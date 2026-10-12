@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html><head>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Mixer Theory</title>
+
+  </head>
+  <body>
+
+
+<h1>Motor Mixer Theory</h1>
+
+<p>This page describes the theory behind motor mixing for multirotors.
+The reader will be familiar with how to come up with mixer tables for
+any motor configuration. Pseudo-inverse technique is used.</p>
+
+<h2>Overview</h2>
+
+<p>A typical control architecture for multirotor vehicles is as follows:</p>
+
+<img src="Mixer%20Theory_files/block_diagram_klYl.png">
+
+<p>The controller outputs desired thrust, <i>T</i>, and roll/pitch/yaw torques, <i>τ</i>.
+Then the mixer converts those values to individual motor commands.
+For example, let an X-configuration quadrotor of the following form:</p>
+
+<img src="Mixer%20Theory_files/quadrotor_x_klYl.png">
+
+<p>Arrow indicates the direction of rotation of the propeller when looking
+down at the quadcopter from above. Note that the clockwise propeller causes
+a counter-clockwise moment on the quadcopter. The mixer algorithm for this
+drone is as follows:</p>
+
+<!-- HTML generated using hilite.me --><div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em;padding:.2em .2em;"><pre style="margin: 0; line-height: 125%">motor1_pwm = thrust - roll + pitch + yaw
+motor2_pwm = thrust + roll - pitch + yaw
+motor3_pwm = thrust + roll + pitch - yaw
+motor4_pwm = thrust - roll - pitch - yaw
+</pre></div>
+
+<p>We are using front-right-down (roll-pitch-yaw) coordinates and
+thrust is in up direction. The above math can be rewritten in matrix form as,</p>
+
+<img src="Mixer%20Theory_files/eq1_klYl.png">
+
+<p>The matrix in the middle with 1s and -1s is called a mixer table.
+It is an N-by-4 matrix where N is the number of rotors.
+It is possible to guess this matrix just by intuition but it soon becomes
+complicated when there are more than 4 motors.
+The following sections explain a method to mathematically determine this matrix.
+This problem is part of a broader field called "control allocation".</p>
+
+
+<h3>2D Case</h3>
+
+<p>To simplify things, let us first consider the 2D case. Given <i>T</i> (thrust) and
+<i>τ</i> (pitch torque) and <i>L</i> (arm length), the problem is to determine <i>F<sub>1</sub></i> and
+<i>F<sub>2</sub></i> (forces from the right and left motors respectively).</p>
+
+<img src="Mixer%20Theory_files/2d_klYl.png">
+
+<p>Summing the forces and torques, we get:</p>
+
+<img src="Mixer%20Theory_files/eq2_klYl.png">
+
+<p>In matrix form:</p>
+
+<img src="Mixer%20Theory_files/eq3_klYl.png">
+
+<p>Solve for the individual motor thrusts by inverting the matrix:</p>
+
+<img src="Mixer%20Theory_files/eq4_klYl.png">
+
+<p>This can be normalized by separating the matrix:</p>
+
+<img src="Mixer%20Theory_files/eq5_klYl.png">
+
+<p>So the motor mixer table is given by,</p>
+
+<img src="Mixer%20Theory_files/eq6_klYl.png">
+
+<p>So the final algorithm is,</p>
+
+<!-- HTML generated using hilite.me --><div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em;padding:.2em .2em;"><pre style="margin: 0; line-height: 125%">motor1_pwm = thrust + pitch
+motor2_pwm = thrust - pitch
+</pre></div>
+
+
+<h3>3D Case</h3>
+
+<p>Now let us consider a 3D case. We will use X-configuration quadrotor again
+as we already know the answer.</p>
+
+<img src="Mixer%20Theory_files/3d_klYl.png">
+
+<p>Summing the forces and torques, we get:</p>
+
+<img src="Mixer%20Theory_files/eq7_klYl.png">
+
+<p><i>γ</i> is rotor drag to thrust coefficient given by,</p>
+
+<img src="Mixer%20Theory_files/eq8_klYl.png">
+
+<p>where <i>n</i> is rotor rotation speed, <i>k<sub>T</sub></i> is thrust coefficient, and <i>k<sub>M</sub></i> is moment
+coefficient. <i>k<sub>T</sub></i> and <i>k<sub>M</sub></i> are only dependent on rotor geometry (and so is <i>γ</i>).</p>
+
+<p>In matrix form,</p>
+
+<img src="Mixer%20Theory_files/eq9_klYl.png">
+
+<p>Solve for the individual motor thrusts by inverting the matrix</p>
+
+<img src="Mixer%20Theory_files/eq10_klYl.png">
+
+<p>The normalized mixer table is:</p>
+
+<img src="Mixer%20Theory_files/eq11_klYl.png">
+
+<h2>A General Solution</h2>
+
+<p>Given N rotors positioned at (<i>x<sub>1</sub></i>, <i>y<sub>1</sub></i>),
+(<i>x<sub>2</sub></i>, <i>y<sub>2</sub></i>), ... (<i>x<sub>N</sub></i>, <i>y<sub>N</sub></i>),
+the general from is:</p>
+
+<img src="Mixer%20Theory_files/eq12_klYl.png">
+
+<p>where +<i>γ</i> is for propeller in CCW rotation and -<i>γ</i> for propeller in CW rotation.
+The solution to the above equation is:</p>
+
+<img src="Mixer%20Theory_files/eq13_klYl.png">
+
+<p>where <sup>+</sup> is Moore-Penrose pseudo-inverse.
+A python script to solve the above is as follows:</p>
+
+<!-- HTML generated using hilite.me --><div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em;padding:.2em .2em;"><pre style="margin: 0; line-height: 125%"><span style="color: #0000ff">import</span> numpy <span style="color: #0000ff">as</span> np
+
+<span style="color: #008000"># XYZ are in front-right-down coordinates</span>
+<span style="color: #008000"># rotors = [</span>
+<span style="color: #008000">#     Position Prop-Direction</span>
+<span style="color: #008000">#    [ x1, y1, 'CW'/'CCW'],</span>
+<span style="color: #008000">#    [ x2, y2, 'CW'/'CCW'],</span>
+<span style="color: #008000">#    [ x3, y3, 'CW'/'CCW'],</span>
+<span style="color: #008000">#    ...</span>
+<span style="color: #008000"># ]</span>
+
+<span style="color: #008000"># Quadrotor-X</span>
+<span style="color: #008000">#    3   1</span>
+<span style="color: #008000">#      x</span>
+<span style="color: #008000">#    2   4</span>
+rotors = [
+    [ 1,  1, <span style="color: #a31515">'CCW'</span>],
+    [-1, -1, <span style="color: #a31515">'CCW'</span>],
+    [ 1, -1, <span style="color: #a31515">'CW'</span> ],
+    [-1,  1, <span style="color: #a31515">'CW'</span> ]
+]
+
+<span style="color: #0000ff">def</span> normalize(B):
+    scale = np.abs(B).max(axis=0)
+
+    <span style="color: #008000"># Same scale on roll and pitch</span>
+    scale[1] = max(scale[1], scale[2])
+    scale[2] = scale[1]
+
+    <span style="color: #0000ff">return</span> B / scale
+
+gamma = 1 <span style="color: #008000"># Drag to thrust coefficient</span>
+
+<span style="color: #008000"># 4 x N matrix where N is the number of rotors</span>
+<span style="color: #008000"># Row 1: thrust</span>
+<span style="color: #008000"># Row 2: roll torque (x)</span>
+<span style="color: #008000"># Row 3: pitch torque (y)</span>
+<span style="color: #008000"># Row 4: yaw torque (z)</span>
+A = np.array([
+    [1] * len(rotors),
+    [-i[1] <span style="color: #0000ff">for</span> i <span style="color: #0000ff">in</span> rotors],
+    [i[0] <span style="color: #0000ff">for</span> i <span style="color: #0000ff">in</span> rotors],
+    [-gamma <span style="color: #0000ff">if</span> i[2]==<span style="color: #a31515">'CW'</span> <span style="color: #0000ff">else</span> gamma <span style="color: #0000ff">for</span> i <span style="color: #0000ff">in</span> rotors]
+])
+
+B = np.linalg.pinv(A)
+
+print(A)
+print(B)
+print(normalize(B))
+</pre></div>
+
+<h2>Example: Quadrotor +</h2>
+
+<img src="Mixer%20Theory_files/quadrotor_plus_klYl.png">
+
+<p>Let, <i>L</i> = 1, <i>γ</i> = 1</p>
+
+<!-- HTML generated using hilite.me --><div style="background: #ffffff; overflow:auto;width:auto;border:solid gray;border-width:.1em;padding:.2em .2em;"><pre style="margin: 0; line-height: 125%">rotors = [
+    [ 0,  1, <span style="color: #a31515">'CCW'</span>],
+    [ 0, -1, <span style="color: #a31515">'CCW'</span>],
+    [ 1,  0, <span style="color: #a31515">'CW'</span> ],
+    [-1,  0, <span style="color: #a31515">'CW'</span> ]
+]
+</pre></div>
+
+<img src="Mixer%20Theory_files/eq15_klYl.png">
+
+
+<h2>Final Notes</h2>
+
+<h3>Normalization</h3>
+
+<p>Often times <i>γ</i> is not known so it is simpler to scale roll/pitch and yaw
+separately. In such case, the commands from the controller is no longer
+in valid SI-units (e.g. N and Nm).</p>
+
+<h3>Motor speed vs force</h3>
+
+<p>The output of the mixer is fed to the ESC as pwm duty. In our calculation
+the output of the mixer is force whereas the ESC accepts rotational speed of
+the rotor. The force needs to be divided by the thrust coefficient and square
+rooted. However this is often not done.</p>
+
+  
+</body></html>

@@ -1,0 +1,598 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Geometric Tracking Control of a Quadrotor UAV on SE(3)",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          95.26859092712402,
+          74.3104305267334
+        ],
+        [
+          513.7763061523438,
+          74.3104305267334
+        ],
+        [
+          513.7763061523438,
+          95.16064453125
+        ],
+        [
+          95.26859092712402,
+          95.16064453125
+        ]
+      ]
+    },
+    {
+      "title": "I. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          133.88654708862305,
+          308.01287841796875
+        ],
+        [
+          216.56884002685547,
+          308.01287841796875
+        ],
+        [
+          216.56884002685547,
+          321.68597412109375
+        ],
+        [
+          133.88654708862305,
+          321.68597412109375
+        ]
+      ]
+    },
+    {
+      "title": "II. QUADROTOR DYNAMICS MODEL",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          352.4076690673828,
+          503.4835510253906
+        ],
+        [
+          512.8577270507812,
+          503.4835510253906
+        ],
+        [
+          512.8577270507812,
+          517.0537109375
+        ],
+        [
+          352.4076690673828,
+          517.0537109375
+        ]
+      ]
+    },
+    {
+      "title": "III. GEOMETRIC TRACKING CONTROL ON SE(3)",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          328.19959259033203,
+          248.03512573242188
+        ],
+        [
+          539.8864288330078,
+          248.03512573242188
+        ],
+        [
+          539.8864288330078,
+          261.98358154296875
+        ],
+        [
+          328.19959259033203,
+          261.98358154296875
+        ]
+      ]
+    },
+    {
+      "title": "A. Tracking Errors",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          51.272918701171875,
+          226.77493286132812
+        ],
+        [
+          132.70623779296875,
+          226.77493286132812
+        ],
+        [
+          132.70623779296875,
+          239.35528564453125
+        ],
+        [
+          51.272918701171875,
+          239.35528564453125
+        ]
+      ]
+    },
+    {
+      "title": "B. Tracking Controller",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          309.737548828125,
+          55.8768367767334
+        ],
+        [
+          407.5111083984375,
+          55.8768367767334
+        ],
+        [
+          407.5111083984375,
+          67.99737548828125
+        ],
+        [
+          309.737548828125,
+          67.99737548828125
+        ]
+      ]
+    },
+    {
+      "title": "C. Exponential Asymptotic Stability",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          309.7319641113281,
+          685.311767578125
+        ],
+        [
+          460.87696838378906,
+          685.311767578125
+        ],
+        [
+          460.87696838378906,
+          698.4881057739258
+        ],
+        [
+          309.7319641113281,
+          698.4881057739258
+        ]
+      ]
+    },
+    {
+      "title": "D. Almost Global Exponential Attractiveness",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          310.44566345214844,
+          214.44532012939453
+        ],
+        [
+          499.3623046875,
+          214.44532012939453
+        ],
+        [
+          499.3623046875,
+          226.4612274169922
+        ],
+        [
+          310.44566345214844,
+          226.4612274169922
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          326.79638671875,
+          549.1747283935547
+        ],
+        [
+          402.26206970214844,
+          549.1747283935547
+        ],
+        [
+          402.26206970214844,
+          560.572998046875
+        ],
+        [
+          326.79638671875,
+          560.572998046875
+        ]
+      ]
+    },
+    {
+      "title": "E. Properties and Extensions",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          309.4969940185547,
+          625.6205749511719
+        ],
+        [
+          433.9698486328125,
+          625.6205749511719
+        ],
+        [
+          433.9698486328125,
+          638.9403686523438
+        ],
+        [
+          309.4969940185547,
+          638.9403686523438
+        ]
+      ]
+    },
+    {
+      "title": "IV. NUMERICAL EXAMPLE",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          115.31568145751953,
+          494.47718811035156
+        ],
+        [
+          234.59669494628906,
+          494.47718811035156
+        ],
+        [
+          234.59669494628906,
+          506.6089172363281
+        ],
+        [
+          115.31568145751953,
+          506.6089172363281
+        ]
+      ]
+    },
+    {
+      "title": "V. CONCLUSION",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          395.0329284667969,
+          433.65838623046875
+        ],
+        [
+          471.9181365966797,
+          433.65838623046875
+        ],
+        [
+          471.9181365966797,
+          445.9989318847656
+        ],
+        [
+          395.0329284667969,
+          445.9989318847656
+        ]
+      ]
+    },
+    {
+      "title": "REFERENCES",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          402.6913146972656,
+          683.3136291503906
+        ],
+        [
+          464.0497283935547,
+          683.3136291503906
+        ],
+        [
+          464.0497283935547,
+          695.6418762207031
+        ],
+        [
+          402.6913146972656,
+          695.6418762207031
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          317
+        ],
+        [
+          "Line",
+          116
+        ],
+        [
+          "Text",
+          15
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          957
+        ],
+        [
+          "Line",
+          203
+        ],
+        [
+          "Text",
+          12
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "Diagram",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "ChemicalBlock",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1088
+        ],
+        [
+          "Line",
+          183
+        ],
+        [
+          "Text",
+          17
+        ],
+        [
+          "Equation",
+          13
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1013
+        ],
+        [
+          "Line",
+          181
+        ],
+        [
+          "Text",
+          17
+        ],
+        [
+          "Equation",
+          12
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Footnote",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          546
+        ],
+        [
+          "Line",
+          126
+        ],
+        [
+          "Text",
+          13
+        ],
+        [
+          "Equation",
+          7
+        ],
+        [
+          "ListGroup",
+          3
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "ListItem",
+          2
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          564
+        ],
+        [
+          "Line",
+          153
+        ],
+        [
+          "Caption",
+          5
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ],
+        [
+          "Text",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/lee2010"
+}

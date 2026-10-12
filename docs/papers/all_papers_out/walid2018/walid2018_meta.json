@@ -1,0 +1,673 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Modelling, Identification and Control of a\nQuadrotor UAV",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          97.34413204625513,
+          99.53723772274843
+        ],
+        [
+          513.471953346387,
+          99.53723772274843
+        ],
+        [
+          513.471953346387,
+          154.33184814453125
+        ],
+        [
+          97.34413204625513,
+          154.33184814453125
+        ]
+      ]
+    },
+    {
+      "title": "I. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          131.67274830623597,
+          379.3190543496598
+        ],
+        [
+          213.56625247061703,
+          379.3190543496598
+        ],
+        [
+          213.56625247061703,
+          392.8514099121094
+        ],
+        [
+          131.67274830623597,
+          392.8514099121094
+        ]
+      ]
+    },
+    {
+      "title": "II. MATHEMATICAL MODELLING",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          361.91833246264713,
+          461.69217215153327
+        ],
+        [
+          509.3594271950518,
+          461.69217215153327
+        ],
+        [
+          509.3594271950518,
+          475.051513671875
+        ],
+        [
+          361.91833246264713,
+          475.051513671875
+        ]
+      ]
+    },
+    {
+      "title": "III. QUADROTOR PROTOTYPE",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          108.95786198921108,
+          380.6931046904566
+        ],
+        [
+          237.44954856276814,
+          380.6931046904566
+        ],
+        [
+          237.44954856276814,
+          394.5315856933594
+        ],
+        [
+          108.95786198921108,
+          394.5315856933594
+        ]
+      ]
+    },
+    {
+      "title": "IV. PARAMETERS IDENTIFICATION",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          97.85800914620273,
+          98.46316240264811
+        ],
+        [
+          248.5135498046875,
+          98.46316240264811
+        ],
+        [
+          248.5135498046875,
+          111.09136962890625
+        ],
+        [
+          97.85800914620273,
+          111.09136962890625
+        ]
+      ]
+    },
+    {
+      "title": "A. Moment of inertia",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          46.13702971028441,
+          168.9272261200902
+        ],
+        [
+          137.0820020007847,
+          168.9272261200902
+        ],
+        [
+          137.0820020007847,
+          181.061767578125
+        ],
+        [
+          46.13702971028441,
+          181.061767578125
+        ]
+      ]
+    },
+    {
+      "title": "B. Rotor dynamic",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          46.2824391718175,
+          371.9270383133383
+        ],
+        [
+          122.62614440917969,
+          371.9270383133383
+        ],
+        [
+          122.62614440917969,
+          385.5417785644531
+        ],
+        [
+          46.2824391718175,
+          385.5417785644531
+        ]
+      ]
+    },
+    {
+      "title": "C. Thrust coefficient",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          308.10587174345926,
+          256.8246093097799
+        ],
+        [
+          396.7922058105469,
+          256.8246093097799
+        ],
+        [
+          396.7922058105469,
+          269.621826171875
+        ],
+        [
+          308.10587174345926,
+          269.621826171875
+        ]
+      ]
+    },
+    {
+      "title": "D. Drug coefficient",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          45.93520250969029,
+          97.63129803461362
+        ],
+        [
+          129.43194580078125,
+          97.63129803461362
+        ],
+        [
+          129.43194580078125,
+          110.98175048828125
+        ],
+        [
+          45.93520250969029,
+          110.98175048828125
+        ]
+      ]
+    },
+    {
+      "title": "Fig. 10. Test bench used for drug factor identification",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          82.90727399158239,
+          174.047223112356
+        ],
+        [
+          263.95321651429913,
+          174.047223112356
+        ],
+        [
+          263.95321651429913,
+          186.37689208984375
+        ],
+        [
+          82.90727399158239,
+          186.37689208984375
+        ]
+      ]
+    },
+    {
+      "title": "V. ATTITUDE CONTROL DESIGN",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          103.23140430210219,
+          449.89558009812583
+        ],
+        [
+          243.71408081054688,
+          449.89558009812583
+        ],
+        [
+          243.71408081054688,
+          463.53155517578125
+        ],
+        [
+          103.23140430210219,
+          463.53155517578125
+        ]
+      ]
+    },
+    {
+      "title": "VI. RESULTS AND DISCUSSION",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          366.3648141241194,
+          440.2563827664111
+        ],
+        [
+          504.4096224614295,
+          440.2563827664111
+        ],
+        [
+          504.4096224614295,
+          453.81158447265625
+        ],
+        [
+          366.3648141241194,
+          453.81158447265625
+        ]
+      ]
+    },
+    {
+      "title": "VII. CONCLUSION",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          130.72829431490575,
+          666.9397948783949
+        ],
+        [
+          214.55377197265625,
+          666.9397948783949
+        ],
+        [
+          214.55377197265625,
+          680.9717712402344
+        ],
+        [
+          130.72829431490575,
+          680.9717712402344
+        ]
+      ]
+    },
+    {
+      "title": "REFERENCES",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          405.0440110367552,
+          349.8691497014658
+        ],
+        [
+          465.35101318359375,
+          349.8691497014658
+        ],
+        [
+          465.35101318359375,
+          362.49151611328125
+        ],
+        [
+          405.0440110367552,
+          362.49151611328125
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          387
+        ],
+        [
+          "Line",
+          117
+        ],
+        [
+          "Text",
+          14
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          974
+        ],
+        [
+          "Line",
+          257
+        ],
+        [
+          "Text",
+          16
+        ],
+        [
+          "Equation",
+          14
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          379
+        ],
+        [
+          "Line",
+          95
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "ListItem",
+          5
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "ListGroup",
+          2
+        ],
+        [
+          "Diagram",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          273
+        ],
+        [
+          "Line",
+          82
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Figure",
+          3
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "Picture",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          590
+        ],
+        [
+          "Line",
+          138
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          252
+        ],
+        [
+          "Line",
+          77
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Figure",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/walid2018"
+}

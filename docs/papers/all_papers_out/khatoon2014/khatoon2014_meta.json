@@ -1,0 +1,442 @@
+{
+  "table_of_contents": [
+    {
+      "title": "PID & LQR Control for a Quadrotor: \nModeling and Simulation",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          105.44509506225586,
+          44.45622539520264
+        ],
+        [
+          513.434814453125,
+          44.45622539520264
+        ],
+        [
+          513.434814453125,
+          102.18145751953125
+        ],
+        [
+          105.44509506225586,
+          102.18145751953125
+        ]
+      ]
+    },
+    {
+      "title": "I. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          119.67569732666016,
+          374.23876190185547
+        ],
+        [
+          230.1362762451172,
+          374.23876190185547
+        ],
+        [
+          230.1362762451172,
+          387.4859924316406
+        ],
+        [
+          119.67569732666016,
+          387.4859924316406
+        ]
+      ]
+    },
+    {
+      "title": "II. LITERATURE SURVEY",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          370.6277160644531,
+          280.6548843383789
+        ],
+        [
+          519.0787353515625,
+          280.6548843383789
+        ],
+        [
+          519.0787353515625,
+          294.84820556640625
+        ],
+        [
+          370.6277160644531,
+          294.84820556640625
+        ]
+      ]
+    },
+    {
+      "title": "III. LINEAR QUADRATIC REGULATOR",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          66.3940315246582,
+          124.67376708984375
+        ],
+        [
+          267.03997802734375,
+          124.67376708984375
+        ],
+        [
+          267.03997802734375,
+          136.115234375
+        ],
+        [
+          66.3940315246582,
+          136.115234375
+        ]
+      ]
+    },
+    {
+      "title": "IV. GENERATING STATE SPACE MODEL",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          63.26465606689453,
+          617.9301452636719
+        ],
+        [
+          271.3509826660156,
+          617.9301452636719
+        ],
+        [
+          271.3509826660156,
+          630.3782958984375
+        ],
+        [
+          63.26465606689453,
+          630.3782958984375
+        ]
+      ]
+    },
+    {
+      "title": "VI. RESULTS AND CONCLUSION",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          127.73904418945312,
+          540.6170196533203
+        ],
+        [
+          289.59606170654297,
+          540.6170196533203
+        ],
+        [
+          289.59606170654297,
+          552.9226531982422
+        ],
+        [
+          127.73904418945312,
+          552.9226531982422
+        ]
+      ]
+    },
+    {
+      "title": "REFERENCES",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          421.2113800048828,
+          165.4295997619629
+        ],
+        [
+          482.46588134765625,
+          165.4295997619629
+        ],
+        [
+          482.46588134765625,
+          178.3873291015625
+        ],
+        [
+          421.2113800048828,
+          178.3873291015625
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          233
+        ],
+        [
+          "Line",
+          110
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageFooter",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          453
+        ],
+        [
+          "Line",
+          157
+        ],
+        [
+          "Text",
+          14
+        ],
+        [
+          "Equation",
+          5
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          283
+        ],
+        [
+          "Line",
+          100
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          239
+        ],
+        [
+          "Line",
+          59
+        ],
+        [
+          "Figure",
+          8
+        ],
+        [
+          "Caption",
+          8
+        ],
+        [
+          "PageFooter",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          257
+        ],
+        [
+          "Line",
+          67
+        ],
+        [
+          "Figure",
+          8
+        ],
+        [
+          "Caption",
+          8
+        ],
+        [
+          "PageFooter",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          215
+        ],
+        [
+          "Line",
+          62
+        ],
+        [
+          "Figure",
+          6
+        ],
+        [
+          "Caption",
+          6
+        ],
+        [
+          "PageFooter",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          492
+        ],
+        [
+          "Line",
+          216
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/khatoon2014"
+}

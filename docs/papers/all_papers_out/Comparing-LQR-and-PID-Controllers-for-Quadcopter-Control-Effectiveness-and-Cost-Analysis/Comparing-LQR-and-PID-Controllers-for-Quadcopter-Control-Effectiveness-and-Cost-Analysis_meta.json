@@ -1,0 +1,655 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Comparing LQR and PID Controllers for\nQuadcopter Control\nEffectiveness and Cost Analysis",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          105.3728256225586,
+          77.13661766052246
+        ],
+        [
+          504.2959442138672,
+          77.13661766052246
+        ],
+        [
+          504.2959442138672,
+          159.884033203125
+        ],
+        [
+          105.3728256225586,
+          159.884033203125
+        ]
+      ]
+    },
+    {
+      "title": "I. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          135.60365295410156,
+          441.44810485839844
+        ],
+        [
+          211.38967895507812,
+          441.44810485839844
+        ],
+        [
+          211.38967895507812,
+          455.10137939453125
+        ],
+        [
+          135.60365295410156,
+          455.10137939453125
+        ]
+      ]
+    },
+    {
+      "title": "II. QUADCOPTER FLIGHT CONTROL MODEL",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          347.3759765625,
+          611.1285552978516
+        ],
+        [
+          520.0346069335938,
+          611.1285552978516
+        ],
+        [
+          520.0346069335938,
+          625.4113616943359
+        ],
+        [
+          347.3759765625,
+          625.4113616943359
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          312.32128143310547,
+          235.19956970214844
+        ],
+        [
+          393.8605041503906,
+          235.19956970214844
+        ],
+        [
+          393.8605041503906,
+          247.69928741455078
+        ],
+        [
+          312.32128143310547,
+          247.69928741455078
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          51.79570198059082,
+          309.41136932373047
+        ],
+        [
+          137.12091064453125,
+          309.41136932373047
+        ],
+        [
+          137.12091064453125,
+          321.6111373901367
+        ],
+        [
+          51.79570198059082,
+          321.6111373901367
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          52.386240005493164,
+          108.05098342895508
+        ],
+        [
+          174.7390365600586,
+          108.05098342895508
+        ],
+        [
+          174.7390365600586,
+          120.35635757446289
+        ],
+        [
+          52.386240005493164,
+          120.35635757446289
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          51.45068550109863,
+          185.61978149414062
+        ],
+        [
+          180.14227294921875,
+          185.61978149414062
+        ],
+        [
+          180.14227294921875,
+          198.51548767089844
+        ],
+        [
+          51.45068550109863,
+          198.51548767089844
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          51.33038520812988,
+          334.7208938598633
+        ],
+        [
+          140.3422966003418,
+          334.7208938598633
+        ],
+        [
+          140.3422966003418,
+          347.1420135498047
+        ],
+        [
+          51.33038520812988,
+          347.1420135498047
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          328.7390670776367,
+          414.4185333251953
+        ],
+        [
+          538.9026489257812,
+          414.4185333251953
+        ],
+        [
+          538.9026489257812,
+          428.0799865722656
+        ],
+        [
+          328.7390670776367,
+          428.0799865722656
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          112.92031860351562,
+          299.07946014404297
+        ],
+        [
+          234.95706939697266,
+          299.07946014404297
+        ],
+        [
+          234.95706939697266,
+          311.6195983886719
+        ],
+        [
+          112.92031860351562,
+          311.6195983886719
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          51.67078971862793,
+          364.49512481689453
+        ],
+        [
+          150.20191955566406,
+          364.49512481689453
+        ],
+        [
+          150.20191955566406,
+          377.1145935058594
+        ],
+        [
+          51.67078971862793,
+          377.1145935058594
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          51.72526931762695,
+          645.7979278564453
+        ],
+        [
+          238.434814453125,
+          645.7979278564453
+        ],
+        [
+          238.434814453125,
+          658.8378753662109
+        ],
+        [
+          51.72526931762695,
+          658.8378753662109
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          111.71949005126953,
+          488.54173278808594
+        ],
+        [
+          235.40595245361328,
+          488.54173278808594
+        ],
+        [
+          235.40595245361328,
+          499.7205047607422
+        ],
+        [
+          111.71949005126953,
+          499.7205047607422
+        ]
+      ]
+    },
+    {
+      "title": "A. Conclusion",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          312.36522674560547,
+          68.02486610412598
+        ],
+        [
+          375.5382843017578,
+          68.02486610412598
+        ],
+        [
+          375.5382843017578,
+          81.0113525390625
+        ],
+        [
+          312.36522674560547,
+          81.0113525390625
+        ]
+      ]
+    },
+    {
+      "title": "B. Future work",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          312.05419921875,
+          217.26022338867188
+        ],
+        [
+          379.568359375,
+          217.26022338867188
+        ],
+        [
+          379.568359375,
+          231.0113525390625
+        ],
+        [
+          312.05419921875,
+          231.0113525390625
+        ]
+      ]
+    },
+    {
+      "title": "REFERENCES",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          406.5502624511719,
+          301.03289794921875
+        ],
+        [
+          462.9759063720703,
+          301.03289794921875
+        ],
+        [
+          462.9759063720703,
+          314.08135986328125
+        ],
+        [
+          406.5502624511719,
+          314.08135986328125
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          1421
+        ],
+        [
+          "Line",
+          105
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "PageFooter",
+          4
+        ],
+        [
+          "PageHeader",
+          3
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Equation",
+          1
+        ],
+        [
+          "ChemicalBlock",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Text",
+          11
+        ],
+        [
+          "Equation",
+          7
+        ],
+        [
+          "ListGroup",
+          4
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "PageFooter",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Figure",
+          1
+        ],
+        [
+          "Diagram",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Text",
+          18
+        ],
+        [
+          "Equation",
+          13
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "PageFooter",
+          3
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Text",
+          16
+        ],
+        [
+          "Equation",
+          9
+        ],
+        [
+          "PageHeader",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageFooter",
+          3
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "Caption",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Caption",
+          6
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "Figure",
+          5
+        ],
+        [
+          "Table",
+          3
+        ],
+        [
+          "PageFooter",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          902
+        ],
+        [
+          "Line",
+          68
+        ],
+        [
+          "Caption",
+          5
+        ],
+        [
+          "Figure",
+          4
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "PageFooter",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/Comparing-LQR-and-PID-Controllers-for-Quadcopter-Control-Effectiveness-and-Cost-Analysis"
+}

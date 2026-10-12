@@ -1,0 +1,741 @@
+{
+  "table_of_contents": [
+    {
+      "title": "PID vs LQ Control Techniques Applied to an \nIndoor Micro Quadrotor",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          102.23082096289893,
+          89.43956565856934
+        ],
+        [
+          499.35357666015625,
+          89.43956565856934
+        ],
+        [
+          499.35357666015625,
+          136.9495849609375
+        ],
+        [
+          102.23082096289893,
+          136.9495849609375
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          304.06592931550443,
+          246.24909210205078
+        ],
+        [
+          378.38952076797204,
+          246.24909210205078
+        ],
+        [
+          378.38952076797204,
+          257.83067321777344
+        ],
+        [
+          304.06592931550443,
+          257.83067321777344
+        ]
+      ]
+    },
+    {
+      "title": "1. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          154.44261757165808,
+          350.15277099609375
+        ],
+        [
+          239.5129852294922,
+          350.15277099609375
+        ],
+        [
+          239.5129852294922,
+          363.0087890625
+        ],
+        [
+          154.44261757165808,
+          363.0087890625
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          304.15181675629367,
+          356.2381896972656
+        ],
+        [
+          407.2509267999364,
+          356.2381896972656
+        ],
+        [
+          407.2509267999364,
+          367.46797943115234
+        ],
+        [
+          304.15181675629367,
+          367.46797943115234
+        ]
+      ]
+    },
+    {
+      "title": "11. QUADROTOR DYNAMIC MODELLING",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          115.80814051019755,
+          337.1361273820394
+        ],
+        [
+          293.2305908203125,
+          337.1361273820394
+        ],
+        [
+          293.2305908203125,
+          350.2575988769531
+        ],
+        [
+          115.80814051019755,
+          350.2575988769531
+        ]
+      ]
+    },
+    {
+      "title": "111. OS4 TEST-BENCH",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          362.03806857340794,
+          376.33756670023405
+        ],
+        [
+          458.3055419921875,
+          376.33756670023405
+        ],
+        [
+          458.3055419921875,
+          389.4576416015625
+        ],
+        [
+          362.03806857340794,
+          389.4576416015625
+        ]
+      ]
+    },
+    {
+      "title": "IV. CLASSICAL CONTROL OF \"OS4\" VTOL \nSYSTEM",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          317.65624463427196,
+          583.5345335529522
+        ],
+        [
+          501.8908386230469,
+          583.5345335529522
+        ],
+        [
+          501.8908386230469,
+          609.1575927734375
+        ],
+        [
+          317.65624463427196,
+          609.1575927734375
+        ]
+      ]
+    },
+    {
+      "title": "A. PD Conrmller Synrhesis and Simularion",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          96.76065879514366,
+          487.41252566014884
+        ],
+        [
+          254.65809163709554,
+          487.41252566014884
+        ],
+        [
+          254.65809163709554,
+          499.7439880371094
+        ],
+        [
+          96.76065879514366,
+          499.7439880371094
+        ]
+      ]
+    },
+    {
+      "title": "B. PID Controller on The Real Sysrem",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          96.34620809962607,
+          632.8151699707954
+        ],
+        [
+          239.52171325683594,
+          632.8151699707954
+        ],
+        [
+          239.52171325683594,
+          645.3088073730469
+        ],
+        [
+          96.34620809962607,
+          645.3088073730469
+        ]
+      ]
+    },
+    {
+      "title": "V. OPTIMAL CONTROL OF\"OS4\" VTOL SYSTEM",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          315.79614690051704,
+          476.277049650542
+        ],
+        [
+          527.2560070815686,
+          476.277049650542
+        ],
+        [
+          527.2560070815686,
+          488.9440002441406
+        ],
+        [
+          315.79614690051704,
+          488.9440002441406
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          85.54862795844947,
+          261.5526944451887
+        ],
+        [
+          189.49839143974836,
+          261.5526944451887
+        ],
+        [
+          189.49839143974836,
+          272.48435577132733
+        ],
+        [
+          85.54862795844947,
+          272.48435577132733
+        ]
+      ]
+    },
+    {
+      "title": "C. Second LQ Conrroller Synthesis and Simulation A. Aduplive Optimal Conrml",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          88.37200164794922,
+          264.55926513671875
+        ],
+        [
+          480.6300048828125,
+          264.55926513671875
+        ],
+        [
+          480.6300048828125,
+          277.7008056640625
+        ],
+        [
+          88.37200164794922,
+          277.7008056640625
+        ]
+      ]
+    },
+    {
+      "title": "B. Firsr LQ Conrroller Synrhesis and Simulation",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          86.53096599415437,
+          576.0623153354496
+        ],
+        [
+          260.04962158203125,
+          576.0623153354496
+        ],
+        [
+          260.04962158203125,
+          588.0440063476562
+        ],
+        [
+          86.53096599415437,
+          588.0440063476562
+        ]
+      ]
+    },
+    {
+      "title": "D. LQ conrroller on The Real Syaern",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          300.84108354061874,
+          596.5678490933767
+        ],
+        [
+          435.1606140136719,
+          596.5678490933767
+        ],
+        [
+          435.1606140136719,
+          608.7999877929688
+        ],
+        [
+          300.84108354061874,
+          608.7999877929688
+        ]
+      ]
+    },
+    {
+      "title": "VI. EXPERIMENTAL AUTONOMOUS FLIGHT",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          107.19229014190562,
+          478.2087928469104
+        ],
+        [
+          301.46563720703125,
+          478.2087928469104
+        ],
+        [
+          301.46563720703125,
+          490.9580078125
+        ],
+        [
+          107.19229014190562,
+          490.9580078125
+        ]
+      ]
+    },
+    {
+      "title": "VII. CONCLUSION",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          383.5371807689923,
+          265.4203379870813
+        ],
+        [
+          467.80950927734375,
+          265.4203379870813
+        ],
+        [
+          467.80950927734375,
+          277.5576171875
+        ],
+        [
+          383.5371807689923,
+          277.5576171875
+        ]
+      ]
+    },
+    {
+      "title": "ACKNOWLEDGMENT",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          381.60240640977946,
+          438.4031477064626
+        ],
+        [
+          463.4842224121094,
+          438.4031477064626
+        ],
+        [
+          463.4842224121094,
+          449.5572204589844
+        ],
+        [
+          381.60240640977946,
+          449.5572204589844
+        ]
+      ]
+    },
+    {
+      "title": "REF ER EN c E s",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          394.7079711466919,
+          507.7397793227197
+        ],
+        [
+          449.1427001953125,
+          507.7397793227197
+        ],
+        [
+          449.1427001953125,
+          519.8680114746094
+        ],
+        [
+          394.7079711466919,
+          519.8680114746094
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          167
+        ],
+        [
+          "Line",
+          60
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Footnote",
+          5
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "Table",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          332
+        ],
+        [
+          "Line",
+          89
+        ],
+        [
+          "Text",
+          12
+        ],
+        [
+          "Equation",
+          9
+        ],
+        [
+          "Diagram",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          218
+        ],
+        [
+          "Line",
+          76
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Equation",
+          5
+        ],
+        [
+          "Footnote",
+          3
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          325
+        ],
+        [
+          "Line",
+          84
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "Equation",
+          9
+        ],
+        [
+          "SectionHeader",
+          3
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          235
+        ],
+        [
+          "Line",
+          70
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Equation",
+          4
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          408
+        ],
+        [
+          "Line",
+          116
+        ],
+        [
+          "Text",
+          6
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Equation",
+          1
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "FigureGroup",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/bouabdallah2004-pidlqr"
+}

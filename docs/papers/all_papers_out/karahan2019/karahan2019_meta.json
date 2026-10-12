@@ -1,0 +1,465 @@
+{
+  "table_of_contents": [
+    {
+      "title": "Modeling and Simulation of Quadrotor UAV Using \nPID Controller",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          48.144914641488405,
+          82.03873489121719
+        ],
+        [
+          550.5069580078125,
+          82.03873489121719
+        ],
+        [
+          550.5069580078125,
+          136.82366943359375
+        ],
+        [
+          48.144914641488405,
+          136.82366943359375
+        ]
+      ]
+    },
+    {
+      "title": "I. INTRODUCTION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          127.05969199846012,
+          388.2301429755329
+        ],
+        [
+          213.9234619140625,
+          388.2301429755329
+        ],
+        [
+          213.9234619140625,
+          402.4710693359375
+        ],
+        [
+          127.05969199846012,
+          402.4710693359375
+        ]
+      ]
+    },
+    {
+      "title": "II. QUADROTOR CONFIGURATION",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          94.48325426692625,
+          527.214130241958
+        ],
+        [
+          242.72893072555885,
+          527.214130241958
+        ],
+        [
+          242.72893072555885,
+          541.1910705566406
+        ],
+        [
+          94.48325426692625,
+          541.1910705566406
+        ]
+      ]
+    },
+    {
+      "title": "III. QUADROTOR DYNAMIC MODELLING",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          342.45064377484454,
+          381.44011342429945
+        ],
+        [
+          515.4330206037469,
+          381.44011342429945
+        ],
+        [
+          515.4330206037469,
+          395.03106689453125
+        ],
+        [
+          342.45064377484454,
+          395.03106689453125
+        ]
+      ]
+    },
+    {
+      "title": "A. The Mathematical Model of Quadrotor",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          304.1246831399067,
+          445.8850216139456
+        ],
+        [
+          480.021240234375,
+          445.8850216139456
+        ],
+        [
+          480.021240234375,
+          460.179443359375
+        ],
+        [
+          304.1246831399067,
+          460.179443359375
+        ]
+      ]
+    },
+    {
+      "title": "B. Pysical Parameters of Quadrotor",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          43.24781908856831,
+          665.9820256628102
+        ],
+        [
+          196.42355346679688,
+          665.9820256628102
+        ],
+        [
+          196.42355346679688,
+          680.3862762451172
+        ],
+        [
+          43.24781908856831,
+          680.3862762451172
+        ]
+      ]
+    },
+    {
+      "title": "C. PID Controller Design",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          304.5958425680396,
+          199.51938118938875
+        ],
+        [
+          415.78802490234375,
+          199.51938118938875
+        ],
+        [
+          415.78802490234375,
+          213.23162841796875
+        ],
+        [
+          304.5958425680396,
+          213.23162841796875
+        ]
+      ]
+    },
+    {
+      "title": "IV. SIMULATION RESULTS",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          107.73277486421598,
+          583.5496221798822
+        ],
+        [
+          217.82872305228668,
+          583.5496221798822
+        ],
+        [
+          217.82872305228668,
+          598.5527648925781
+        ],
+        [
+          107.73277486421598,
+          598.5527648925781
+        ]
+      ]
+    },
+    {
+      "title": "V. CONCLUSION",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          388.8193700679904,
+          51.969042036645874
+        ],
+        [
+          469.65358720678523,
+          51.969042036645874
+        ],
+        [
+          469.65358720678523,
+          65.15106201171875
+        ],
+        [
+          388.8193700679904,
+          65.15106201171875
+        ]
+      ]
+    },
+    {
+      "title": "REFERENCES",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          398.3577828587453,
+          184.97975668223543
+        ],
+        [
+          454.5582512151684,
+          184.97975668223543
+        ],
+        [
+          454.5582512151684,
+          197.83807373046875
+        ],
+        [
+          398.3577828587453,
+          197.83807373046875
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          238
+        ],
+        [
+          "Line",
+          93
+        ],
+        [
+          "Text",
+          10
+        ],
+        [
+          "Equation",
+          6
+        ],
+        [
+          "SectionHeader",
+          5
+        ],
+        [
+          "ChemicalBlock",
+          5
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "PageHeader",
+          1
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          594
+        ],
+        [
+          "Line",
+          240
+        ],
+        [
+          "Equation",
+          14
+        ],
+        [
+          "Text",
+          11
+        ],
+        [
+          "ChemicalBlock",
+          8
+        ],
+        [
+          "Caption",
+          3
+        ],
+        [
+          "Table",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "TableGroup",
+          2
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          145
+        ],
+        [
+          "Line",
+          43
+        ],
+        [
+          "Text",
+          8
+        ],
+        [
+          "Equation",
+          6
+        ],
+        [
+          "ChemicalBlock",
+          6
+        ],
+        [
+          "Caption",
+          6
+        ],
+        [
+          "Figure",
+          4
+        ],
+        [
+          "FigureGroup",
+          2
+        ],
+        [
+          "Diagram",
+          1
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ],
+        [
+          "TableGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          135
+        ],
+        [
+          "Line",
+          55
+        ],
+        [
+          "Figure",
+          4
+        ],
+        [
+          "Caption",
+          4
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "FigureGroup",
+          3
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "PageFooter",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/karahan2019"
+}

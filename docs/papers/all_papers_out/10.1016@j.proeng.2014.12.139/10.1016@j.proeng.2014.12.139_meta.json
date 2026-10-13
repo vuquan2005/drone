@@ -1,0 +1,795 @@
+{
+  "table_of_contents": [
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          111.23550047230786,
+          141.0180685464838
+        ],
+        [
+          427.7668362872331,
+          141.0180685464838
+        ],
+        [
+          427.7668362872331,
+          155.3674731365246
+        ],
+        [
+          111.23550047230786,
+          155.3674731365246
+        ]
+      ]
+    },
+    {
+      "title": "Mathematical Modelling and Parameter Identification of Quadrotor \n(a survey)",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          41.99783779701254,
+          167.9297631318586
+        ],
+        [
+          494.0865173339844,
+          167.9297631318586
+        ],
+        [
+          494.0865173339844,
+          207.42987060546875
+        ],
+        [
+          41.99783779701254,
+          207.42987060546875
+        ]
+      ]
+    },
+    {
+      "title": "Abstract",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          37.336084533985655,
+          279.001429737757
+        ],
+        [
+          73.33459244615119,
+          279.001429737757
+        ],
+        [
+          73.33459244615119,
+          291.3293762207031
+        ],
+        [
+          37.336084533985655,
+          291.3293762207031
+        ]
+      ]
+    },
+    {
+      "title": "1. Introduction",
+      "heading_level": null,
+      "page_id": 0,
+      "polygon": [
+        [
+          37.32438652311803,
+          449.0693741845555
+        ],
+        [
+          104.14845889593288,
+          449.0693741845555
+        ],
+        [
+          104.14845889593288,
+          462.65789794921875
+        ],
+        [
+          37.32438652311803,
+          462.65789794921875
+        ]
+      ]
+    },
+    {
+      "title": "",
+      "heading_level": null,
+      "page_id": 1,
+      "polygon": [
+        [
+          43.055610026209806,
+          366.75104095428185
+        ],
+        [
+          106.21454811621632,
+          366.75104095428185
+        ],
+        [
+          106.21454811621632,
+          378.43557834721474
+        ],
+        [
+          43.055610026209806,
+          378.43557834721474
+        ]
+      ]
+    },
+    {
+      "title": "2. Modelling of a quadrotor",
+      "heading_level": null,
+      "page_id": 2,
+      "polygon": [
+        [
+          39.77701696810972,
+          280.39038957428374
+        ],
+        [
+          159.9134979248047,
+          280.39038957428374
+        ],
+        [
+          159.9134979248047,
+          293.43621826171875
+        ],
+        [
+          39.77701696810972,
+          293.43621826171875
+        ]
+      ]
+    },
+    {
+      "title": "2.1. Nonlinear model with respect to body-fixed frame",
+      "heading_level": null,
+      "page_id": 3,
+      "polygon": [
+        [
+          44.24919372747752,
+          307.642511454408
+        ],
+        [
+          257.9724966001905,
+          307.642511454408
+        ],
+        [
+          257.9724966001905,
+          321.2593994140625
+        ],
+        [
+          44.24919372747752,
+          321.2593994140625
+        ]
+      ]
+    },
+    {
+      "title": "2.2. Nonlinear model with respect to inertial frame",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          38.84972123075123,
+          136.62197233906426
+        ],
+        [
+          240.28212597219084,
+          136.62197233906426
+        ],
+        [
+          240.28212597219084,
+          149.83587646484375
+        ],
+        [
+          38.84972123075123,
+          149.83587646484375
+        ]
+      ]
+    },
+    {
+      "title": "2.3. Model using quaternions",
+      "heading_level": null,
+      "page_id": 4,
+      "polygon": [
+        [
+          38.6688015414992,
+          508.09644915814596
+        ],
+        [
+          157.88287353515625,
+          508.09644915814596
+        ],
+        [
+          157.88287353515625,
+          520.96728515625
+        ],
+        [
+          38.6688015414992,
+          520.96728515625
+        ]
+      ]
+    },
+    {
+      "title": "2.4. Model near hover position",
+      "heading_level": null,
+      "page_id": 5,
+      "polygon": [
+        [
+          42.11525318051173,
+          451.1164454085795
+        ],
+        [
+          165.68980119773508,
+          451.1164454085795
+        ],
+        [
+          165.68980119773508,
+          464.1230773925781
+        ],
+        [
+          42.11525318051173,
+          464.1230773925781
+        ]
+      ]
+    },
+    {
+      "title": "3. Identification of the parameters of the quadrotor",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          37.707686095855124,
+          300.1995125933203
+        ],
+        [
+          256.4181213378906,
+          300.1995125933203
+        ],
+        [
+          256.4181213378906,
+          313.7193908691406
+        ],
+        [
+          37.707686095855124,
+          313.7193908691406
+        ]
+      ]
+    },
+    {
+      "title": "3.1. Thrust and rotor drag coefficient identification",
+      "heading_level": null,
+      "page_id": 6,
+      "polygon": [
+        [
+          38.493586243348346,
+          381.89265945388377
+        ],
+        [
+          243.43824768066406,
+          381.89265945388377
+        ],
+        [
+          243.43824768066406,
+          395.23095703125
+        ],
+        [
+          38.493586243348346,
+          395.23095703125
+        ]
+      ]
+    },
+    {
+      "title": "3.2. Inertia matrix",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          40.08396303686557,
+          103.10038022869891
+        ],
+        [
+          114.09288495696937,
+          103.10038022869891
+        ],
+        [
+          114.09288495696937,
+          116.5831298828125
+        ],
+        [
+          40.08396303686557,
+          116.5831298828125
+        ]
+      ]
+    },
+    {
+      "title": "4. Conclusion",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          39.48844121507376,
+          264.3878470689329
+        ],
+        [
+          98.8973492498897,
+          264.3878470689329
+        ],
+        [
+          98.8973492498897,
+          277.5914306640625
+        ],
+        [
+          39.48844121507376,
+          277.5914306640625
+        ]
+      ]
+    },
+    {
+      "title": "Acknowledgements",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          39.78612337559051,
+          381.63898351767466
+        ],
+        [
+          123.41562402478263,
+          381.63898351767466
+        ],
+        [
+          123.41562402478263,
+          394.0165710449219
+        ],
+        [
+          39.78612337559051,
+          394.0165710449219
+        ]
+      ]
+    },
+    {
+      "title": "References",
+      "heading_level": null,
+      "page_id": 8,
+      "polygon": [
+        [
+          39.305714562576334,
+          427.6281632963271
+        ],
+        [
+          88.36588636245938,
+          427.6281632963271
+        ],
+        [
+          88.36588636245938,
+          440.5835266113281
+        ],
+        [
+          39.305714562576334,
+          440.5835266113281
+        ]
+      ]
+    }
+  ],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          141
+        ],
+        [
+          "Line",
+          38
+        ],
+        [
+          "Text",
+          9
+        ],
+        [
+          "PageHeader",
+          7
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Picture",
+          2
+        ],
+        [
+          "PageFooter",
+          2
+        ],
+        [
+          "Footnote",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 1,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          263
+        ],
+        [
+          "Line",
+          49
+        ],
+        [
+          "Text",
+          4
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Table",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 2,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          198
+        ],
+        [
+          "Line",
+          78
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "SectionHeader",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 3,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          553
+        ],
+        [
+          "Line",
+          176
+        ],
+        [
+          "Equation",
+          5
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 4,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          598
+        ],
+        [
+          "Line",
+          177
+        ],
+        [
+          "Equation",
+          6
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 5,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          539
+        ],
+        [
+          "Line",
+          178
+        ],
+        [
+          "Equation",
+          6
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "SectionHeader",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 6,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          263
+        ],
+        [
+          "Line",
+          106
+        ],
+        [
+          "Text",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "SectionHeader",
+          2
+        ],
+        [
+          "Picture",
+          1
+        ],
+        [
+          "Caption",
+          1
+        ],
+        [
+          "PictureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 7,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          63
+        ],
+        [
+          "Line",
+          18
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "Figure",
+          2
+        ],
+        [
+          "Caption",
+          2
+        ],
+        [
+          "Text",
+          2
+        ],
+        [
+          "Equation",
+          2
+        ],
+        [
+          "FigureGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 8,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          236
+        ],
+        [
+          "Line",
+          55
+        ],
+        [
+          "Text",
+          5
+        ],
+        [
+          "SectionHeader",
+          4
+        ],
+        [
+          "Equation",
+          3
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "ListGroup",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    },
+    {
+      "page_id": 9,
+      "text_extraction_method": "pdftext",
+      "block_counts": [
+        [
+          "Span",
+          155
+        ],
+        [
+          "Line",
+          33
+        ],
+        [
+          "PageHeader",
+          2
+        ],
+        [
+          "ListGroup",
+          1
+        ],
+        [
+          "Text",
+          1
+        ]
+      ],
+      "block_metadata": {
+        "llm_request_count": 0,
+        "llm_error_count": 0,
+        "llm_tokens_used": 0,
+        "previous_text": "",
+        "previous_type": "",
+        "previous_order": 0
+      }
+    }
+  ],
+  "debug_data_path": "debug_data/10.1016@j.proeng.2014.12.139"
+}

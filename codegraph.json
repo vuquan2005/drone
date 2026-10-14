@@ -1,0 +1,11 @@
+{
+  "include": [
+    "docs/other_git_repo/Arduino-Quadcopter/",
+    "docs/other_git_repo/MonteQuadcopter/",
+    "docs/other_git_repo/PX4-Autopilot/",
+    "docs/other_git_repo/Quadcopter/",
+    "docs/other_git_repo/ardupilot/",
+    "docs/other_git_repo/betaflight/",
+    "docs/other_git_repo/crazyflie-firmware/"
+  ]
+}

@@ -223,7 +223,7 @@ m_4 = T + \tau_{roll} + \tau_{yaw}
 ---
 
 ## 3.2 Ma trận hiệu dụng điều khiển & Giả nghịch đảo
-Trong các hệ thống cao cấp như PX4 ([ControlAllocator](file:///home/vuquan/edu/drone/docs/other_git_repo/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp)), mixer không dùng công thức cộng trừ cứng mà xây dựng **Ma trận hiệu dụng điều khiển (Actuator Effectiveness Matrix $B$)**:
+Trong các hệ thống cao cấp như PX4 ([ControlAllocator](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp)), mixer không dùng công thức cộng trừ cứng mà xây dựng **Ma trận hiệu dụng điều khiển (Actuator Effectiveness Matrix $B$)**:
 
 $$\begin{bmatrix} \vec{\tau} \\ \vec{T} \end{bmatrix} = B \cdot \vec{u}$$
 
@@ -242,7 +242,7 @@ Khoảng làm việc của động cơ chỉ nằm trong $[0.0, 1.0]$. Khi drone
 
 Nếu chỉ đơn giản dùng hàm `clamp(m_i, 0.0, 1.0)` cho từng động cơ riêng biệt, **tỉ lệ chênh lệch mô-men giữa các động cơ bị phá vỡ**, dẫn đến mất khả năng giữ thăng bằng và drone rơi tự do.
 
-PX4 triển khai thuật toán **Sequential Desaturation** ([ControlAllocationSequentialDesaturation.cpp](file:///home/vuquan/edu/drone/docs/other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp)) với thứ tự ưu tiên tuyệt đối:
+PX4 triển khai thuật toán **Sequential Desaturation** ([ControlAllocationSequentialDesaturation.cpp](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp)) với thứ tự ưu tiên tuyệt đối:
 $$\textbf{Roll \& Pitch (Giữ cân bằng chống lật)} > \textbf{Thrust (Duy trì độ cao)} > \textbf{Yaw (Giữ hướng mũi)}$$
 
 1. **Bước 1**: Phối trộn Roll, Pitch và Thrust trước (tạm bỏ qua Yaw).
@@ -262,7 +262,7 @@ Trong các chuyến bay nhào lộn FPV (Betaflight) hoặc khi hạ độ cao n
 ---
 
 ## 3.5 Thuật toán Capping đối xứng (Crazyflie Method)
-Trong mã nguồn Crazyflie ([power_distribution_quadrotor.c](file:///home/vuquan/edu/drone/docs/other_git_repo/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160-L190)):
+Trong mã nguồn Crazyflie ([power_distribution_quadrotor.c](../other_git_repo/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160-L190)):
 ```c
 // Tìm động cơ có giá trị cao nhất
 int32_t highestThrustFound = max(m1, m2, m3, m4);

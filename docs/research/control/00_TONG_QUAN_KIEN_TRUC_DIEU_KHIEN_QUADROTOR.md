@@ -1,6 +1,6 @@
 # TỔNG QUAN KIẾN TRÚC ĐIỀU KHIỂN QUADROTOR TỪ CÁC DỰ ÁN MÃ NGUỒN MỞ
 
-Tài liệu này phân tích và tổng hợp kiến trúc điều khiển bay của 7 dự án mã nguồn mở có trong thư mục `docs/other_git_repo`:
+Tài liệu này phân tích và tổng hợp kiến trúc điều khiển bay của 7 dự án mã nguồn mở có trong thư mục `docs/external/repos`:
 1. **Arduino-Quadcopter** (ATmega328P - Đơn giản nhất)
 2. **MonteQuadcopter** (Arduino/Teensy - Cơ bản)
 3. **Quadcopter** (STM32F4 + uCOS-II RTOS - PID xếp tầng kinh điển)

@@ -1,11 +1,11 @@
 {
   "include": [
-    "docs/other_git_repo/Arduino-Quadcopter/",
-    "docs/other_git_repo/MonteQuadcopter/",
-    "docs/other_git_repo/PX4-Autopilot/",
-    "docs/other_git_repo/Quadcopter/",
-    "docs/other_git_repo/ardupilot/",
-    "docs/other_git_repo/betaflight/",
-    "docs/other_git_repo/crazyflie-firmware/"
+    "docs/external/repos/Arduino-Quadcopter/",
+    "docs/external/repos/MonteQuadcopter/",
+    "docs/external/repos/PX4-Autopilot/",
+    "docs/external/repos/Quadcopter/",
+    "docs/external/repos/ardupilot/",
+    "docs/external/repos/betaflight/",
+    "docs/external/repos/crazyflie-firmware/"
   ]
 }

@@ -1,6 +1,6 @@
 # CHI TIẾT CÁC VÒNG ĐIỀU KHIỂN: INPUT, OUTPUT & THUẬT TOÁN
 
-Tài liệu này mổ xẻ chi tiết từng tầng vòng điều khiển trong hệ thống bay Quadrotor từ các dự án thực tế trong `docs/other_git_repo`: cách tính toán sai số, bộ điều khiển sử dụng, đầu vào, đầu ra và cơ chế chuyển đổi giữa các tầng.
+Tài liệu này mổ xẻ chi tiết từng tầng vòng điều khiển trong hệ thống bay Quadrotor từ các dự án thực tế trong `docs/external/repos`: cách tính toán sai số, bộ điều khiển sử dụng, đầu vào, đầu ra và cơ chế chuyển đổi giữa các tầng.
 
 ---
 
@@ -56,7 +56,7 @@ Vòng này duy trì tọa độ mong muốn của drone trong không gian 3 chi�
 
 ### 2.2. Thuật toán điều khiển trong mã nguồn
 - Thường dùng **P controller** (tỉ lệ thuần túy) kèm theo giới hạn vận tốc tối đa (Velocity Saturation). Không dùng I hay D ở vòng này vì tích phân sai số đã được đảm nhiệm ở vòng vận tốc, thêm tích phân ở đây dễ gây hiện tượng dao động trễ pha (phase lag) và vọt lố lớn.
-- **Trích dẫn mã PX4** ([`PositionControl.cpp`](../other_git_repo/PX4-Autopilot/src/modules/mc_pos_control/PositionControl/PositionControl.cpp#L127-L141)):
+- **Trích dẫn mã PX4** ([`PositionControl.cpp`](../../external/repos/PX4-Autopilot/src/modules/mc_pos_control/PositionControl/PositionControl.cpp#L127-L141)):
   ```cpp
   void PositionControl::_positionControl()
   {
@@ -71,7 +71,7 @@ Vòng này duy trì tọa độ mong muốn của drone trong không gian 3 chi�
       _vel_sp(2) = math::constrain(_vel_sp(2), -_lim_vel_up, _lim_vel_down);
   }
   ```
-- **Trong Crazyflie** ([`position_controller_pid.c`](../other_git_repo/crazyflie-firmware/src/modules/src/controller/position_controller_pid.c#L202-L232)):
+- **Trong Crazyflie** ([`position_controller_pid.c`](../../external/repos/crazyflie-firmware/src/modules/src/controller/position_controller_pid.c#L202-L232)):
   - Crazyflie xoay sai số vị trí từ hệ cố định Trái Đất (World) sang hệ trục thân drone (Body frame) trước khi chạy P/PID:
     $$x_{body} = x_{world} \cos\psi + y_{world} \sin\psi$$
     $$y_{body} = -x_{world} \sin\psi + y_{world} \cos\psi$$
@@ -108,7 +108,7 @@ Vòng này điều khiển tốc độ di chuyển của drone theo 3 trục kh�
    - Hướng vector trục $Z$ thân drone mong muốn ($\mathbf{z}_B$):
      $$\mathbf{z}_B = -\frac{\mathbf{F}_{sp}}{\|\mathbf{F}_{sp}\|}$$
 
-- **Trích dẫn mã PX4** ([`PositionControl.cpp`](../other_git_repo/PX4-Autopilot/src/modules/mc_pos_control/PositionControl/PositionControl.cpp#L207-L225)):
+- **Trích dẫn mã PX4** ([`PositionControl.cpp`](../../external/repos/PX4-Autopilot/src/modules/mc_pos_control/PositionControl/PositionControl.cpp#L207-L225)):
   ```cpp
   void PositionControl::_accelerationControl()
   {
@@ -144,7 +144,7 @@ Vòng này biến sai lệch góc nghiêng thành vận tốc góc mong muốn �
 ### 4.2. So sánh 2 cách tiếp cận: Euler vs Quaternion
 
 #### Cách 1: Euler Angle P-Controller (Đơn giản, trực quan)
-Được sử dụng trong dự án [`Quadcopter` (STM32)](../other_git_repo/Quadcopter/Application/Algorithm/PID.c#L96-L107) và [`crazyflie`](../other_git_repo/crazyflie-firmware/src/modules/src/controller/attitude_pid_controller.c#L156-L171):
+Được sử dụng trong dự án [`Quadcopter` (STM32)](../../external/repos/Quadcopter/Application/Algorithm/PID.c#L96-L107) và [`crazyflie`](../../external/repos/crazyflie-firmware/src/modules/src/controller/attitude_pid_controller.c#L156-L171):
 - Tính trực tiếp sai số trên từng trục:
   $$e_\phi = \phi_{sp} - \phi, \quad e_\theta = \theta_{sp} - \theta, \quad e_\psi = \psi_{sp} - \psi$$
   *(Lưu ý: Sai số $e_\psi$ phải được quấn góc về khoảng $[-\pi, \pi]$ để tránh lộn vòng khi đi qua mốc $180^\circ$)*.
@@ -161,7 +161,7 @@ Không bao giờ bị Gimbal Lock, tính toán quay 3 chiều mượt mà ngay c
 2. **Xử lý tính đối xứng (Antipodal ambiguity)**:
    - Vì $\mathbf{q}$ và $-\mathbf{q}$ biểu diễn cùng một phép quay, nếu phần thực $q_{e,0} < 0$, đổi dấu toàn bộ $\mathbf{q}_e \leftarrow -\mathbf{q}_e$ để drone chọn đường quay ngắn nhất.
 3. **Tách thành phần Tilt và Yaw (Yaw decoupling)**:
-   - Trong PX4 ([`AttitudeControl.cpp`](../other_git_repo/PX4-Autopilot/src/modules/mc_att_control/AttitudeControl/AttitudeControl.cpp#L153-L180)), thuật toán tách $\mathbf{q}_e$ thành phép quay nghiêng trục Z (Roll/Pitch) và phép quay quanh trục Z (Yaw), gán trọng số `_yaw_w` (thường $\le 1$) để luôn ưu tiên giữ thăng bằng Roll/Pitch hơn là xoay đầu Yaw.
+   - Trong PX4 ([`AttitudeControl.cpp`](../../external/repos/PX4-Autopilot/src/modules/mc_att_control/AttitudeControl/AttitudeControl.cpp#L153-L180)), thuật toán tách $\mathbf{q}_e$ thành phép quay nghiêng trục Z (Roll/Pitch) và phép quay quanh trục Z (Yaw), gán trọng số `_yaw_w` (thường $\le 1$) để luôn ưu tiên giữ thăng bằng Roll/Pitch hơn là xoay đầu Yaw.
 4. **Trích xuất vector sai số góc (Rotation Vector Error)**:
    $$\mathbf{e}_{\theta} = 2 \cdot \text{sgn}(q_{e,0}) \cdot \begin{bmatrix} q_{e,1} \\ q_{e,2} \\ q_{e,3} \end{bmatrix}$$
 5. **Tính toán Setpoint vận tốc góc**:
@@ -184,7 +184,7 @@ Không bao giờ bị Gimbal Lock, tính toán quay 3 chiều mượt mà ngay c
 ### 5.2. Cấu trúc bộ điều khiển PID trong các dự án hàng đầu
 
 #### A. Kiến trúc kinh điển (PID chuẩn trong STM32 uCOS-II)
-Trích dẫn từ [`Quadcopter/Application/Algorithm/PID.c`](../other_git_repo/Quadcopter/Application/Algorithm/PID.c#L108-L125):
+Trích dẫn từ [`Quadcopter/Application/Algorithm/PID.c`](../../external/repos/Quadcopter/Application/Algorithm/PID.c#L108-L125):
 ```cpp
 inner->err = outer->output - omega;
 inner->errSum = limit(inner->errSum + inner->err * deltaT, -INNER_INT_MAX, INNER_INT_MAX);
@@ -199,7 +199,7 @@ inner->output = limit(inner->outputP + inner->outputI + inner->outputD, -PWM_OUT
   - Đạo hàm tính trên sai số `(inner->err - inner->errLast)` khiến mỗi lần phi công gạt mạnh tay điều khiển (setpoint thay đổi đột ngột), số hạng D sẽ vọt lên một xung cực lớn (hiện tượng **Derivative Kick**), làm rung động cơ và nóng motor.
 
 #### B. Kiến trúc 2-DOF PID + FeedForward tối tân (Betaflight & PX4 & ArduPilot)
-Để giải quyết bài toán đua tốc độ cao và phản xạ mượt mà, Betaflight ([`pid.c`](../other_git_repo/betaflight/src/main/flight/pid.c#L1410-L1530)) và ArduPilot áp dụng cấu trúc **2-DOF (2 bậc tự do)**:
+Để giải quyết bài toán đua tốc độ cao và phản xạ mượt mà, Betaflight ([`pid.c`](../../external/repos/betaflight/src/main/flight/pid.c#L1410-L1530)) và ArduPilot áp dụng cấu trúc **2-DOF (2 bậc tự do)**:
 
 $$\tau(t) = \underbrace{K_p \cdot e(t)}_{P} + \underbrace{K_i \int e(t) dt}_{I} - \underbrace{K_d \cdot \frac{d\,\omega_{gyro}(t)}{dt}}_{D \text{ on Measurement}} + \underbrace{K_{ff} \cdot \frac{d\,\omega_{sp}(t)}{dt}}_{\text{FeedForward (FF)}}$$
 

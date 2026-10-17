@@ -1,5 +1,49 @@
-# other docs
-docs/other_git_repo/
+# Local reference repositories
+/docs/external/repos/
 
-docs/papers/papers_md/*/*_meta.json
-docs/papers/papers_md/*/*.jpeg
+docs/references/papers/papers_md/*/*_meta.json
+docs/references/papers/papers_md/*/*.jpeg
+
+# C/C++ and STM32 build outputs
+build/
+cmake-build-*/
+Debug/
+Release/
+*.elf
+*.bin
+*.hex
+*.map
+*.o
+*.a
+
+# LaTeX temporary files (keep source documents and reference PDFs)
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.xdv
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.ipynb_checkpoints/
+
+# Large or intermediate experiment data
+/experiments/raw/*
+/experiments/processed/*
+!/experiments/raw/.gitkeep
+!/experiments/processed/.gitkeep
+
+# Local operating system files
+.DS_Store
+Thumbs.db

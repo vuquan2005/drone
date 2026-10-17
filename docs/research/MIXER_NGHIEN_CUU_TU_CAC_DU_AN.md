@@ -1,7 +1,7 @@
 # Bộ trộn motor (mixer): học từ PX4, ArduPilot, Betaflight và Crazyflie
 
 **Ngày khảo sát:** 16/10/2026.  
-**Nguồn:** mã nguồn đang có trong `docs/other_git_repo`.  
+**Nguồn:** mã nguồn đang có trong `docs/external/repos`.  
 **Mục tiêu:** hiểu mixer có những tính năng gì, từng dự án triển khai ra sao và nên học phần nào khi tự xây dựng bộ điều khiển quadrotor.
 
 **Gợi ý đọc:** mục 2–4 giải thích nền tảng; mục 5–8 đi sâu từng dự án; mục 9 đối chiếu các bản thử nghiệm; mục 10 so sánh tính năng; mục 11–12 tổng hợp cách thiết kế và kiểm tra. Các khối mã không ghi tên hàm là công thức hoặc mã giả minh họa, không phải đoạn mã có thể chép nguyên vào firmware.
@@ -141,7 +141,7 @@ moment = ct * (r × a) - ct * km * a
 
 `ct` là hệ số thrust và `km` là tỷ lệ mô-men phản lực theo quy ước của PX4. Với `a = [0, 0, -1]`, phần cánh tay đòn cho roll tỷ lệ `-r_y`, pitch tỷ lệ `r_x`. Đây là nguồn gốc vật lý của các dấu cộng trừ.
 
-Nguồn: [PX4 — dựng ma trận rotor](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/VehicleActuatorEffectiveness/ActuatorEffectivenessRotors.cpp#L193).
+Nguồn: [PX4 — dựng ma trận rotor](../external/repos/PX4-Autopilot/src/modules/control_allocator/VehicleActuatorEffectiveness/ActuatorEffectivenessRotors.cpp#L193).
 
 ## 4. Vấn đề quan trọng nhất: bão hòa motor
 
@@ -228,7 +228,7 @@ Allocator sử dụng vector sáu thành phần theo thứ tự:
 
 Sáu thành phần trong giao diện không có nghĩa quad thông thường điều khiển độc lập được cả sáu. Quad với rotor thẳng đứng không trực tiếp tạo lực `x/y` độc lập.
 
-Nguồn: [ControlAllocator::Run](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L378).
+Nguồn: [ControlAllocator::Run](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L378).
 
 ### 5.2. Những tính năng quan sát được
 
@@ -242,7 +242,7 @@ Nguồn: [ControlAllocator::Run](../other_git_repo/PX4-Autopilot/src/modules/con
 | Xử lý motor lỗi trong mô hình | Khi lỗi đã được tiếp nhận, đặt cột tương ứng trong ma trận hiệu lực về 0 |
 | Xử lý trục gần phụ thuộc tuyến tính | Bản cục bộ có `dropDependentAxes()` để bỏ trục gần phụ thuộc trước khi tính giả nghịch đảo |
 
-Nguồn: [cấu hình rotor](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/VehicleActuatorEffectiveness/ActuatorEffectivenessRotors.cpp#L46), [chọn thuật toán](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L140), [nguồn hiệu lực](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L208), [motor lỗi](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L559), [báo cáo kết quả](../other_git_repo/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L657).
+Nguồn: [cấu hình rotor](../external/repos/PX4-Autopilot/src/modules/control_allocator/VehicleActuatorEffectiveness/ActuatorEffectivenessRotors.cpp#L46), [chọn thuật toán](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L140), [nguồn hiệu lực](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L208), [motor lỗi](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L559), [báo cáo kết quả](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L657).
 
 ### 5.3. Giả nghịch đảo: nghiệm tuyến tính trước, giới hạn sau
 
@@ -258,7 +258,7 @@ Sau đó `ControlAllocator::Run()` mới giới hạn actuator. Vì vậy phươ
 
 Chế độ thông thường có chuẩn hóa scale; không nên đọc tên `vehicle_torque_setpoint` rồi mặc định mọi giá trị đều là N·m. Mã cục bộ cũng có nhánh metric, nhưng đơn vị thực tế còn phụ thuộc đường điều khiển và cấu hình được sử dụng.
 
-Nguồn: [updatePseudoInverse](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp#L66), [allocate](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp#L183).
+Nguồn: [updatePseudoInverse](../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp#L66), [allocate](../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp#L183).
 
 ### 5.4. Giải bão hòa tuần tự hoạt động thế nào?
 
@@ -284,7 +284,7 @@ Nhánh `mixYaw()` tạm nới trần tính toán bằng `MINIMUM_YAW_MARGIN = 0.
 
 Chi tiết dễ đọc nhầm: tham số `increase_only` nghĩa là chỉ cộng theo **hướng vector giải bão hòa**. Với cột thrust Z âm của rotor hướng lên, cộng theo vector có thể làm giảm lệnh motor. Vì vậy không dịch tên biến thành “chỉ tăng lực nâng”.
 
-Nguồn: [thuật toán giải bão hòa](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp#L67), [các nhánh airmode](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp#L121), [biên yaw](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.hpp#L61).
+Nguồn: [thuật toán giải bão hòa](../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp#L67), [các nhánh airmode](../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp#L121), [biên yaw](../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.hpp#L61).
 
 ### 5.5. Phản hồi về bộ điều khiển và mô hình motor
 
@@ -294,7 +294,7 @@ Allocator tính phần yêu cầu chưa đạt từ setpoint trừ kết quả p
 
 Phép biến đổi đường cong thrust nằm ở lớp xuất motor: `FunctionMotors::updateValues()` đảo mô hình `rel_thrust = factor*x² + (1-factor)*x`, rồi đổi miền cho motor không đảo chiều. Tách bước này giúp allocator làm việc trong miền gần tuyến tính với lực đẩy.
 
-Nguồn: [phản hồi đến rate controller](../other_git_repo/PX4-Autopilot/src/modules/mc_rate_control/MulticopterRateControl.cpp#L205), [biến đổi thrust](../other_git_repo/PX4-Autopilot/src/lib/mixer_module/functions/FunctionMotors.hpp#L81).
+Nguồn: [phản hồi đến rate controller](../external/repos/PX4-Autopilot/src/modules/mc_rate_control/MulticopterRateControl.cpp#L205), [biến đổi thrust](../external/repos/PX4-Autopilot/src/lib/mixer_module/functions/FunctionMotors.hpp#L81).
 
 **Điều nên học:** giao diện rõ ràng giữa hình học, thuật toán phân bổ, giới hạn và driver; chỉ cập nhật ma trận khi cần; báo cáo yêu cầu chưa đạt. Cơ chế loại motor lỗi không bảo đảm mọi khung tiếp tục bay đủ các trục sau lỗi.
 
@@ -314,7 +314,7 @@ roll_factor, pitch_factor, yaw_factor, throttle_factor
 
 Điều này khác bảng `±1` minh họa và khác scale thường gặp ở Betaflight. Mang nguyên PID gain sang hệ khác có thể làm đổi độ mạnh điều khiển.
 
-Nguồn: [khai báo motor](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L503), [quad X và các biến thể](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L575), [chuẩn hóa](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L1351).
+Nguồn: [khai báo motor](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L503), [quad X và các biến thể](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L575), [chuẩn hóa](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L1351).
 
 ### 6.2. Trình tự trong `output_armed_stabilizing()`
 
@@ -334,7 +334,7 @@ thrust_i = throttle_selected * throttle_factor_i
            + rpy_scale * (roll_i + pitch_i + yaw_limited_i)
 ```
 
-Nguồn: [hàm trộn chính](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L213).
+Nguồn: [hàm trộn chính](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L213).
 
 ### 6.3. Những tính năng đáng chú ý
 
@@ -350,7 +350,7 @@ Nguồn: [hàm trộn chính](../other_git_repo/ardupilot/libraries/AP_Motors/AP
 
 **Thông tin giới hạn cho PID.** Các cờ `limit.roll/pitch/yaw` được truyền vào `update_all()` của rate PID. Đây là đường phản hồi chống windup cụ thể, thay vì để PID tiếp tục tăng yêu cầu không thể đạt.
 
-Nguồn: [yaw headroom](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L300), [throttle mix](../other_git_repo/ardupilot/libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp#L306), [mô hình thrust](../other_git_repo/ardupilot/libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp#L103), [giới hạn dòng](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMulticopter.cpp#L373), [spool và đầu ra](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L143), [cờ giới hạn vào PID](../other_git_repo/ardupilot/libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp#L472).
+Nguồn: [yaw headroom](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L300), [throttle mix](../external/repos/ardupilot/libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp#L306), [mô hình thrust](../external/repos/ardupilot/libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp#L103), [giới hạn dòng](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMulticopter.cpp#L373), [spool và đầu ra](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L143), [cờ giới hạn vào PID](../external/repos/ardupilot/libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp#L472).
 
 ### 6.4. Xử lý motor lỗi: cần đọc đúng phạm vi
 
@@ -358,7 +358,7 @@ Nguồn: [yaw headroom](../other_git_repo/ardupilot/libraries/AP_Motors/AP_Motor
 
 Trong bản khảo sát, điều kiện đánh dấu mất cân bằng yêu cầu **ít nhất 6 motor** và loại trừ một số khung co-rotating. Đây là suy luận từ lệnh motor, không phải tự nó là phép đo RPM xác nhận motor hỏng. Mã cũng nêu quad không đủ bậc tự do cho cơ chế xử lý mất motor này.
 
-Nguồn: [kiểm tra mất cân bằng](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L414), [ghi chú giới hạn trên quad](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L263).
+Nguồn: [kiểm tra mất cân bằng](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L414), [ghi chú giới hạn trên quad](../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L263).
 
 **Điều nên học:** chính sách yaw/throttle rõ ràng, phản hồi giới hạn về PID, và quản lý đầy đủ đường thrust → actuator → đầu ra. Không nên sao chép riêng hàm trộn mà bỏ những giới hạn do lớp cha và controller cung cấp.
 
@@ -377,7 +377,7 @@ Bảng quad X trong bản khảo sát, theo thứ tự `(throttle, roll, pitch, 
 
 Đây là bảng của Betaflight, khác thứ tự và quy ước ví dụ ở mục 3. Đặc biệt, `mixTable()` còn đổi dấu yaw theo `yaw_motors_reversed`. Không thể suy ra đầy đủ chiều quay vật lý chỉ bằng một cột của bảng.
 
-Nguồn: [mixerQuadX](../other_git_repo/betaflight/src/main/flight/mixer_init.c#L84), [xử lý yaw](../other_git_repo/betaflight/src/main/flight/mixer.c#L723).
+Nguồn: [mixerQuadX](../external/repos/betaflight/src/main/flight/mixer_init.c#L84), [xử lý yaw](../external/repos/betaflight/src/main/flight/mixer.c#L723).
 
 ### 7.2. Luồng xử lý và cách giải bão hòa phổ biến
 
@@ -405,7 +405,7 @@ Sau đó cộng phần throttle và ánh xạ ra miền đầu ra motor. Đây c
 
 Nếu airmode tắt và throttle dưới 0.5, mã còn giảm quyền điều khiển bằng `airmodeTransitionPercent`, chuyển từ 0.5 ở throttle 0 lên 1 ở throttle 0.5. Vì vậy không thể áp công thức airmode bật cho mọi trạng thái.
 
-Nguồn: [tính phần RPY](../other_git_repo/betaflight/src/main/flight/mixer.c#L776), [điều chỉnh legacy](../other_git_repo/betaflight/src/main/flight/mixer.c#L665), [cộng throttle và xuất motor](../other_git_repo/betaflight/src/main/flight/mixer.c#L465).
+Nguồn: [tính phần RPY](../external/repos/betaflight/src/main/flight/mixer.c#L776), [điều chỉnh legacy](../external/repos/betaflight/src/main/flight/mixer.c#L665), [cộng throttle và xuất motor](../external/repos/betaflight/src/main/flight/mixer.c#L465).
 
 ### 7.3. Các chính sách mixer trong bản cục bộ
 
@@ -418,7 +418,7 @@ Nguồn: [tính phần RPY](../other_git_repo/betaflight/src/main/flight/mixer.c
 
 Tên `LINEAR/DYNAMIC` ở bảng này nói về chính sách mixer trong Betaflight, không đồng nghĩa với phép tuyến tính hóa đường cong lực đẩy motor. Cần đọc hai chức năng riêng.
 
-Nguồn: [linear/dynamic](../other_git_repo/betaflight/src/main/flight/mixer.c#L566), [EZ landing](../other_git_repo/betaflight/src/main/flight/mixer.c#L601), [chọn chính sách](../other_git_repo/betaflight/src/main/flight/mixer.c#L838).
+Nguồn: [linear/dynamic](../external/repos/betaflight/src/main/flight/mixer.c#L566), [EZ landing](../external/repos/betaflight/src/main/flight/mixer.c#L601), [chọn chính sách](../external/repos/betaflight/src/main/flight/mixer.c#L838).
 
 ### 7.4. Tính năng quanh đường mixer
 
@@ -431,7 +431,7 @@ Nguồn: [linear/dynamic](../other_git_repo/betaflight/src/main/flight/mixer.c#L
 - **Giới hạn throttle và RPM:** có nhánh xử lý riêng khi được bật; không phải chức năng của phép nhân hệ số.
 - **Disarm/failsafe/motor stop:** kiểm soát đầu ra cuối; miền đặc biệt của DShot được xét khi cần.
 
-Nguồn: [endpoints và dynamic idle](../other_git_repo/betaflight/src/main/flight/mixer.c#L128), [crash flip](../other_git_repo/betaflight/src/main/flight/mixer.c#L694), [launch và yaw recovery](../other_git_repo/betaflight/src/main/flight/mixer.c#L701), [RPM limiter](../other_git_repo/betaflight/src/main/flight/mixer.c#L413), [đầu ra/disarm](../other_git_repo/betaflight/src/main/flight/mixer.c#L465), [motor stop](../other_git_repo/betaflight/src/main/flight/mixer.c#L857).
+Nguồn: [endpoints và dynamic idle](../external/repos/betaflight/src/main/flight/mixer.c#L128), [crash flip](../external/repos/betaflight/src/main/flight/mixer.c#L694), [launch và yaw recovery](../external/repos/betaflight/src/main/flight/mixer.c#L701), [RPM limiter](../external/repos/betaflight/src/main/flight/mixer.c#L413), [đầu ra/disarm](../external/repos/betaflight/src/main/flight/mixer.c#L465), [motor stop](../external/repos/betaflight/src/main/flight/mixer.c#L857).
 
 ### 7.5. Phản hồi bão hòa: không suy diễn quá mức từ tên biến
 
@@ -439,7 +439,7 @@ Mixer cung cấp `getMotorMixRange()`; rate PID dùng nó trong phát hiện/ph�
 
 Tuy nhiên, trong phần cập nhật tích phân đang khảo sát, `pid.c` trực tiếp giới hạn I-term bằng `itermLimit`/`itermLimitYaw`. Không nên suy từ chú thích EZ landing rằng bản này đã có đường phản hồi phần dư mô-men theo từng trục giống PX4. Hai giao diện không tương đương.
 
-Nguồn: [range dùng trong crash recovery](../other_git_repo/betaflight/src/main/flight/pid.c#L773), [giới hạn tích phân](../other_git_repo/betaflight/src/main/flight/pid.c#L1416), [chú thích EZ landing](../other_git_repo/betaflight/src/main/flight/mixer.c#L650).
+Nguồn: [range dùng trong crash recovery](../external/repos/betaflight/src/main/flight/pid.c#L773), [giới hạn tích phân](../external/repos/betaflight/src/main/flight/pid.c#L1416), [chú thích EZ landing](../external/repos/betaflight/src/main/flight/mixer.c#L650).
 
 **Điều nên học:** giải bão hòa bằng min/max và scale rất gọn, dễ triển khai cho quad đối xứng; airmode và idle phải được thiết kế cùng nhau. Trong nhánh legacy, RPY được gộp rồi co chung; không có cùng quy trình dành headroom yaw riêng như ArduPilot.
 
@@ -483,7 +483,7 @@ f4 = thrustPart + rollPart - pitchPart + yawPart
 
 Lực âm được đưa về 0, rồi đổi sang thang thrust số nguyên bằng `force / THRUST_MAX * UINT16_MAX`. **Đây chưa phải phép nghịch đảo đường cong motor ra duty cuối cùng.** Chú ý dấu pitch/yaw giữa hai chế độ khác nhau; phải dùng đúng quy ước của controller tương ứng.
 
-Nguồn: [ba chế độ power distribution](../other_git_repo/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L84).
+Nguồn: [ba chế độ power distribution](../external/repos/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L84).
 
 ### 8.2. Đường thrust → bù pin → giới hạn → motor
 
@@ -498,7 +498,7 @@ Khi `CONFIG_ENABLE_THRUST_BAT_COMPENSATED` được bật, `motorsCompensateBatt
 
 Điểm đáng học là giữ các đầu ra chưa bị giới hạn trong cấu trúc trung gian, vì bù pin có thể làm giá trị vượt trần. Giới hạn sau đó mới quyết định kết quả gửi motor.
 
-Nguồn: [controlMotors](../other_git_repo/crazyflie-firmware/src/modules/src/stabilizer.c#L255), [mô hình motor và pin](../other_git_repo/crazyflie-firmware/src/drivers/src/motors.c#L180).
+Nguồn: [controlMotors](../external/repos/crazyflie-firmware/src/modules/src/stabilizer.c#L255), [mô hình motor và pin](../external/repos/crazyflie-firmware/src/drivers/src/motors.c#L180).
 
 ### 8.3. Capping: trừ cùng một lượng khi vượt trần
 
@@ -515,7 +515,7 @@ Với các đầu ra chưa chạm sàn, trừ chung giữ nguyên chênh lệch 
 
 Một chi tiết nữa: nhánh ForceTorque đã cắt lực âm trước khi cap; nhánh Force đã clip từng yêu cầu vào `[0,1]`. Do đó không phải mọi thông tin về yêu cầu ban đầu đều được bảo toàn đến bước giảm chung.
 
-Nguồn: [powerDistributionCap](../other_git_repo/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160).
+Nguồn: [powerDistributionCap](../external/repos/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160).
 
 ### 8.4. Idle, supervisor và phản hồi
 
@@ -523,7 +523,7 @@ Nguồn: [powerDistributionCap](../other_git_repo/crazyflie-firmware/src/modules
 
 Trong đường `controlMotors()` khảo sát, cờ `isCapped` được dùng để ghi cảnh báo nếu cấu hình cho phép. Không thấy tại đây giao diện trả phần dư mô-men theo từng trục về controller như PX4; không nên xem cảnh báo cap là một cơ chế anti-windup đầy đủ.
 
-Nguồn: [idle](../other_git_repo/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L192), [supervisor kiểm soát motor](../other_git_repo/crazyflie-firmware/src/modules/src/stabilizer.c#L356).
+Nguồn: [idle](../external/repos/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L192), [supervisor kiểm soát motor](../external/repos/crazyflie-firmware/src/modules/src/stabilizer.c#L356).
 
 **Điều nên học:** giao diện ForceTorque rõ đơn vị, công thức dễ kiểm tra và phân tách bước xử lý. Capping này đơn giản hơn chính sách ưu tiên theo trục của PX4/ArduPilot.
 
@@ -544,7 +544,7 @@ Yaw bị comment rõ là tắt để thử ổn định. Công thức đang ho�
 
 Trong `control_update()` không có thuật toán giải bão hòa phối hợp; `update_motors()` chuyển các giá trị sang `Servo.writeMicroseconds()`. Giới hạn ở thư viện/driver nếu có cũng không thay thế một chính sách bảo toàn mô-men.
 
-Nguồn: [control_update](../other_git_repo/Arduino-Quadcopter/Quadcopter/Control.ino#L2), [ghi motor](../other_git_repo/Arduino-Quadcopter/Quadcopter/Motors.ino#L24).
+Nguồn: [control_update](../external/repos/Arduino-Quadcopter/Quadcopter/Control.ino#L2), [ghi motor](../external/repos/Arduino-Quadcopter/Quadcopter/Motors.ino#L24).
 
 **Dùng để học:** đường từ PID đến motor và dấu cộng trừ cơ bản. **Chưa đủ để học:** mixer RPY hoàn chỉnh, ưu tiên trục và giải bão hòa.
 
@@ -557,7 +557,7 @@ Cần phân biệt hai phần mã trong repository:
 
 Không có thành phần yaw trong hai hàm trộn này. Đọc pin chỉ để đo/cảnh báo trong đoạn vòng lặp khảo sát, chưa phải đường bù hiệu lực thrust như Crazyflie.
 
-Nguồn: [xuất targetSpeed](../other_git_repo/MonteQuadcopter/src/MonteQuadcopter.ino#L203), [gọi stabilise và lệnh xuất bị comment](../other_git_repo/MonteQuadcopter/src/MonteQuadcopter.ino#L270), [stabilise](../other_git_repo/MonteQuadcopter/src/MonteQuadcopter.ino#L326), [bản thư viện](../other_git_repo/MonteQuadcopter/lib/Quadcopter/Quadcopter.cpp#L83).
+Nguồn: [xuất targetSpeed](../external/repos/MonteQuadcopter/src/MonteQuadcopter.ino#L203), [gọi stabilise và lệnh xuất bị comment](../external/repos/MonteQuadcopter/src/MonteQuadcopter.ino#L270), [stabilise](../external/repos/MonteQuadcopter/src/MonteQuadcopter.ino#L326), [bản thư viện](../external/repos/MonteQuadcopter/lib/Quadcopter/Quadcopter.cpp#L83).
 
 **Dùng để học:** phép trộn hai trục và lý do phải kiểm tra call path đến đầu ra thật. Đây là ví dụ thử nghiệm, không đủ bằng chứng để coi là mixer bay hoàn chỉnh.
 
@@ -581,7 +581,7 @@ Hai điểm cần lưu ý:
 
 Mixer thực tế chạy từ `Task_Angel` qua `PIDControl()`, còn `Task_Motor` trong `main.c` là placeholder. Tên task không đủ để xác định nơi điều khiển motor.
 
-Nguồn: [gain yaw](../other_git_repo/Quadcopter/Application/Algorithm/PID.c#L73), [trộn và ghi đầu ra](../other_git_repo/Quadcopter/Application/Algorithm/PID.c#L232), [call path trong task](../other_git_repo/Quadcopter/Application/Src/main.c#L190), [cấu hình timer](../other_git_repo/Quadcopter/Application/Peripheral/PWM.c#L51).
+Nguồn: [gain yaw](../external/repos/Quadcopter/Application/Algorithm/PID.c#L73), [trộn và ghi đầu ra](../external/repos/Quadcopter/Application/Algorithm/PID.c#L232), [call path trong task](../external/repos/Quadcopter/Application/Src/main.c#L190), [cấu hình timer](../external/repos/Quadcopter/Application/Peripheral/PWM.c#L51).
 
 ## 10. So sánh trực tiếp các tính năng
 
@@ -690,11 +690,11 @@ ArduPilot có chương trình ví dụ `AP_Motors_test` và ví dụ kiểm tra 
 
 Các test kể trên được nhận diện trong mã nguồn, **chưa được thực thi trong lần nghiên cứu này**.
 
-Nguồn: [PX4 sequential desaturation tests](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturationTest.cpp#L136), [PX4 dependent axes tests](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverseTest.cpp#L165), [ArduPilot motor test](../other_git_repo/ardupilot/libraries/AP_Motors/examples/AP_Motors_test/AP_Motors_test.cpp), [Betaflight wing mixer tests](../other_git_repo/betaflight/src/test/unit/flight_mixer_wing_unittest.cc#L146), [Crazyflie powerDistributionTest](../other_git_repo/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L70).
+Nguồn: [PX4 sequential desaturation tests](../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturationTest.cpp#L136), [PX4 dependent axes tests](../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverseTest.cpp#L165), [ArduPilot motor test](../external/repos/ardupilot/libraries/AP_Motors/examples/AP_Motors_test/AP_Motors_test.cpp), [Betaflight wing mixer tests](../external/repos/betaflight/src/test/unit/flight_mixer_wing_unittest.cc#L146), [Crazyflie powerDistributionTest](../external/repos/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L70).
 
 ## 13. Bản đồ mã nguồn để đọc tiếp
 
-Đường dẫn trong bảng tương đối với `docs/other_git_repo/`.
+Đường dẫn trong bảng tương đối với `docs/external/repos/`.
 
 | Dự án | Tệp/hàm | Câu hỏi mà nó giải đáp |
 |---|---|---|
@@ -718,7 +718,7 @@ Nguồn: [PX4 sequential desaturation tests](../other_git_repo/PX4-Autopilot/src
 
 Các giá trị SHA-256 dưới đây giúp đối chiếu tệp khi bản sao cục bộ thay đổi. Chúng không thay thế commit upstream và không biểu thị firmware đã được kiểm thử.
 
-| Tệp trong `docs/other_git_repo/` | SHA-256 |
+| Tệp trong `docs/external/repos/` | SHA-256 |
 |---|---|
 | `PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp` | `4bc5a8ba318f4205cab9e98d2ed824ca6ad07a4ff07c305413198908dd71c758` |
 | `PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp` | `07e60bc11a9948d41c99950fd99fff06368bb6203f05b79d64386a0a04351d7c` |

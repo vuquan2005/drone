@@ -89,7 +89,7 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
 ## 3. So Sánh 5 Thuật Toán Mixer Trong Các Dự Án
 
 ### Thuật toán 1: Direct Clamping (Cơ bản nhất)
-- **Áp dụng trong**: [`Arduino-Quadcopter`](../other_git_repo/Arduino-Quadcopter/Quadcopter/Control.ino#L10-L22), [`MonteQuadcopter`](../other_git_repo/MonteQuadcopter/lib/Quadcopter/Quadcopter.cpp#L86-L99), [`Quadcopter` (STM32)](../other_git_repo/Quadcopter/Application/Algorithm/PID.c#L232-L235).
+- **Áp dụng trong**: [`Arduino-Quadcopter`](../../external/repos/Arduino-Quadcopter/Quadcopter/Control.ino#L10-L22), [`MonteQuadcopter`](../../external/repos/MonteQuadcopter/lib/Quadcopter/Quadcopter.cpp#L86-L99), [`Quadcopter` (STM32)](../../external/repos/Quadcopter/Application/Algorithm/PID.c#L232-L235).
 - **Mã nguồn (STM32)**:
   ```c
   motor1 = limit(expMode - pidRoll - pidPitch - pidYaw + pidThr, 1000, 2000);
@@ -103,7 +103,7 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
 ---
 
 ### Thuật toán 2: Attitude Prioritization via Capping (Crazyflie)
-- **Áp dụng trong**: [`crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c`](../other_git_repo/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160-L190).
+- **Áp dụng trong**: [`crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c`](../../external/repos/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160-L190).
 - **Nguyên lý cốt lõi**: **"Hy sinh một chút độ cao chứ nhất quyết không để mất góc nghiêng!"**
 - **Thuật toán**:
   1. Tính toán giá trị xung cho 4 động cơ mà không kẹp giới hạn (`motorThrustUncapped`).
@@ -138,7 +138,7 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
 ---
 
 ### Thuật toán 3: Dynamic Shifting & Airmode (Betaflight)
-- **Áp dụng trong**: [`betaflight/src/main/flight/mixer.c`](../other_git_repo/betaflight/src/main/flight/mixer.c#L566-L599) & [`mixTable`](../other_git_repo/betaflight/src/main/flight/mixer.c#L686-L869).
+- **Áp dụng trong**: [`betaflight/src/main/flight/mixer.c`](../../external/repos/betaflight/src/main/flight/mixer.c#L566-L599) & [`mixTable`](../../external/repos/betaflight/src/main/flight/mixer.c#L686-L869).
 - **Mục tiêu**: Đem lại khả năng nhào lộn tự do hoàn hảo ngay cả khi tay ga kéo sát sàn ($0\%$ ga).
 - **Thuật toán 3 bước**:
   1. **Bước 1: Tính toán mô-men thuần túy (Roll, Pitch, Yaw Mix)** cho từng motor mà chưa cộng Throttle:
@@ -171,7 +171,7 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
 ---
 
 ### Thuật toán 4: Sequential Desaturation (PX4-Autopilot)
-- **Áp dụng trong**: [`ControlAllocationSequentialDesaturation.cpp`](../other_git_repo/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp#L44-L228).
+- **Áp dụng trong**: [`ControlAllocationSequentialDesaturation.cpp`](../../external/repos/PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp#L44-L228).
 - **Nguyên lý phân cấp ưu tiên nghiêm ngặt (Strict Hierarchy)**:
   1. **Ưu tiên 1 (Tối cao)**: Mô-men Roll và Pitch (Đảm bảo drone không bị lật).
   2. **Ưu tiên 2**: Lực đẩy trục Z (Duy trì độ cao).
@@ -194,7 +194,7 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
 ---
 
 ### Thuật toán 5: Headroom Dynamic Allocation & Thrust Linearization (ArduPilot)
-- **Áp dụng trong**: [`AP_MotorsMatrix.cpp`](../other_git_repo/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L213-L404) & [`AP_Motors_Thrust_Linearization.cpp`](../other_git_repo/ardupilot/libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp).
+- **Áp dụng trong**: [`AP_MotorsMatrix.cpp`](../../external/repos/ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp#L213-L404) & [`AP_Motors_Thrust_Linearization.cpp`](../../external/repos/ardupilot/libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp).
 - **Hai tính năng nổi trội hàng đầu**:
 
 #### A. Dự trữ khoảng trống cho Yaw (`MOT_YAW_HEADROOM`)

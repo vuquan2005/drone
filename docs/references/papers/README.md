@@ -1,8 +1,8 @@
 # TÀI LIỆU NGHIÊN CỨU & CHỈ MỤC BÀI BÁO KHOA HỌC VỀ QUADROTOR UAV
 > **Chủ đề:** Mô hình hóa Động lực học, Nhận dạng Tham số, Chiến lược Điều khiển (PID, LQR, SMC, MRAC, Geometric SE(3), Thích nghi) và Quy hoạch Quỹ đạo Tối ưu (Minimum Snap).  
-> **Thư mục lưu trữ:** `/home/vuquan/edu/drone/docs/papers`  
+> **Thư mục lưu trữ:** `docs/references/papers/`  
 > **Tệp trích dẫn BibTeX:** [`references.bib`](./references.bib)  
-> **Dữ liệu trích xuất (Markdown & Hình ảnh):** [`all_papers_out/`](./all_papers_out/)  
+> **Dữ liệu trích xuất (Markdown & Hình ảnh):** [`papers_md/`](./papers_md/)  
 
 ---
 
@@ -118,7 +118,7 @@ flowchart TD
 
 ### 1.1. Chovancová et al. (2014) - Mô hình hóa và nhận dạng tham số Quadrotor (Survey)
 - **Tệp tài liệu:** [`10.1016@j.proeng.2014.12.139.pdf`](./10.1016@j.proeng.2014.12.139.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/10.1016@j.proeng.2014.12.139/`](./all_papers_out/10.1016@j.proeng.2014.12.139/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/10.1016@j.proeng.2014.12.139/`](./papers_md/10.1016@j.proeng.2014.12.139/)
 - **Tiêu đề gốc:** *Mathematical Modelling and Parameter Identification of Quadrotor (a survey)*
 - **Tác giả:** Anežka Chovancová, Tomáš Fico, Ľuboš Chovanec, Peter Hubinský
 - **Công bố tại:** *Procedia Engineering (MMaMS 2014)*, Vol. 96, pp. 172–181, Elsevier, 2014. DOI: `10.1016/j.proeng.2014.12.139`.
@@ -142,7 +142,7 @@ flowchart TD
 
 ### 1.2. Bouabdallah et al. (ICRA 2004) - Thiết kế và điều khiển Micro Quadrotor trong nhà OS4
 - **Tệp tài liệu:** [`bouabdallah2004.pdf`](./bouabdallah2004.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/bouabdallah2004/`](./all_papers_out/bouabdallah2004/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/bouabdallah2004/`](./papers_md/bouabdallah2004/)
 - **Tiêu đề gốc:** *Design and Control of an Indoor Micro Quadrotor*
 - **Tác giả:** Samir Bouabdallah, Pierpaolo Murrieri, Roland Siegwart
 - **Công bố tại:** *Proceedings of the 2004 IEEE International Conference on Robotics and Automation (ICRA 2004)*, Vol. 5, pp. 4393–4398, IEEE, 2004. DOI: `10.1109/ROBOT.2004.1302409`.
@@ -165,7 +165,7 @@ flowchart TD
 
 ### 1.3. Walid et al. (SSD 2018) - Mô hình hóa Euler-Lagrange, nhận dạng thực nghiệm và điều khiển
 - **Tệp tài liệu:** [`walid2018.pdf`](./walid2018.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/walid2018/`](./all_papers_out/walid2018/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/walid2018/`](./papers_md/walid2018/)
 - **Tiêu đề gốc:** *Modelling, Identification and Control of a Quadrotor UAV*
 - **Tác giả:** Mizouri Walid, Najar Slaheddine, Aoun Mohamed, Bouabdallah Lamjed
 - **Công bố tại:** *15th International Multi-Conference on Systems, Signals & Devices (SSD 2018)*, pp. 1017–1022, IEEE, 2018. DOI: `10.1109/ssd.2018.8570512`.
@@ -188,7 +188,7 @@ flowchart TD
 
 ### 1.4. Karahan & Kasnakoglu (ECAI 2019) - Mô hình hóa và mô phỏng Quadrotor cấu hình chữ X
 - **Tệp tài liệu:** [`karahan2019.pdf`](./karahan2019.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/karahan2019/`](./all_papers_out/karahan2019/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/karahan2019/`](./papers_md/karahan2019/)
 - **Tiêu đề gốc:** *Modeling and Simulation of Quadrotor UAV Using PID Controller*
 - **Tác giả:** Mehmet Karahan, Cosku Kasnakoglu
 - **Công bố tại:** *2019 11th International Conference on Electronics, Computers and Artificial Intelligence (ECAI 2019)*, pp. 1–4, IEEE, 2019. DOI: `10.1109/ecai46879.2019.9042043`.
@@ -215,7 +215,7 @@ flowchart TD
 
 ### 2.1. Mou et al. (YAC 2016) - Điều khiển bay Micro Quadrotor dùng PID và Quaternion/Bộ lọc bù
 - **Tệp tài liệu:** [`mou2016.pdf`](./mou2016.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/mou2016/`](./all_papers_out/mou2016/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/mou2016/`](./papers_md/mou2016/)
 - **Tiêu đề gốc:** *The Flight Control of Micro Quad-Rotor UAV Based on PID*
 - **Tác giả:** Yihong Mou, Qingyong Zhang, Shilin Liu, Ketian Liang
 - **Công bố tại:** *2016 31st Youth Academic Annual Conference of Chinese Association of Automation (YAC 2016)*, pp. 353–356, IEEE, 2016. DOI: `10.1109/yac.2016.7804918`.
@@ -243,7 +243,7 @@ flowchart TD
 
 ### 3.1. Bouabdallah et al. (IROS 2004) - So sánh kỹ thuật PID và LQ trên Quadrotor OS4
 - **Tệp tài liệu:** [`bouabdallah2004-pidlqr.pdf`](./bouabdallah2004-pidlqr.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/bouabdallah2004-pidlqr/`](./all_papers_out/bouabdallah2004-pidlqr/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/bouabdallah2004-pidlqr/`](./papers_md/bouabdallah2004-pidlqr/)
 - **Tiêu đề gốc:** *PID vs LQ Control Techniques Applied to an Indoor Micro Quadrotor*
 - **Tác giả:** Samir Bouabdallah, André Noth, Roland Siegwart
 - **Công bố tại:** *Proceedings of the 2004 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS 2004)*, Vol. 3, pp. 2451–2456, IEEE, 2004. DOI: `10.1109/IROS.2004.1389776`.
@@ -266,7 +266,7 @@ flowchart TD
 
 ### 3.2. Argentim et al. (ICIEV 2013) - So sánh PID (ITAE), LQR và LQR-PID
 - **Tệp tài liệu:** [`argentim2013.pdf`](./argentim2013.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/argentim2013/`](./all_papers_out/argentim2013/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/argentim2013/`](./papers_md/argentim2013/)
 - **Tiêu đề gốc:** *PID, LQR and LQR-PID on a Quadcopter Platform*
 - **Tác giả:** Lucas M. Argentim, Willian C. Rezende, Paulo E. Santos, Renato A. Aguiar
 - **Công bố tại:** *2013 International Conference on Informatics, Electronics and Vision (ICIEV 2013)*, pp. 1–6, IEEE, 2013. DOI: `10.1109/iciev.2013.6572698`.
@@ -290,7 +290,7 @@ flowchart TD
 
 ### 3.3. Dayana Salim et al. (ICIT 2014) - Điều khiển tư thế kết hợp PID + LQR cho Hexarotor
 - **Tệp tài liệu:** [`dayanasalim2014.pdf`](./dayanasalim2014.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/dayanasalim2014/`](./all_papers_out/dayanasalim2014/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/dayanasalim2014/`](./papers_md/dayanasalim2014/)
 - **Tiêu đề gốc:** *PID Plus LQR Attitude Control for Hexarotor MAV in Indoor Environments*
 - **Tác giả:** Nurul Dayana Salim, Dafizal Derawi, Shahrum Shah Abdullah, Saiful Amri Mazlan, Hairi Zamzuri
 - **Công bố tại:** *2014 IEEE International Conference on Industrial Technology (ICIT 2014)*, pp. 85–90, IEEE, 2014. DOI: `10.1109/icit.2014.6894977`.
@@ -313,7 +313,7 @@ flowchart TD
 
 ### 3.4. Khatoon et al. (ICACCI 2014) - Mô hình hóa và mô phỏng so sánh PID & LQR
 - **Tệp tài liệu:** [`khatoon2014.pdf`](./khatoon2014.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/khatoon2014/`](./all_papers_out/khatoon2014/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/khatoon2014/`](./papers_md/khatoon2014/)
 - **Tiêu đề gốc:** *PID & LQR Control for a Quadrotor: Modeling and Simulation*
 - **Tác giả:** Shahida Khatoon, Dhiraj Gupta, L. K. Das
 - **Công bố tại:** *2014 International Conference on Advances in Computing, Communications and Informatics (ICACCI 2014)*, pp. 796–802, IEEE, 2014. DOI: `10.1109/icacci.2014.6968232`.
@@ -336,7 +336,7 @@ flowchart TD
 
 ### 3.5. Saraf et al. (INDICON 2020) - So sánh bộ điều khiển kinh điển PID và tối ưu LQR
 - **Tệp tài liệu:** [`saraf2020.pdf`](./saraf2020.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/saraf2020/`](./all_papers_out/saraf2020/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/saraf2020/`](./papers_md/saraf2020/)
 - **Tiêu đề gốc:** *A Comparative Study Between a Classical and Optimal Controller for a Quadrotor*
 - **Tác giả:** Prathamesh Saraf, Manan Gupta, Alivelu Manga Parimi
 - **Công bố tại:** *2020 IEEE 17th India Council International Conference (INDICON 2020)*, pp. 1–6, IEEE, 2020. DOI: `10.1109/INDICON49873.2020.9342485`.
@@ -359,7 +359,7 @@ flowchart TD
 
 ### 3.6. Abu Ihnak & Edardar (ICSC 2023) - Đánh giá hiệu quả và phân tích chi phí LQR vs PID
 - **Tệp tài liệu:** [`Comparing-LQR-and-PID-Controllers-for-Quadcopter-Control-Effectiveness-and-Cost-Analysis.pdf`](./Comparing-LQR-and-PID-Controllers-for-Quadcopter-Control-Effectiveness-and-Cost-Analysis.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/Comparing-LQR-and-PID-Controllers-for-Quadcopter-Control-Effectiveness-and-Cost-Analysis/`](./all_papers_out/Comparing-LQR-and-PID-Controllers-for-Quadcopter-Control-Effectiveness-and-Cost-Analysis/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/Comparing-LQR-and-PID-Controllers-for-Quadcopter-Control-Effectiveness-and-Cost-Analysis/`](./papers_md/Comparing-LQR-and-PID-Controllers-for-Quadcopter-Control-Effectiveness-and-Cost-Analysis/)
 - **Tiêu đề gốc:** *Comparing LQR and PID Controllers for Quadcopter Control Effectiveness and Cost Analysis*
 - **Tác giả:** Mahmoud S. Abu Ihnak, Mohamed M. Edardar
 - **Công bố tại:** *2023 IEEE 11th International Conference on Systems and Control (ICSC 2023)*, pp. 754–759, IEEE, 2023. DOI: `10.1109/icsc58660.2023.10449763`.
@@ -387,7 +387,7 @@ flowchart TD
 
 ### 4.1. Lee et al. (CDC 2010) - Điều khiển bám hình học trên nhóm Lie SE(3)
 - **Tệp tài liệu:** [`lee2010.pdf`](./lee2010.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/lee2010/`](./all_papers_out/lee2010/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/lee2010/`](./papers_md/lee2010/)
 - **Tiêu đề gốc:** *Geometric Tracking Control of a Quadrotor UAV on SE(3)*
 - **Tác giả:** Taeyoung Lee, Melvin Leok, N. Harris McClamroch
 - **Công bố tại:** *49th IEEE Conference on Decision and Control (CDC 2010)*, pp. 5420–5425, IEEE, 2010. DOI: `10.1109/cdc.2010.5717652`.
@@ -410,7 +410,7 @@ flowchart TD
 
 ### 4.2. Zeng et al. (IMCCC 2012) - So sánh PID và Điều khiển Thích nghi Mô hình Mẫu (MRAC)
 - **Tệp tài liệu:** [`zeng2012.pdf`](./zeng2012.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/zeng2012/`](./all_papers_out/zeng2012/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/zeng2012/`](./papers_md/zeng2012/)
 - **Tiêu đề gốc:** *PID vs. MRAC Control Techniques Applied to a Quadrotor's Attitude*
 - **Tác giả:** Yong Zeng, Qiang Jiang, Qiang Liu, Hua Jing
 - **Công bố tại:** *2012 Second International Conference on Instrumentation, Measurement, Computer, Communication and Control (IMCCC 2012)*, pp. 1086–1089, IEEE, 2012. DOI: `10.1109/imccc.2012.256`.
@@ -433,7 +433,7 @@ flowchart TD
 
 ### 4.3. Luong Tuan & Won (ICCAS 2013) - Bộ điều khiển trượt dựa trên PID (PID-SMC) chống Chattering
 - **Tệp tài liệu:** [`luongtuan2013.pdf`](./luongtuan2013.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/luongtuan2013/`](./all_papers_out/luongtuan2013/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/luongtuan2013/`](./papers_md/luongtuan2013/)
 - **Tiêu đề gốc:** *PID Based Sliding Mode Controller Design for the Micro Quadrotor*
 - **Tác giả:** Luong Tuan Long, Sangchul Won
 - **Công bố tại:** *2013 13th International Conference on Control, Automation and Systems (ICCAS 2013)*, pp. 1860–1865, ICROS/IEEE, 2013. DOI: `10.1109/iccas.2013.6704244`.
@@ -456,7 +456,7 @@ flowchart TD
 
 ### 4.4. Ozbek & Burkan (Springer 2025) - Điều khiển thích nghi lượng giác (TAC) với tham số biến thiên
 - **Tệp tài liệu:** [`Adaptive-trajectory-tracking-control-of-quadrotors-based-on-trigonometric-parameter-estimation.pdf`](./Adaptive-trajectory-tracking-control-of-quadrotors-based-on-trigonometric-parameter-estimation.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/Adaptive-trajectory-tracking-control-of-quadrotors-based-on-trigonometric-parameter-estimation/`](./all_papers_out/Adaptive-trajectory-tracking-control-of-quadrotors-based-on-trigonometric-parameter-estimation/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/Adaptive-trajectory-tracking-control-of-quadrotors-based-on-trigonometric-parameter-estimation/`](./papers_md/Adaptive-trajectory-tracking-control-of-quadrotors-based-on-trigonometric-parameter-estimation/)
 - **Tiêu đề gốc:** *Adaptive Trajectory Tracking Control of Quadrotors Based on Trigonometric Parameter Estimation Law*
 - **Tác giả:** Cengiz Ozbek, Recep Burkan
 - **Công bố tại:** *Journal of the Brazilian Society of Mechanical Sciences and Engineering*, Vol. 47, Article 132, Springer, 2025. DOI: `10.1007/s40430-025-05447-7`.
@@ -484,7 +484,7 @@ flowchart TD
 
 ### 5.1. Mellinger & Kumar (ICRA 2011) - Sinh quỹ đạo Minimum Snap và điều khiển phi tuyến
 - **Tệp tài liệu:** [`mellinger2011.pdf`](./mellinger2011.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/mellinger2011/`](./all_papers_out/mellinger2011/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/mellinger2011/`](./papers_md/mellinger2011/)
 - **Tiêu đề gốc:** *Minimum Snap Trajectory Generation and Control for Quadrotors*
 - **Tác giả:** Daniel Mellinger, Vijay Kumar (GRASP Laboratory, University of Pennsylvania)
 - **Công bố tại:** *IEEE International Conference on Robotics and Automation (ICRA 2011)*, pp. 2520–2525, IEEE, 2011. DOI: `10.1109/ICRA.2011.5980409`.
@@ -513,7 +513,7 @@ flowchart TD
 
 ### 5.2. Mellinger et al. (IJRR 2012) - Sinh quỹ đạo và điều khiển cơ động mạo hiểm chính xác
 - **Tệp tài liệu:** [`mellinger2012.pdf`](./mellinger2012.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/mellinger2012/`](./all_papers_out/mellinger2012/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/mellinger2012/`](./papers_md/mellinger2012/)
 - **Tiêu đề gốc:** *Trajectory Generation and Control for Precise Aggressive Maneuvers with Quadrotors*
 - **Tác giả:** Daniel Mellinger, Nathan Michael, Vijay Kumar (GRASP Lab, UPenn)
 - **Công bố tại:** *The International Journal of Robotics Research (IJRR)*, Vol. 31, No. 5, pp. 664–674, SAGE Publications, 2012. DOI: `10.1177/0278364911434236`.
@@ -536,7 +536,7 @@ flowchart TD
 
 ### 5.3. Singh & Kumar (Springer 2023) - Điều khiển tư thế/vị trí với quy hoạch Minimum Snap đa thức bậc 7
 - **Tệp tài liệu:** [`Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV.pdf`](./Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV.pdf)
-- **Thư mục dữ liệu trích xuất:** [`all_papers_out/Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV/`](./all_papers_out/Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV/)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV/`](./papers_md/Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV/)
 - **Tiêu đề gốc:** *Attitude and Position Control with Minimum Snap Trajectory Planning for Quadrotor UAV*
 - **Tác giả:** Brajesh Kumar Singh, Awadhesh Kumar
 - **Công bố tại:** *International Journal of Dynamics and Control*, Vol. 11, pp. 2342–2353, Springer, 2023. DOI: `10.1007/s40435-022-01111-3`.
@@ -600,4 +600,4 @@ Từ 18 công trình nghiên cứu trên, lộ trình kỹ thuật tối ưu đ�
 
 > **Lưu ý khai thác dữ liệu:**  
 > - Toàn bộ mã nguồn LaTeX/BibTeX của 18 bài báo được lưu trữ tại [`references.bib`](./references.bib).  
-> - Các tài liệu đã được bóc tách định dạng Markdown cùng toàn bộ sơ đồ/hình vẽ nguyên bản chất lượng cao nằm trong từng thư mục con tại [`all_papers_out/`](./all_papers_out/).
+> - Các tài liệu đã được bóc tách định dạng Markdown cùng toàn bộ sơ đồ/hình vẽ nguyên bản chất lượng cao nằm trong từng thư mục con tại [`papers_md/`](./papers_md/).

@@ -5,6 +5,7 @@ $aux_dir = 'build';
 $xelatex = 'xelatex -interaction=nonstopmode -halt-on-error -file-line-error %O %S';
 $bibtex_use = 2;
 $max_repeat = 5;
+@default_files = ('main.tex');
 
 # TeX include files write auxiliary files into matching subdirectories.
 use File::Path qw(make_path);

@@ -1,9 +1,0 @@
-\chapter{KẾT LUẬN}\label{cha:conclusion} \label{chap:conclusion}
-
-\section{Discussion}
-
-This thesis presents two complementary approaches to collision handling for the Tombo quadrotor, aimed at enhancing safety and flight reliability in collision-prone environments. The first approach involves sensorless collision mitigation by integrating the $\mathcal{L}_1$Quad controller, compensating for uncertainties caused by Tombo propellers and quickly recovers trajectory tracking performance after collisions. The second approach introduces a sensor-based collision detection and response framework utilizing rotary encoders embedded in the Tombo propellers, enabling timely identification of collisions and facilitating adaptive control responses. Together, these solutions significantly improve the resilience and stability of the Tombo quadrotor during and following in-flight collisions.
-
-\subsection{Sensorless Collision Handling for Tombo Quadrotor}
-
-The integration of Tombo propellers with the $\mathcal{L}_1$Quad control framework offers a robust solution to address the dynamic uncertainties introduced by deformable rotor systems. While Tombo propellers improve collision resilience by absorbing impact forces and reducing structural damage, their compliant nature induces instabilities during aggressive maneuvers or minor impacts, such as transient thrust losses and variations in torque generation. $\mathcal{L}_1$Quad effectively mitigates these effects through adaptive compensation, particularly enhancing trajectory tracking along the z-axis where deviations are most pronounced.

@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "STM32: Debug (ST-LINK)",
+      "type": "stlinkgdbtarget",
+      "request": "launch",
+      "origin": "snippet",
+      "cwd": "${workspaceFolder}/firmware/drone",
+      "preBuild": "${command:st-stm32-ide-debug-launch.build}",
+      "runEntry": "main",
+      "imagesAndSymbols": [
+        {
+          "imageFileName": "${workspaceFolder}/firmware/drone/build/Debug/drone.elf"
+        }
+      ],
+      "serverInterface": "SWD",
+      "serverInterfaceFrequency": "1000",
+      "serverReset": "Software system reset",
+      "serverRtos": {
+        "enabled": false
+      },
+      "serverSemihosting": {
+        "enabled": false
+      },
+      "logFile": "${workspaceFolder}/firmware/drone/build/Debug/gdb-client.log",
+      "serverLogFile": "${workspaceFolder}/firmware/drone/build/Debug/stlink-gdbserver.log"
+    }
+  ]
+}

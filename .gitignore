@@ -16,6 +16,11 @@ Release/
 *.o
 *.a
 
+# Local firmware toolchain overrides and generated editor databases
+/firmware/**/CMakeUserPresets.json
+/firmware/**/compile_commands.json
+/firmware/**/.cache/clangd/
+
 # LaTeX temporary files (keep source documents and reference PDFs)
 *.aux
 *.log

@@ -1,0 +1,6 @@
+# Generated sources, dependencies and build outputs.
+firmware/drone/Core/**
+firmware/drone/Drivers/**
+docs/external/repos/**
+**/build/**
+**/cmake-build-*/**

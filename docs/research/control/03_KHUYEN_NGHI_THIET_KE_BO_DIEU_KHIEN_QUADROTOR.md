@@ -37,12 +37,14 @@ flowchart TD
 Đây là "trái tim" của hệ thống. Nếu vòng này chưa chuẩn, toàn bộ các vòng bên ngoài (góc, vị trí) đều sẽ dao động hoặc rơi.
 
 ### 2.1. Đạo hàm D trên giá trị đo (Derivative on Measurement)
+
 - **Tuyệt đối tránh**: $D = K_d \frac{e(k) - e(k-1)}{\Delta t}$ (Vì khi phi công giật cần điều khiển, $e(k)$ nhảy bậc $\implies$ Xung $D$ cực đại làm giật motor).
 - **Chuẩn thiết kế**:
   $$D(k) = -K_d \cdot \frac{\omega_{gyro}(k) - \omega_{gyro}(k-1)}{\Delta t}$$
   Dấu trừ thể hiện bản chất phản kháng lại tốc độ biến thiên góc của thân máy bay (giảm xóc ảo).
 
 ### 2.2. Bộ lọc số cho D-term (Bắt buộc phải có)
+
 - Tín hiệu đo từ Gyro luôn bị nhiễm rung động cơ học tần số cao từ động cơ và cánh quạt ($100\,\text{Hz} - 400\,\text{Hz}$).
 - Khi tính đạo hàm $\frac{d}{dt}$, nhiễu tần số cao bị khuếch đại lên hàng chục lần! Nếu không lọc, motor sẽ nóng ran và có thể cháy ESC/cuộn dây.
 - **Giải pháp**:
@@ -51,6 +53,7 @@ flowchart TD
   với $\alpha = \frac{2\pi f_c \Delta t}{1 + 2\pi f_c \Delta t}$.
 
 ### 2.3. Bổ sung FeedForward (FF)
+
 - Để máy bay bám gậy tức thì mà không cần đẩy hệ số $K_p$ lên quá cao (dễ gây rung rơ):
   $$\text{FF}(k) = K_{ff} \cdot \frac{\omega_{sp}(k) - \omega_{sp}(k-1)}{\Delta t}$$
 
@@ -59,11 +62,13 @@ flowchart TD
 ## 3. Thiết Kế Vòng Góc (Outer Attitude Loop)
 
 ### 3.1. Dùng Euler hay Quaternion?
+
 - **Khuyến nghị cho dự án nghiên cứu ban đầu**: Bắt đầu bằng **Euler Angles** $[\phi, \theta, \psi]$ (Roll, Pitch, Yaw) để trực quan, dễ gỡ lỗi trên đồ thị.
   - Giới hạn góc nghiêng tối đa: $\phi_{max} = \theta_{max} = 35^\circ - 45^\circ$. Trong phạm vi này, không lo ngại về hiện tượng Gimbal Lock.
 - **Nâng cấp giai đoạn 2**: Chuyển sang **Quaternion** $\mathbf{q} = [q_0, q_1, q_2, q_3]^T$ như chuẩn PX4 khi muốn drone có khả năng lộn nhào $360^\circ$ hoặc bay tự động hoàn toàn.
 
 ### 3.2. Cấu trúc P-controller cho vòng ngoài
+
 - Vòng ngoài **chỉ nên dùng P (Proportional)**:
   $$p_{sp} = K_{p,att} \cdot (\phi_{sp} - \phi)$$
   $$q_{sp} = K_{p,att} \cdot (\theta_{sp} - \theta)$$
@@ -72,6 +77,7 @@ flowchart TD
   - Thành phần D vòng ngoài chính là tốc độ góc $\dot{\phi} \approx p$, bản thân vòng trong đã đo đạc và điều khiển trực tiếp biến này rồi! Thêm D ở vòng ngoài chỉ gây trễ pha và nhiễu.
 
 ### 3.3. Xử lý riêng cho trục Yaw
+
 - Trục Yaw không tự cân bằng về $0^\circ$ như Roll/Pitch. Khi phi công buông cần điều khiển:
   - Cần phải **khóa góc đầu mũi hiện tại** (Heading Hold).
   - Tránh lỗi quấn vòng góc ($180^\circ \to -180^\circ$):

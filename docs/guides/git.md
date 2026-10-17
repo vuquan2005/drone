@@ -18,6 +18,12 @@ git config user.name "Tên của bạn"
 git config user.email "ban@example.com"
 ```
 
+Kích hoạt Git pre-commit hook (tự động format trước khi commit):
+
+```sh
+git config core.hooksPath .githooks
+```
+
 ## Quy trình mỗi lần làm việc
 
 Xem trạng thái trước khi sửa:

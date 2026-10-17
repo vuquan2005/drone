@@ -1,10 +1,12 @@
 # KIẾN TRÚC ĐIỀU KHIỂN QUADROTOR, CÁC VÒNG LẶP (CASCADED LOOPS) VÀ THUẬT TOÁN MIXER
+
 > **Tài liệu nghiên cứu và đối chiếu mã nguồn từ các dự án mã nguồn mở tiêu biểu**  
-> *(PX4-Autopilot, ArduPilot, Betaflight, Crazyflie, STM32 Quadcopter, Arduino-Quadcopter)*
+> _(PX4-Autopilot, ArduPilot, Betaflight, Crazyflie, STM32 Quadcopter, Arduino-Quadcopter)_
 
 ---
 
 ## MỤC LỤC
+
 1. [Tổng Quan Kiến Trúc Điều Khiển Phân Tầng (Cascaded Control Architecture)](#1-tổng-quan-kiến-trúc-điều-khiển-phân-tầng)
 2. [Chi Tiết Từng Vòng Điều Khiển (Input - Algorithm - Output)](#2-chi-tiết-từng-vòng-điều-khiển)
    - [2.1 Vòng Vị trí (Position Loop)](#21-vòng-vị-trí-position-loop)
@@ -35,7 +37,9 @@ Quadrotor là một hệ thống **Under-actuated** (chỉ có 4 động cơ t�
 Để sinh ra gia tốc tịnh tiến theo phương ngang ($x, y$), máy bay bắt buộc phải nghiêng thân một góc Roll/Pitch ($\phi, \theta$) tương ứng.
 
 ### Nguyên lý tách thang thời gian (Time-scale Separation)
+
 Trong động lực học bay:
+
 - **Động học quay (Rotational Dynamics)**: Máy bay có mô-men quán tính nhỏ, phản ứng quay quanh các trục diễn ra rất nhanh (vài mili-giây đến vài chục mili-giây).
 - **Động học tịnh tiến (Translational Dynamics)**: Chuyển động thay đổi vị trí đòi hỏi thời gian tích lũy vận tốc, phản ứng diễn ra chậm hơn đáng kể (hàng trăm mili-giây đến giây).
 
@@ -88,18 +92,19 @@ Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều �
 
 # 2. Chi Tiết Từng Vòng Điều Khiển
 
-| Vòng điều khiển | Tần số lấy mẫu | Bộ điều khiển | Tín hiệu vào (Inputs) | Tín hiệu ra (Outputs) |
-| :--- | :--- | :--- | :--- | :--- |
-| **Vị trí (Position)** | 50 – 100 Hz | **P** hoặc P + Feedforward | Vị trí đặt $\vec{p}_{sp}$, Vị trí ước lượng $\hat{\vec{p}}$ | Vận tốc đặt $\vec{v}_{sp} = [v_x, v_y, v_z]^T$ |
-| **Vận tốc (Velocity)** | 50 – 100 Hz | **PID** + Accel Feedforward | Vận tốc đặt $\vec{v}_{sp}$, Vận tốc ước lượng $\hat{\vec{v}}$, Gia tốc trọng trường $g$ | Vector gia tốc đặt $\vec{a}_{sp}$ & Lực nâng tập trung $T_z$ |
-| **Chuyển đổi Lực $\to$ Góc** | Cùng tần số Vel | Giải tích hình học / Vector | $\vec{a}_{sp}$, $T_z$, Yaw mong muốn $\psi_{sp}$ | Quaternion tư thế đặt $q_{sp}$ hoặc $(\phi_{sp}, \theta_{sp})$ |
-| **Tư thế (Attitude)** | 100 – 500 Hz | **P** (Euler hoặc Quaternion) | Tư thế đặt $q_{sp}$, Tư thế thực $\hat{q}$ (từ AHRS/EKF) | Tốc độ góc đặt $\vec{\omega}_{sp} = [p_{sp}, q_{sp}, r_{sp}]^T$ |
-| **Vận tốc góc (Rate)** | 250 Hz – 8 kHz | **PID** + Rate Feedforward | $\vec{\omega}_{sp}$, Tốc độ góc thực từ Gyroscope $\vec{\omega}_{gyro}$ | Mô-men xoắn $\vec{\tau} = [\tau_x, \tau_y, \tau_z]^T$ |
-| **Bộ Mixer** | Cùng tần số Rate | Ma trận hiệu dụng + Giảm bão hòa | Mô-men $\vec{\tau}$, Lực nâng $T$ | Tín hiệu xung PWM / DShot từng motor $(m_1..m_4)$ |
+| Vòng điều khiển              | Tần số lấy mẫu   | Bộ điều khiển                    | Tín hiệu vào (Inputs)                                                                   | Tín hiệu ra (Outputs)                                           |
+| :--------------------------- | :--------------- | :------------------------------- | :-------------------------------------------------------------------------------------- | :-------------------------------------------------------------- |
+| **Vị trí (Position)**        | 50 – 100 Hz      | **P** hoặc P + Feedforward       | Vị trí đặt $\vec{p}_{sp}$, Vị trí ước lượng $\hat{\vec{p}}$                             | Vận tốc đặt $\vec{v}_{sp} = [v_x, v_y, v_z]^T$                  |
+| **Vận tốc (Velocity)**       | 50 – 100 Hz      | **PID** + Accel Feedforward      | Vận tốc đặt $\vec{v}_{sp}$, Vận tốc ước lượng $\hat{\vec{v}}$, Gia tốc trọng trường $g$ | Vector gia tốc đặt $\vec{a}_{sp}$ & Lực nâng tập trung $T_z$    |
+| **Chuyển đổi Lực $\to$ Góc** | Cùng tần số Vel  | Giải tích hình học / Vector      | $\vec{a}_{sp}$, $T_z$, Yaw mong muốn $\psi_{sp}$                                        | Quaternion tư thế đặt $q_{sp}$ hoặc $(\phi_{sp}, \theta_{sp})$  |
+| **Tư thế (Attitude)**        | 100 – 500 Hz     | **P** (Euler hoặc Quaternion)    | Tư thế đặt $q_{sp}$, Tư thế thực $\hat{q}$ (từ AHRS/EKF)                                | Tốc độ góc đặt $\vec{\omega}_{sp} = [p_{sp}, q_{sp}, r_{sp}]^T$ |
+| **Vận tốc góc (Rate)**       | 250 Hz – 8 kHz   | **PID** + Rate Feedforward       | $\vec{\omega}_{sp}$, Tốc độ góc thực từ Gyroscope $\vec{\omega}_{gyro}$                 | Mô-men xoắn $\vec{\tau} = [\tau_x, \tau_y, \tau_z]^T$           |
+| **Bộ Mixer**                 | Cùng tần số Rate | Ma trận hiệu dụng + Giảm bão hòa | Mô-men $\vec{\tau}$, Lực nâng $T$                                                       | Tín hiệu xung PWM / DShot từng motor $(m_1..m_4)$               |
 
 ---
 
 ## 2.1 Vòng Vị trí (Position Loop)
+
 - **Mục tiêu**: Bám theo vị trí toạ độ mong muốn trong hệ quy chiếu cục bộ (NED / ENU).
 - **Thuật toán phổ biến**: Bộ điều khiển tỉ lệ **P** (Proportional) kết hợp bù đón đầu **Feed-Forward**:
   $$\vec{v}_{sp} = K_p^{pos} \cdot (\vec{p}_{sp} - \hat{\vec{p}}) + \vec{v}_{ff}$$
@@ -112,6 +117,7 @@ Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều �
 ---
 
 ## 2.2 Vòng Vận tốc (Velocity Loop)
+
 - **Mục tiêu**: Bám theo vector vận tốc mong muốn $\vec{v}_{sp}$.
 - **Thuật toán phổ biến**: **PID** trên sai số vận tốc $\vec{e}_v = \vec{v}_{sp} - \hat{\vec{v}}$:
   $$\vec{a}_{sp} = K_p^{vel} \vec{e}_v + K_i^{vel} \int \vec{e}_v dt - K_d^{vel} \dot{\vec{v}} + \vec{a}_{ff}$$
@@ -125,6 +131,7 @@ Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều �
 ---
 
 ## 2.3 Bộ Chuyển Đổi Gia Tốc / Lực Nâng Sang Góc Tư Thế
+
 Do quadrotor chỉ có thể đẩy theo trục $Z$ của thân máy bay ($Z_B$), để tạo ra vector gia tốc mong muốn trong không gian $\vec{a}_{sp} = [a_x, a_y, a_z]^T$, trục $Z_B$ phải nghiêng theo hướng của vector lực tổng:
 
 $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
@@ -133,7 +140,7 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
    $$\vec{z}_B = \frac{-\vec{F}_{des}}{\|\vec{F}_{des}\|}$$
 2. **Khống chế góc nghiêng tối đa (Tilt Angle Limit)**:
    Để tránh việc drone lật quá nghiêng gây sụt giảm lực nâng thẳng đứng, góc giữa $\vec{z}_B$ và phương thẳng đứng của Trái Đất $\vec{z}_W = [0, 0, 1]^T$ được bão hòa qua hàm giới hạn góc `limitTilt()` (xem PX4 `ControlMath::limitTilt`).
-3. **Dựng hệ trục toạ độ mục tiêu ($R_{sp} = [\vec{x}_B, \vec{y}_B, \vec{z}_B]$)**:
+3. **Dựng hệ trục toạ độ mục tiêu ($R\_{sp} = [\vec{x}\_B, \vec{y}\_B, \vec{z}\_B]$)**:
    Dựa vào hướng Yaw mong muốn $\psi_{sp}$, vector phụ nằm trên mặt phẳng ngang là $\vec{y}_C = [-\sin\psi_{sp}, \cos\psi_{sp}, 0]^T$:
    $$\vec{x}_B = \frac{\vec{y}_C \times \vec{z}_B}{\|\vec{y}_C \times \vec{z}_B\|}, \quad \vec{y}_B = \vec{z}_B \times \vec{x}_B$$
 4. Chuyển ma trận xoay $R_{sp}$ thành Quaternion mong muốn $q_{sp}$ hoặc các góc Euler tương đương:
@@ -142,12 +149,13 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
 ---
 
 ## 2.4 Vòng Tư thế (Attitude / Angle Loop)
+
 - **Mục tiêu**: Đưa hướng nghiêng của thân drone về trùng với hướng mục tiêu.
 - **Cách tiếp cận 1: Góc Euler (Dành cho hệ thống đơn giản: Betaflight Angle mode, STM32 Quadcopter)**:
   $$p_{sp} = K_p^{att} \cdot (\phi_{sp} - \hat{\phi})$$
   $$q_{sp} = K_p^{att} \cdot (\theta_{sp} - \hat{\theta})$$
   $$r_{sp} = K_p^{yaw} \cdot (\psi_{sp} - \hat{\psi}) + r_{ff}$$
-  *Nhược điểm: Bị hiện tượng Gimbal Lock khi góc Pitch $\to \pm 90^\circ$ và tính toán hàm lượng giác tốn chu kỳ MCU.*
+  _Nhược điểm: Bị hiện tượng Gimbal Lock khi góc Pitch $\to \pm 90^\circ$ và tính toán hàm lượng giác tốn chu kỳ MCU._
 
 - **Cách tiếp cận 2: Quaternion (Chuẩn công nghiệp & hàn lâm: PX4, ArduPilot, Crazyflie)**:
   - Tính Quaternion lỗi:
@@ -160,17 +168,20 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
 ---
 
 ## 2.5 Vòng Vận tốc góc (Angular Rate / Gyro Loop)
+
 Đây là **vòng lặp trong cùng (Inner-most Loop)**, có vai trò sống còn quyết định máy bay có ổn định hay bị rung lắc, dao động.
+
 - **Tín hiệu vào**: $\vec{\omega}_{sp} = [p_{sp}, q_{sp}, r_{sp}]^T$ và dữ liệu đo góc quay từ Gyroscope $\vec{\omega}_{gyro} = [p, q, r]^T$.
 - **Giải thuật**: **PID đầy đủ + Feedforward**:
   $$\tau_x = K_p \cdot e_p + K_i \int e_p dt + K_d \cdot \frac{d(-p)}{dt} + K_{ff} \cdot p_{sp}$$
-  
+
 ### Các kỹ thuật xử lý tín hiệu bắt buộc trong Rate Loop:
+
 1. **D-on-Measurement (Đạo hàm trên giá trị đo)**:
    Thay vì vi phân sai số $\frac{d(e)}{dt} = \frac{d(sp - meas)}{dt}$, ta chỉ lấy vi phân của tín hiệu đo $\frac{-d(meas)}{dt}$. Điều này ngăn hiện tượng "Derivative Kick" – khi tín hiệu từ cần lái nhảy đột ngột, motor không bị vọt lố công suất.
 2. **Lọc thông thấp cho khâu D (D-term Filter)**:
    Khâu vi phân $D$ khuếch đại nhiễu tần số cao (do cánh quạt và motor quay rung truyền vào IMU). Bắt buộc phải có bộ lọc thông thấp (PT1 Low-pass, Biquad Filter, hoặc Dynamic Notch Filter theo vòng tua motor RPM).
-3. **Feedforward ($K_{ff}$)**:
+3. **Feedforward ($K\_{ff}$)**:
    Cho phép mô-men phản hồi lập tức theo chuyển động tay gạt cần lái mà không cần đợi sai số xuất hiện rồi khâu $P$ mới phản ứng. Giúp tăng độ nhạy (stick responsiveness) mà không gây dao động do tăng $K_p$.
 4. **Anti-Windup (Chống bão hòa tích phân)**:
    Khi đầu ra motor đã chạm giới hạn trần (100%) hoặc sàn (0%), đóng băng khâu tích phân $I$ (I-term freeze).
@@ -182,12 +193,15 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
 Sau khi vòng Rate tính ra **Mô-men xoắn 3 trục $(\tau_x, \tau_y, \tau_z)$** và **Tổng lực nâng $T$ (Collective Thrust)**, bộ phối trộn (Mixer) chịu trách nhiệm tính toán công suất phát ra cho từng động cơ.
 
 ## 3.1 Ma trận Mixer hình học
+
 Quy ước chiều:
+
 - Roll ($\tau_x$): Nghiêng sang phải dương $\to$ Motor bên trái tăng ga, motor bên phải giảm ga.
 - Pitch ($\tau_y$): Mũi ngóc lên dương $\to$ Motor phía trước tăng ga, motor phía sau giảm ga.
 - Yaw ($\tau_z$): Xoay mũi sang phải (theo chiều kim đồng hồ) dương $\to$ Motor quay CCW tăng tốc, motor quay CW giảm tốc (theo định luật bảo toàn mô-men động lượng).
 
 ### Cấu hình Quad X (Chuẩn phổ biến hiện nay)
+
 ```
       M4 (CW)     M1 (CCW)
          \       /
@@ -198,14 +212,18 @@ Quy ước chiều:
 ```
 
 Công thức chuyển đổi:
-$$\begin{cases}
+
+$$
+\begin{cases}
 m_1 = T - \tau_{roll} + \tau_{pitch} - \tau_{yaw} \\
 m_2 = T - \tau_{roll} - \tau_{pitch} + \tau_{yaw} \\
 m_3 = T + \tau_{roll} - \tau_{pitch} - \tau_{yaw} \\
 m_4 = T + \tau_{roll} + \tau_{pitch} + \tau_{yaw}
-\end{cases}$$
+\end{cases}
+$$
 
 ### Cấu hình Quad + (Plus - thường gặp ở các dự án thử nghiệm ban đầu)
+
 ```
              M1 (Front)
                  ▲
@@ -213,21 +231,26 @@ m_4 = T + \tau_{roll} + \tau_{pitch} + \tau_{yaw}
                  │
              M3 (Rear)
 ```
-$$\begin{cases}
+
+$$
+\begin{cases}
 m_1 = T + \tau_{pitch} - \tau_{yaw} \\
 m_2 = T - \tau_{roll} + \tau_{yaw} \\
 m_3 = T - \tau_{pitch} - \tau_{yaw} \\
 m_4 = T + \tau_{roll} + \tau_{yaw}
-\end{cases}$$
+\end{cases}
+$$
 
 ---
 
 ## 3.2 Ma trận hiệu dụng điều khiển & Giả nghịch đảo
+
 Trong các hệ thống cao cấp như PX4 ([ControlAllocator](../../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp)), mixer không dùng công thức cộng trừ cứng mà xây dựng **Ma trận hiệu dụng điều khiển (Actuator Effectiveness Matrix $B$)**:
 
 $$\begin{bmatrix} \vec{\tau} \\ \vec{T} \end{bmatrix} = B \cdot \vec{u}$$
 
 Với mỗi động cơ thứ $i$ đặt tại toạ độ $\vec{r}_i = [x_i, y_i, z_i]^T$, có trục quay định hướng $\vec{n}_i$, hệ số lực đẩy $C_T$, và tỉ số mô-men phản kháng $k_m$:
+
 - Lực đẩy do động cơ tạo ra: $\vec{F}_i = C_T \cdot \vec{n}_i \cdot u_i$
 - Mô-men xoắn do động cơ tạo ra: $\vec{M}_i = (\vec{r}_i \times \vec{F}_i) - C_T \cdot k_m \cdot \vec{n}_i \cdot u_i$
 
@@ -252,7 +275,9 @@ $$\textbf{Roll \& Pitch (Giữ cân bằng chống lật)} > \textbf{Thrust (Duy
 ---
 
 ## 3.4 Cơ chế Air Mode (Bảo toàn mô-men khi Throttle = 0)
+
 Trong các chuyến bay nhào lộn FPV (Betaflight) hoặc khi hạ độ cao nhanh (PX4):
+
 - **Vấn đề**: Người lái hạ cần ga về 0 ($T = 0$). Các động cơ quay ở tốc độ không tải tối thiểu. Lúc này, công thức $m_i = T \pm \tau$ sẽ khiến các motor không thể giảm ga sâu hơn được nữa để tạo chênh lệch lực $\to$ Drone mất hoàn toàn lực điều khiển tư thế (mất lái giữa không trung).
 - **Thuật toán Air Mode**:
   Khi phát hiện tổng mô-men yêu cầu $\Delta m = m_{max} - m_{min} > 0$ nhưng cần ga ở mức 0, mixer tự động **nâng mức ga sàn ảo lên**:
@@ -262,7 +287,9 @@ Trong các chuyến bay nhào lộn FPV (Betaflight) hoặc khi hạ độ cao n
 ---
 
 ## 3.5 Thuật toán Capping đối xứng (Crazyflie Method)
+
 Trong mã nguồn Crazyflie ([power_distribution_quadrotor.c](../../external/repos/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160-L190)):
+
 ```c
 // Tìm động cơ có giá trị cao nhất
 int32_t highestThrustFound = max(m1, m2, m3, m4);
@@ -276,11 +303,13 @@ if (highestThrustFound > maxAllowedThrust) {
     }
 }
 ```
-*Tác dụng*: Bằng cách trừ đều lượng dư thừa cho cả 4 động cơ, tỉ lệ sai phân lực giữa các cánh quạt được giữ nguyên chính xác $100\%$, bảo đảm mô-men lật thăng bằng không bị biến dạng, chỉ suy giảm một chút lực nâng thẳng đứng trong khoảnh khắc đó.
+
+_Tác dụng_: Bằng cách trừ đều lượng dư thừa cho cả 4 động cơ, tỉ lệ sai phân lực giữa các cánh quạt được giữ nguyên chính xác $100\%$, bảo đảm mô-men lật thăng bằng không bị biến dạng, chỉ suy giảm một chút lực nâng thẳng đứng trong khoảnh khắc đó.
 
 ---
 
 ## 3.6 Tuyến tính hóa lực đẩy (Thrust Linearization)
+
 Lực đẩy cánh quạt tỉ lệ với **bình phương tốc độ quay**:
 $$F \propto \Omega^2 \propto V_{PWM}^2$$
 Nếu gửi lệnh điều khiển tỉ lệ tuyến tính từ PID ra PWM, lực sinh ra ở dải ga cao sẽ nhạy gấp nhiều lần dải ga thấp, khiến việc tinh chỉnh PID rất khó khăn.
@@ -291,17 +320,18 @@ $$PWM_{out} = \frac{-1 + \sqrt{1 + 4 \cdot k_{lin} \cdot Thrust}}{2 \cdot k_{lin
 
 # 4. Phân Tích Chi Tiết Mã Nguồn Các Dự Án Thực Tế
 
-| Tiêu chí | PX4-Autopilot | ArduPilot | Betaflight | Crazyflie | STM32 Quadcopter |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ngôn ngữ** | C++14/17 | C++ | C99 | C99 | C |
-| **Hệ điều hành** | NuttX RTOS | AP_HAL (NuttX/ChibiOS) | Bare-metal (Timer ISR) | FreeRTOS | uCOS-II |
-| **Đại diện tư thế** | Unit Quaternion | Unit Quaternion | Euler Angles | Quaternion / Euler | Euler Angles |
-| **Tần số Rate** | 250 Hz – 1 kHz | 400 Hz – 800 Hz | 2 kHz – 8 kHz | 500 Hz | 333 Hz (~3ms) |
-| **Bộ mixer** | Control Allocator | AP_MotorsMatrix | mixTable | Power Distribution | Direct Limit |
+| Tiêu chí            | PX4-Autopilot     | ArduPilot              | Betaflight             | Crazyflie          | STM32 Quadcopter |
+| :------------------ | :---------------- | :--------------------- | :--------------------- | :----------------- | :--------------- |
+| **Ngôn ngữ**        | C++14/17          | C++                    | C99                    | C99                | C                |
+| **Hệ điều hành**    | NuttX RTOS        | AP_HAL (NuttX/ChibiOS) | Bare-metal (Timer ISR) | FreeRTOS           | uCOS-II          |
+| **Đại diện tư thế** | Unit Quaternion   | Unit Quaternion        | Euler Angles           | Quaternion / Euler | Euler Angles     |
+| **Tần số Rate**     | 250 Hz – 1 kHz    | 400 Hz – 800 Hz        | 2 kHz – 8 kHz          | 500 Hz             | 333 Hz (~3ms)    |
+| **Bộ mixer**        | Control Allocator | AP_MotorsMatrix        | mixTable               | Power Distribution | Direct Limit     |
 
 ---
 
 ### 4.1 PX4-Autopilot
+
 - **Cấu trúc module**:
   - `mc_pos_control`: Đón nhận tọa độ điểm đến, chạy P vị trí $\to$ PID vận tốc $\to$ tính vector gia tốc $\vec{a}_{sp}$.
   - `mc_att_control`: Dùng thuật toán Quaternion tangent-space error. Có mô hình tham chiếu giảm chấn bậc hai (`propagateReferenceModel`) để triệt tiêu vọt lố.
@@ -309,12 +339,14 @@ $$PWM_{out} = \frac{-1 + \sqrt{1 + 4 \cdot k_{lin} \cdot Thrust}}{2 \cdot k_{lin
   - `control_allocator`: Hỗ trợ cấu hình ma trận hình học động cơ tùy ý và thuật toán khử bão hòa đa tầng.
 
 ### 4.2 ArduPilot (ArduCopter)
+
 - **Cấu trúc thư viện**:
   - `AC_PosControl`: Quản lý 3 trục vị trí. Sử dụng khâu Feedforward gia tốc và vận tốc kết hợp giới hạn gia tốc góc (jerk limiting).
   - `AC_AttitudeControl_Multi`: Bộ điều khiển tư thế quaternion với cơ chế **Angle P Boost** (tự động kích tăng độ nhạy góc khi cần ga biến thiên nhanh).
   - `AP_MotorsMatrix`: Cơ chế tính toán **Yaw Headroom** độc quyền. Luôn dự trữ một khoảng dung sai cho phép Yaw can thiệp mà không làm xáo trộn lực cân bằng Roll/Pitch.
 
 ### 4.3 Betaflight
+
 - **Triết lý thiết kế**: Chuyên biệt cho đua FPV và nhào lộn tự do, tối ưu hóa độ trễ tính toán tới mức dưới $500\mu s$.
 - **Đặc điểm nổi bật**:
   - **Acro Mode (Rate mode thuần)**: Bỏ qua hoàn toàn vòng Vị trí và Tư thế. Cần lái người điều khiển gán trực tiếp thành tốc độ góc quay mục tiêu ($\pm 1000^\circ/\text{s}$).
@@ -323,6 +355,7 @@ $$PWM_{out} = \frac{-1 + \sqrt{1 + 4 \cdot k_{lin} \cdot Thrust}}{2 \cdot k_{lin
   - **Anti-Gravity**: Khâu nhận biết thay đổi ga đột ngột để tạm thời nhân hệ số tích phân $I$, chống hiện tượng chúi mũi (pitch dip) khi thốc ga.
 
 ### 4.4 Crazyflie Firmware
+
 - **Nền tảng nghiên cứu lý tưởng**:
   - Mã nguồn C cực kỳ trong sáng, tách bạch giữa tầng ước lượng trạng thái (`sensfusion6.c` / `estimator_kalman.c`), tầng điều khiển (`controller_pid.c`), và tầng phân phối công suất (`power_distribution_quadrotor.c`).
   - Hỗ trợ chuyển đổi nhanh qua các thuật toán điều khiển phi tuyến hiện đại:
@@ -331,6 +364,7 @@ $$PWM_{out} = \frac{-1 + \sqrt{1 + 4 \cdot k_{lin} \cdot Thrust}}{2 \cdot k_{lin
     - `controller_indi.c`: Bộ điều khiển đảo ngược động lực học phi tuyến gia số (Incremental Nonlinear Dynamic Inversion - INDI) có khả năng kháng gió và thích nghi tải trọng vượt trội.
 
 ### 4.5 STM32 Quadcopter & Arduino-Quadcopter
+
 - Dự án nhúng kinh điển thể hiện trọn vẹn thuật toán **Serial PID (Cascade PID)**:
   - Vòng ngoài: Nhận góc Euler sai lệch $\to$ tính ra vận tốc góc mong muốn.
   - Vòng trong: Lấy sai lệch vận tốc góc trừ dữ liệu Gyro $\to$ tính giá trị bù PWM cho 4 motor.
@@ -355,6 +389,7 @@ Xây dựng Vòng Rate        Xây dựng Vòng Angle       Xây dựng Vòng V�
 ```
 
 ### 1. Trật tự Tune PID trên thực tế
+
 - **Bước 1 (Inner Rate Loop)**: Cố định drone trên trục thử nghiệm (test bench 1 bậc tự do). Tune vòng Rate trước. Tăng $K_p$ đến khi hệ thống đáp ứng nhanh mà không rung, thêm $K_d$ để dập tắt dao động, thêm một chút $K_i$ để triệt tiêu sai số xác lập.
 - **Bước 2 (Attitude Loop)**: Chỉ cần bộ điều khiển tỉ lệ **P** (khoảng $4.0 - 8.0$). Nếu $K_p$ góc quá lớn, drone sẽ giật và kích động vòng Rate bên trong.
 - **Bước 3 (Thrust & Mixer)**: Bắt buộc phải có thuật toán **Desaturation / Capping đối xứng** (như của Crazyflie) để chống mất lái khi thốc ga hoặc hạ ga.

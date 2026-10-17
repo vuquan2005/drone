@@ -12,12 +12,12 @@ Mixer nhận yêu cầu lực đẩy và mô-men từ bộ điều khiển, rồ
 
 Trong các bản mã nguồn ở thư mục này, bốn dự án đáng nghiên cứu sâu phục vụ những mục tiêu khác nhau:
 
-| Dự án | Điểm đáng học nhất | Cách triển khai cốt lõi |
-|---|---|---|
-| **PX4-Autopilot** | Kiến trúc phân bổ điều khiển tổng quát; tách mô hình khung khỏi thuật toán | Dựng ma trận hiệu lực từ vị trí/hướng rotor, tính giả nghịch đảo, giải bão hòa tuần tự |
-| **ArduPilot** | Mixer multicopter gắn với giới hạn thực tế, dành biên yaw và quản lý motor | Hệ số theo khung, giới hạn yaw trước, co phần RPY rồi chọn throttle khả thi |
-| **Betaflight** | Duy trì quyền điều khiển ở throttle thấp/cao và các tình huống bay acro | Bảng hệ số, tính dải chênh motor, chuẩn hóa dải và dịch throttle; nhiều chính sách mixer |
-| **Crazyflie** | Mã ngắn, dễ nối lý thuyết với triển khai; có giao diện lực/mô-men SI | Công thức quad cố định, ba loại đầu vào, bù pin rồi giảm đồng loạt khi vượt trần |
+| Dự án             | Điểm đáng học nhất                                                         | Cách triển khai cốt lõi                                                                  |
+| ----------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| **PX4-Autopilot** | Kiến trúc phân bổ điều khiển tổng quát; tách mô hình khung khỏi thuật toán | Dựng ma trận hiệu lực từ vị trí/hướng rotor, tính giả nghịch đảo, giải bão hòa tuần tự   |
+| **ArduPilot**     | Mixer multicopter gắn với giới hạn thực tế, dành biên yaw và quản lý motor | Hệ số theo khung, giới hạn yaw trước, co phần RPY rồi chọn throttle khả thi              |
+| **Betaflight**    | Duy trì quyền điều khiển ở throttle thấp/cao và các tình huống bay acro    | Bảng hệ số, tính dải chênh motor, chuẩn hóa dải và dịch throttle; nhiều chính sách mixer |
+| **Crazyflie**     | Mã ngắn, dễ nối lý thuyết với triển khai; có giao diện lực/mô-men SI       | Công thức quad cố định, ba loại đầu vào, bù pin rồi giảm đồng loạt khi vượt trần         |
 
 “Đáng học” ở đây là đánh giá theo cấu trúc và tính năng quan sát được trong mã nguồn, không phải bảng xếp hạng hiệu năng bay. Không có benchmark giữa các dự án trong lần khảo sát này.
 
@@ -49,12 +49,12 @@ Sơ đồ là kiến trúc khái quát; không phải dự án nào cũng có đ
 
 Với quadrotor thông thường, mixer thường nhận:
 
-| Đại lượng | Ý nghĩa | Không nên nhầm với |
-|---|---|---|
-| `T` | Mức lực đẩy chung | Luôn là độ rộng xung PWM hoặc luôn là Newton |
-| `R` | Yêu cầu điều khiển roll | Góc roll trực tiếp |
-| `P` | Yêu cầu điều khiển pitch | Góc pitch trực tiếp |
-| `Y` | Yêu cầu điều khiển yaw | Góc hướng trực tiếp |
+| Đại lượng | Ý nghĩa                  | Không nên nhầm với                           |
+| --------- | ------------------------ | -------------------------------------------- |
+| `T`       | Mức lực đẩy chung        | Luôn là độ rộng xung PWM hoặc luôn là Newton |
+| `R`       | Yêu cầu điều khiển roll  | Góc roll trực tiếp                           |
+| `P`       | Yêu cầu điều khiển pitch | Góc pitch trực tiếp                          |
+| `Y`       | Yêu cầu điều khiển yaw   | Góc hướng trực tiếp                          |
 
 Trong giao diện chuẩn hóa, `R/P/Y` là đầu ra điều khiển đã được scale. Trong giao diện vật lý, chúng có thể là mô-men theo N·m. Hai loại giao diện cần hệ số khác nhau.
 
@@ -157,20 +157,20 @@ T = 0.90, R = 0.20, P = 0.10, Y = 0.05
 
 Kết quả:
 
-| Cách xử lý | M1 | M2 | M3 | M4 |
-|---|---:|---:|---:|---:|
-| Yêu cầu ban đầu | 0.85 | 0.55 | 1.05 | 1.15 |
+| Cách xử lý           |   M1 |   M2 |   M3 |   M4 |
+| -------------------- | ---: | ---: | ---: | ---: |
+| Yêu cầu ban đầu      | 0.85 | 0.55 | 1.05 | 1.15 |
 | Cắt riêng từng motor | 0.85 | 0.55 | 1.00 | 1.00 |
-| Giảm chung 0.15 | 0.70 | 0.40 | 0.90 | 1.00 |
+| Giảm chung 0.15      | 0.70 | 0.40 | 0.90 | 1.00 |
 
 Tính ngược theo ma trận ví dụ:
 
 | Đại lượng | Yêu cầu | Sau cắt riêng | Sau giảm chung |
-|---|---:|---:|---:|
-| `T` | 0.900 | 0.850 | 0.750 |
-| `R` | 0.200 | 0.150 | 0.200 |
-| `P` | 0.100 | 0.075 | 0.100 |
-| `Y` | 0.050 | 0.075 | 0.050 |
+| --------- | ------: | ------------: | -------------: |
+| `T`       |   0.900 |         0.850 |          0.750 |
+| `R`       |   0.200 |         0.150 |          0.200 |
+| `P`       |   0.100 |         0.075 |          0.100 |
+| `Y`       |   0.050 |         0.075 |          0.050 |
 
 Cắt riêng làm giảm roll/pitch và tăng yaw ngoài ý muốn. Giảm chung giữ được toàn bộ chênh lệch motor, đổi lại giảm lực nâng chung.
 
@@ -232,15 +232,15 @@ Nguồn: [ControlAllocator::Run](../external/repos/PX4-Autopilot/src/modules/con
 
 ### 5.2. Những tính năng quan sát được
 
-| Tính năng | Cách làm |
-|---|---|
-| Khai báo hình học rotor | Vị trí `PX/PY/PZ`, trục `AX/AY/AZ`, hệ số `CT`, `KM`; có liên kết rotor với cơ cấu nghiêng |
-| Nhiều kiểu phương tiện | Tách các lớp `ActuatorEffectiveness` cho multirotor, fixed-wing, VTOL, rotor nghiêng và cấu hình khác |
-| Lựa chọn thuật toán | `PSEUDO_INVERSE`, `SEQUENTIAL_DESATURATION`, hoặc `AUTO` theo đề xuất của loại phương tiện |
-| Giới hạn actuator | Min/max và slew rate; có hỗ trợ actuator đảo chiều theo cấu hình |
-| Phản hồi kết quả phân bổ | `unallocated_torque`, `unallocated_thrust`, trạng thái đạt setpoint, bão hòa từng actuator |
-| Xử lý motor lỗi trong mô hình | Khi lỗi đã được tiếp nhận, đặt cột tương ứng trong ma trận hiệu lực về 0 |
-| Xử lý trục gần phụ thuộc tuyến tính | Bản cục bộ có `dropDependentAxes()` để bỏ trục gần phụ thuộc trước khi tính giả nghịch đảo |
+| Tính năng                           | Cách làm                                                                                              |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Khai báo hình học rotor             | Vị trí `PX/PY/PZ`, trục `AX/AY/AZ`, hệ số `CT`, `KM`; có liên kết rotor với cơ cấu nghiêng            |
+| Nhiều kiểu phương tiện              | Tách các lớp `ActuatorEffectiveness` cho multirotor, fixed-wing, VTOL, rotor nghiêng và cấu hình khác |
+| Lựa chọn thuật toán                 | `PSEUDO_INVERSE`, `SEQUENTIAL_DESATURATION`, hoặc `AUTO` theo đề xuất của loại phương tiện            |
+| Giới hạn actuator                   | Min/max và slew rate; có hỗ trợ actuator đảo chiều theo cấu hình                                      |
+| Phản hồi kết quả phân bổ            | `unallocated_torque`, `unallocated_thrust`, trạng thái đạt setpoint, bão hòa từng actuator            |
+| Xử lý motor lỗi trong mô hình       | Khi lỗi đã được tiếp nhận, đặt cột tương ứng trong ma trận hiệu lực về 0                              |
+| Xử lý trục gần phụ thuộc tuyến tính | Bản cục bộ có `dropDependentAxes()` để bỏ trục gần phụ thuộc trước khi tính giả nghịch đảo            |
 
 Nguồn: [cấu hình rotor](../external/repos/PX4-Autopilot/src/modules/control_allocator/VehicleActuatorEffectiveness/ActuatorEffectivenessRotors.cpp#L46), [chọn thuật toán](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L140), [nguồn hiệu lực](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L208), [motor lỗi](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L559), [báo cáo kết quả](../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp#L657).
 
@@ -274,11 +274,11 @@ Nếu `v` là cột thrust, hiệu chỉnh chủ yếu thay đổi lực đẩy 
 
 Đây là thủ tục tuần tự theo chính sách; không phải bộ giải tối ưu có ràng buộc toàn cục. Trường hợp cực đoan vẫn cần clip cuối cùng.
 
-| `MC_AIRMODE` | Trình tự chính | Chính sách |
-|---|---|---|
-| `0` — tắt | Trộn chưa có yaw → chỉ giảm thrust khi giải bão hòa → hiệu chỉnh roll/pitch → thêm yaw riêng | Không tăng thrust để cứu quyền điều khiển |
-| `1` — roll/pitch | Trộn chưa có yaw → dịch thrust → thêm yaw riêng | Cho phép tăng/giảm thrust để giữ roll/pitch; yaw không được làm tăng thrust |
-| `2` — roll/pitch/yaw | Trộn đủ các trục → dịch thrust → giải bão hòa theo yaw | Cho phép dịch thrust cho RPY; vẫn ưu tiên roll/pitch khi phải giảm yaw |
+| `MC_AIRMODE`         | Trình tự chính                                                                               | Chính sách                                                                  |
+| -------------------- | -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `0` — tắt            | Trộn chưa có yaw → chỉ giảm thrust khi giải bão hòa → hiệu chỉnh roll/pitch → thêm yaw riêng | Không tăng thrust để cứu quyền điều khiển                                   |
+| `1` — roll/pitch     | Trộn chưa có yaw → dịch thrust → thêm yaw riêng                                              | Cho phép tăng/giảm thrust để giữ roll/pitch; yaw không được làm tăng thrust |
+| `2` — roll/pitch/yaw | Trộn đủ các trục → dịch thrust → giải bão hòa theo yaw                                       | Cho phép dịch thrust cho RPY; vẫn ưu tiên roll/pitch khi phải giảm yaw      |
 
 Nhánh `mixYaw()` tạm nới trần tính toán bằng `MINIMUM_YAW_MARGIN = 0.15`, hiệu chỉnh yaw rồi giảm thrust để trở lại giới hạn. Đây là biên trong thuật toán, không phải cho phép đầu ra vật lý vượt 100%.
 
@@ -369,11 +369,11 @@ Nguồn: [kiểm tra mất cân bằng](../external/repos/ardupilot/libraries/AP
 Bảng quad X trong bản khảo sát, theo thứ tự `(throttle, roll, pitch, yaw)`:
 
 | Motor trong bảng | Throttle | Roll | Pitch | Yaw |
-|---|---:|---:|---:|---:|
-| Sau-phải | 1 | -1 | +1 | -1 |
-| Trước-phải | 1 | -1 | -1 | +1 |
-| Sau-trái | 1 | +1 | +1 | +1 |
-| Trước-trái | 1 | +1 | -1 | -1 |
+| ---------------- | -------: | ---: | ----: | --: |
+| Sau-phải         |        1 |   -1 |    +1 |  -1 |
+| Trước-phải       |        1 |   -1 |    -1 |  +1 |
+| Sau-trái         |        1 |   +1 |    +1 |  +1 |
+| Trước-trái       |        1 |   +1 |    -1 |  -1 |
 
 Đây là bảng của Betaflight, khác thứ tự và quy ước ví dụ ở mục 3. Đặc biệt, `mixTable()` còn đổi dấu yaw theo `yaw_motors_reversed`. Không thể suy ra đầy đủ chiều quay vật lý chỉ bằng một cột của bảng.
 
@@ -409,11 +409,11 @@ Nguồn: [tính phần RPY](../external/repos/betaflight/src/main/flight/mixer.c
 
 ### 7.3. Các chính sách mixer trong bản cục bộ
 
-| Chính sách | Cách làm ở mức thuật toán |
-|---|---|
-| `MIXER_LEGACY` | Chuẩn hóa dải chênh motor và giới hạn throttle theo khoảng còn lại |
-| `MIXER_LINEAR` | Thêm một độ dịch chung phụ thuộc throttle và dải chênh, rồi chuẩn hóa và giới hạn throttle |
-| `MIXER_DYNAMIC` | Dùng cùng hàm với linear nhưng độ dịch phụ thuộc độ lớn của từng phần tử mix |
+| Chính sách        | Cách làm ở mức thuật toán                                                                                        |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `MIXER_LEGACY`    | Chuẩn hóa dải chênh motor và giới hạn throttle theo khoảng còn lại                                               |
+| `MIXER_LINEAR`    | Thêm một độ dịch chung phụ thuộc throttle và dải chênh, rồi chuẩn hóa và giới hạn throttle                       |
+| `MIXER_DYNAMIC`   | Dùng cùng hàm với linear nhưng độ dịch phụ thuộc độ lớn của từng phần tử mix                                     |
 | `MIXER_EZLANDING` | Tính biên theo throttle, độ lệch stick và tốc độ nếu có GPS; có thể giảm thêm phần mix để hỗ trợ hành vi hạ cánh |
 
 Tên `LINEAR/DYNAMIC` ở bảng này nói về chính sách mixer trong Betaflight, không đồng nghĩa với phép tuyến tính hóa đường cong lực đẩy motor. Cần đọc hai chức năng riêng.
@@ -449,11 +449,11 @@ Nguồn: [range dùng trong crash recovery](../external/repos/betaflight/src/mai
 
 `powerDistribution()` chọn đường xử lý theo `controlMode`:
 
-| Chế độ | Đầu vào | Cách chuyển sang lệnh từng motor |
-|---|---|---|
-| `controlModeLegacy` | `thrust`, `roll`, `pitch`, `yaw` theo scale cũ | Công thức cộng trừ cố định; roll/pitch chia 2 trước khi trộn |
-| `controlModeForceTorque` | Tổng thrust SI và mô-men ba trục | Chia tổng lực cho 4, chia mô-men theo arm và hệ số thrust-to-torque |
-| `controlModeForce` | `normalizedForces[i]` cho từng motor | Cắt từng giá trị vào `[0,1]`, scale sang miền số nguyên |
+| Chế độ                   | Đầu vào                                        | Cách chuyển sang lệnh từng motor                                    |
+| ------------------------ | ---------------------------------------------- | ------------------------------------------------------------------- |
+| `controlModeLegacy`      | `thrust`, `roll`, `pitch`, `yaw` theo scale cũ | Công thức cộng trừ cố định; roll/pitch chia 2 trước khi trộn        |
+| `controlModeForceTorque` | Tổng thrust SI và mô-men ba trục               | Chia tổng lực cho 4, chia mô-men theo arm và hệ số thrust-to-torque |
+| `controlModeForce`       | `normalizedForces[i]` cho từng motor           | Cắt từng giá trị vào `[0,1]`, scale sang miền số nguyên             |
 
 Nhánh legacy:
 
@@ -587,17 +587,17 @@ Nguồn: [gain yaw](../external/repos/Quadcopter/Application/Algorithm/PID.c#L73
 
 Bảng này chỉ nói về đường multicopter đã đọc. “Không thấy” có nghĩa chưa thấy trong đường đó, không khẳng định toàn bộ repository không có chức năng tương tự.
 
-| Tiêu chí | PX4 | ArduPilot | Betaflight | Crazyflie |
-|---|---|---|---|---|
-| Biểu diễn hình học | Vị trí, trục rotor, hệ số hiệu lực | Góc/bảng hệ số và cấu hình khung | Bảng hệ số và custom mixer | Công thức quad cố định |
-| Đầu vào chính | Vector torque/thrust; có scale chuẩn hóa | RPY/throttle chuẩn hóa, có feed-forward | Tổng PID được scale và throttle | Legacy, SI ForceTorque hoặc force từng motor |
-| Xử lý bão hòa | Giả nghịch đảo + clip hoặc giải bão hòa tuần tự | Giới hạn yaw, co RPY, chọn throttle | Co dải và dịch throttle; nhiều chính sách | Trừ chung khi vượt trần, rồi chặn sàn |
-| Ưu tiên riêng yaw | Có trong sequential desaturation | Có tính yaw allowance/headroom | Legacy co RPY chung; yaw có giới hạn PID riêng | Không thấy giải bão hòa riêng yaw |
-| Giữ điều khiển khi ga thấp | Tùy `MC_AIRMODE` | Theo throttle mix và giới hạn trung bình | Airmode và chính sách transition | Sàn idle; không thấy chính sách airmode tương đương |
-| Mô hình thrust → tín hiệu | Ở lớp output motor | `Thrust_Linearization` | Hook thrust linearization | Mô hình motor/bù pin khi bật cấu hình |
-| Phản hồi đến controller | Phần dư và bão hòa theo chiều/trục | Cờ giới hạn từng trục | Có range; PID có giới hạn I-term riêng | Cờ cap dùng cho cảnh báo trong đường đã đọc |
-| Quản lý motor lỗi | Thay ma trận khi đã tiếp nhận lỗi | Phát hiện mất cân bằng và logic boost, có điều kiện ≥6 motor | Không thấy tái phân bổ do mất motor trong đường đã đọc | Không thấy trong power distribution quad |
-| Mức độ tổng quát | Cao: tách effectiveness/allocator/output | Cao trong hệ AP_Motors, nhiều lớp khung | Rất nhiều chế độ quanh đường điều khiển motor | Gọn, thuận tiện nghiên cứu quad |
+| Tiêu chí                   | PX4                                             | ArduPilot                                                    | Betaflight                                             | Crazyflie                                           |
+| -------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------ | --------------------------------------------------- |
+| Biểu diễn hình học         | Vị trí, trục rotor, hệ số hiệu lực              | Góc/bảng hệ số và cấu hình khung                             | Bảng hệ số và custom mixer                             | Công thức quad cố định                              |
+| Đầu vào chính              | Vector torque/thrust; có scale chuẩn hóa        | RPY/throttle chuẩn hóa, có feed-forward                      | Tổng PID được scale và throttle                        | Legacy, SI ForceTorque hoặc force từng motor        |
+| Xử lý bão hòa              | Giả nghịch đảo + clip hoặc giải bão hòa tuần tự | Giới hạn yaw, co RPY, chọn throttle                          | Co dải và dịch throttle; nhiều chính sách              | Trừ chung khi vượt trần, rồi chặn sàn               |
+| Ưu tiên riêng yaw          | Có trong sequential desaturation                | Có tính yaw allowance/headroom                               | Legacy co RPY chung; yaw có giới hạn PID riêng         | Không thấy giải bão hòa riêng yaw                   |
+| Giữ điều khiển khi ga thấp | Tùy `MC_AIRMODE`                                | Theo throttle mix và giới hạn trung bình                     | Airmode và chính sách transition                       | Sàn idle; không thấy chính sách airmode tương đương |
+| Mô hình thrust → tín hiệu  | Ở lớp output motor                              | `Thrust_Linearization`                                       | Hook thrust linearization                              | Mô hình motor/bù pin khi bật cấu hình               |
+| Phản hồi đến controller    | Phần dư và bão hòa theo chiều/trục              | Cờ giới hạn từng trục                                        | Có range; PID có giới hạn I-term riêng                 | Cờ cap dùng cho cảnh báo trong đường đã đọc         |
+| Quản lý motor lỗi          | Thay ma trận khi đã tiếp nhận lỗi               | Phát hiện mất cân bằng và logic boost, có điều kiện ≥6 motor | Không thấy tái phân bổ do mất motor trong đường đã đọc | Không thấy trong power distribution quad            |
+| Mức độ tổng quát           | Cao: tách effectiveness/allocator/output        | Cao trong hệ AP_Motors, nhiều lớp khung                      | Rất nhiều chế độ quanh đường điều khiển motor          | Gọn, thuận tiện nghiên cứu quad                     |
 
 Điểm chung đáng chú ý: cả bốn đều vượt xa một dòng `motor = throttle ± PID`. Tuy vậy, chúng đánh đổi khác nhau giữa lực nâng, mô-men, tính tổng quát và độ đơn giản tính toán.
 
@@ -625,14 +625,14 @@ ControlDemand
     → MotorDriver
 ```
 
-| Khối | Trách nhiệm cần rõ |
-|---|---|
-| `ControlDemand` | Đơn vị, dấu, scale của R/P/Y và thrust |
-| `MixerGeometry` | Số motor, vị trí, chiều quay, thứ tự motor logic |
-| `AllocationPolicy` | Phân bổ và quyết định ưu tiên khi không đủ khả năng |
-| `MotorModel` | Chuyển lực sang tín hiệu, bù hiệu lực theo mô hình |
-| `OutputLimitsAndState` | Idle, slew, arm/disarm, giới hạn cuối |
-| `MotorDriver` | Ánh xạ kênh và phát giao thức phần cứng |
+| Khối                   | Trách nhiệm cần rõ                                  |
+| ---------------------- | --------------------------------------------------- |
+| `ControlDemand`        | Đơn vị, dấu, scale của R/P/Y và thrust              |
+| `MixerGeometry`        | Số motor, vị trí, chiều quay, thứ tự motor logic    |
+| `AllocationPolicy`     | Phân bổ và quyết định ưu tiên khi không đủ khả năng |
+| `MotorModel`           | Chuyển lực sang tín hiệu, bù hiệu lực theo mô hình  |
+| `OutputLimitsAndState` | Idle, slew, arm/disarm, giới hạn cuối               |
+| `MotorDriver`          | Ánh xạ kênh và phát giao thức phần cứng             |
 
 Giới hạn vật lý nên được allocator biết trước càng đầy đủ càng tốt. Lớp đầu ra vẫn cần chặn cuối; nếu bước mô hình hoặc slew làm thay đổi đáng kể kết quả thì thông tin phản hồi cũng cần phản ánh điều đó.
 
@@ -669,20 +669,20 @@ MixerResult:
 
 ## 12. Những tình huống cần kiểm tra khi tự triển khai
 
-| Tình huống | Điều cần quan sát |
-|---|---|
-| Chỉ thrust | Các motor bằng nhau đối với khung/motor đối xứng |
-| Chỉ roll, chỉ pitch, chỉ yaw | Đúng nhóm motor tăng/giảm và đúng dấu mô-men |
-| Thrust cao + roll/pitch | Có dịch throttle hoặc giảm yêu cầu theo chính sách, tránh clip gây lệch trục ngoài ý muốn |
-| Thrust thấp + roll/pitch | Khác biệt giữa cho phép và không cho phép nâng throttle để giữ điều khiển |
-| Yaw lớn cùng roll/pitch | Trình tự giảm ưu tiên hoạt động đúng |
-| Dải chênh lớn hơn biên actuator | Mọi đầu ra nằm trong miền, trạng thái thiếu khả năng được phản ánh |
-| Giới hạn riêng hoặc hệ số motor khác nhau | Không giả định phép dịch đều vẫn giữ nguyên mô-men |
-| Slew rate đang tác động | Phản hồi xét được quyền điều khiển giảm tạm thời |
-| Disarm, idle, spool | Chuyển trạng thái đúng, yêu cầu PID không vượt qua điều kiện cho phép motor |
-| Điện áp thay đổi | Phân biệt lệnh lực, tín hiệu điện và thời điểm chạm giới hạn |
-| Ma trận gần suy biến | Không xuất gain lớn bất thường; báo các trục không còn độc lập |
-| Bão hòa kéo dài rồi trở lại miền khả thi | I-term hồi phục, không tích lũy vượt khả năng actuator |
+| Tình huống                                | Điều cần quan sát                                                                         |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Chỉ thrust                                | Các motor bằng nhau đối với khung/motor đối xứng                                          |
+| Chỉ roll, chỉ pitch, chỉ yaw              | Đúng nhóm motor tăng/giảm và đúng dấu mô-men                                              |
+| Thrust cao + roll/pitch                   | Có dịch throttle hoặc giảm yêu cầu theo chính sách, tránh clip gây lệch trục ngoài ý muốn |
+| Thrust thấp + roll/pitch                  | Khác biệt giữa cho phép và không cho phép nâng throttle để giữ điều khiển                 |
+| Yaw lớn cùng roll/pitch                   | Trình tự giảm ưu tiên hoạt động đúng                                                      |
+| Dải chênh lớn hơn biên actuator           | Mọi đầu ra nằm trong miền, trạng thái thiếu khả năng được phản ánh                        |
+| Giới hạn riêng hoặc hệ số motor khác nhau | Không giả định phép dịch đều vẫn giữ nguyên mô-men                                        |
+| Slew rate đang tác động                   | Phản hồi xét được quyền điều khiển giảm tạm thời                                          |
+| Disarm, idle, spool                       | Chuyển trạng thái đúng, yêu cầu PID không vượt qua điều kiện cho phép motor               |
+| Điện áp thay đổi                          | Phân biệt lệnh lực, tín hiệu điện và thời điểm chạm giới hạn                              |
+| Ma trận gần suy biến                      | Không xuất gain lớn bất thường; báo các trục không còn độc lập                            |
+| Bão hòa kéo dài rồi trở lại miền khả thi  | I-term hồi phục, không tích lũy vượt khả năng actuator                                    |
 
 Trong mã nguồn đã đọc, PX4 có các test riêng cho collective thrust, RPY tại thrust cao/thấp, ba chế độ airmode, trục phụ thuộc và tình huống sau motor failure. Đây là nguồn tham khảo tốt để thiết kế ca kiểm tra.
 
@@ -696,36 +696,36 @@ Nguồn: [PX4 sequential desaturation tests](../external/repos/PX4-Autopilot/src
 
 Đường dẫn trong bảng tương đối với `docs/external/repos/`.
 
-| Dự án | Tệp/hàm | Câu hỏi mà nó giải đáp |
-|---|---|---|
-| PX4 | `src/modules/control_allocator/ControlAllocator.cpp` — `Run()` | Đầu vào, thứ tự phân bổ/giới hạn và đầu ra |
-| PX4 | `src/modules/control_allocator/VehicleActuatorEffectiveness/ActuatorEffectivenessRotors.cpp` — `computeEffectivenessMatrix()` | Hình học rotor trở thành lực/mô-men như thế nào |
-| PX4 | `src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp` | Tính, chuẩn hóa và sử dụng giả nghịch đảo |
-| PX4 | `src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp` | Ưu tiên airmode và giải bão hòa theo vector |
-| PX4 | `src/lib/mixer_module/functions/FunctionMotors.hpp` | Thrust chuyển thành tín hiệu motor ra sao |
-| ArduPilot | `libraries/AP_Motors/AP_MotorsMatrix.cpp` | Cấu hình khung, trộn RPY/throttle, yaw headroom |
-| ArduPilot | `libraries/AP_Motors/AP_MotorsMulticopter.cpp` | Giới hạn dòng, spool, slew và ánh xạ đầu ra |
-| ArduPilot | `libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp` | Đường cong lực và bù hiệu lực |
-| ArduPilot | `libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp` | Controller cấp lệnh và sử dụng cờ giới hạn |
-| Betaflight | `src/main/flight/mixer_init.c` | Bảng hệ số và khởi tạo cấu hình |
-| Betaflight | `src/main/flight/mixer.c` | Toàn bộ đường trộn, airmode, idle và đầu ra |
-| Betaflight | `src/main/flight/pid.c` | Các giới hạn PID và cách dùng thông tin mixer |
-| Crazyflie | `src/modules/src/power_distribution_quadrotor.c` | Ba giao diện và thuật toán capping |
-| Crazyflie | `src/modules/src/stabilizer.c` — `controlMotors()` | Thứ tự distribution, bù pin, cap, ghi motor |
-| Crazyflie | `src/drivers/src/motors.c` — `motorsCompensateBatteryVoltage()` | Mô hình lực/điện áp và duty |
+| Dự án      | Tệp/hàm                                                                                                                       | Câu hỏi mà nó giải đáp                          |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| PX4        | `src/modules/control_allocator/ControlAllocator.cpp` — `Run()`                                                                | Đầu vào, thứ tự phân bổ/giới hạn và đầu ra      |
+| PX4        | `src/modules/control_allocator/VehicleActuatorEffectiveness/ActuatorEffectivenessRotors.cpp` — `computeEffectivenessMatrix()` | Hình học rotor trở thành lực/mô-men như thế nào |
+| PX4        | `src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp`                                            | Tính, chuẩn hóa và sử dụng giả nghịch đảo       |
+| PX4        | `src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp`                                   | Ưu tiên airmode và giải bão hòa theo vector     |
+| PX4        | `src/lib/mixer_module/functions/FunctionMotors.hpp`                                                                           | Thrust chuyển thành tín hiệu motor ra sao       |
+| ArduPilot  | `libraries/AP_Motors/AP_MotorsMatrix.cpp`                                                                                     | Cấu hình khung, trộn RPY/throttle, yaw headroom |
+| ArduPilot  | `libraries/AP_Motors/AP_MotorsMulticopter.cpp`                                                                                | Giới hạn dòng, spool, slew và ánh xạ đầu ra     |
+| ArduPilot  | `libraries/AP_Motors/AP_Motors_Thrust_Linearization.cpp`                                                                      | Đường cong lực và bù hiệu lực                   |
+| ArduPilot  | `libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp`                                                                   | Controller cấp lệnh và sử dụng cờ giới hạn      |
+| Betaflight | `src/main/flight/mixer_init.c`                                                                                                | Bảng hệ số và khởi tạo cấu hình                 |
+| Betaflight | `src/main/flight/mixer.c`                                                                                                     | Toàn bộ đường trộn, airmode, idle và đầu ra     |
+| Betaflight | `src/main/flight/pid.c`                                                                                                       | Các giới hạn PID và cách dùng thông tin mixer   |
+| Crazyflie  | `src/modules/src/power_distribution_quadrotor.c`                                                                              | Ba giao diện và thuật toán capping              |
+| Crazyflie  | `src/modules/src/stabilizer.c` — `controlMotors()`                                                                            | Thứ tự distribution, bù pin, cap, ghi motor     |
+| Crazyflie  | `src/drivers/src/motors.c` — `motorsCompensateBatteryVoltage()`                                                               | Mô hình lực/điện áp và duty                     |
 
 ## Phụ lục: nhận diện bản mã nguồn đã khảo sát
 
 Các giá trị SHA-256 dưới đây giúp đối chiếu tệp khi bản sao cục bộ thay đổi. Chúng không thay thế commit upstream và không biểu thị firmware đã được kiểm thử.
 
-| Tệp trong `docs/external/repos/` | SHA-256 |
-|---|---|
-| `PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp` | `4bc5a8ba318f4205cab9e98d2ed824ca6ad07a4ff07c305413198908dd71c758` |
+| Tệp trong `docs/external/repos/`                                                                          | SHA-256                                                            |
+| --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp`                                        | `4bc5a8ba318f4205cab9e98d2ed824ca6ad07a4ff07c305413198908dd71c758` |
 | `PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationSequentialDesaturation.cpp` | `07e60bc11a9948d41c99950fd99fff06368bb6203f05b79d64386a0a04351d7c` |
-| `PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp` | `646b13263af5f445a24baf2b023c930764b8b2627ccaac3f5413e95b1fbb5e4e` |
-| `ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp` | `54118f5782b699b890da825ac5bfe44bf11aa0d2db8a279fdd8786dbaf6f92b2` |
-| `betaflight/src/main/flight/mixer.c` | `01ff88196ec18accd1c6f5cd3a212fe359a17d3a72657ef2a61b52334714e5f3` |
-| `crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c` | `07017878341e15cc2f70406f3a9cc5ea97cb77acf57aac369205154a3614b1d6` |
-| `Arduino-Quadcopter/Quadcopter/Control.ino` | `c8038192b3bc9025aac054245ec33beec30248af4f091649388dfe630aa07db6` |
-| `MonteQuadcopter/src/MonteQuadcopter.ino` | `bad1c03ca3b62629aedf14898252b1c424034e219b43a68fbd0d65ac6106f0fe` |
-| `Quadcopter/Application/Algorithm/PID.c` | `d8a7998560d854a08ce9c9c9e404b9c0121b5667cc4e887a5e4453a705170f99` |
+| `PX4-Autopilot/src/lib/control_allocation/control_allocation/ControlAllocationPseudoInverse.cpp`          | `646b13263af5f445a24baf2b023c930764b8b2627ccaac3f5413e95b1fbb5e4e` |
+| `ardupilot/libraries/AP_Motors/AP_MotorsMatrix.cpp`                                                       | `54118f5782b699b890da825ac5bfe44bf11aa0d2db8a279fdd8786dbaf6f92b2` |
+| `betaflight/src/main/flight/mixer.c`                                                                      | `01ff88196ec18accd1c6f5cd3a212fe359a17d3a72657ef2a61b52334714e5f3` |
+| `crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c`                                       | `07017878341e15cc2f70406f3a9cc5ea97cb77acf57aac369205154a3614b1d6` |
+| `Arduino-Quadcopter/Quadcopter/Control.ino`                                                               | `c8038192b3bc9025aac054245ec33beec30248af4f091649388dfe630aa07db6` |
+| `MonteQuadcopter/src/MonteQuadcopter.ino`                                                                 | `bad1c03ca3b62629aedf14898252b1c424034e219b43a68fbd0d65ac6106f0fe` |
+| `Quadcopter/Application/Algorithm/PID.c`                                                                  | `d8a7998560d854a08ce9c9c9e404b9c0121b5667cc4e887a5e4453a705170f99` |

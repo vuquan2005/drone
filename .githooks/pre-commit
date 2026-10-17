@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# Git pre-commit hook: Auto-format staged files before committing.
+# Respects .clang-format-ignore, .prettierignore, and CubeMX generated code.
+
+set -e
+
+# Get list of staged files (Added, Copied, Modified)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+# Track if any formatting tool updated files
+for FILE in $STAGED_FILES; do
+    [ ! -f "$FILE" ] && continue
+
+    case "$FILE" in
+        # C/C++ source and header files
+        # Note: Core/ and Drivers/ are protected by .clang-format (DisableFormat: true)
+        *.c|*.h|*.cpp|*.hpp)
+            if command -v clang-format >/dev/null 2>&1; then
+                clang-format -i "$FILE"
+                git add "$FILE"
+            fi
+            ;;
+
+        # Markdown, JSON, YAML files (Prettier respects .prettierignore)
+        *.md|*.json|*.jsonc|*.yaml|*.yml)
+            if command -v prettier >/dev/null 2>&1; then
+                prettier --write "$FILE" >/dev/null 2>&1 || true
+                git add "$FILE"
+            elif command -v npx >/dev/null 2>&1; then
+                npx --yes prettier --write "$FILE" >/dev/null 2>&1 || true
+                git add "$FILE"
+            fi
+            ;;
+
+        # CMake files (skip CubeMX auto-generated cmake directory)
+        CMakeLists.txt|*.cmake)
+            case "$FILE" in
+                */cmake/stm32cubemx/*)
+                    # Skip CubeMX internal generated cmake
+                    ;;
+                *)
+                    if command -v cmake-format >/dev/null 2>&1; then
+                        cmake-format -i "$FILE"
+                        git add "$FILE"
+                    fi
+                    ;;
+            esac
+            ;;
+    esac
+done
+
+exit 0

@@ -18,13 +18,13 @@
   },
   "prettier.requireConfig": true,
   "[markdown]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[jsonc]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[yaml]": {
     "editor.defaultFormatter": "redhat.vscode-yaml",
@@ -33,16 +33,16 @@
   "yaml.validate": true,
   "yaml.format.enable": true,
   "[cmake]": {
-    "editor.defaultFormatter": "cheshirekow.cmake-format",
+    "editor.defaultFormatter": "cheshirekow.cmake-format"
   },
   "[latex]": {
-    "editor.defaultFormatter": "James-Yu.latex-workshop",
+    "editor.defaultFormatter": "James-Yu.latex-workshop"
   },
   "[latex-package]": {
-    "editor.defaultFormatter": "James-Yu.latex-workshop",
+    "editor.defaultFormatter": "James-Yu.latex-workshop"
   },
   "[bibtex]": {
-    "editor.defaultFormatter": "James-Yu.latex-workshop",
+    "editor.defaultFormatter": "James-Yu.latex-workshop"
   },
   "latex-workshop.formatting.latex": "latexindent",
   "latex-workshop.linting.chktex.enabled": true,
@@ -61,10 +61,10 @@
   ],
   "C_Cpp.intelliSenseEngine": "disabled",
   "[c]": {
-    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd",
+    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
   },
   "[cpp]": {
-    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd",
+    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
   },
   "latex-workshop.latex.outDir": "%DIR%/build",
   "latex-workshop.latex.auxDir": "%OUTDIR%",

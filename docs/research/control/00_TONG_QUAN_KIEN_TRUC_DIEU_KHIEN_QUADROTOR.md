@@ -1,6 +1,7 @@
 # TỔNG QUAN KIẾN TRÚC ĐIỀU KHIỂN QUADROTOR TỪ CÁC DỰ ÁN MÃ NGUỒN MỞ
 
 Tài liệu này phân tích và tổng hợp kiến trúc điều khiển bay của 7 dự án mã nguồn mở có trong thư mục `docs/external/repos`:
+
 1. **Arduino-Quadcopter** (ATmega328P - Đơn giản nhất)
 2. **MonteQuadcopter** (Arduino/Teensy - Cơ bản)
 3. **Quadcopter** (STM32F4 + uCOS-II RTOS - PID xếp tầng kinh điển)
@@ -13,15 +14,15 @@ Tài liệu này phân tích và tổng hợp kiến trúc điều khiển bay c
 
 ## 1. Bảng so sánh tổng quan giữa các dự án
 
-| Dự án | Số vòng điều khiển | Cấu trúc bộ điều khiển | Biểu diễn tư thế | Xử lý Mixer & Bão hòa (Saturation) | Tính năng nổi bật |
-| :--- | :---: | :--- | :--- | :--- | :--- |
-| **Arduino-Quadcopter** | 1 vòng | Single PID (Góc trực tiếp ra PWM) | Euler (Roll, Pitch, Yaw) | Phép cộng/trừ cơ bản, không xử lý bão hòa | Thích hợp làm quen khái niệm nhập môn |
-| **MonteQuadcopter** | 1 vòng | Single PID (Góc ra tốc độ động cơ) | Euler (Roll, Pitch) | Phép cộng/trừ cơ bản, kẹp giá trị [0, 255] | Đơn giản, điều khiển qua Processing UI |
-| **Quadcopter (STM32)** | 2 vòng | Cascade PID (Vòng ngoài Góc $\to$ Vòng trong Vận tốc góc) | Euler (Madgwick / Mahony AHRS) | Phép cộng/trừ trực tiếp ra PWM [1000, 2000] | Chuyển chế độ Yaw (Giữ góc vs Quay góc tự do) |
-| **crazyflie-firmware** | 4 vòng | Cascade PID / Mellinger SE(3) / INDI | Euler + Quaternion + Rotation Matrix | Capping giảm đều lực đẩy (Thrust Reduction) để ưu tiên tư thế | Hỗ trợ nhiều bộ điều khiển hiện đại (Mellinger, INDI) |
-| **betaflight** | 1-2 vòng | 2-DOF Rate PID + FeedForward (Acro) / Cascade Angle (Angle mode) | Euler (IMU complementary) | **Airmode**: Tự động dời và co giãn dải ga (Throttle shifting/normalization) | Xử lý nhiễu cực mạnh (RPM filter, Dyn Notch, D_MAX, Anti-Gravity) |
-| **PX4-Autopilot** | 4 vòng | Cascade: Pos P $\to$ Vel PID $\to$ Att Quat P $\to$ Rate PID | Quaternion ($\mathbf{q}$) | **Sequential Desaturation**: Ưu tiên Roll/Pitch $\to$ Thrust $\to$ Yaw | Chuẩn hóa hướng đối tượng, tách biệt Control Allocation |
-| **ardupilot** | 4 vòng | Cascade: Pos Leash $\to$ Vel PID $\to$ Att Sqrt-P $\to$ Rate PID+FF | Quaternion + Rotation Matrix | **AP_MotorsMatrix**: Dynamic Headroom + Throttle-RPY Mix | Ổn định công nghiệp, bù điện áp pin, chống rớt khi mất 1 motor |
+| Dự án                  | Số vòng điều khiển | Cấu trúc bộ điều khiển                                              | Biểu diễn tư thế                     | Xử lý Mixer & Bão hòa (Saturation)                                           | Tính năng nổi bật                                                 |
+| :--------------------- | :----------------: | :------------------------------------------------------------------ | :----------------------------------- | :--------------------------------------------------------------------------- | :---------------------------------------------------------------- |
+| **Arduino-Quadcopter** |       1 vòng       | Single PID (Góc trực tiếp ra PWM)                                   | Euler (Roll, Pitch, Yaw)             | Phép cộng/trừ cơ bản, không xử lý bão hòa                                    | Thích hợp làm quen khái niệm nhập môn                             |
+| **MonteQuadcopter**    |       1 vòng       | Single PID (Góc ra tốc độ động cơ)                                  | Euler (Roll, Pitch)                  | Phép cộng/trừ cơ bản, kẹp giá trị [0, 255]                                   | Đơn giản, điều khiển qua Processing UI                            |
+| **Quadcopter (STM32)** |       2 vòng       | Cascade PID (Vòng ngoài Góc $\to$ Vòng trong Vận tốc góc)           | Euler (Madgwick / Mahony AHRS)       | Phép cộng/trừ trực tiếp ra PWM [1000, 2000]                                  | Chuyển chế độ Yaw (Giữ góc vs Quay góc tự do)                     |
+| **crazyflie-firmware** |       4 vòng       | Cascade PID / Mellinger SE(3) / INDI                                | Euler + Quaternion + Rotation Matrix | Capping giảm đều lực đẩy (Thrust Reduction) để ưu tiên tư thế                | Hỗ trợ nhiều bộ điều khiển hiện đại (Mellinger, INDI)             |
+| **betaflight**         |      1-2 vòng      | 2-DOF Rate PID + FeedForward (Acro) / Cascade Angle (Angle mode)    | Euler (IMU complementary)            | **Airmode**: Tự động dời và co giãn dải ga (Throttle shifting/normalization) | Xử lý nhiễu cực mạnh (RPM filter, Dyn Notch, D_MAX, Anti-Gravity) |
+| **PX4-Autopilot**      |       4 vòng       | Cascade: Pos P $\to$ Vel PID $\to$ Att Quat P $\to$ Rate PID        | Quaternion ($\mathbf{q}$)            | **Sequential Desaturation**: Ưu tiên Roll/Pitch $\to$ Thrust $\to$ Yaw       | Chuẩn hóa hướng đối tượng, tách biệt Control Allocation           |
+| **ardupilot**          |       4 vòng       | Cascade: Pos Leash $\to$ Vel PID $\to$ Att Sqrt-P $\to$ Rate PID+FF | Quaternion + Rotation Matrix         | **AP_MotorsMatrix**: Dynamic Headroom + Throttle-RPY Mix                     | Ổn định công nghiệp, bù điện áp pin, chống rớt khi mất 1 motor    |
 
 ---
 

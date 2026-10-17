@@ -1,0 +1,48 @@
+\chapter[CHẾ TẠO MÔ HÌNH VÀ ĐÁNH GIÁ HỆ THỐNG]{CHẾ TẠO MÔ HÌNH VÀ ĐÁNH GIÁ HOẠT ĐỘNG HỆ THỐNG} \label{chap:tombo-encoder}
+
+While the integration of $\mathcal{L}_1$Quad control with deformable Tombo propellers has shown promising results in mitigating the effects of minor collisions during trajectory-following flights, challenges remain when the quadrotor encounters strong or prolonged impacts. In such cases, significant and sustained reductions in propeller speed can prevent the controller from effectively compensating for thrust imbalances, leading to loss of stability or even crashes. This limitation highlights the need for a collision-aware mechanism that can detect severe impacts early and respond appropriately to prevent the vehicle from penetrating further into hazardous regions.
+
+To address this challenge, this chapter presents a sensing and control framework that augments the existing $\mathcal{L}_1$Quad system with real-time collision detection based on encoder feedback. By continuously monitoring propeller speeds, the system can identify the occurrence and location of collisions, enabling timely evasive maneuvers to avoid deeper intrusion into obstacles and reduce the risk of failure.
+
+This chapter presents the dynamic modeling foundation used to describe collisions of motorized deformable propellers and the key motor parameters used in the subsequent analysis.
+
+\section{Collision dynamics of motorized deformable propellers} \label{sec: collision modeling}
+\subsection{System Modeling}
+The electromechanical setup includes a deformable propeller, a \gls{BLDC} motor, and an external object that interacts with the system during collisions, as depicted in Figure~\ref{Collision image}. During impact, the propeller is seen to bend into three separate parts—comprising the hub and two rigid plastic blades—with the bending occurring at the soft nodus region. Drawing from these observations, a physical model of the system is then constructed for analysis. The dynamics are then derived using the Lagrangian method, allowing for the evaluation of the propeller’s angular velocity throughout the collision process.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.8]{Figures/Collision_Image_2.PNG}
+    \caption[Propeller collision deformation]{The deformation of the propeller when collisions happen with top view. The propeller folds into three segments at the locations of the nodus, similar to a three-link mechanism with the hubs acting as joints.}
+    \label{Collision image}
+\end{figure}
+
+\subsubsection{Modeling of BLDC Motor}
+The first dynamic model describes the \gls{BLDC} motor using a structure similar to that of a regular \gls{DC} motor, without changing the motor’s physical characteristics. This model includes important electrical components such as the armature resistance $R_a$, the winding inductance $L_a$, the back electromotive force, denoted as $e_b$, is directly associated with the rotor’s angular velocity. The output torque, $\tau_m$, is considered proportional to the armature current. Since the rotor also affects the motor’s rotation during operation, its mechanical properties need to be included in the model. In particular, the moment of inertia of the rotor—a key mechanical value—is calculated using SolidWorks, as shown in Figure~\ref{rotor}. The values used for modeling are based on the technical data of the SURPASS C2216-1120 Kv motor (Goolsky), presented in Table~\ref{Parametersmotor}.
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale=0.3]{Figures/rotor.pdf}
+    \captionsetup{width=\textwidth,justification=centering}
+    \caption{Rotor motor's moment of inertia about the rotational axis (SolidWorks)}
+    \label{rotor}
+\end{figure}
+
+\begin{table}[ht]
+\centering
+\captionsetup{width=\textwidth, justification=centering}
+\caption{Parameters of the motor}
+\label{Parametersmotor}
+\begin{tabular}{|p{0.14\textwidth}|p{0.46\textwidth}|p{0.22\textwidth}|}
+\hline
+Symbols & Definitions & Values \\
+\hline
+$K_t$ & Torque constant & 0.00853\,Nm/A \\
+$K_b$ & Back emf constant & 0.00853\,Vs/rad \\
+$R_a$ & Armature resistance & 0.18\,$\Omega$ \\
+$L_a$ & Armature Inductance & 0.000085\,H \\
+$b_m$ & Viscous damping factor of motor & 4.9e-5\,N\,m\,s/rad \\
+$J_r$ & Moment of inertia of the rotor motor & 3.95e-6\,kg\,m$^2$ \\
+$m_r$ & Mass of rotor motor & 0.03213\,kg \\
+\hline
+\end{tabular}
+\end{table}

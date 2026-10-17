@@ -1,0 +1,11 @@
+# Run latexmk from report/.
+$pdf_mode = 5; # XeLaTeX
+$out_dir = 'build';
+$aux_dir = 'build';
+$xelatex = 'xelatex -interaction=nonstopmode -halt-on-error -file-line-error %O %S';
+$bibtex_use = 2;
+$max_repeat = 5;
+
+# TeX include files write auxiliary files into matching subdirectories.
+use File::Path qw(make_path);
+make_path('build/frontmatter', 'build/chapters', 'build/appendices');

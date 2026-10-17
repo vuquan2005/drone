@@ -1,0 +1,27 @@
+{
+  "latex-workshop.latex.outDir": "%DIR%/build",
+  "latex-workshop.latex.auxDir": "%OUTDIR%",
+  "latex-workshop.latex.recipe.default": "thesis (XeLaTeX)",
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "thesis (XeLaTeX)",
+      "tools": ["thesis-latexmk"]
+    }
+  ],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "thesis-latexmk",
+      "command": "latexmk",
+      "args": [
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "-xelatex",
+        "-outdir=%OUTDIR%",
+        "%DOC%"
+      ],
+      "cwd": "%DIR%"
+    }
+  ],
+  "latex-workshop.view.pdf.viewer": "tab"
+}

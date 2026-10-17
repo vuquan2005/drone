@@ -33,4 +33,6 @@ Tài liệu được chia theo mục đích; xem [mục lục tài liệu](docs/
 2. Đọc [hướng dẫn Git](docs/guides/git.md): kiểm tra thay đổi, commit và đồng bộ.
 3. Đặt tài liệu hoặc mã mới vào thư mục tương ứng; tạo thư mục con khi có nội dung thực tế.
 
+Báo cáo: xem [hướng dẫn bộ khung LaTeX](report/README.md). Tệp chính là `report/main.tex`; thông tin bìa được điền tại `report/metadata.tex`.
+
 Quy ước ban đầu: `control/` chứa thuật toán độc lập; phần gọi STM32 HAL nằm trong `firmware/`, phần kết nối trình mô phỏng nằm trong `simulation/`.

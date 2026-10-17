@@ -1,0 +1,57 @@
+% !TEX program = xelatex
+\documentclass[14pt,a4paper,oneside]{extbook}
+
+\usepackage{kieu_bao_cao}
+
+\input{chu_viet_tat}
+
+\begin{document}
+
+\singlespacing
+
+\input{trang_bia}
+
+\pagenumbering{Roman}
+
+%%%%%%%%%%%%%%%% Tóm tắt và lời cảm ơn %%%%%%%%%%%%%%%
+\onehalfspacing
+\include{Chapters/mo_dau}
+\singlespacing
+
+%%%%%%%%%%%%%%%% Tóm tắt và lời cảm ơn end %%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%% Danh sách hình ảnh, bảng, thuật ngữ %%%%%%%%%%%%%%%
+
+{\sloppy
+\tableofcontents % chèn mục lục
+\listoffigures % chèn danh sách hình ảnh
+\listoftables % chèn danh sách bảng
+}
+
+\renewcommand{\acronymname}{DANH MỤC KÝ HIỆU, CHỮ VIẾT TẮT}
+\addcontentsline{toc}{chapter}{DANH MỤC KÝ HIỆU, CHỮ VIẾT TẮT}
+\printglossary[type=\acronymtype, nonumberlist]
+%%%%%%%%%%%%%%%% Danh sách hình ảnh, bảng, thuật ngữ end %%%%%%%%%%%%%%
+
+\cleardoublepage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\onehalfspacing
+
+%%%%%%%%%%%%%%%% Nội dung chính %%%%%%%%%%%%%%%%%%%%%%%%
+\include{Chapters/gioi_thieu_chung}
+\include{Chapters/chuong_2}
+\include{Chapters/chuong_3}
+\include{Chapters/chuong_4}
+\include{Chapters/ket_luan}
+%%%%%%%%%%%%%%%% Nội dung chính end %%%%%%%%%%%%%%%%%%%%%
+
+\appendix
+
+\bibliographystyle{ieeetr}
+\bibliography{tai_lieu_tham_khao}
+%%%%%%%%%%%%%%%% Tham khảo end %%%%%%%%%%%%%%%%%%%
+
+\cleardoublepage
+\end{document}

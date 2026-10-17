@@ -1,0 +1,20 @@
+# Build outputs and local indexes
+**/build/**
+**/cmake-build-*/**
+**/Debug/**
+**/Release/**
+.codegraph/**
+
+# Imported documents and external repositories
+docs/references/**
+docs/external/**
+
+# CubeMX-generated sources, metadata and build scripts
+firmware/drone/Core/**
+firmware/drone/Drivers/**
+firmware/drone/cmake/**
+firmware/drone/.settings/**
+
+# Experiment data
+experiments/raw/**
+experiments/processed/**

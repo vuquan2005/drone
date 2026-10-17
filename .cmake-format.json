@@ -1,0 +1,11 @@
+{
+  "format": {
+    "line_width": 100,
+    "tab_size": 4,
+    "use_tabchars": false,
+    "enable_sort": false
+  },
+  "markup": {
+    "enable_markup": false
+  }
+}

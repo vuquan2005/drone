@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "stmicroelectronics.stm32-vscode-extension",
+    "esbenp.prettier-vscode",
+    "redhat.vscode-yaml",
+    "cheshirekow.cmake-format"
+  ],
+  "unwantedRecommendations": ["ms-vscode.cpptools-extension-pack"]
+}

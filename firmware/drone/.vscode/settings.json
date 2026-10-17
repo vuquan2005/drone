@@ -1,26 +1,50 @@
 {
-    "cmake.useCMakePresets": "always",
-    "cmake.configureOnOpen": false,
-    "C_Cpp.intelliSenseEngine": "disabled",
-    "[c]": {
-        "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd",
-        "editor.formatOnSave": false
-    },
-    "[cpp]": {
-        "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd",
-        "editor.formatOnSave": false
-    },
-    "cmake.cmakePath": "cube-cmake",
-    "cmake.configureArgs": [
-        "-DCMAKE_COMMAND=cube-cmake"
-    ],
-    "cmake.preferredGenerators": [
-        "Ninja"
-    ],
-    "stm32cube-ide-clangd.path": "cube",
-    "stm32cube-ide-clangd.arguments": [
-        "starm-clangd",
-        "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc*",
-        "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++*"
-    ],
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    ".gitignore": ".gitattributes, .gitmodules",
+    "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
+    "*.ioc": ".mxproject",
+    "bundles.store.json": "bundles-lock.store.json"
+  },
+  "files.exclude": {
+    "**/build": true,
+    "**/cmake-build-*": true,
+    "**/.cache/clangd": true
+  },
+  "prettier.requireConfig": true,
+  "prettier.ignorePath": "../../.prettierignore",
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2
+  },
+  "yaml.validate": true,
+  "yaml.format.enable": true,
+  "[cmake]": {
+    "editor.defaultFormatter": "cheshirekow.cmake-format"
+  },
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": false,
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "[c]": {
+    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
+  },
+  "cmake.cmakePath": "cube-cmake",
+  "cmake.configureArgs": ["-DCMAKE_COMMAND=cube-cmake"],
+  "cmake.preferredGenerators": ["Ninja"],
+  "stm32cube-ide-clangd.path": "cube",
+  "stm32cube-ide-clangd.arguments": [
+    "starm-clangd",
+    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc*",
+    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++*"
+  ]
 }

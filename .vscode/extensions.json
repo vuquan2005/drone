@@ -3,8 +3,10 @@
     "stmicroelectronics.stm32-vscode-extension",
     "james-yu.latex-workshop",
     "tomoki1207.pdf",
+    "esbenp.prettier-vscode",
+    "davidanson.vscode-markdownlint",
+    "redhat.vscode-yaml",
+    "cheshirekow.cmake-format"
   ],
-  "unwantedRecommendations": [
-    "ms-vscode.cpptools-extension-pack"
-  ]
+  "unwantedRecommendations": ["ms-vscode.cpptools-extension-pack"]
 }

@@ -1,4 +1,52 @@
 {
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*, .clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore, codegraph.json",
+    ".gitignore": ".gitattributes, .gitmodules",
+    "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
+    "*.ioc": ".mxproject",
+    "bundles.store.json": "bundles-lock.store.json",
+    "main.tex": "metadata.tex, latexmkrc",
+    "*.tex": "$(capture).aux, $(capture).log, $(capture).out, $(capture).toc, $(capture).lof, $(capture).lot, $(capture).bbl, $(capture).blg, $(capture).bcf, $(capture).run.xml, $(capture).fls, $(capture).fdb_latexmk, $(capture).synctex.gz, $(capture).xdv, $(capture).pdf"
+  },
+  "files.exclude": {
+    "**/build": true,
+    "**/cmake-build-*": true,
+    "**/.codegraph": true,
+    "**/.cache/clangd": true
+  },
+  "prettier.requireConfig": true,
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.tabSize": 2
+  },
+  "yaml.validate": true,
+  "yaml.format.enable": true,
+  "[cmake]": {
+    "editor.defaultFormatter": "cheshirekow.cmake-format",
+  },
+  "[latex]": {
+    "editor.defaultFormatter": "James-Yu.latex-workshop",
+  },
+  "[latex-package]": {
+    "editor.defaultFormatter": "James-Yu.latex-workshop",
+  },
+  "[bibtex]": {
+    "editor.defaultFormatter": "James-Yu.latex-workshop",
+  },
+  "latex-workshop.formatting.latex": "latexindent",
+  "latex-workshop.linting.chktex.enabled": true,
+  "latex-workshop.linting.run": "onSave",
   "cmake.sourceDirectory": "${workspaceFolder}/firmware/drone",
   "cmake.useCMakePresets": "always",
   "cmake.configureOnOpen": false,
@@ -14,11 +62,9 @@
   "C_Cpp.intelliSenseEngine": "disabled",
   "[c]": {
     "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd",
-    "editor.formatOnSave": false
   },
   "[cpp]": {
     "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd",
-    "editor.formatOnSave": false
   },
   "latex-workshop.latex.outDir": "%DIR%/build",
   "latex-workshop.latex.auxDir": "%OUTDIR%",

@@ -30,12 +30,13 @@
 {\normalsize\bfseries \ThesisTitle\par}
 \vspace{1.3cm}
 
-\begin{tabular}{@{}>{\raggedleft\arraybackslash}p{4.5cm}>{\raggedright\arraybackslash}p{8.5cm}@{}}
-\textbf{Giáo viên hướng dẫn:} & \SupervisorName \\
-\textbf{Sinh viên thực hiện:} & \StudentName{} -- \StudentID \\
-\textbf{} & \SecondStudentName{} -- \SecondStudentID \\
-\textbf{} & \ThirdStudentName{} -- \ThirdStudentID \\
-\textbf{Lớp:} & \ClassName \\
+% Separate names and student IDs to align both columns.
+\begin{tabular}{@{}r@{\hspace{0.5cm}}l@{\enspace}c@{\enspace}l@{}}
+\textbf{Giáo viên hướng dẫn:} & \multicolumn{3}{@{}l@{}}{\SupervisorName} \\
+\textbf{Sinh viên thực hiện:} & \StudentName & -- & \StudentID \\
+& \SecondStudentName & -- & \SecondStudentID \\
+& \ThirdStudentName & -- & \ThirdStudentID \\
+\textbf{Lớp:} & \multicolumn{3}{@{}l@{}}{\ClassName} \\
 \end{tabular}
 \end{center}
 \end{titlepage}

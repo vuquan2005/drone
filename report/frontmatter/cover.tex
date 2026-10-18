@@ -3,7 +3,7 @@
 \thispagestyle{empty}
 \begin{tikzpicture}[remember picture,overlay]
     \node[inner sep=0pt] at (current page.center) {\includegraphics[width=\paperwidth,height=\paperheight]{figures/template/cover_frame.pdf}};
-    \node[anchor=south] at ([yshift=3.0cm]current page.south) {\large\itshape \SubmissionCity{} -- \SubmissionYear};
+    \node[anchor=south,text width=\paperwidth,align=center] at ([yshift=3.0cm]current page.south) {\large\itshape \SubmissionCity{} -- \SubmissionYear};
 \end{tikzpicture}
 
 \begin{center}
@@ -32,8 +32,9 @@
 
 \begin{tabular}{@{}p{6.0cm}>{\raggedright\arraybackslash}p{7.0cm}@{}}
 \textbf{Giáo viên hướng dẫn:} & \SupervisorName \\
-\textbf{Sinh viên thực hiện:} & \StudentName \\
-\textbf{Mã sinh viên:} & \StudentID \\
+\textbf{Sinh viên thực hiện:} & \StudentName{} -- \StudentID \\
+\textbf{} & \SecondStudentName{} -- \SecondStudentID \\
+\textbf{} & \ThirdStudentName{} -- \ThirdStudentID \\
 \textbf{Lớp:} & \ClassName \\
 \end{tabular}
 \end{center}

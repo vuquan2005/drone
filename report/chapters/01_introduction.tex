@@ -1,9 +1,125 @@
 % !TEX root = ../main.tex
 \chapter{GIỚI THIỆU CHUNG}
 \label{chap:introduction}
+\section{Bối cảnh nghiên cứu và Tính cấp thiết của đề tài}
+\label{sec:boi_canh}
 
-\section{[Section title]}
-\placeholder{Introduction content}
+Trong kỷ nguyên phát triển mạnh mẽ của công nghệ tự động hóa, robot học và trí tuệ nhân tạo, các thiết bị bay không người lái (Unmanned Aerial Vehicle - UAV), đặc biệt là dòng máy bay bốn cánh quạt (Quadrotor), đã trở thành một trong những đối tượng nghiên cứu trọng điểm thu hút sự quan tâm lớn từ cả giới hàn lâm lẫn công nghiệp. Nhờ khả năng cất và hạ cánh thẳng đứng (Vertical Take-Off and Landing - VTOL), khả năng bay treo cố định tại một vị trí trong không gian, cùng với cấu trúc cơ khí tối giản không đòi hỏi đĩa quay phức tạp như máy bay trực thăng truyền thống, Quadrotor sở hữu tính linh hoạt cao và độ cơ động vượt trội. Trong thực tiễn, Quadrotor đang được triển khai rộng rãi trong nhiều ứng dụng thiết thực như tìm kiếm cứu nạn, giám sát an ninh, quay phim hàng không, kiểm tra cơ sở hạ tầng, nông nghiệp thông minh và giao vận hàng hóa tự động.
 
-% Replace the placeholder reference with a verified source when writing.
-\placeholder{Citation example:~\cite{placeholder-reference}}
+Về mặt lý thuyết điều khiển, Quadrotor đại diện cho một hệ thống phi tuyến phức tạp, có kênh tác động chéo mạnh và thuộc lớp hệ thống tác động thiếu (Underactuated System). Thiết bị sở hữu 6 độ tự do không gian bao gồm 3 tọa độ vị trí tịnh tiến ($x, y, z$) và 3 góc tư thế xoay ($\phi, \theta, \psi$), nhưng hệ thống chỉ được chi phối trực tiếp bởi 4 lực đẩy độc lập sinh ra từ các động cơ. Do không có động cơ tạo lực đẩy ngang trực tiếp, mọi chuyển động tịnh tiến theo phương ngang bắt buộc phải thông qua việc nghiêng thân máy bay để phân tách vectơ tổng lực đẩy. Bên cạnh đó, các yếu tố nhiễu động từ gió ngoại cảnh, sự thay đổi tải trọng và sai số mô hình hóa luôn đặt ra thử thách lớn đối với bài toán ổn định và bám quỹ đạo. Do đó, việc nghiên cứu phát triển thuật toán điều khiển đáp ứng nhanh, ổn định và có độ tin cậy cao cho Quadrotor là một yêu cầu mang tính cấp thiết cả về mặt khoa học lẫn thực tiễn ứng dụng.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+            >=stealth,
+            font=\small,
+            motor/.style={
+                    draw,
+                    circle,
+                    fill=white,
+                    minimum size=1.4cm,
+                    align=center,
+                    inner sep=2pt
+                },
+            arm/.style={line width=1.2pt}
+        ]
+        \coordinate (center) at (0,0);
+        \coordinate (m1) at (-2,1.45);
+        \coordinate (m2) at (2,1.45);
+        \coordinate (m3) at (2,-1.45);
+        \coordinate (m4) at (-2,-1.45);
+        \draw[arm] (center) -- (m1);
+        \draw[arm] (center) -- (m2);
+        \draw[arm] (center) -- (m3);
+        \draw[arm] (center) -- (m4);
+        \node[motor] at (m1) {$M_1$\\$\odot\,T_1$};
+        \node[motor] at (m2) {$M_2$\\$\odot\,T_2$};
+        \node[motor] at (m3) {$M_3$\\$\odot\,T_3$};
+        \node[motor] at (m4) {$M_4$\\$\odot\,T_4$};
+        \node[draw, circle, minimum size=0.75cm] at (center) {};
+        \fill (center) circle (1.5pt);
+        \draw[->, thick] (0.15,0) -- (1.05,0)
+        node[midway, above] {$x_B$};
+        \draw[->, thick] (0,0.15) -- (0,1.05)
+        node[midway, left] {$y_B$};
+        \node[anchor=west] at (2.85,0.8) {$\odot\,T_i$: lực đẩy hướng theo $+z_B$};
+        \node[anchor=west] at (2.85,0.25) {$+z_B$: hướng ra khỏi mặt phẳng hình};
+        \node[anchor=west] at (2.85,-0.3) {$M_i$: động cơ thứ $i$};
+        \node[align=center] at (0,-2.35)
+        {Nhìn từ trên xuống; các động cơ bố trí theo cấu hình chữ X.};
+    \end{tikzpicture}
+    \caption{Sơ đồ cấu hình chữ X và vị trí các động cơ của Quadrotor.}
+    \label{fig:quadrotor_concept}
+\end{figure}
+
+\section{Tổng quan tình hình nghiên cứu}
+\label{sec:tong_quan}
+
+Bài toán điều khiển Quadrotor đã thu hút sự chú ý của đông đảo các nhà khoa học trên thế giới với nhiều hướng tiếp cận từ cổ điển đến hiện đại. Việc xem xét tổng quan các công trình nghiên cứu tiền đề giúp định hình phương pháp luận phù hợp cho đồ án này.
+
+Trước hết, thuật toán điều khiển PID (Proportional-Integral-Derivative) phản hồi kinh điển là giải pháp được áp dụng phổ biến nhất trong các bộ điều khiển bay thương mại và các nền tảng mã nguồn mở nhờ cấu trúc đơn giản, chi phí tính toán thấp và dễ dàng triển khai thực nghiệm. Tuy nhiên, do bản chất của PID dựa trên việc tuyến tính hóa xung quanh điểm cân bằng (hovering), chất lượng điều khiển sẽ giảm đáng kể khi hệ thống thực hiện các thao tác bay động học chuyển trạng thái nhanh hoặc chịu ảnh hưởng của nhiễu gió lớn.
+
+Để khắc phục hạn chế này, các phương pháp điều khiển tối ưu và điều khiển nâng cao như LQR (Linear Quadratic Regulator), điều khiển trượt (Sliding Mode Control - SMC), và điều khiển thích nghi (MRAC) đã được phát triển rộng rãi. Bộ điều khiển LQR giúp cân bằng tối ưu giữa chất lượng đáp ứng trạng thái và năng lượng tiêu thụ của động cơ dựa trên hệ phương trình không gian trạng thái. Trong khi đó, thuật toán trượt SMC mang lại độ vững chắc (robustness) cao trước các thành phần nhiễu bất định của hệ thống.
+
+\begin{figure}[htbp]
+    \centering
+    \begin{tikzpicture}[
+            >=stealth,
+            font=\small,
+            block/.style={
+                    draw,
+                    rounded corners,
+                    align=center,
+                    text width=2.25cm,
+                    minimum height=1.15cm,
+                    inner sep=4pt
+                }
+        ]
+        \node[block] (reference) at (-5.6,0)
+        {Quỹ đạo đặt\\$\mathbf{p}_d,\mathbf{v}_d$};
+        \node[block] (outer) at (-2.8,0)
+        {Điều khiển vị trí\\và vận tốc};
+        \node[block] (inner) at (0,0)
+        {Điều khiển tư thế\\và tốc độ góc};
+        \node[block] (mixer) at (2.8,0)
+        {Bộ trộn\\và bốn động cơ};
+        \node[block] (vehicle) at (5.6,0)
+        {Quadrotor\\chuyển động thực tế};
+        \draw[->,thick] (reference) -- (outer);
+        \draw[->,thick] (outer) -- (inner);
+        \draw[->,thick] (inner) -- (mixer);
+        \draw[->,thick] (mixer) -- (vehicle);
+        \draw[thick] (vehicle.south) -- (5.6,-1.55)
+        -- (-2.8,-1.55);
+        \draw[->,thick] (-2.8,-1.55) -- (outer.south);
+        \draw[->,thick] (0,-1.55) -- (inner.south);
+        \node[align=center] at (1.4,-2.05)
+        {Phản hồi trạng thái: vị trí, vận tốc, tư thế, tốc độ góc};
+    \end{tikzpicture}
+    \caption{Sơ đồ khối tổng quan cấu trúc điều khiển phân cấp (Cascaded Control) cho Quadrotor.}
+    \label{fig:cascaded_control}
+\end{figure}
+
+Về mặt kiến trúc hệ thống, cấu trúc điều khiển phân cấp (Cascaded Control) như thể hiện trong Hình \ref{fig:cascaded_control} đã trở thành chuẩn mực thiết kế hàng đầu cho các thiết bị bay tự hành. Kiến trúc này chia hệ thống thành hai tầng điều khiển khép kín hoạt động ở các dải tần số khác nhau. Tầng ngoài (Outer Loop) thực hiện nhiệm vụ điều khiển vị trí và vận tốc với tần số đáp ứng trung bình, tính toán ra nhu cầu gia tốc và góc tư thế đặt. Tầng trong (Inner Loop) thực hiện nhiệm vụ điều khiển góc tư thế và tốc độ góc ở tần số rất cao, xuất ra mô-men tác động tới các động cơ. Việc tách biệt này vừa giúp giảm tính phức tạp trong tính toán toán học, vừa phản ánh đúng đặc tính động lực học tự nhiên của thiết bị bay.
+
+Bên cạnh đó, vấn đề biểu diễn tư thế không gian cũng đóng vai trò then chốt. Việc sử dụng góc Euler ($\phi, \theta, \psi$) tuy trực quan nhưng dễ gặp phải hiện tượng khóa Gimbal (Gimbal Lock) tại các góc nghiêng tới hạn. Do đó, xu hướng áp dụng số Quaternion ($q_0, q_1, q_2, q_3$) hoặc đại số Lie trên tập hợp $SE(3)$ đang được nghiên cứu chuyên sâu nhằm đảm bảo tính toàn cục không bị kỳ dị trong toàn bộ không gian hoạt động.
+
+\section{Mục tiêu và Phạm vi nghiên cứu}
+\label{sec:muc_tieu_pham_vi}
+
+\subsection{Mục tiêu nghiên cứu}
+
+Mục tiêu tổng quát của đồ án là nghiên cứu, thiết lập mô hình toán học động lực học hoàn chỉnh và thiết kế hệ thống điều khiển tự động phân cấp cho đối tượng Quadrotor, đảm bảo khả năng giữ cân bằng tư thế ổn định và bám chính xác quỹ đạo không gian 3D dưới tác động của nhiễu.
+
+Để đạt được mục tiêu tổng quát nêu trên, đồ án tập trung giải quyết các mục tiêu cụ thể bao gồm: Xây dựng hệ phương trình động lực học phi tuyến của Quadrotor dựa trên phương pháp Euler-Lagrange và Newton-Euler; thực hiện tuyến tính hóa mô hình quanh điểm cân bằng để thiết lập hệ phương trình không gian trạng thái; thiết kế cấu trúc điều khiển phân cấp 4 vòng lặp phản hồi khép kín kết hợp khối chuyển đổi gia tốc sang góc tư thế; và cuối cùng là xây dựng mô hình mô phỏng trên môi trường MATLAB/Simulink nhằm kiểm chứng, đánh giá chất lượng động học của các bộ điều khiển PID và LQR.
+
+\subsection{Phạm vi nghiên cứu}
+
+Về đối tượng và mô hình, đề tài giới hạn nghiên cứu trên mô hình Quadrotor cấu hình chữ X (X-configuration), coi khung máy bay là vật thể rắn tuyệt đối có tính đối xứng cơ khí và tâm khối trùng với tâm gốc hệ tọa độ thân. Đồ án bỏ qua sự biến dạng đàn hồi của cánh quạt và các hiệu ứng khí động học bậc cao phức tạp khi bay ở vận tốc siêu âm.
+
+Về thuật toán và thử nghiệm, đồ án tập trung nghiên cứu chuyên sâu hai thuật toán điều khiển cốt lõi là PID phân cấp và LQR tối ưu, được đánh giá thông qua môi trường mô phỏng số trên máy tính dưới các kịch bản đáp ứng bước nhảy và bám quỹ đạo liên tục.
+
+\section{Phương pháp nghiên cứu}
+\label{sec:phuong_phap}
+
+Đồ án áp dụng kết hợp hài hòa giữa phương pháp nghiên cứu lý thuyết và phương pháp mô phỏng số. Về mặt lý thuyết, đồ án sử dụng các công cụ đại số tuyến tính, hình học không gian, lý thuyết điều khiển tự động và cơ học lý thuyết để thiết lập mô hình toán học và tổng hợp bộ điều khiển.

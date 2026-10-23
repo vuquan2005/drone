@@ -179,6 +179,51 @@ Tình huống thứ hai giải thích vì sao nhiều firmware không cần bi�
 
 ### 4.2. Thang đo được đưa vào ma trận như thế nào?
 
+#### 4.2.1. Chuẩn hóa là chọn một mốc rồi biểu diễn theo tỉ lệ
+
+Với đại lượng `x` có đơn vị, chọn một mốc `x_ref > 0` cùng đơn vị và định nghĩa:
+
+$$
+\bar x=\frac{x}{x_{ref}},\qquad x=x_{ref}\bar x.
+$$
+
+Ví dụ `f = 2 N`, chọn `f_ref = 8 N` thì `t = 0.25`. Giá trị này có nghĩa **lực yêu cầu bằng 25% mốc lực 8 N**, chưa có nghĩa throttle 25% hay PWM 1250 µs. Nếu đổi mốc thành `10 N`, cùng lực `2 N` được biểu diễn bằng `0.2`; phần cứng không thay đổi chỉ vì đổi cách biểu diễn.
+
+Phép chia làm mất đơn vị ở giá trị được truyền đi, nhưng thông tin đơn vị vẫn nằm trong mốc tham chiếu. Bên tạo yêu cầu và bên sử dụng phải thống nhất mốc đó. Đây là phép đổi thang với mốc đã định nghĩa, không phải lấy giá trị lớn nhất đang xuất hiện trong mỗi chu kỳ để chia; cách chia theo từng chu kỳ sẽ làm cùng một số chuẩn hóa mang ý nghĩa vật lý khác nhau theo thời gian.
+
+Ba phép chuẩn hóa thường gặp trong luồng này cần được phân biệt:
+
+| Đại lượng        | Ví dụ phép chuẩn hóa                                                | Ý nghĩa của giá trị `0.5`           |
+| ---------------- | ------------------------------------------------------------------- | ----------------------------------- |
+| Lực từng motor   | `t_i = f_i / f_ref,i`                                               | Một nửa lực tham chiếu của motor đó |
+| Yêu cầu một trục | `r = tau_x / tau_ref,x`                                             | Một nửa mốc mô-men roll đã chọn     |
+| Lệnh motor       | `u_i = (p_i - p_min) / (p_max - p_min)` trong ánh xạ PWM tuyến tính | Điểm giữa khoảng lệnh PWM đang xét  |
+
+Dòng cuối là chuẩn hóa **lệnh**, còn hai dòng đầu chuẩn hóa **lực/mô-men**. Chúng có thể cùng là số không thứ nguyên nhưng không thể dùng thay cho nhau.
+
+#### 4.2.2. Chọn mốc và xử lý offset
+
+Với motor một chiều, cách dễ diễn giải là lấy lực bằng 0 làm gốc và lực tại đầu trên của đường cong hiệu chuẩn làm `f_ref`. Khi đó:
+
+$$
+t_i=\frac{f_i}{f_{ref,i}},\qquad f_i=f_{ref,i}t_i.
+$$
+
+Nếu chỉ hiệu chuẩn một khoảng vận hành có lực đầu dưới khác 0, phép đổi thang tương ứng là:
+
+$$
+t_i=\frac{f_i-f_{lo,i}}{f_{hi,i}-f_{lo,i}},\qquad
+f_i=f_{lo,i}+(f_{hi,i}-f_{lo,i})t_i.
+$$
+
+Trong cách thứ hai, `t_i = 0` nghĩa là `f_i = f_lo,i`, có thể là motor vẫn đang quay và tạo lực. Trạng thái dừng/disarm phải được xử lý riêng. Không dùng đường cong có gốc lực bằng 0 cho một giá trị `t_i` được định nghĩa theo khoảng có offset mà chưa chuyển đổi.
+
+Tương tự, `u_i = 0` phải được định nghĩa là đầu dưới của khoảng lệnh nào: khoảng toàn phần hay khoảng từ idle đến mức vận hành trên. Ví dụ cùng một PWM 1500 µs là `u = 0.5` trong khoảng 1000–2000 µs, nhưng là `u = 0.375` trong khoảng 1200–2000 µs. Đường cong lực–lệnh phải sử dụng đúng định nghĩa `u` đã dùng lúc đo.
+
+Mốc lực tham chiếu và giới hạn lực hiện có là hai thông tin riêng. Chẳng hạn chọn cố định `f_ref = 8 N` tại điện áp tham chiếu, nhưng khi pin tụt chỉ còn đạt `6 N`, giới hạn chuẩn hóa khi đó là `t_max = 6/8 = 0.75`. Nếu vẫn cho phép `t = 1`, phép biểu diễn đang yêu cầu `8 N` dù phần cứng không đạt được. Có thể dùng mốc thay đổi theo điện áp, nhưng phải cập nhật đồng bộ phép scale yêu cầu, ma trận phân bổ và mô hình lực–lệnh.
+
+#### 4.2.3. Đổi cả yêu cầu lẫn ma trận phân bổ
+
 Để thấy quan hệ với cách 1, xét mô hình lý tưởng không có offset lực. Đặt:
 
 $$
@@ -193,6 +238,31 @@ $$
 $$
 
 `C` là ma trận hiệu lực trong hệ chuẩn hóa. Như vậy các thang đo vật lý đã được đưa vào hệ số ma trận hoặc quy tắc scale, thay vì được truyền dưới dạng N và N·m tại giao diện mixer.
+
+Cụ thể:
+
+$$
+D_f=\operatorname{diag}(f_{ref,1},\ldots,f_{ref,n}),\qquad
+D_w=\operatorname{diag}(T_{ref},\tau_{ref,x},\tau_{ref,y},\tau_{ref,z}).
+$$
+
+Các mốc trong `D_w` đều dương; dấu của yêu cầu mô-men nằm trong thành phần tương ứng của `w`. Với hệ vuông khả nghịch:
+
+$$
+\mathbf t=C^{-1}\bar{\mathbf w}
+=D_f^{-1}A^{-1}D_w\bar{\mathbf w}.
+$$
+
+Đẳng thức này cho thấy không thể chỉ chia yêu cầu cho một mốc bất kỳ rồi giữ nguyên một mixer vốn được thiết kế cho mốc khác. Muốn cùng một yêu cầu vật lý cho cùng lực motor, phải đổi thang ở cả hai phía một cách nhất quán.
+
+Nếu dùng offset lực ở mục 4.2.2, đặt `f = f_lo + D_delta t`, với `D_delta` chứa các khoảng `f_hi,i - f_lo,i`. Khi đó `w_lo = A f_lo` và công thức đúng là:
+
+$$
+D_w^{-1}(\mathbf w-\mathbf w_{lo})
+=D_w^{-1}AD_\Delta\mathbf t.
+$$
+
+Không bỏ số hạng nền `w_lo`; nó biểu diễn lực và mô-men đã có tại đầu dưới của khoảng vận hành.
 
 Với hệ vuông khả nghịch và chưa có bão hòa, hai biểu diễn cho kết quả tương đương khi dùng cùng mô hình và thang đo. Với bài toán dư cơ cấu chấp hành hoặc có giới hạn, còn phải chuyển đúng trọng số, hàm mục tiêu và thứ tự ưu tiên; đổi thang rồi dùng giả nghịch đảo/trọng số mặc định khác có thể cho nghiệm khác.
 
@@ -233,6 +303,71 @@ Các số hạng đều không thứ nguyên nên cộng trừ được. Các h�
 
 Đây là phép suy ra để giải thích đơn vị, không phải tuyên bố rằng cả bốn dự án đều dùng đúng cách đánh số, dấu và thang đo này. Các giới hạn tham chiếu của từng trục cũng không có nghĩa hệ thống đạt đồng thời mọi cực đại đó.
 
+#### 4.3.1. Chọn mốc cụ thể cho quad X
+
+Với cách định nghĩa ngay trên, các mốc là:
+
+| Kênh     | Mốc được chọn               | Với `f_ref = 8 N`, `d = 0.1 m`, `kappa = 0.02 m` |
+| -------- | --------------------------- | ------------------------------------------------ |
+| Tổng lực | `T_ref = 4 f_ref`           | `32 N`                                           |
+| Roll     | `tau_ref,x = 4 d f_ref`     | `3.2 N·m`                                        |
+| Pitch    | `tau_ref,y = 4 d f_ref`     | `3.2 N·m`                                        |
+| Yaw      | `tau_ref,z = 4 kappa f_ref` | `0.64 N·m`                                       |
+
+Ví dụ `b = 0.25` là tổng lực `8 N`, còn `r = 0.125` là mô-men roll `0.4 N·m`. Cùng một con số `0.25` ở kênh thrust và kênh roll biểu diễn hai đại lượng vật lý khác nhau, nên phải biết đang đọc kênh nào.
+
+Các mốc mô-men ở đây được chọn để mixer có hệ số cộng trừ bằng `1`; chúng **không phải mô-men cực đại khả thi**. Với `0 <= t_i <= 1`, roll thuần đạt nhiều nhất `r = 0.5` khi hai motor một bên ở `0`, hai motor bên kia ở `1`. Mô-men roll khi đó là `2 d f_ref = 1.6 N·m`, tại `b = 0.5`.
+
+Nếu muốn biểu diễn mức roll này bằng một biến có giá trị `1`, có thể định nghĩa:
+
+$$
+\rho=\frac{\tau_x}{2df_{ref}}=2r.
+$$
+
+Nhưng mixer khi đó phải dùng `r = rho/2`, tức phần roll trong mỗi đầu ra là `±0.5 rho`, không còn là `±rho`. Đây là lý do cần đọc cả quy tắc scale đầu vào lẫn hệ số mixer khi gặp giao diện mô tả roll trong `[-1, 1]`.
+
+#### 4.3.2. Khoảng chuẩn hóa không bảo đảm yêu cầu khả thi
+
+Khi chỉ yêu cầu thrust và roll (`p = y = 0`), bốn motor nhận `b-r` hoặc `b+r`. Điều kiện đồng thời nằm trong `[0, 1]` là:
+
+$$
+0\leq b\leq 1,\qquad |r|\leq\min(b,1-b).
+$$
+
+Vì vậy khả năng tạo roll phụ thuộc lực nền: tại `b = 0.25`, chỉ có thể đạt `|r| <= 0.25` nếu giữ nguyên tổng lực. Tại `b = 1`, cả bốn motor đã ở mức trên nên không còn dư địa tạo roll mà vẫn giữ nguyên tổng lực đó.
+
+Ví dụ yêu cầu `b = 0.25`, `r = 0.30` cho kết quả:
+
+```text
+t = [-0.05, -0.05, 0.55, 0.55]
+```
+
+Các đầu vào đều nằm trong những khoảng thường gọi là chuẩn hóa, nhưng hai motor bị yêu cầu lực âm. Với các mốc ở mục 4.3.1, yêu cầu gốc là `T = 8 N`, `tau_x = 0.96 N·m`. Nếu chỉ kẹp từng motor vào `[0, 1]`, kết quả `[0, 0, 0.55, 0.55]` lại tạo `T = 8.8 N`, `tau_x = 0.88 N·m`.
+
+Nếu chính sách là giữ tổng lực và giảm roll xuống mức khả thi, có thể chọn `r = 0.25`, cho `[0, 0, 0.5, 0.5]`, tương ứng `T = 8 N`, `tau_x = 0.8 N·m`. Đây là một lựa chọn ưu tiên để minh họa; allocator thực tế có thể chọn ưu tiên khác. Khi có cả pitch/yaw, phải kiểm tra cả bốn bất đẳng thức `0 <= b ± r ± p ± y <= 1` với đúng tổ hợp dấu của mixer, không xét từng trục độc lập.
+
+#### 4.3.3. Nếu PID xuất trực tiếp số chuẩn hóa thì chuẩn hóa ở đâu?
+
+Nếu bộ điều khiển đã tính mô-men SI `tau_x`, việc tạo `r` là phép chia rõ ràng `r = tau_x / tau_ref,x`. Nhưng nếu PID được tuning để xuất trực tiếp `r`, phép scale đã nằm trong gain và các giới hạn đầu ra.
+
+Ví dụ giữ nguyên định nghĩa sai số tốc độ góc `e` và dạng PID liên tục:
+
+$$
+\tau_x=K_P e+K_I\int e\,dt+K_D\frac{de}{dt}.
+$$
+
+Chia cả phương trình cho `tau_ref,x`:
+
+$$
+r=\frac{K_P}{\tau_{ref,x}}e
++\frac{K_I}{\tau_{ref,x}}\int e\,dt
++\frac{K_D}{\tau_{ref,x}}\frac{de}{dt}.
+$$
+
+Với cùng sai số, thời gian lấy mẫu và cách triển khai PID, các gain ở miền đầu ra chuẩn hóa bằng gain SI chia cho mốc mô-men. Giới hạn đầu ra, giới hạn phần tích phân và các số hạng feedforward cùng đơn vị đầu ra cũng phải đổi thang tương ứng. Nếu đồng thời đổi sai số từ rad/s sang deg/s hoặc đổi cách tích phân rời rạc, phải xét thêm các hệ số đó.
+
+Ngược lại, một bộ gain được tuning trực tiếp để xuất `r` chưa tự xác định một thang N·m đáng tin cậy nếu chưa có mô hình hoặc hiệu chuẩn liên hệ mixer với phần cứng. Việc đặt tên đầu ra là “normalized torque” không đủ để suy ra `r = 0.2` tương ứng chính xác bao nhiêu N·m.
+
 ### 4.4. Đường cong lực đẩy vẫn nằm sau mixer
 
 Sau khi có `t_i`, hệ thống có thể vẫn cần tính `u_i = h^{-1}(t_i)`. Nếu `h(u)` phi tuyến, phải áp dụng đường cong lên kết quả từng motor. Nói chung:
@@ -242,6 +377,20 @@ h^{-1}(b+r)\ne h^{-1}(b)+h^{-1}(r).
 $$
 
 Do đó không thể đổi riêng từng thành phần lực/mô-men sang PWM bằng cùng một đường cong rồi cộng chúng tùy ý. Các bước bù throttle đặc thù của từng firmware cần được hiểu trong toàn bộ thuật toán.
+
+Ví dụ đường cong `t = 0.5u + 0.5u²` với `f_ref = 8 N` cho các điểm:
+
+| Lệnh `u` | Lực chuẩn hóa `t` | Lực `f = 8t` (N) |
+| -------: | ----------------: | ---------------: |
+|        0 |                 0 |                0 |
+|     0.25 |           0.15625 |             1.25 |
+|     0.50 |           0.37500 |             3.00 |
+|     0.75 |           0.65625 |             5.25 |
+|     1.00 |           1.00000 |             8.00 |
+
+Muốn mỗi motor tạo `2 N`, trước hết chuẩn hóa lực thành `t = 2/8 = 0.25`, rồi nghịch đảo đường cong được `u ≈ 0.366025`. Với khoảng PWM minh họa 1000–2000 µs, lệnh tương ứng khoảng `1366 µs`. Nếu lấy ngay `t = 0.25` làm lệnh `u`, motor theo mô hình chỉ tạo `1.25 N`.
+
+Như vậy có ba phép đổi khác nhau cần giữ rõ trong triển khai: **lực → lực chuẩn hóa** bằng mốc lực; **lực chuẩn hóa → lệnh chuẩn hóa** bằng mô hình nghịch; **lệnh chuẩn hóa → PWM/DShot** bằng ánh xạ giao thức và trạng thái motor. Chỉ phép đầu tiên là phép chia cho một mốc lực.
 
 ## 5. Đối chiếu cách 2 trong ba dự án
 

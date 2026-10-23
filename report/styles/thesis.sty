@@ -31,10 +31,12 @@
 \usepackage{booktabs}
 \usepackage{subcaption}
 \usepackage{array}
+\usepackage{indentfirst}
 \usepackage{setspace}
 % Visible placeholders are intentional in this starter template.
 \newcommand{\placeholder}[1]{\par\noindent\textit{[PLACEHOLDER: #1]}\par}
-\captionsetup{justification=justified, singlelinecheck=false}
+\captionsetup{font=small, labelfont=bf, justification=centering}
+\renewcommand{\arraystretch}{1.2}
 \let\OriginalIncludeGraphics\includegraphics
 \RenewDocumentCommand{\includegraphics}{O{} m}{%
   \IfFileExists{#2}{%
@@ -174,7 +176,7 @@
 \renewcommand\section{\@startsection{section}{1}{\z@}%
                                    {-3.5ex \@plus -1ex \@minus -.2ex}%
                                    {2.3ex \@plus.2ex}%
-                                   {\normalfont\normalsize\bfseries}}
+                                   {\normalfont\large\bfseries}}
 \renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
                                    {-3.25ex\@plus -1ex \@minus -.2ex}%
                                    {1.5ex \@plus .2ex}%
@@ -211,5 +213,7 @@
   \renewcommand{\chaptername}{CHƯƠNG}
   \renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
   \renewcommand{\appendixname}{PHỤ LỤC}
+  \renewcommand{\figurename}{Hình}
+  \renewcommand{\tablename}{Bảng}
   \pagestyle{plain}
 }

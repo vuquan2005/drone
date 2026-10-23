@@ -1,0 +1,13 @@
+# ChkTeX configuration for Vietnamese LaTeX Thesis
+# Suppress false positives on UTF-8 characters and standard layout
+CmdLine
+{
+  -n3 -n8 -n13 -n19 -n21 -n22 -n24 -n30 -n36 -n44 -n46
+}
+
+# Commands safe to terminate with space / newline
+Silent
+{
+  \cleardoublepage \singlespacing \onehalfspacing
+  \StudentName \StudentID \SecondStudentName \SecondStudentID \ThirdStudentName \ThirdStudentID
+}

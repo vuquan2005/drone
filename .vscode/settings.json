@@ -7,7 +7,7 @@
     "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
     "*.ioc": ".mxproject",
     "bundles.store.json": "bundles-lock.store.json",
-    "main.tex": "metadata.tex, latexmkrc",
+    "main.tex": "metadata.tex, latexmkrc, .chktexrc",
     "*.tex": "$(capture).aux, $(capture).log, $(capture).out, $(capture).toc, $(capture).lof, $(capture).lot, $(capture).bbl, $(capture).blg, $(capture).bcf, $(capture).run.xml, $(capture).fls, $(capture).fdb_latexmk, $(capture).synctex.gz, $(capture).xdv, $(capture).pdf"
   },
   "files.exclude": {
@@ -47,6 +47,24 @@
   "latex-workshop.formatting.latex": "latexindent",
   "latex-workshop.linting.chktex.enabled": true,
   "latex-workshop.linting.run": "onSave",
+  "latex-workshop.linting.chktex.exec.args": [
+    "-wall",
+    "-n3",
+    "-n8",
+    "-n13",
+    "-n19",
+    "-n21",
+    "-n22",
+    "-n24",
+    "-n30",
+    "-n36",
+    "-n44",
+    "-n46",
+    "-e16",
+    "-q",
+    "-l",
+    ".chktexrc"
+  ],
   "cmake.sourceDirectory": "${workspaceFolder}/firmware/drone",
   "cmake.useCMakePresets": "always",
   "cmake.configureOnOpen": false,

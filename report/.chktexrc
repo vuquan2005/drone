@@ -1,8 +1,10 @@
 # ChkTeX configuration for Vietnamese LaTeX Thesis
-# Suppress false positives on UTF-8 characters and standard layout
+# Shared warning policy for terminal ChkTeX and LaTeX Workshop.
+# Enable warnings first, then preserve the template's exclusions.
+# Treat message 16 as an error, matching the previous VS Code policy.
 CmdLine
 {
-  -n3 -n8 -n13 -n19 -n21 -n22 -n24 -n30 -n36 -n44 -n46
+  -wall -n3 -n8 -n13 -n19 -n21 -n22 -n24 -n30 -n36 -n44 -n46 -e16
 }
 
 # Commands safe to terminate with space / newline

@@ -1,114 +1,146 @@
-% Adapted from the teacher-provided template.
-% Original attribution: Revised by Wensheng Lin (linwest@jaist.ac.jp)
+% GÓI ĐỊNH DẠNG LUẬN VĂN / BÁO CÁO
+% Nạp trong phần mở đầu của tài liệu bằng: \usepackage{styles/thesis}.
+% Dùng với lớp tài liệu có chương (ví dụ report hoặc book), vì gói tùy chỉnh
+% \chapter, mục lục theo chương và các bộ đếm phụ thuộc vào chapter.
+% Biên dịch bằng XeLaTeX hoặc LuaLaTeX để dùng fontspec và unicode-math;
+% lưu tệp nguồn ở UTF-8 để giữ đúng các tên hiển thị bằng tiếng Việt.
+% Sáu nhóm dưới đây đi từ cấu hình chung đến các tiện ích chuyên biệt.
+% Chú thích chỉ giải thích cấu hình hiện có; các giá trị là mặc định của mẫu.
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{styles/thesis}[2026/10/17 Thesis formatting]
+\ProvidesPackage{styles/thesis}[2026/10/25 Thesis formatting]
 
-\usepackage{etoolbox}
-\usepackage{fontspec}
-\usepackage{unicode-math}
+% Mặc định là bản nộp (final). Bật [draft] để lệnh \thesisfigure cho phép
+% khung giữ chỗ khi thiếu ảnh; \includegraphics luôn giữ hành vi chuẩn.
+% Ví dụ ở main.tex: \usepackage[draft]{styles/thesis}.
+\newif\ifthesisdraft
+\DeclareOption{draft}{\thesisdrafttrue}
+\DeclareOption{final}{\thesisdraftfalse}
+\ExecuteOptions{final}
+\ProcessOptions\relax
+
+% ==========================================================================
+% 1. NẠP CÁC GÓI HỖ TRỢ
+% ==========================================================================
+
+% etoolbox cung cấp thao tác vá lệnh (\patchcmd, \apptocmd) và hook
+% \AtEndPreamble để trì hoãn bản vá tới hết phần mở đầu.
+\RequirePackage{etoolbox}
+\RequirePackage{fontspec}
+\RequirePackage{unicode-math}
+
+% amsmath: công thức, căn chỉnh nhiều dòng và \text trong chế độ toán.
+% graphicx: chèn hình; float: hỗ trợ vị trí [H] cho hình/bảng.
+% tikz + calc: vẽ hình và tính toán tọa độ trong các hình TikZ.
+% cite: xử lý nhóm trích dẫn số; booktabs: đường kẻ bảng như \toprule.
+% subcaption: chú thích hình/bảng con; array: mở rộng kiểu cột bảng.
+% tabularx: tự tính độ rộng cột X theo chiều rộng toàn bảng được chỉ định.
+% indentfirst: thụt dòng đoạn đầu sau tiêu đề; setspace: cung cấp các lệnh
+% giãn dòng, nhưng việc nạp gói chưa tự đặt giãn dòng 1.5 hay giãn dòng đôi.
+\RequirePackage{amsmath}
+\RequirePackage{graphicx}
+\RequirePackage{float}
+\RequirePackage{tikz}
+\usetikzlibrary{calc}
+\RequirePackage{cite}
+\RequirePackage{booktabs}
+\RequirePackage{subcaption}
+\RequirePackage{array}
+\RequirePackage{tabularx}
+\RequirePackage{indentfirst}
+\RequirePackage{setspace}
+
+% xcolor cung cấp pha màu như gray!15; dvipsnames bổ sung tên màu dựng sẵn.
+\RequirePackage[dvipsnames]{xcolor}
+
+\RequirePackage{listings}
+
+% hyperref được nạp ở nhóm 5, sau các tùy chỉnh chương ở nhóm 3,
+% để giữ thứ tự áp dụng bản vá chương của mẫu và của hyperref.
+
+% ==========================================================================
+% 2. KHỔ GIẤY, LỀ, FONT VÀ ĐOẠN VĂN
+% ==========================================================================
+
+% Khổ A4: lề trái 3.5 cm (chừa khoảng đóng gáy), phải 2 cm,
+% trên/dưới đều 2 cm. Thay các tham số geometry tại đây để đổi lề.
+\RequirePackage[a4paper,left=3.5cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+
+% Ưu tiên Times New Roman cho văn bản chính, chỉ rõ các biến thể đậm/nghiêng.
+% Nếu máy không có font này, chuyển sang TeX Gyre Termes.
 \IfFontExistsTF{Times New Roman}{%
-\setmainfont{Times New Roman}[
-  BoldFont=Times New Roman Bold,
-  ItalicFont=Times New Roman Italic,
-  BoldItalicFont=Times New Roman Bold Italic
-]%
+  \setmainfont{Times New Roman}[
+    BoldFont=Times New Roman Bold,
+    ItalicFont=Times New Roman Italic,
+    BoldItalicFont=Times New Roman Bold Italic
+  ]%
 }{\setmainfont{TeX Gyre Termes}}
+% Font không chân và font đơn cách cũng có phương án dự phòng tương ứng.
+% \setsansfont dùng cho \sffamily/\textsf; \setmonofont dùng cho
+% \ttfamily/\texttt (không tự đổi toàn bộ văn bản sang các font này).
 \IfFontExistsTF{Arial}{\setsansfont{Arial}}{\setsansfont{TeX Gyre Heros}}
 \IfFontExistsTF{Courier New}{\setmonofont{Courier New}}{\setmonofont{TeX Gyre Cursor}}
+% Công thức dùng font toán OpenType riêng, độc lập với font văn bản.
+% Ưu tiên TeX Gyre Termes Math; nếu thiếu thì dùng Latin Modern Math.
 \IfFontExistsTF{TeX Gyre Termes Math}{
   \setmathfont{TeX Gyre Termes Math}
 }{
   \setmathfont{Latin Modern Math}
 }
 
-\setcounter{secnumdepth}{3}
-\setcounter{tocdepth}{2}
-\renewcommand{\thesubsubsection}{\alph{subsubsection}\symbol{41}}
-\usepackage{amsmath}
-\usepackage{graphicx, epsfig}
-\usepackage{float}
-\usepackage{tikz}
-\usetikzlibrary{calc}
-\usepackage{cite}
-\usepackage{booktabs}
-\usepackage{subcaption}
-\usepackage{array}
-\usepackage{indentfirst}
-\usepackage{setspace}
-% Visible placeholders are intentional in this starter template.
-\newcommand{\placeholder}[1]{\par\noindent\textit{[PLACEHOLDER: #1]}\par}
-\captionsetup{font=small, labelfont=bf, justification=centering}
-\renewcommand{\arraystretch}{1.2}
-\let\OriginalIncludeGraphics\includegraphics
-\RenewDocumentCommand{\includegraphics}{O{} m}{%
-  \IfFileExists{#2}{%
-    \OriginalIncludeGraphics[#1]{#2}%
-  }{%
-    \fbox{%
-      \parbox[c][4cm][c]{0.8\linewidth}{%
-        \centering Missing figure\\\texttt{\detokenize{#2}}%
-      }%
-    }%
-  }%
-}
-
-\newcommand{\diag}[1]{\text{diag}(#1)}
-\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
-
+% Hạn chế ngắt trang tự động bên trong các môi trường toán nhiều dòng
+% được amsmath hỗ trợ. Đoạn văn thụt đầu dòng 1 cm, không cộng khoảng cách
+% dọc giữa hai đoạn (parskip = 0 pt).
 \allowdisplaybreaks[0]
 \setlength{\parindent}{1cm}
 \setlength{\parskip}{0pt}
 
-%%%%%%%%%%%%%%%%%%%%%% acronym support without glossaries %%%%%%%%%%%%%%%%%%%%
-\newcommand{\acronymlist}{}
-\newcommand{\acronymtype}{acronym}
-\providecommand{\acronymname}{List of Abbreviations}
-\newcommand{\setglossarystyle}[1]{}
-\newcommand{\glsresetall}{}
-\newcommand{\makeglossaries}{}
-\newcommand{\glsadd}[1]{}
-\newcommand{\newglossaryentry}[2]{}
-\newcommand{\newacronym}[3]{%
-  \expandafter\gdef\csname acro@#1@short\endcsname{#2}%
-  \expandafter\gdef\csname acro@#1@long\endcsname{#3}%
-  \listgadd{\acronymlist}{#1}%
-}
-\newcommand{\gls}[1]{%
-  \ifcsdef{acro@#1@short}{\csname acro@#1@short\endcsname}{#1}%
-}
-\newcommand{\printacronymitem}[1]{%
-  \textbf{\csname acro@#1@short\endcsname} & \csname acro@#1@long\endcsname \\
-}
-\newcommand{\printglossary}[1][]{%
-  \begingroup
-  \parindent=0pt
-  \sloppy
-  \raggedright
-  \chapter*{\acronymname}%
-  \normalsize
-  \setlength{\tabcolsep}{0pt}%
-  \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3cm}@{\quad}>{\raggedright\arraybackslash}p{11cm}@{}}
-  \forlistloop{\printacronymitem}{\acronymlist}
-  \end{tabular}%
-  \endgroup
-}
-%%%%%%%%%%%%%%%%%%%%%% acronym support without glossaries end %%%%%%%%%%%%%%%%
+% hyphenpenalty càng lớn càng hạn chế ngắt từ có gạch nối; 500 vẫn cho phép.
+% tolerance=1000 là ngưỡng chấp nhận độ xấu khi dàn dòng, không phải độ rộng.
+% Đây là tham số dàn đoạn chung; không tự nạp ngôn ngữ hay mẫu ngắt từ tiếng Anh.
+\hyphenpenalty=500
+\tolerance=1000
 
-%%%%%%%%%%%%%%%%%%%%%% Chỉnh sửa bố cục trang %%%%%%%%%%%%%%%%%%%%
-\RequirePackage[a4paper,left=3.5cm,right=2cm,top=2cm,bottom=2cm]{geometry}
-%%%%%%%%%%%%%%%%%%%%%% Chỉnh sửa bố cục trang end %%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%% Chỉnh sửa kiểu tiêu đề chương trong mục lục end %%%%%%%
+% ==========================================================================
+% 3. TIÊU ĐỀ CHƯƠNG/MỤC, MỤC LỤC VÀ SỐ TRANG
+% ==========================================================================
 
-%%%%%%%%%%%%%% Kiểu phụ lục trong mục lục %%%%%%%%%%%%%%%%%%%%
+% Đánh số tiêu đề tới cấp 3 (subsubsection). Độ sâu hiển thị trong mục lục
+% do tocdepth quyết định riêng, không được thiết lập bởi dòng này.
+\setcounter{secnumdepth}{3}
+% Mục lục chỉ hiện tới cấp 2 (subsection), dù subsubsection vẫn có đánh số.
+\setcounter{tocdepth}{2}
+% Nhãn subsubsection dùng chữ thường kèm dấu đóng ngoặc: a), b), c), ...
+% \symbol{41} in ký tự có mã 41 là dấu ); nhãn không kèm số chương/mục cha.
+\renewcommand{\thesubsubsection}{\alph{subsubsection}\symbol{41}}
+
+% \appendicesname là dòng nhóm "Phụ lục" được thêm riêng vào mục lục;
+% khác với \appendixname là tên đứng trước số/chữ của từng phụ lục.
 \newcommand{\appendicesname}{Phụ lục}
 
+% Cờ FistAppd ban đầu tắt; sau \appendix thì bật lên.
+% Khi chương phụ lục có đánh số đầu tiên đi qua \@chapter, thêm dòng nhóm
+% vào mục lục rồi tắt cờ, tránh lặp lại dòng nhóm cho các phụ lục sau.
+% Giữ nguyên tên FistAppd/addAppdicestoToC như mã hiện có.
 \newif\ifFistAppd
 \FistAppdfalse
-\apptocmd{\appendix}{\protect\FistAppdtrue}{}{}	
+\apptocmd{\appendix}{\protect\FistAppdtrue}{}{%
+  \PackageWarning{styles/thesis}{Could not patch appendix; check appendix grouping}%
+}
 \newcommand{\addAppdicestoToC}{\ifFistAppd\addcontentsline{toc}{chapter}{\appendicesname}\FistAppdfalse\fi}
-	
+
 \makeatletter
-\patchcmd{\@chapter}{\addcontentsline}{\protect \addAppdicestoToC\addcontentsline}{}{}
+% \makeatletter cho phép truy cập các lệnh nội bộ chứa ký tự @.
+% Vá \@chapter để chèn thao tác thêm nhóm phụ lục ngay trước lần gọi
+% \addcontentsline đầu tiên. Nhánh thành công rỗng giữ nguyên luồng xử lý;
+% nhánh thất bại phát cảnh báo để dễ phát hiện khi đổi lớp tài liệu.
+\patchcmd{\@chapter}{\addcontentsline}{\protect \addAppdicestoToC\addcontentsline}{}{%
+  \PackageWarning{styles/thesis}{Could not patch chapter; check appendix ToC entry}%
+}
+% Tiêu đề chương có số: cách đầu vùng văn bản 6 pt, căn giữa, in đậm 16 pt
+% với bước dòng 20 pt; tên chương + số + dấu chấm đứng trước nội dung #1.
+% Chỉ in phần tên/số nếu secnumdepth > -1. \interlinepenalty\@M ngăn
+% ngắt trang giữa các dòng tiêu đề; \nobreak giữ tiêu đề với khoảng sau nó.
+% Khoảng cách sau tiêu đề là 18 pt. \z@ = 0 pt, \m@ne = -1, \@M = 10000.
 \def\@makechapterhead#1{%
   \vspace*{6pt}%
   {\parindent \z@ \centering \normalfont
@@ -118,6 +150,8 @@
     \interlinepenalty\@M
     \fontsize{16}{20}\bfseries\selectfont #1\par\nobreak
     \vskip 18pt}}
+% Tiêu đề chương không số (\chapter*): cùng cỡ chữ và khoảng cách như trên,
+% nhưng không in tên chương và số chương.
 \def\@makeschapterhead#1{%
   \vspace*{6pt}%
   {\parindent \z@ \centering \normalfont
@@ -126,88 +160,55 @@
     \vskip 18pt}}
 \makeatother
 
-%%%%%%%%%%%%%% Kiểu phụ lục trong mục lục end %%%%%%%%%%%%%%%%%%
-
-\usepackage[hidelinks,plainpages=false]{hyperref}
-
-%%%%%%%%%%%%%%%%%%% Định dạng mục lục %%%%%%%%%%%%%%%%%%%%
-\apptocmd{\thebibliography}{\protect \addcontentsline{toc}{chapter}{\bibname}}{}{}
-%%%%%%%%%%%%%%%%%%% Định dạng mục lục end %%%%%%%%%%%%%%%%%%%%
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%% Đầu trang và chân trang %%%%%%%%%%%%%%%%%%%%%%%%%%
-\patchcmd{\chapter}{\cleardoublepage}{
-	\protect \pagestyle{plain}\cleardoublepage }{}{}
-%%%%%%%%%%%%%%%%%%%%% Đầu trang và chân trang end %%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%% Cấu hình ngắt từ tiếng Anh %%%%%%%%%%%%%%%%%%%%
-\hyphenpenalty=500
-\tolerance=1000
-%%%%%%%%%%%%%%%%%%% Cấu hình ngắt từ tiếng Anh end %%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%% Định nghĩa danh sách công trình khoa học %%%%%%%%%%%%%
-\newenvironment{publication}
-{\newcounter{pubnum}\begin{list}
-{[\arabic{pubnum}]}{\usecounter{pubnum}}}{\end{list}}
-%%%%%%%%%%%%%%%%%%% Định nghĩa danh sách công trình khoa học end %%%%%%%%%%%%%
-
-%%%%%%%%%%%%%%%%%%%%% Định nghĩa màu sắc %%%%%%%%%%%%%%%%%%%%
-\usepackage[dvipsnames]{xcolor}
-%%%%%%%%%%%%%%%%%%%%% Định nghĩa màu sắc end %%%%%%%%%%%%%%%%%%%
-
-%%%%%%%%%%%%%% Cấu hình kiểu mã nguồn %%%%%%%%%%%%%%
-\usepackage{listings}
-\lstset{language=C++,basicstyle=\footnotesize,numbers=left,stepnumber=1,
-    showstringspaces=false,tabsize=2,breaklines=true,
-    breakatwhitespace=false,frame=single,backgroundcolor=\color{gray!15}}
-\renewcommand{\lstlistingname}{Code}
-%%%%%%%%%%%%%% Cấu hình kiểu mã nguồn end %%%%%%%%%%%%%
-
-
-%%%%%%%%%%%%%%%% Định nghĩa lệnh tham chiếu tùy chỉnh %%%%%%%%%%%%%%
-\newcommand{\charef}[1]{\chaptername~\ref{#1}} % tham chiếu chương
-\newcommand{\appref}[1]{\appendixname~\ref{#1}} % tham chiếu phụ lục
-\newcommand{\secref}[1]{\ref{#1}} % tham chiếu mục
-\newcommand{\fref}[1]{\figurename~\ref{#1}} % tham chiếu hình
-\newcommand{\tref}[1]{\tablename~\ref{#1}} % tham chiếu bảng
-\newcommand{\eqsref}[2]{(\ref{#1} -- \ref{#2})} % tham chiếu công thức liên tiếp
-\newcommand{\coderef}[1]{\lstlistingname~\ref{#1}} % tham chiếu mã
 \makeatletter
+% Định dạng các cấp tiêu đề mục
+% Cú pháp nội bộ: \@startsection{tên}{cấp}{thụt lề}{cách trước}{cách sau}{kiểu}.
+% Các cấp 1/2/3 tương ứng section/subsection/subsubsection, đều sát lề trái.
+% Theo quy ước của \@startsection, khoảng trước âm còn yêu cầu bỏ thụt đầu
+% dòng sau tiêu đề; tuy nhiên gói indentfirst đã nạp sẽ giữ việc thụt dòng.
+% Khoảng sau dương đặt nội dung xuống dòng, không nối vào tiêu đề.
+% ex phụ thuộc font; \@plus và \@minus cho phép khoảng cách co giãn khi dàn trang.
+% section dùng large đậm; hai cấp dưới dùng normalsize đậm.
 \renewcommand\section{\@startsection{section}{1}{\z@}%
-                                   {-3.5ex \@plus -1ex \@minus -.2ex}%
-                                   {2.3ex \@plus.2ex}%
-                                   {\normalfont\large\bfseries}}
+  {-3.5ex \@plus -1ex \@minus -.2ex}%
+  {2.3ex \@plus.2ex}%
+  {\normalfont\large\bfseries}}
 \renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
-                                   {-3.25ex\@plus -1ex \@minus -.2ex}%
-                                   {1.5ex \@plus .2ex}%
-                                   {\normalfont\normalsize\bfseries}}
+  {-3.25ex\@plus -1ex \@minus -.2ex}%
+  {1.5ex \@plus .2ex}%
+  {\normalfont\normalsize\bfseries}}
 \renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
-                                   {-3.25ex\@plus -1ex \@minus -.2ex}%
-                                   {1.5ex \@plus .2ex}%
-                                   {\normalfont\normalsize\bfseries}}
+  {-3.25ex\@plus -1ex \@minus -.2ex}%
+  {1.5ex \@plus .2ex}%
+  {\normalfont\normalsize\bfseries}}
 \makeatother
-\newcommand{\PropositionName}{Proposition}
-\newcounter{proposition}[chapter]
-\renewcommand{\theproposition}{\PropositionName~\thechapter.\arabic{proposition}}
-\def\Proposition{\refstepcounter{proposition}\textbf{\theproposition:}~}
-%%%%%%%%%%%%%%% Định nghĩa Proposition đánh số tự động end %%%%%%%%%%%
 
-%%%%%%%%%%%%%%% Định nghĩa Definition đánh số tự động %%%%%%%%%%%%%%
-\newcommand{\DefinitionName}{Definition}
-\newcounter{definition}[chapter]
-\renewcommand{\thedefinition}{\DefinitionName~\thechapter.\arabic{definition}}
-\def\Definition{\refstepcounter{definition}\textbf{\thedefinition:}~}
-%%%%%%%%%%%%%%% Định nghĩa Definition đánh số tự động end %%%%%%%%%%%
+% Chờ hết phần mở đầu để các bản vá dưới đây chạy sau khi hyperref được
+% nạp ở nhóm 5, giữ thứ tự xử lý mục lục và kiểu trang như trước khi sắp xếp.
+\AtEndPreamble{
+  % Thêm danh mục tài liệu tham khảo vào mục lục ở cấp chapter với tên bibname
+  % khi mở môi trường thebibliography (kể cả khi môi trường do tệp .bbl tạo ra).
+  % Cần biên dịch lại để nội dung mục lục và số trang được cập nhật.
+  \apptocmd{\thebibliography}{\protect \addcontentsline{toc}{chapter}{\bibname}}{}{%
+    \PackageWarning{styles/thesis}{Could not patch bibliography; check bibliography ToC entry}%
+  }
 
-%%%%%%%%%%%%%%% Định nghĩa Lemma đánh số tự động %%%%%%%%%%%%%%%%%%%
-\newcommand{\LemmaName}{Lemma}
-\newcounter{lemma}[chapter]
-\renewcommand{\thelemma}{\LemmaName~\thechapter.\arabic{lemma}}
-\def\Lemma{\refstepcounter{lemma}\textbf{\thelemma:}~}
-%%%%%%%%%%%%%%% Định nghĩa Lemma đánh số tự động end %%%%%%%%%%%%%%%
-% Chủ động đặt tên hiển thị bằng tiếng Việt (đặt ở cuối để ghi đè sau cùng)
+  % Trước bước \cleardoublepage của \chapter, chuyển kiểu trang sang plain.
+  % Với các lớp chuẩn, plain thường chỉ có số trang ở giữa chân trang.
+  % Bản vá chỉ có tác dụng nếu định nghĩa \chapter có chứa \cleardoublepage;
+  % phát cảnh báo nếu không tìm thấy đoạn cần thay thế.
+  \patchcmd{\chapter}{\cleardoublepage}{
+    \protect \pagestyle{plain}\cleardoublepage }{}{%
+    \PackageWarning{styles/thesis}{Could not patch chapter page style; check page numbering}%
+  }
+}
+
+% Tên hiển thị tiếng Việt và kiểu trang mặc định
+% Trì hoãn việc đổi tên đến lúc bắt đầu tài liệu để áp dụng sau khi đã nạp
+% phần mở đầu. Các gói/hook chạy sau vẫn có thể thay đổi các giá trị này.
+% Nhóm tên này dùng cho mục lục, danh mục hình/bảng, chương, tài liệu tham khảo,
+% phụ lục và chú thích hình/bảng; không dịch tên Proposition/Definition/Lemma.
+% pagestyle=plain đặt kiểu trang chung của báo cáo.
 \AtBeginDocument{
   \renewcommand{\contentsname}{MỤC LỤC}
   \renewcommand{\listfigurename}{DANH MỤC HÌNH VẼ}
@@ -219,3 +220,129 @@
   \renewcommand{\tablename}{Bảng}
   \pagestyle{plain}
 }
+
+% ==========================================================================
+% 4. HÌNH, BẢNG, CHÚ THÍCH VÀ MÃ NGUỒN
+% ==========================================================================
+
+% Chú thích hình/bảng: chữ nhỏ, nhãn in đậm, căn giữa.
+% Tăng chiều cao hàng bảng lên 1.2 lần so với giá trị mặc định.
+\captionsetup{font=small, labelfont=bf, justification=centering}
+\renewcommand{\arraystretch}{1.2}
+
+% Giữ nguyên \includegraphics của graphicx: hỗ trợ dò đuôi tệp,
+% \graphicspath, biến thể có dấu * và báo lỗi chuẩn khi thiếu ảnh.
+% Khi muốn ảnh giữ chỗ trong bản nháp, dùng lệnh riêng:
+% \thesisfigure[width=0.8\linewidth]{figures/example.png}.
+% Trong [final], lệnh chuyển thẳng sang \includegraphics; trong [draft],
+% nếu tệp chưa tồn tại thì cảnh báo và in khung giữ chỗ cao 4 cm.
+% Khi dùng khung nháp, ghi đường dẫn đầy đủ cả đuôi tệp, tính từ main.tex;
+% phép kiểm tra tệp nháp không dùng cơ chế dò đuôi hay \graphicspath.
+% Các tùy chọn kích thước áp dụng khi có ảnh; khung giữ chỗ dùng cỡ cố định.
+\NewDocumentCommand{\thesisfigure}{O{} m}{%
+  \ifthesisdraft
+    \IfFileExists{#2}{%
+      \includegraphics[#1]{#2}%
+    }{%
+      \PackageWarning{styles/thesis}{Missing draft figure: \detokenize{#2}}%
+      \fbox{%
+        \parbox[c][4cm][c]{0.8\linewidth}{%
+          \centering Missing figure\\\texttt{\detokenize{#2}}%
+        }%
+      }%
+    }%
+  \else
+    \includegraphics[#1]{#2}%
+  \fi
+}
+
+% Cột độ rộng cố định L{...}/C{...}/R{...}: căn trái/giữa/phải,
+% tự xuống dòng trong ô và căn trên theo kiểu cột p.
+% \arraybackslash khôi phục cách dùng \\ để kết thúc hàng trong bảng.
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+% Cột độ rộng tự động Y/Z: căn trái/giữa, dùng bên trong tabularx.
+% Ví dụ: \begin{tabularx}{\linewidth}{|l|Y|Z|} ... \end{tabularx}.
+% Các cột X (gồm Y/Z) chia đều phần chiều rộng còn lại sau các cột cố định;
+% nội dung tự xuống dòng. Dùng \centering trong table để căn giữa cả bảng.
+% Viền vẫn khai báo bằng | và \hline theo từng bảng; không áp lên bảng bìa.
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{Z}{>{\centering\arraybackslash}X}
+
+% Mặc định cho lstlisting: tô cú pháp C++, font đơn cách cỡ footnotesize;
+% đánh số từng dòng bên trái, tab rộng 2 ký tự, không đánh dấu khoảng trắng
+% trong chuỗi; tự xuống dòng dài kể cả khi không có khoảng trắng để ngắt.
+% Bao khung đơn và dùng nền xám 15%. Có thể ghi đè theo từng đoạn mã,
+% ví dụ \begin{lstlisting}[language=Python,caption={Ví dụ},label={code:demo}].
+\lstset{language=C++,basicstyle=\ttfamily\footnotesize,numbers=left,stepnumber=1,
+  showstringspaces=false,tabsize=2,breaklines=true,
+  breakatwhitespace=false,frame=single,backgroundcolor=\color{gray!15}}
+\renewcommand{\lstlistingname}{Code}
+
+% ==========================================================================
+% 5. LIÊN KẾT VÀ LỆNH THAM CHIẾU
+% ==========================================================================
+
+% hyperref tạo liên kết cho tham chiếu/mục lục; hidelinks ẩn màu và viền.
+% plainpages=false phân biệt nhãn trang dạng La Mã và Ả Rập khi tạo đích
+% liên kết, hữu ích khi phần đầu và nội dung chính đều bắt đầu từ trang 1.
+\RequirePackage[hidelinks,plainpages=false]{hyperref}
+
+% Đặt \label{...} tại đối tượng cần dẫn rồi gọi các lệnh dưới đây với khóa đó.
+% Ví dụ: \fref{fig:system}, \tref{tab:result}, \coderef{code:demo}.
+% Dấu ~ giữ tên loại đối tượng và số trên cùng dòng; \secref chỉ in số mục.
+% \eqsref{eq:start}{eq:end} in khoảng số công thức trong một cặp ngoặc tròn.
+% Các tên như chaptername/figurename lấy giá trị tại lúc dùng, nên phản ánh
+% các thiết lập tiếng Việt ở nhóm 3. Tham chiếu cần biên dịch lại để hết ??.
+\newcommand{\charef}[1]{\chaptername~\ref{#1}} % tham chiếu chương
+\newcommand{\appref}[1]{\appendixname~\ref{#1}} % tham chiếu phụ lục
+\newcommand{\secref}[1]{\ref{#1}} % tham chiếu mục
+\newcommand{\fref}[1]{\figurename~\ref{#1}} % tham chiếu hình
+\newcommand{\tref}[1]{\tablename~\ref{#1}} % tham chiếu bảng
+\newcommand{\eqsref}[2]{(\ref{#1} -- \ref{#2})} % tham chiếu công thức liên tiếp
+\newcommand{\coderef}[1]{\lstlistingname~\ref{#1}} % tham chiếu mã
+
+% ==========================================================================
+% 6. VIẾT TẮT, KÝ HIỆU VÀ CÁC TIỆN ÍCH CHUYÊN BIỆT
+% ==========================================================================
+
+% Danh mục chữ viết tắt và ký hiệu được nhập trực tiếp trong
+% frontmatter/abbreviations.tex và frontmatter/symbols.tex.
+% Khi cần quản lý thuật ngữ tự động, nạp gói glossaries thật;
+% gói này không định nghĩa các lệnh giả lập cùng tên để tránh xung đột.
+
+% Nội dung giữ chỗ được cố ý in ra để nhắc hoàn thiện bản thảo.
+% \placeholder{nội dung cần bổ sung} tạo đoạn chữ nghiêng trong ngoặc vuông.
+\newcommand{\placeholder}[1]{\par\noindent\textit{[PLACEHOLDER: #1]}\par}
+
+% \diag{a,b} in chữ diag đứng trong công thức, kèm đối số trong ngoặc.
+\newcommand{\diag}[1]{\text{diag}(#1)}
+
+% Mệnh đề, định nghĩa và bổ đề đánh số theo chương
+% Mỗi loại có bộ đếm riêng và trở về 0 khi bộ đếm chapter tăng.
+% Ví dụ: \Proposition\label{prop:stability} Nội dung mệnh đề...
+% \refstepcounter tăng số và cập nhật giá trị để \label/\ref tham chiếu được.
+% Tên loại nằm trong \theproposition (tương tự cho hai loại bên dưới), nên
+% \ref cũng chứa cả tên, ví dụ "Proposition 2.1", không chỉ riêng số 2.1.
+% Đây là lệnh in nhãn đậm có dấu hai chấm, không phải môi trường định lý;
+% không tự tạo đoạn mới, định dạng phần thân hay thêm phần chứng minh.
+% Có thể đổi tên qua \renewcommand{\PropositionName}{Mệnh đề}.
+\newcommand{\PropositionName}{Proposition}
+\newcounter{proposition}[chapter]
+\renewcommand{\theproposition}{\PropositionName~\thechapter.\arabic{proposition}}
+\def\Proposition{\refstepcounter{proposition}\textbf{\theproposition:}~}
+
+% \Definition dùng bộ đếm definition độc lập; cách dùng như \Proposition.
+% Đổi tên hiển thị bằng \renewcommand{\DefinitionName}{Định nghĩa} nếu cần.
+\newcommand{\DefinitionName}{Definition}
+\newcounter{definition}[chapter]
+\renewcommand{\thedefinition}{\DefinitionName~\thechapter.\arabic{definition}}
+\def\Definition{\refstepcounter{definition}\textbf{\thedefinition:}~}
+
+% \Lemma dùng bộ đếm lemma độc lập, cũng được đánh số theo chương.
+% Đổi tên hiển thị bằng \renewcommand{\LemmaName}{Bổ đề} nếu cần.
+\newcommand{\LemmaName}{Lemma}
+\newcounter{lemma}[chapter]
+\renewcommand{\thelemma}{\LemmaName~\thechapter.\arabic{lemma}}
+\def\Lemma{\refstepcounter{lemma}\textbf{\thelemma:}~}

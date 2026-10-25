@@ -8,7 +8,7 @@
 
 ## MỤC LỤC TỔNG QUAN
 
-1. [Bảng Chỉ mục Nhanh 18 Bài báo Khoa học](#1-bảng-chỉ-mục-nhanh-18-bài-báo-khoa-học)
+1. [Bảng Chỉ mục Nhanh 20 Bài báo Khoa học](#1-bảng-chỉ-mục-nhanh-20-bài-báo-khoa-học)
 2. [Cây Tri thức & Bản đồ Phân loại Nghiên cứu](#2-cây-tri-thức--bản-đồ-phân-loại-nghiên-cứu)
 3. [Phần I: Mô hình hóa Động lực học & Nhận dạng Tham số](#phần-i-mô-hình-hóa-động-lực-học--nhận-dạng-tham-số)
    - [1.1. Chovancová et al. (2014) - Mô hình hóa và nhận dạng tham số Quadrotor (Survey)](#11-chovancová-et-al-2014---mô-hình-hóa-và-nhận-dạng-tham-số-quadrotor-survey)
@@ -29,16 +29,17 @@
    - [4.2. Zeng et al. (IMCCC 2012) - So sánh PID và Điều khiển Thích nghi Mô hình Mẫu (MRAC)](#42-zeng-et-al-imccc-2012---so-sánh-pid-và-điều-khiển-thích-nghi-mô-hình-mẫu-mrac)
    - [4.3. Luong Tuan & Won (ICCAS 2013) - Bộ điều khiển trượt dựa trên PID (PID-SMC) chống Chattering](#43-luong-tuan--won-iccas-2013---bộ-điều-khiển-trượt-dựa-trên-pid-pid-smc-chống-chattering)
    - [4.4. Ozbek & Burkan (Springer 2025) - Điều khiển thích nghi lượng giác (TAC) với tham số biến thiên](#44-ozbek--burkan-springer-2025---điều-khiển-thích-nghi-lượng-giác-tac-với-tham-số-biến-thiên)
+   - [4.5. Hoàng Văn Huy (HaUI 2024) - Mô phỏng hệ điều khiển Quadrotor dùng động cơ DC với bộ điều khiển thích nghi](#45-hoàng-văn-huy-haui-2024---mô-phỏng-hệ-điều-khiển-quadrotor-dùng-động-cơ-dc-với-bộ-điều-khiển-thích-nghi)
+   - [4.6. Trần Thúy Quỳnh et al. (HaUI 2025) - Thiết kế bộ điều khiển thích nghi cho Quadrotor dựa trên phương pháp trượt (AFSMC)](#46-trần-thúy-quỳnh-et-al-haui-2025---thiết-kế-bộ-điều-khiển-thích-nghi-cho-quadrotor-dựa-trên-phương-pháp-trượt-afsmc)
 7. [Phần V: Sinh Quỹ đạo Tối ưu & Chuyển động Cơ động Cao](#phần-v-sinh-quỹ-đạo-tối-ưu--chuyển-động-cơ-động-cao)
    - [5.1. Mellinger & Kumar (ICRA 2011) - Sinh quỹ đạo Minimum Snap và điều khiển phi tuyến](#51-mellinger--kumar-icra-2011---sinh-quỹ-đạo-minimum-snap-và-điều-khiển-phi-tuyến)
    - [5.2. Mellinger et al. (IJRR 2012) - Sinh quỹ đạo và điều khiển cơ động mạo hiểm chính xác](#52-mellinger-et-al-ijrr-2012---sinh-quỹ-đạo-và-điều-khiển-cơ-động-mạo-hiểm-chính-xác)
    - [5.3. Singh & Kumar (Springer 2023) - Điều khiển tư thế/vị trí với quy hoạch Minimum Snap đa thức bậc 7](#53-singh--kumar-springer-2023---điều-khiển-tư-thếvị-trí-với-quy-hoạch-minimum-snap-đa-thức-bậc-7)
 8. [Bảng So sánh & Tổng hợp Kỹ thuật giữa các Phương pháp Điều khiển](#8-bảng-so-sánh--tổng-hợp-kỹ-thuật-giữa-các-phương-pháp-điều-khiển)
-9. [Lộ trình Triển khai Thực tế cho Dự án Drone](#9-lộ-trình-triển-khai-thực-tế-cho-dự-án-drone)
 
 ---
 
-## 1. BẢNG CHỈ MỤC NHANH 18 BÀI BÁO KHOA HỌC
+## 1. BẢNG CHỈ MỤC NHANH 20 BÀI BÁO KHOA HỌC
 
 | STT | Tệp PDF bài báo | Tiêu đề tóm tắt | Tác giả chính | Năm | Phân loại chính | Thuật toán / Trọng tâm |
 |:---:|:---|:---|:---|:---:|:---|:---|
@@ -60,6 +61,8 @@
 | 16 | [`mellinger2011.pdf`](./mellinger2011.pdf) | Minimum Snap Trajectory Generation and Control | D. Mellinger et al. | 2011 | Nhóm 5: Sinh quỹ đạo tối ưu | Vi phân phẳng (Differential Flatness), Tối ưu Snap (QP), Bay Slalom tốc độ cao |
 | 17 | [`mellinger2012.pdf`](./mellinger2012.pdf) | Trajectory Generation & Control for Aggressive Maneuvers | D. Mellinger et al. | 2012 | Nhóm 5: Sinh quỹ đạo tối ưu | Bay cơ động mạo hiểm qua khe hẹp thẳng đứng, Bám đậu (Perching), Học lặp |
 | 18 | [`Attitude-and-position-control...pdf`](./Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV.pdf) | Attitude & Position Control with Minimum Snap Planning | B. K. Singh et al. | 2023 | Nhóm 5: Sinh quỹ đạo tối ưu | Đa thức bậc 7 Euler-Lagrange, Hai vòng PD bám quỹ đạo Helical/Số 8 |
+| 19 | [`huy2024.pdf`](./huy2024.pdf) | Mô phỏng ĐK Quadrotor dùng động cơ DC với bộ ĐK thích nghi | H. V. Huy | 2024 | Nhóm 4: Phi tuyến & Thích nghi | Động cơ DC RS-555PH, Thích nghi Gradient/MIT, Tuyến tính hóa phản hồi, Tối ưu modul |
+| 20 | [`quynh2025.pdf`](./quynh2025.pdf) | Thiết kế bộ điều khiển thích nghi cho Quadrotor dựa trên SMC | T. T. Quỳnh et al. | 2025 | Nhóm 4: Phi tuyến & Thích nghi | Trượt thích nghi mờ (AFSMC), 2 bộ giám sát mờ FMC1 & FMC2, Ổn định Lyapunov, Giảm Chattering |
 
 ---
 
@@ -94,6 +97,8 @@ flowchart TD
         N2["Zeng (2012)<br/>Thích nghi MRAC vs PID"]
         N3["Luong Tuan (2013)<br/>PID-SMC chống Chattering"]
         N4["Ozbek (2025)<br/>Thích nghi lượng giác TAC"]
+        N5["Huy (2024)<br/>Động cơ DC & Thích nghi Gradient"]
+        N6["Quỳnh et al. (2025)<br/>Trượt thích nghi mờ AFSMC"]
     end
 
     subgraph G5["Nhóm 5: Sinh Quỹ đạo Tối ưu & Cơ động Cao"]
@@ -477,6 +482,59 @@ flowchart TD
 
 ---
 
+### 4.5. Hoàng Văn Huy (HaUI 2024) - Mô phỏng hệ điều khiển Quadrotor dùng động cơ DC với bộ điều khiển thích nghi
+- **Tệp tài liệu:** [`huy2024.pdf`](./huy2024.pdf)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/huy2024/`](./papers_md/huy2024/)
+- **Tiêu đề gốc:** *Mô phỏng hệ điều khiển quadrotor sử dụng động cơ chấp hành một chiều với bộ điều khiển thích nghi* (English: *Simulation of Quadrotor Control System Using Engine One Way with Adaptive Controller*)
+- **Tác giả:** Hoàng Văn Huy
+- **Công bố tại:** *Tạp chí Khoa học & Công nghệ - Đại học Công nghiệp Hà Nội (HaUI Journal of Science and Technology)*, Vol. 60, No. 9, pp. 111–117, 09/2024. DOI: `10.57001/huih5804.2024.303`.
+
+#### Tóm tắt (Abstract)
+- **Nguyên bản tiếng Việt:**
+  > Bài báo này trình bày việc xây dựng một mô hình động lực học đầy đủ của quadrotor khi kể đến cơ cấu chấp hành là động cơ điện một chiều với bộ điều khiển thích nghi. Các bộ điều khiển vị trí, tốc độ của quadrotor sẽ được thiết kế theo phương pháp tối ưu modul, tuyến tính hóa phản hồi và kết quả được kiểm chứng bằng phần mềm Matlab-Simulink.
+- **Bản dịch tiếng Anh (Abstract):**
+  > *"This article presents the construction of a full dynamic model of a quadrotor considering that the actuator is a DC electric motor with an adaptive controller. The position and speed controllers of the quadrotor will be designed according to the modular optimization method, feedback linearization and the results will be verified using Matlab-Simulink software."*
+
+#### Mở đầu (Introduction) - Trích đoạn & Đặt vấn đề
+- **Bối cảnh & Khoảng trống nghiên cứu:**
+  Hầu hết các nghiên cứu mô hình hóa quadrotor cổ điển xem tốc độ động cơ $\Omega_i$ hoặc lực đẩy $F_i$ là các biến vào lý tưởng tức thời, bỏ qua hoàn toàn động học phần điện và quán tính cơ khí của cơ cấu chấp hành động cơ điện. Trên thực tế, động cơ điện một chiều mang tính trễ điện cảm ($L_u$), quán tính rotor ($J_P$), và chịu mô-men cản khí động học phi tuyến mạnh của cánh quạt ($M_c = M_0 + B\Omega + d\Omega^2 / \eta N$). Việc bỏ qua động học động cơ khiến các bộ điều khiển lý thuyết dễ bị mất ổn định hoặc sai lệch đáp ứng quá độ khi triển khai phần cứng.
+- **Đóng góp chính:**
+  1. **Mô hình hóa động lực học tích hợp động cơ DC:** Xây dựng hệ phương trình Newton-Euler 6-DoF đầy đủ ghép nối trực tiếp với phương trình cân bằng điện áp phần ứng $U_u = R_u i + L_u \frac{di}{dt} + K_E \omega$ và động lực học cơ khí rotor $J_P \frac{d\omega}{dt} = M_{dc} - M_c$.
+  2. **Vòng điều khiển động cơ đa tầng thích nghi:** 
+     - Vòng dòng điện: Thiết kế tỷ lệ tích phân PI theo tiêu chuẩn tối ưu modul (Modul Optimum) $W_{\text{đi}} = K_i + 1/(T_n p)$.
+     - Vòng tốc độ động cơ: Áp dụng thuật toán thích nghi Gradient (luật MIT) bám theo mô hình tham chiếu bậc 2 mong muốn $G_m(p) = \frac{1}{p^2 + 0.5p + 1}$, tự động cập nhật hệ số khuếch đại thích ứng $\frac{dk}{dt} = -\gamma (y - y_m)\frac{p+ap}{p^2+ap+1}u$, triệt tiêu biến thiên của tham số tải cánh quạt.
+  3. **Tuyến tính hóa phản hồi (Feedback Linearization) & Ổn định Lyapunov cho góc Euler ($C_1$):** Chuyển đổi các biến điều khiển phi tuyến $(U_2, U_3, U_4)$ thành các biến tuyến tính ảo, chứng minh ổn định tiệm cận toàn cục qua hàm Lyapunov $V = 0.5(x_7^2 + x_8^2 + x_9^2)$ với $\dot{V} = \sum \lambda_i x_i^2 < 0$.
+  4. **Điều khiển vị trí ($C_3$) & vận tốc ($C_2$):** Thiết kế bộ điều khiển vị trí PID theo phương pháp nhận dạng và tối ưu modul, nghịch đảo động học xác định góc nghiêng Euler mong muốn $\phi_d, \theta_d$. Kiểm chứng mô phỏng Matlab/Simulink cho thấy quadrotor bám chính xác các nấc độ cao $Z_d = [10, 15, 40, 25, 5]\text{ m}$ và tọa độ ngang $X_d = 15\text{ m}, Y_d = 10\text{ m}$ với độ êm ái cao.
+
+---
+
+### 4.6. Trần Thúy Quỳnh et al. (HaUI 2025) - Thiết kế bộ điều khiển thích nghi cho Quadrotor dựa trên phương pháp trượt (AFSMC)
+- **Tệp tài liệu:** [`quynh2025.pdf`](./quynh2025.pdf)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/quynh2025/`](./papers_md/quynh2025/)
+- **Tiêu đề gốc:** *Thiết kế bộ điều khiển thích nghi cho quadrotor dựa trên phương pháp trượt* (English: *Adaptive Controller Design for a Quadrotor Based on Sliding Mode Control*)
+- **Tác giả:** Trần Thúy Quỳnh, Vũ Tiến Mạnh, Trần Thị Hồng Thắm, Nguyễn Hữu Hải, Ngô Mạnh Tùng
+- **Công bố tại:** *Tạp chí Khoa học & Công nghệ - Đại học Công nghiệp Hà Nội (HaUI Journal of Science and Technology)*, Vol. 61, No. 11, pp. 35–41, 11/2025. DOI: `10.57001/huih5804.2025.378`.
+
+#### Tóm tắt (Abstract)
+- **Nguyên bản tiếng Việt:**
+  > Thiết bị không người lái (UAV), đặc biệt là quadrotor, trong quá trình vận hành chịu nhiều tác động từ môi trường bên ngoài trong việc duy trì sự ổn định do tính phi tuyến của động lực học và yếu tố bất định như nhiễu gió hoặc thay đổi tải trọng. Bộ điều khiển trượt (Sliding Mode Control - SMC) là một phương pháp phổ biến để xử lý các hệ thống phi tuyến, trong đó tác động của nhiễu bên ngoài còn ảnh hưởng nhiều tới sai lệch đầu ra. Để khắc phục vấn đề này, bộ điều khiển thích nghi mờ - trượt (Adaptive Fuzzy Sliding Mode Controller - AFSMC) được đề xuất được thiết kế dựa trên bộ SMC kết hợp kỹ thuật logic mờ để cải thiện hiệu suất và tính ổn định của UAV. Thành phần logic mờ có vai trò xác định các tham số của bộ điều khiển đề xuất, tăng khả năng thích nghi với các thay đổi môi trường và tính bất định mô hình. Thuật toán điều khiển AFSMC áp dụng hàm Lyapunov để chứng minh tính ổn định của bộ điều khiển đề xuất.
+- **Bản dịch tiếng Anh (Abstract):**
+  > *"Unmanned aerial vehicles (UAVs), particularly quadrotors, face significant challenges in maintaining stability during operation due to their inherent nonlinear dynamics and environmental uncertainties such as wind disturbances or payload variations. Sliding Mode Control (SMC) is a widely adopted method for addressing nonlinear systems; however, it often suffers from high-frequency chattering and requires careful selection of control parameters. To overcome these limitations, an Adaptive Fuzzy Sliding Mode Controller (AFSMC) is proposed. This controller is designed by integrating fuzzy logic with SMC to enhance the performance and stability of UAVs. The fuzzy logic component plays a crucial role in determining the parameters of the proposed controller, thereby increasing its adaptability to environmental changes and model uncertainties. The stability of the proposed AFSMC algorithm is rigorously proven using Lyapunov stability analysis."*
+
+#### Mở đầu (Introduction) - Trích đoạn & Đặt vấn đề
+- **Bối cảnh & Hạn chế của SMC truyền thống:**
+  Điều khiển chế độ trượt (Sliding Mode Control - SMC) sở hữu đặc tính kháng nhiễu trực tiếp và bền vững cao trước sai lệch tham số mô hình. Tuy nhiên, hai rào cản cốt tử khi triển khai SMC là:
+  1. Hiện tượng rung giật tần số cao (**Chattering**) sinh ra từ thành phần đóng cắt gián đoạn $\eta \text{sgn}(s)$, gây tổn hại cơ cấu chấp hành và kích thích các mode dao động ký sinh.
+  2. Các thông số điều khiển (hệ số độ dốc mặt trượt $\lambda$ và biên độ đóng cắt $\eta$) rất khó hiệu chỉnh tối ưu bằng thực nghiệm thủ công, đặc biệt khi điều kiện môi trường và tải trọng biến thiên theo thời gian thực.
+- **Đóng góp chính:**
+  1. **Cấu trúc thích nghi mờ - trượt 2 tầng (Dual Fuzzy Supervisory):**
+     - Bộ giám sát mờ **FMC1:** Đầu vào là sai số $e_i$ và đạo hàm sai số $\dot{e}_i$, đầu ra hiệu chỉnh trực tuyến hệ số mặt trượt $\lambda_i$, giúp quỹ đạo trạng thái nhanh chóng tiến vào mặt trượt.
+     - Bộ giám sát mờ **FMC2:** Đầu vào là khoảng cách mặt trượt $s_i$ và đạo hàm $\dot{s}_i$, đầu ra tự thích ứng hệ số đóng cắt $\eta_i$. Khi ở xa mặt trượt, $\eta_i$ được đẩy lên cao để hội tụ nhanh; khi đã ở sát mặt trượt ($s_i \to 0$), $\eta_i$ được tự động hạ nhỏ để **triệt tiêu hoàn toàn hiện tượng chattering**.
+  2. **Chứng minh ổn định Lyapunov mạch kín:** Thiết lập hàm Lyapunov $V = \frac{1}{2} s_i^2$ và chứng minh $\dot{V} = s_i \dot{s}_i \le 0$ cho cả 4 kênh độc lập ($z, \phi, \theta, \psi$), đảm bảo tính ổn định tiệm cận toàn cục.
+  3. **Kiểm chứng kháng nhiễu gió vượt trội:** Mô phỏng kịch bản cất cánh lên $4\text{ m}$ và bám góc đặt phức tạp, kết hợp kích hoạt nhiễu gió ngoại sinh dọc trục $y$ từ giây thứ 5. Kết quả cho thấy AFSMC đạt ổn định nhanh hơn SMC từ **2 đến 3 giây**, đồng thời cắt giảm biên độ rung lắc góc Roll từ **10% đến 16%** so với bộ điều khiển SMC truyền thống.
+
+---
+
 ## PHẦN V: SINH QUỸ ĐẠO TỐI ƯU & CHUYỂN ĐỘNG CƠ ĐỘNG CAO
 *(Trajectory Generation, Planning & Aggressive Maneuvers)*
 
@@ -560,7 +618,7 @@ flowchart TD
 
 ## 8. BẢNG SO SÁNH & TỔNG HỢP KỸ THUẬT GIỮA CÁC PHƯƠNG PHÁP ĐIỀU KHIỂN
 
-Bảng tổng hợp đối chiếu toàn diện các giải pháp điều khiển xuất hiện trong 18 bài báo nghiên cứu:
+Bảng tổng hợp đối chiếu toàn diện các giải pháp điều khiển xuất hiện trong 20 bài báo nghiên cứu:
 
 | Phương pháp điều khiển | Loại mô hình áp dụng | Bậc tự do kiểm soát | Độ phức tạp tính toán | Kháng nhiễu / Biến thiên tham số | Nguy cơ bất lợi | Khả năng chạy trên MCU (STM32/ESP32) | Bài báo tiêu biểu |
 |:---|:---|:---|:---:|:---:|:---|:---:|:---|
@@ -570,34 +628,13 @@ Bảng tổng hợp đối chiếu toàn diện các giải pháp điều khiể
 | **Điều khiển trượt (PID-SMC)** | Mô hình phi tuyến 6-DoF | Tư thế & Vị trí | Trung bình | Rất cao, kháng nhiễu cực tốt | Chattering (rung giật) nếu dùng hàm sgn | Khả thi (khi dùng hàm bão hòa sat) | Luong Tuan & Won (2013) |
 | **Thích nghi mô hình mẫu (MRAC)** | Phi tuyến + Bất định | Góc tư thế | Trung bình - Cao | Tự bù sai lệch mô hình và tạp âm | Nguy cơ trôi tham số khi thiếu kích thích | Khả thi trên Cortex-M4/M7 | Zeng et al. (2012) |
 | **Thích nghi lượng giác (TAC)** | Phi tuyến 6-DoF under-actuated | Bám quỹ đạo đầy đủ | Cao | Cực cao, bù tham số biến thiên theo thời gian | Cần đo đủ vận tốc và gia tốc | Cần MCU tốc độ cao hoặc Companion PC | Ozbek & Burkan (2025) |
+| **Thích nghi động cơ DC + Tuyến tính hóa phản hồi** | Mô hình 6-DoF + Động cơ DC RS-555PH | Độ cao, góc Euler & Vận tốc động cơ | Trung bình - Khá | Tốt trước biến thiên mô-men cản cánh quạt | Cần nhận dạng thông số điện cảm/điện trở | Khả thi trên STM32 (vòng dòng/tốc độ PWM) | Hoàng Văn Huy (2024) |
+| **Trượt thích nghi mờ (AFSMC)** | Mô hình phi tuyến 6-DoF có nhiễu gió | Độ cao và 3 góc Euler | Khá | Cực cao, kháng nhiễu gió ngoại sinh (biên độ dao động giảm 10-16%, đáp ứng nhanh hơn 2s) | Cần bảng luật mờ và giải mờ trọng tâm | Hoàn toàn khả thi trên STM32/ESP32 | Trần Thúy Quỳnh et al. (2025) |
 | **Điều khiển hình học SE(3)** | Phi tuyến toàn cục trên đa tạp Lie | Bám tư thế góc lớn & Vị trí | Trung bình - Khá | Tuyệt vời cho nhào lộn góc lớn ($360^\circ$) | Không thể tuyến tính hóa đơn giản | Hoàn toàn khả thi trên STM32F4/F7 | Taeyoung Lee et al. (2010) |
 | **Quy hoạch Minimum Snap (QP)** | Vi phân phẳng (Differential Flatness) | Sinh quỹ đạo $x, y, z, \psi$ mượt | Cao (Giải QP hoặc hệ đa thức bậc 7) | Sinh quỹ đạo khả thi cho cơ cấu chấp hành | Đòi hỏi giải QP nếu hành lang va chạm phức tạp | Thường giải trên Companion PC (ROS) | Mellinger (2011, 2012), Singh (2023) |
 
 ---
 
-## 9. LỘ TRÌNH TRIỂN KHAI THỰC TẾ CHO DỰ ÁN DRONE
-
-Từ 18 công trình nghiên cứu trên, lộ trình kỹ thuật tối ưu để xây dựng và phát triển phần mềm điều khiển bay (Flight Controller Firmware) cho dự án Drone thực tế được đề xuất qua 3 giai đoạn:
-
-### Giai đoạn 1: Ước lượng tư thế & Ổn định góc cơ bản (Attitude Stabilization Loop)
-- **Cảm biến:** IMU MPU-6050 / ICM-42688 (I2C/SPI).
-- **Thuật toán ước lượng:** Áp dụng phương pháp của **Mou et al. (2016)**: Sử dụng Quaternion kết hợp Bộ lọc bù (Complementary Filter) để suy diễn góc Euler mà không bị tốn tài nguyên vi điều khiển STM32.
-- **Vòng điều khiển:** Cài đặt bộ điều khiển PID phân tầng (hoặc LQR-PID theo **Argentim et al., 2013**):
-  - Vòng ngoài (Angle Controller): Tần số $100\text{ Hz}$, tính toán vận tốc góc mong muốn từ sai số góc.
-  - Vòng trong (Rate Controller): Tần số $500\text{ Hz} - 1\text{ kHz}$, điều khiển trực tiếp mô-men động cơ từ sai số vận tốc con quay hồi chuyển.
-
-### Giai đoạn 2: Giữ độ cao & Kháng nhiễu nâng cao (Altitude & Robust Control Loop)
-- **Cảm biến:** Khí áp kế BMP280/SPL06 + Cảm biến sóng siêu âm / Lidar ToF tầm gần.
-- **Mô hình hóa:** Áp dụng mô hình định danh tham số từ **Chovancová et al. (2014)** và **Walid et al. (2018)** để xác định chính xác lực nâng cánh quạt ($k_T$) và hằng số mô-men ($k_D$).
-- **Kháng nhiễu:** Tích hợp bộ điều khiển trượt mượt chống rung giật (Smooth PID-SMC) theo nghiên cứu của **Luong Tuan & Won (2013)** để giữ thăng bằng vững vàng khi có gió tạt ngoài trời.
-
-### Giai đoạn 3: Tự hành bám quỹ đạo mượt & Bay cơ động cao (Autonomous Trajectory Tracking)
-- **Kiến trúc phần cứng:** Máy tính nhúng đồng hành (Companion Computer: Raspberry Pi / Jetson Nano) kết nối với mạch bay chính (Flight Controller: STM32) qua giao thức MAVLink.
-- **Quy hoạch quỹ đạo:** Companion Computer chạy giải thuật **Minimum Snap** của **Mellinger & Kumar (2011)** và **Singh & Kumar (2023)** trên ROS để sinh các hàm đa thức bậc 7 đi qua các waypoints không gian.
-- **Bộ điều khiển bám:** Cài đặt bộ điều khiển hình học trên nhóm **SE(3)** theo **Lee et al. (2010)** trên vi điều khiển bay để loại bỏ hoàn toàn hiện tượng Gimbal Lock, cho phép drone thực hiện các góc nghiêng cơ động gắt một cách an toàn và chính xác tuyệt đối.
-
----
-
 > **Lưu ý khai thác dữ liệu:**  
-> - Toàn bộ mã nguồn LaTeX/BibTeX của 18 bài báo được lưu trữ tại [`references.bib`](./references.bib).  
+> - Toàn bộ mã nguồn LaTeX/BibTeX của 20 bài báo được lưu trữ tại [`references.bib`](./references.bib).  
 > - Các tài liệu đã được bóc tách định dạng Markdown cùng toàn bộ sơ đồ/hình vẽ nguyên bản chất lượng cao nằm trong từng thư mục con tại [`papers_md/`](./papers_md/).

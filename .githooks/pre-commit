@@ -4,7 +4,7 @@
 set -e
 
 # Get list of staged files (Added, Copied, Modified)
-mapfile -t STAGED_FILES < <(git diff --cached --name-only --diff-filter=ACM)
+mapfile -d '' -t STAGED_FILES < <(git diff --cached --name-only -z --diff-filter=ACM)
 
 if [ ${#STAGED_FILES[@]} -eq 0 ]; then
     exit 0
@@ -13,6 +13,7 @@ fi
 C_FILES=()
 PRETTIER_FILES=()
 CMAKE_FILES=()
+LATEX_FILES=()
 
 for FILE in "${STAGED_FILES[@]}"; do
     [ ! -f "$FILE" ] && continue
@@ -33,6 +34,10 @@ for FILE in "${STAGED_FILES[@]}"; do
 
         CMakeLists.txt|*.cmake)
             CMAKE_FILES+=("$FILE")
+            ;;
+
+        *.tex|*.sty|*.cls|*.bib)
+            LATEX_FILES+=("$FILE")
             ;;
     esac
 done
@@ -55,6 +60,18 @@ fi
 if [ ${#CMAKE_FILES[@]} -gt 0 ] && command -v cmake-format >/dev/null 2>&1; then
     cmake-format -i "${CMAKE_FILES[@]}"
     MODIFIED_FILES+=("${CMAKE_FILES[@]}")
+fi
+
+# Format LaTeX sources and bibliography; keep backups/logs outside the repo.
+if [ ${#LATEX_FILES[@]} -gt 0 ] && command -v latexindent >/dev/null 2>&1; then
+    (
+        LATEX_AUX_DIR=$(mktemp -d)
+        trap 'rm -rf -- "$LATEX_AUX_DIR"' EXIT
+        for FILE in "${LATEX_FILES[@]}"; do
+            latexindent -w -s -c="$LATEX_AUX_DIR" "./$FILE"
+        done
+    )
+    MODIFIED_FILES+=("${LATEX_FILES[@]}")
 fi
 
 # Re-stage any modified files

@@ -4,11 +4,13 @@
 > **Tệp trích dẫn BibTeX:** [`references.bib`](./references.bib)  
 > **Dữ liệu trích xuất (Markdown & Hình ảnh):** [`papers_md/`](./papers_md/)  
 
+Đồng bộ PDF sang Markdown và ảnh bằng `python3 tools/sync_papers.py` từ thư mục gốc repository; dùng `--dry-run` để xem trước. Script giữ nguyên các bản Markdown biên tập thủ công hiện có. Xem [hướng dẫn và tùy chọn trích xuất](../../../tools/README.md).
+
 ---
 
 ## MỤC LỤC TỔNG QUAN
 
-1. [Bảng Chỉ mục Nhanh 20 Bài báo Khoa học](#1-bảng-chỉ-mục-nhanh-20-bài-báo-khoa-học)
+1. [Bảng Chỉ mục Nhanh 21 Bài báo Khoa học](#1-bảng-chỉ-mục-nhanh-21-bài-báo-khoa-học)
 2. [Cây Tri thức & Bản đồ Phân loại Nghiên cứu](#2-cây-tri-thức--bản-đồ-phân-loại-nghiên-cứu)
 3. [Phần I: Mô hình hóa Động lực học & Nhận dạng Tham số](#phần-i-mô-hình-hóa-động-lực-học--nhận-dạng-tham-số)
    - [1.1. Chovancová et al. (2014) - Mô hình hóa và nhận dạng tham số Quadrotor (Survey)](#11-chovancová-et-al-2014---mô-hình-hóa-và-nhận-dạng-tham-số-quadrotor-survey)
@@ -31,6 +33,7 @@
    - [4.4. Ozbek & Burkan (Springer 2025) - Điều khiển thích nghi lượng giác (TAC) với tham số biến thiên](#44-ozbek--burkan-springer-2025---điều-khiển-thích-nghi-lượng-giác-tac-với-tham-số-biến-thiên)
    - [4.5. Hoàng Văn Huy (HaUI 2024) - Mô phỏng hệ điều khiển Quadrotor dùng động cơ DC với bộ điều khiển thích nghi](#45-hoàng-văn-huy-haui-2024---mô-phỏng-hệ-điều-khiển-quadrotor-dùng-động-cơ-dc-với-bộ-điều-khiển-thích-nghi)
    - [4.6. Trần Thúy Quỳnh et al. (HaUI 2025) - Thiết kế bộ điều khiển thích nghi cho Quadrotor dựa trên phương pháp trượt (AFSMC)](#46-trần-thúy-quỳnh-et-al-haui-2025---thiết-kế-bộ-điều-khiển-thích-nghi-cho-quadrotor-dựa-trên-phương-pháp-trượt-afsmc)
+   - [4.7. Hoàng Văn Huy (HaUI 2024) - Điều khiển vị trí Quadrotor bằng tuyến tính hóa phản hồi](#47-hoàng-văn-huy-haui-2024---điều-khiển-vị-trí-quadrotor-bằng-tuyến-tính-hóa-phản-hồi)
 7. [Phần V: Sinh Quỹ đạo Tối ưu & Chuyển động Cơ động Cao](#phần-v-sinh-quỹ-đạo-tối-ưu--chuyển-động-cơ-động-cao)
    - [5.1. Mellinger & Kumar (ICRA 2011) - Sinh quỹ đạo Minimum Snap và điều khiển phi tuyến](#51-mellinger--kumar-icra-2011---sinh-quỹ-đạo-minimum-snap-và-điều-khiển-phi-tuyến)
    - [5.2. Mellinger et al. (IJRR 2012) - Sinh quỹ đạo và điều khiển cơ động mạo hiểm chính xác](#52-mellinger-et-al-ijrr-2012---sinh-quỹ-đạo-và-điều-khiển-cơ-động-mạo-hiểm-chính-xác)
@@ -39,7 +42,7 @@
 
 ---
 
-## 1. BẢNG CHỈ MỤC NHANH 20 BÀI BÁO KHOA HỌC
+## 1. BẢNG CHỈ MỤC NHANH 21 BÀI BÁO KHOA HỌC
 
 | STT | Tệp PDF bài báo | Tiêu đề tóm tắt | Tác giả chính | Năm | Phân loại chính | Thuật toán / Trọng tâm |
 |:---:|:---|:---|:---|:---:|:---|:---|
@@ -63,6 +66,7 @@
 | 18 | [`Attitude-and-position-control...pdf`](./Attitude-and-position-control-with-minimum-snap-trajectory-planning-for-quadrotor-UAV.pdf) | Attitude & Position Control with Minimum Snap Planning | B. K. Singh et al. | 2023 | Nhóm 5: Sinh quỹ đạo tối ưu | Đa thức bậc 7 Euler-Lagrange, Hai vòng PD bám quỹ đạo Helical/Số 8 |
 | 19 | [`huy2024.pdf`](./huy2024.pdf) | Mô phỏng ĐK Quadrotor dùng động cơ DC với bộ ĐK thích nghi | H. V. Huy | 2024 | Nhóm 4: Phi tuyến & Thích nghi | Động cơ DC RS-555PH, Thích nghi Gradient/MIT, Tuyến tính hóa phản hồi, Tối ưu modul |
 | 20 | [`quynh2025.pdf`](./quynh2025.pdf) | Thiết kế bộ điều khiển thích nghi cho Quadrotor dựa trên SMC | T. T. Quỳnh et al. | 2025 | Nhóm 4: Phi tuyến & Thích nghi | Trượt thích nghi mờ (AFSMC), 2 bộ giám sát mờ FMC1 & FMC2, Ổn định Lyapunov, Giảm Chattering |
+| 21 | [`huy2024-262.pdf`](./huy2024-262.pdf) | Thiết kế bộ điều khiển vị trí Quadrotor bằng tuyến tính hóa phản hồi | H. V. Huy | 2024 | Nhóm 4: Phi tuyến & Thích nghi | Phân chia chuyển động, 3 vòng góc Euler - tốc độ - vị trí, PI tối ưu modul, PD, Lyapunov |
 
 ---
 
@@ -99,6 +103,7 @@ flowchart TD
         N4["Ozbek (2025)<br/>Thích nghi lượng giác TAC"]
         N5["Huy (2024)<br/>Động cơ DC & Thích nghi Gradient"]
         N6["Quỳnh et al. (2025)<br/>Trượt thích nghi mờ AFSMC"]
+        N7["Huy (2024, DOI .262)<br/>Vị trí & Tuyến tính hóa phản hồi 3 vòng"]
     end
 
     subgraph G5["Nhóm 5: Sinh Quỹ đạo Tối ưu & Cơ động Cao"]
@@ -535,6 +540,29 @@ flowchart TD
 
 ---
 
+### 4.7. Hoàng Văn Huy (HaUI 2024) - Điều khiển vị trí Quadrotor bằng tuyến tính hóa phản hồi
+- **Tệp tài liệu:** [`huy2024-262.pdf`](./huy2024-262.pdf)
+- **Thư mục dữ liệu trích xuất:** [`papers_md/huy2024-262/`](./papers_md/huy2024-262/)
+- **Bản Markdown:** [`huy2024-262.md`](./papers_md/huy2024-262/huy2024-262.md)
+- **Tiêu đề gốc:** *Thiết kế bộ điều khiển vị trí thiết bị bay không người lái quadrotor bằng phương pháp tuyến tính hóa phản hồi* (English: *Design of a Quadrotor Position Controller Using Feedback Linearized Method*)
+- **Tác giả:** Hoàng Văn Huy, Trường Đại học Công nghiệp Hà Nội
+- **Công bố tại:** *Tạp chí Khoa học và Công nghệ Trường Đại học Công nghiệp Hà Nội (HaUI Journal of Science and Technology)*, Vol. 60, No. 8, pp. 42–49, 08/2024. DOI: `10.57001/huih5804.2024.262`.
+- **Khóa BibTeX:** `huy2024position`. Đây là bài riêng với `huy2024simulation` (DOI `.303`, số 9/2024) đã có trong kho.
+
+#### Tóm tắt (Abstract)
+- **Nguyên bản tiếng Việt:**
+  > Bài báo trình bày phương pháp thiết kế bộ điều khiển thiết bị bay không người lái (UAV) quadrotor phi tuyến, dựa trên sự phân chia mô hình động lực học của quadrotor thành các hệ con có cấu trúc phụ thuộc nhau và sử dụng tuyến tính hóa phản hồi. Trên cơ sở các bộ điều khiển tổng hợp được, tiến hành mô phỏng hệ điều khiển vị trí quadrotor bằng Matlab-Simulink. Các kết quả mô phỏng chứng minh tính đúng đắn của thuật toán và cách tiếp cận khi tổng hợp bộ điều khiển phức tạp của quadrotor.
+- **Diễn giải:** Tách động lực học quay và tịnh tiến để xây dựng ba vòng điều khiển lệ thuộc. Vòng góc Euler dùng tuyến tính hóa phản hồi và PI theo tiêu chuẩn tối ưu modul; vòng tốc độ dài dùng bộ điều khiển tỷ lệ; vòng vị trí ngoài cùng dùng PD.
+
+#### Mở đầu (Introduction) - Bối cảnh & Đóng góp chính
+- **Bối cảnh:** Quadrotor có động lực học phi tuyến mạnh và khả năng tính toán trên thiết bị hạn chế. Phân chia chuyển động giúp đơn giản hóa việc tổng hợp bộ điều khiển vị trí.
+- **Đóng góp chính:**
+  1. Xây dựng mô hình Newton-Euler, quan hệ lực đẩy/mô-men với tốc độ bốn cánh quạt và tách hai hệ con quay (S1), tịnh tiến (S2).
+  2. Thiết kế cấu trúc **C1 góc Euler → C2 tốc độ dài → C3 vị trí**, với yêu cầu vòng trong phản ứng nhanh hơn vòng ngoài. Chọn các hệ số của phần động học góc đã tuyến tính hóa theo điều kiện Lyapunov.
+  3. Mô phỏng Matlab-Simulink với hai giá trị đặt: cất cánh thẳng đứng đến $(0, 0, 37)$ m và di chuyển kết hợp cất cánh đến $(3{,}5, 4, 15)$ m. Các đồ thị cho thấy vị trí tiến về giá trị đặt và các góc Euler trở về gần 0 sau quá độ; bài báo chưa báo cáo thử nghiệm bay thực tế hoặc đánh giá định lượng kháng nhiễu.
+
+---
+
 ## PHẦN V: SINH QUỸ ĐẠO TỐI ƯU & CHUYỂN ĐỘNG CƠ ĐỘNG CAO
 *(Trajectory Generation, Planning & Aggressive Maneuvers)*
 
@@ -618,7 +646,7 @@ flowchart TD
 
 ## 8. BẢNG SO SÁNH & TỔNG HỢP KỸ THUẬT GIỮA CÁC PHƯƠNG PHÁP ĐIỀU KHIỂN
 
-Bảng tổng hợp đối chiếu toàn diện các giải pháp điều khiển xuất hiện trong 20 bài báo nghiên cứu:
+Bảng tổng hợp đối chiếu toàn diện các giải pháp điều khiển xuất hiện trong 21 bài báo nghiên cứu:
 
 | Phương pháp điều khiển | Loại mô hình áp dụng | Bậc tự do kiểm soát | Độ phức tạp tính toán | Kháng nhiễu / Biến thiên tham số | Nguy cơ bất lợi | Khả năng chạy trên MCU (STM32/ESP32) | Bài báo tiêu biểu |
 |:---|:---|:---|:---:|:---:|:---|:---:|:---|
@@ -629,6 +657,7 @@ Bảng tổng hợp đối chiếu toàn diện các giải pháp điều khiể
 | **Thích nghi mô hình mẫu (MRAC)** | Phi tuyến + Bất định | Góc tư thế | Trung bình - Cao | Tự bù sai lệch mô hình và tạp âm | Nguy cơ trôi tham số khi thiếu kích thích | Khả thi trên Cortex-M4/M7 | Zeng et al. (2012) |
 | **Thích nghi lượng giác (TAC)** | Phi tuyến 6-DoF under-actuated | Bám quỹ đạo đầy đủ | Cao | Cực cao, bù tham số biến thiên theo thời gian | Cần đo đủ vận tốc và gia tốc | Cần MCU tốc độ cao hoặc Companion PC | Ozbek & Burkan (2025) |
 | **Thích nghi động cơ DC + Tuyến tính hóa phản hồi** | Mô hình 6-DoF + Động cơ DC RS-555PH | Độ cao, góc Euler & Vận tốc động cơ | Trung bình - Khá | Tốt trước biến thiên mô-men cản cánh quạt | Cần nhận dạng thông số điện cảm/điện trở | Khả thi trên STM32 (vòng dòng/tốc độ PWM) | Hoàng Văn Huy (2024) |
+| **Tuyến tính hóa phản hồi + 3 vòng PI/P/PD** | Mô hình Newton-Euler phi tuyến, tách quay và tịnh tiến | Vị trí X, Y, Z và góc Euler | Chưa định lượng trong bài | Chưa khảo sát riêng nhiễu hoặc biến thiên tham số | Phụ thuộc mô hình và giả thiết vòng góc đủ nhanh | Chưa kiểm chứng trên MCU; mô phỏng Matlab-Simulink | Hoàng Văn Huy (2024, DOI `.262`) |
 | **Trượt thích nghi mờ (AFSMC)** | Mô hình phi tuyến 6-DoF có nhiễu gió | Độ cao và 3 góc Euler | Khá | Cực cao, kháng nhiễu gió ngoại sinh (biên độ dao động giảm 10-16%, đáp ứng nhanh hơn 2s) | Cần bảng luật mờ và giải mờ trọng tâm | Hoàn toàn khả thi trên STM32/ESP32 | Trần Thúy Quỳnh et al. (2025) |
 | **Điều khiển hình học SE(3)** | Phi tuyến toàn cục trên đa tạp Lie | Bám tư thế góc lớn & Vị trí | Trung bình - Khá | Tuyệt vời cho nhào lộn góc lớn ($360^\circ$) | Không thể tuyến tính hóa đơn giản | Hoàn toàn khả thi trên STM32F4/F7 | Taeyoung Lee et al. (2010) |
 | **Quy hoạch Minimum Snap (QP)** | Vi phân phẳng (Differential Flatness) | Sinh quỹ đạo $x, y, z, \psi$ mượt | Cao (Giải QP hoặc hệ đa thức bậc 7) | Sinh quỹ đạo khả thi cho cơ cấu chấp hành | Đòi hỏi giải QP nếu hành lang va chạm phức tạp | Thường giải trên Companion PC (ROS) | Mellinger (2011, 2012), Singh (2023) |
@@ -636,5 +665,5 @@ Bảng tổng hợp đối chiếu toàn diện các giải pháp điều khiể
 ---
 
 > **Lưu ý khai thác dữ liệu:**  
-> - Toàn bộ mã nguồn LaTeX/BibTeX của 20 bài báo được lưu trữ tại [`references.bib`](./references.bib).  
+> - Toàn bộ mã nguồn LaTeX/BibTeX của 21 bài báo được lưu trữ tại [`references.bib`](./references.bib).
 > - Các tài liệu đã được bóc tách định dạng Markdown cùng toàn bộ sơ đồ/hình vẽ nguyên bản chất lượng cao nằm trong từng thư mục con tại [`papers_md/`](./papers_md/).

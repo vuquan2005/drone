@@ -2,13 +2,41 @@
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
-    "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*, .clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore, codegraph.json",
+    "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*",
     ".gitignore": ".gitattributes, .gitmodules",
     "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
     "*.ioc": ".mxproject",
     "bundles.store.json": "bundles-lock.store.json",
     "main.tex": "metadata.tex, latexmkrc, .chktexrc",
-    "*.tex": "$(capture).aux, $(capture).log, $(capture).out, $(capture).toc, $(capture).lof, $(capture).lot, $(capture).bbl, $(capture).blg, $(capture).bcf, $(capture).run.xml, $(capture).fls, $(capture).fdb_latexmk, $(capture).synctex.gz, $(capture).xdv, $(capture).pdf"
+    "*.tex": "${capture}.aux, ${capture}.log, ${capture}.out, ${capture}.toc, ${capture}.lof, ${capture}.lot, ${capture}.bbl, ${capture}.blg, ${capture}.bcf, ${capture}.run.xml, ${capture}.fls, ${capture}.fdb_latexmk, ${capture}.synctex.gz, ${capture}.xdv, ${capture}.pdf",
+    ".editorconfig": ".clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore"
+  },
+  "workbench.iconTheme": "material-icon-theme",
+  "material-icon-theme.folders.associations": {
+    "control": "controller",
+    "firmware": "robot",
+    "hardware": "core",
+    "experiments": "benchmark",
+    "report": "docs",
+    "research": "review",
+    "references": "bibliography",
+    "external": "import",
+    "papers": "pdf",
+    "cad": "container",
+    "kicad": "core",
+    "BSP": "interface",
+    "Drivers": "lib",
+    "cmake": "config"
+  },
+  "material-icon-theme.files.associations": {
+    "*.ioc": "settings",
+    "*.kicad_pro": "settings",
+    "*.kicad_sch": "drawio",
+    "*.kicad_pcb": "architecture",
+    "*.kicad_sym": "drawio",
+    "*.kicad_mod": "architecture",
+    ".mxproject": "settings",
+    "*.ld": "assembly"
   },
   "files.exclude": {
     "**/build": true,

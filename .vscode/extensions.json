@@ -1,5 +1,7 @@
 {
   "recommendations": [
+    "editorconfig.editorconfig",
+    "pkief.material-icon-theme",
     "stmicroelectronics.stm32-vscode-extension",
     "james-yu.latex-workshop",
     "tomoki1207.pdf",

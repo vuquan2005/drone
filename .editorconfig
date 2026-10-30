@@ -1,0 +1,27 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+[*.{json,jsonc,yml,yaml,md}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false
+
+[{Makefile,makefile,*.mk}]
+indent_style = tab
+
+# Generated code, imported sources, native CAD and experiment data.
+[{firmware/drone/Core,firmware/drone/Drivers,firmware/drone/cmake,firmware/drone/.settings,docs/external,docs/references,hardware,experiments/raw,experiments/processed}/**]
+charset = unset
+end_of_line = unset
+insert_final_newline = unset
+indent_style = unset
+indent_size = unset
+trim_trailing_whitespace = unset

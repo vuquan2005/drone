@@ -36,16 +36,33 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Enable the SPI HAL while the board pin assignment is still pending in CubeMX.
+# An empty definition also matches CubeMX's definition after SPI is enabled there.
+target_compile_definitions(stm32cubemx INTERFACE HAL_SPI_MODULE_ENABLED=)
+target_sources(
+    STM32_Drivers
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c)
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library search paths
 )
 
 # Add user sources to executable when needed:
-# target_sources(${CMAKE_PROJECT_NAME} PRIVATE ...)
+target_sources(
+    ${CMAKE_PROJECT_NAME}
+    PRIVATE Drivers/BMI270/bmi2.c
+            Drivers/BMI270/bmi270.c
+            BSP/Src/bsp_bmi270.c
+            BSP/Src/bsp_board.c
+            BSP/Src/bsp_time.c
+            App/Src/app.c
+            App/Src/app_imu.c)
 
 # Add include paths
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined include paths
-)
+target_include_directories(
+    ${CMAKE_PROJECT_NAME}
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BMI270 ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc)
 
 # Add user project symbols (macros) when needed:
 # target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ...)

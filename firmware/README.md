@@ -12,6 +12,8 @@ Project CubeMX hiện nằm trong `drone/`. Giữ cấu trúc do CubeMX sinh ra;
 
 ## Build
 
+Từ thư mục gốc repository, `make clean` xóa toàn bộ `firmware/drone/build/` (Debug, Release và cache CMake) cùng `report/build/`. Lần build tiếp theo cần configure lại CMake. Build và debug firmware bằng VS Code theo hướng dẫn bên dưới.
+
 Mở thư mục gốc `drone/` của repository trong VS Code. Workspace Settings đã trỏ CMake Tools đến `firmware/drone` và dùng các preset có sẵn; không tự configure khi chỉ mở workspace để viết báo cáo.
 
 Trong STM32CubeIDE for VS Code, import/discover project CubeMX và kiểm tra các tool bundle được extension yêu cầu. Sau đó chọn configure preset `Debug` hoặc `Release` và build bằng CMake Tools. Hai cách mở thư mục đều dùng `cube-cmake` và các bundle ST đã chọn. Extension quản lý công cụ riêng; compiler có thể chưa xuất hiện trong terminal bên ngoài VS Code.

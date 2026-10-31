@@ -22,6 +22,9 @@
     "references": "bibliography",
     "external": "import",
     "papers": "pdf",
+    "papers_md": "markdown",
+    "datasheets": "pdf",
+    "datasheets_md": "markdown",
     "cad": "container",
     "kicad": "core",
     "BSP": "interface",
@@ -39,6 +42,8 @@
     "*.ld": "assembly"
   },
   "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pdf-sync.json": true,
     "**/build": true,
     "**/cmake-build-*": true,
     "**/.codegraph": true,
@@ -55,11 +60,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[yaml]": {
-    "editor.defaultFormatter": "redhat.vscode-yaml",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2
   },
   "yaml.validate": true,
-  "yaml.format.enable": true,
+  "yaml.format.enable": false,
   "[cmake]": {
     "editor.defaultFormatter": "cheshirekow.cmake-format"
   },

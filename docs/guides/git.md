@@ -18,11 +18,14 @@ git config user.name "Tên của bạn"
 git config user.email "ban@example.com"
 ```
 
-Kích hoạt Git pre-commit hook:
+Kích hoạt framework `pre-commit` cho bản clone hiện tại:
 
 ```sh
-git config core.hooksPath .githooks
+uv tool install pre-commit
+pre-commit install --install-hooks
 ```
+
+Nếu trước đây đã dùng hook trong `.githooks`, chạy `git config --local --unset core.hooksPath` trước khi cài hook mới. Các formatter chỉ xử lý tệp đã stage và tự bảo vệ phần chưa stage. Khi formatter sửa tệp, xem diff, stage phần mong muốn rồi commit lại. Xem [các lệnh format/lint và yêu cầu công cụ](../../tools/README.md).
 
 ## Quy trình mỗi lần làm việc
 

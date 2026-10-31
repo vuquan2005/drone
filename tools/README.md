@@ -1,5 +1,35 @@
 # Công cụ hỗ trợ
 
+## Lệnh nhanh từ thư mục gốc
+
+Chạy `make` hoặc `make help` để xem hướng dẫn:
+
+| Lệnh                   | Tác dụng                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `make format`          | Sửa định dạng bằng Prettier, clang-format, cmake-format, latexindent và Black      |
+| `make lint`            | Kiểm tra Markdown bằng markdownlint-cli2, CMake bằng cmake-lint, LaTeX bằng ChkTeX |
+| `make sync-papers`     | Trích xuất toàn bộ PDF bài báo                                                     |
+| `make sync-datasheets` | Trích xuất toàn bộ PDF datasheet                                                   |
+
+Cần Make, Git và Python để chạy bộ công cụ; không cần cài sẵn Node.js hoặc từng formatter. Cài framework một lần, rồi đăng ký hook cho mỗi bản clone:
+
+```bash
+uv tool install pre-commit
+# Chỉ cần khi chuyển từ cấu hình hook cũ của repository:
+git config --local --unset core.hooksPath
+pre-commit install --install-hooks
+```
+
+Nếu `core.hooksPath` chưa được đặt thì bỏ qua lệnh `--unset`. Pre-commit tự tạo môi trường, tải Node.js theo `default_language_version` và cài các hook từ repo mạng đã ghim `rev` trong `.pre-commit-config.yaml`: Black, clang-format, cmake-format/cmake-lint và markdownlint-cli2. Prettier dùng mirror `rbubley/mirrors-prettier` vì mirror cũ của tổ chức `pre-commit` đã được archive. Lần đầu cần mạng; các lần sau dùng cache. Riêng latexindent và ChkTeX dùng bản đã cài trong TeX distribution trên máy.
+
+Dùng `pre-commit autoupdate` để cập nhật các `rev`, rồi kiểm tra diff trước khi áp dụng; phiên bản Node được cập nhật riêng ở `default_language_version`. Makefile gọi trực tiếp ID của các hook tương ứng. `make format` và `make lint` xử lý toàn bộ tệp Git đang theo dõi; tệp mới phải `git add` trước. Phạm vi loại trừ chung được khai báo ở `exclude` trong `.pre-commit-config.yaml`: tài liệu tham khảo, kho ngoài, mã CubeMX/vendor, dữ liệu thí nghiệm và thư mục build. Các công cụ tiếp tục đọc cấu hình riêng của chúng. Python dùng Black với `pyproject.toml` (100 ký tự/dòng, Python 3.9+ cho mã nguồn); VS Code dùng extension `ms-python.black-formatter`.
+
+Khi commit, chỉ các formatter chạy trên tệp đã stage; lint được gọi riêng bằng `make lint`. Framework tạm cất phần chưa stage rồi khôi phục lại, không tự stage thay đổi. Nếu formatter sửa tệp, commit dừng để bạn xem diff, `git add` phần mong muốn và commit lần nữa. Khi việc khôi phục phần chưa stage xung đột với kết quả format, framework hoàn tác phần tự sửa và khôi phục thay đổi của bạn. Công cụ thiếu hoặc kiểm tra thất bại đều trả lỗi.
+
+`make format` cũng có thể trả mã thoát 1 khi formatter vừa sửa tệp; xem diff và chạy lại để xác nhận. Lint hiện gồm Markdown, CMake, LaTeX; chưa phân tích tĩnh C/C++. Không có target `test` hoặc `check` tổng hợp.
+
+Có thể chạy trực tiếp `pre-commit run` để xử lý staged, `pre-commit run --all-files` để chạy các formatter trên toàn bộ tệp theo dõi, hoặc `pre-commit run black --files tools/sync_reference_pdfs.py` để format một tệp. Build/test có thể bổ sung sau; chưa được bật trong cấu hình hiện tại.
+
 ## Đồng bộ PDF bài báo và datasheet sang Markdown
 
 `sync_reference_pdfs.py` dùng Python 3.9+ và Poppler (`pdftotext`, `pdfimages`), không cần thư viện Python bên ngoài. Trên Ubuntu/Debian hoặc Fedora, gói Poppler tương ứng là `poppler-utils`.

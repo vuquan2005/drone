@@ -1,0 +1,65 @@
+minimum_pre_commit_version: "4.0.0"
+default_stages: [pre-commit, manual]
+default_language_version:
+  node: "24.18.0"
+
+# Shared scope for every formatter and linter; editor tools keep their own ignores.
+exclude: |
+  (?x)^(
+    docs/(references|external)/|
+    firmware/drone/(Core|Drivers|cmake|\.settings)/|
+    experiments/(raw|processed)/|
+    \.codegraph/|
+    (?:.*/)?(?:build|cmake-build-[^/]*|Debug|Release|\.venv|__pycache__)/
+  )
+
+repos:
+  # Maintained mirror; pre-commit/mirrors-prettier was archived in 2024.
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.9.10
+    hooks:
+      - id: prettier
+        files: \.(md|mdx|json|jsonc|ya?ml)$
+
+  - repo: https://github.com/psf/black-pre-commit-mirror
+    rev: 26.10.1
+    hooks:
+      - id: black
+
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v22.1.8
+    hooks:
+      - id: clang-format
+        files: \.(c|h|cpp|hpp|cc|cxx|hxx)$
+        types_or: [c, c++]
+
+  - repo: https://github.com/cheshirekow/cmake-format-precommit
+    rev: v0.6.13
+    hooks:
+      - id: cmake-format
+      - id: cmake-lint
+        stages: [manual]
+
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.2
+    hooks:
+      - id: markdownlint-cli2
+        stages: [manual]
+
+  # TeX tools remain system dependencies; the adapter keeps logs/backups temporary.
+  - repo: local
+    hooks:
+      - id: format-latex
+        name: Format LaTeX and BibTeX
+        language: system
+        entry: python3 tools/format_latex.py
+        files: \.(tex|sty|cls|bib)$
+        types: [file]
+        require_serial: true
+      - id: lint-latex
+        name: Lint LaTeX
+        language: system
+        entry: chktex
+        args: [-q, -I0]
+        types: [tex]
+        stages: [manual]

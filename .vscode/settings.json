@@ -3,7 +3,8 @@
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
     "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*",
-    ".gitignore": ".gitattributes, .gitmodules",
+    ".gitignore": ".gitattributes, .gitmodules, codegraph.json",
+    "Makefile": ".pre-commit-config.yaml, pyproject.toml",
     "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
     "*.ioc": ".mxproject",
     "bundles.store.json": "bundles-lock.store.json",

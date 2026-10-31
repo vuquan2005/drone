@@ -3,7 +3,7 @@
     "default": true,
     "MD013": false,
     "MD024": { "siblings_only": true },
-    "MD033": false,
+    "MD033": false
   },
   "ignores": [
     "**/build/**",
@@ -12,6 +12,6 @@
     "docs/references/**",
     "docs/external/**",
     "firmware/drone/Core/**",
-    "firmware/drone/Drivers/**",
-  ],
+    "firmware/drone/Drivers/**"
+  ]
 }

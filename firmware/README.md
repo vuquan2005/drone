@@ -66,22 +66,21 @@ Nếu không kết nối được, kiểm tra nguồn, GND chung, SWDIO/SWCLK, q
 
 ## Configuration ownership
 
-| File                                      | Vai trò và cách quản lý                                                              |
-| ----------------------------------------- | ------------------------------------------------------------------------------------ |
-| `drone/drone.ioc`                         | Cấu hình phần cứng; chỉnh bằng CubeMX                                                |
-| `drone/CMakePresets.json`                 | Nguồn định nghĩa preset Debug/Release và thư mục đầu ra                              |
-| `drone/.settings/ide.store.json`          | Nhận diện MCU/core/toolchain cho ST extension; giữ trong Git                         |
-| `drone/.settings/bundles.store.json`      | Chọn phiên bản các tool bundle; giữ trong Git                                        |
-| `drone/.settings/bundles-lock.store.json` | Khóa các bundle đã giải quyết cho từng nền tảng; giữ trong Git                       |
-| `../.vscode/settings.json`                | Cấu hình khi mở root repository; có cả firmware và LaTeX                             |
-| `drone/.vscode/settings.json`             | Cấu hình khi mở riêng firmware; giữ phần ST đồng bộ với root                         |
-| `../.vscode/launch.json`                  | Launch ST-LINK dùng khi mở root repository                                           |
-| `drone/.clangd`                           | Chọn compile database tại `build/Debug`                                              |
-| `drone/.vscode/c_cpp_properties.json`     | Cấu hình dự phòng do ST sinh cho Microsoft C/C++; không quyết định chuẩn C khi build |
+| File                                      | Vai trò và cách quản lý                                        |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `drone/drone.ioc`                         | Cấu hình phần cứng; chỉnh bằng CubeMX                          |
+| `drone/CMakePresets.json`                 | Nguồn định nghĩa preset Debug/Release và thư mục đầu ra        |
+| `drone/.settings/ide.store.json`          | Nhận diện MCU/core/toolchain cho ST extension; giữ trong Git   |
+| `drone/.settings/bundles.store.json`      | Chọn phiên bản các tool bundle; giữ trong Git                  |
+| `drone/.settings/bundles-lock.store.json` | Khóa các bundle đã giải quyết cho từng nền tảng; giữ trong Git |
+| `../.vscode/settings.json`                | Cấu hình khi mở root repository; có cả firmware và LaTeX       |
+| `drone/.vscode/settings.json`             | Cấu hình khi mở riêng firmware; giữ phần ST đồng bộ với root   |
+| `../.vscode/launch.json`                  | Launch ST-LINK dùng khi mở root repository                     |
+| `drone/.clangd`                           | Chọn compile database tại `build/Debug`                        |
 
 VS Code không tự áp dụng `.vscode/settings.json` của thư mục con khi chỉ mở repo gốc như một workspace đơn. Vì vậy hai file settings phục vụ hai cách mở khác nhau. Nếu ST setup thay đổi phiên bản bundle hoặc sinh lại phần cấu hình editor, cập nhật các khóa `cmake.cmakePath`, `cmake.configureArgs`, `cmake.preferredGenerators` và `stm32cube-ide-clangd.*` tương ứng ở root. Phiên bản compiler trong `--query-driver` phải khớp `bundles.store.json`.
 
-Workspace chọn clangd của ST làm dịch vụ C/C++; Microsoft C/C++ IntelliSense được tắt để tránh chạy thêm engine trùng. File `c_cpp_properties.json` vẫn được giữ vì ST có thể sinh lại; giá trị dự phòng đã được chỉnh thành ARM/GNU C11. Khi cần dùng lại Microsoft IntelliSense, phải chủ động đổi thiết lập engine. Cấu hình build thực tế luôn lấy từ CMake và `compile_commands.json`.
+Workspace chọn clangd của ST làm dịch vụ C/C++; Microsoft C/C++ IntelliSense được tắt để tránh chạy thêm engine trùng. Không giữ `drone/.vscode/c_cpp_properties.json` trong Git vì cấu hình hiện tại không dùng tệp này; `.gitignore` bỏ qua nếu công cụ sinh lại. Khi cần dùng lại Microsoft IntelliSense, bật engine và tạo cấu hình bằng lệnh **C/C++: Edit Configurations** trong VS Code. Cấu hình build thực tế luôn lấy từ CMake và `compile_commands.json`.
 
 Các file `.settings` hiện không chứa đường dẫn home tuyệt đối hay mã probe riêng. Không bỏ qua cả thư mục `.settings` hoặc `.vscode`. Các file build, compile database sinh tự động và cache clangd được bỏ qua; đường dẫn công cụ cá nhân đặt trong User Settings hoặc `CMakeUserPresets.json`.
 

@@ -10,7 +10,7 @@ Nếu Mixer thiết kế sơ sài, drone sẽ bị mất kiểm soát, lật úp
 
 ### 1.1. Cấu hình Quad-X (Phổ biến nhất hiện nay)
 
-```
+```text
         Phía trước (Front / +X)
           M4 (CW)     M1 (CCW)
              \       /
@@ -98,12 +98,14 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
 
 - **Áp dụng trong**: [`Arduino-Quadcopter`](../../external/repos/Arduino-Quadcopter/Quadcopter/Control.ino#L10-L22), [`MonteQuadcopter`](../../external/repos/MonteQuadcopter/lib/Quadcopter/Quadcopter.cpp#L86-L99), [`Quadcopter` (STM32)](../../external/repos/Quadcopter/Application/Algorithm/PID.c#L232-L235).
 - **Mã nguồn (STM32)**:
+
   ```c
   motor1 = limit(expMode - pidRoll - pidPitch - pidYaw + pidThr, 1000, 2000);
   motor2 = limit(expMode - pidRoll + pidPitch + pidYaw + pidThr, 1000, 2000);
   motor3 = limit(expMode + pidRoll + pidPitch - pidYaw + pidThr, 1000, 2000);
   motor4 = limit(expMode + pidRoll - pidPitch + pidYaw + pidThr, 1000, 2000);
   ```
+
 - **Đặc điểm**: Chỉ dùng hàm `limit()` hoặc `constrain()`.
 - **Đánh giá**: Dễ viết nhưng nguy hiểm, dễ rơi máy bay khi gặp gió lớn hoặc thao tác gậy mạnh.
 
@@ -190,6 +192,7 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
   2. **Ưu tiên 2**: Lực đẩy trục Z (Duy trì độ cao).
   3. **Ưu tiên 3 (Thấp nhất)**: Mô-men xoay đầu Yaw (Xoay đầu lệch vài độ không làm rơi máy bay, nhưng mất Roll/Pitch là rơi ngay).
 - **Quy trình thực thi**:
+
   ```mermaid
   flowchart TD
       STEP1["1. Hòa trộn Roll + Pitch + Thrust_Z"] --> CHECK1{"Có motor nào bão hòa?"}
@@ -201,6 +204,7 @@ $$u_i \in [u_{min}, u_{max}] \quad (\text{thường là } [0, 1] \text{ hoặc P
       CHECK2 -- Không --> OUT["Xuất tín hiệu ra Actuator Motors"]
       DESAT_YAW --> OUT
   ```
+
 - **Hàm tính hệ số giải bão hòa `computeDesaturationGain`**:
   PX4 tính toán chính xác hệ số tỉ lệ $k$ cần dịch chuyển theo vector giải bão hòa để đưa motor bị lố về sát biên ($u_{min}$ hoặc $u_{max}$) một cách tối ưu.
 

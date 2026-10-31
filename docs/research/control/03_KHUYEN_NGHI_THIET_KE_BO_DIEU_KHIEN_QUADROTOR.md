@@ -81,6 +81,7 @@ flowchart TD
 - Trục Yaw không tự cân bằng về $0^\circ$ như Roll/Pitch. Khi phi công buông cần điều khiển:
   - Cần phải **khóa góc đầu mũi hiện tại** (Heading Hold).
   - Tránh lỗi quấn vòng góc ($180^\circ \to -180^\circ$):
+
     ```c
     float err_yaw = target_yaw - current_yaw;
     while (err_yaw > 180.0f)  err_yaw -= 360.0f;

@@ -17,10 +17,10 @@
 3. [Thuật Toán Mixer & Phân Phối Lực Động Cơ (Control Allocation)](#3-thuật-toán-mixer--phân-phối-lực-động-cơ)
    - [3.1 Ma trận Mixer hình học (Khung X và Khung +)](#31-ma-trận-mixer-hình-học)
    - [3.2 Ma trận hiệu dụng điều khiển & Giả nghịch đảo (Control Allocation Matrix)](#32-ma-trận-hiệu-dụng-điều-khiển--giả-nghịch-đảo)
-   - [3.3 Hiện tượng bão hòa động cơ & Thứ tự ưu tiên (Sequential Desaturation)](#33-hiện-tượng-bão-hòa-động-cơ--thứ-tự-ưu-tiên)
-   - [3.4 Cơ chế Air Mode (Bảo toàn mô-men khi Throttle = 0)](#34-cơ-chế-air-mode)
-   - [3.5 Thuật toán Capping đối xứng (Crazyflie Method)](#35-thuật-toán-capping-đối-xứng)
-   - [3.6 Tuyến tính hóa lực đẩy (Thrust Linearization)](#36-tuyến-tính-hóa-lực-đẩy)
+   - [3.3 Hiện tượng bão hòa động cơ & Thứ tự ưu tiên (Sequential Desaturation)](#33-hiện-tượng-bão-hòa-động-cơ--thứ-tự-ưu-tiên-sequential-desaturation)
+   - [3.4 Cơ chế Air Mode (Bảo toàn mô-men khi Throttle = 0)](#34-cơ-chế-air-mode-bảo-toàn-mô-men-khi-throttle--0)
+   - [3.5 Thuật toán Capping đối xứng (Crazyflie Method)](#35-thuật-toán-capping-đối-xứng-crazyflie-method)
+   - [3.6 Tuyến tính hóa lực đẩy (Thrust Linearization)](#36-tuyến-tính-hóa-lực-đẩy-thrust-linearization)
 4. [Phân Tích Chi Tiết Mã Nguồn Các Dự Án Thực Tế](#4-phân-tích-chi-tiết-mã-nguồn-các-dự-án-thực-tế)
    - [4.1 PX4-Autopilot](#41-px4-autopilot)
    - [4.2 ArduPilot (ArduCopter)](#42-ardupilot-arducopter)
@@ -31,7 +31,7 @@
 
 ---
 
-# 1. Tổng Quan Kiến Trúc Điều Khiển Phân Tầng
+## 1. Tổng Quan Kiến Trúc Điều Khiển Phân Tầng
 
 Quadrotor là một hệ thống **Under-actuated** (chỉ có 4 động cơ tạo lực đẩy song song dọc theo trục $Z$ của thân máy bay, nhưng cần làm chủ 6 bậc tự do: vị trí $x, y, z$ và góc hướng $\phi, \theta, \psi$).
 Để sinh ra gia tốc tịnh tiến theo phương ngang ($x, y$), máy bay bắt buộc phải nghiêng thân một góc Roll/Pitch ($\phi, \theta$) tương ứng.
@@ -45,7 +45,7 @@ Trong động lực học bay:
 
 Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều được thiết kế dưới dạng **chuỗi vòng lặp lồng nhau (Cascaded Loops)**:
 
-```
+```text
 [Mục tiêu Vị trí: x_sp, y_sp, z_sp]
                │
                ▼
@@ -90,7 +90,7 @@ Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều �
 
 ---
 
-# 2. Chi Tiết Từng Vòng Điều Khiển
+## 2. Chi Tiết Từng Vòng Điều Khiển
 
 | Vòng điều khiển              | Tần số lấy mẫu   | Bộ điều khiển                    | Tín hiệu vào (Inputs)                                                                   | Tín hiệu ra (Outputs)                                           |
 | :--------------------------- | :--------------- | :------------------------------- | :-------------------------------------------------------------------------------------- | :-------------------------------------------------------------- |
@@ -103,7 +103,7 @@ Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều �
 
 ---
 
-## 2.1 Vòng Vị trí (Position Loop)
+### 2.1 Vòng Vị trí (Position Loop)
 
 - **Mục tiêu**: Bám theo vị trí toạ độ mong muốn trong hệ quy chiếu cục bộ (NED / ENU).
 - **Thuật toán phổ biến**: Bộ điều khiển tỉ lệ **P** (Proportional) kết hợp bù đón đầu **Feed-Forward**:
@@ -116,7 +116,7 @@ Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều �
 
 ---
 
-## 2.2 Vòng Vận tốc (Velocity Loop)
+### 2.2 Vòng Vận tốc (Velocity Loop)
 
 - **Mục tiêu**: Bám theo vector vận tốc mong muốn $\vec{v}_{sp}$.
 - **Thuật toán phổ biến**: **PID** trên sai số vận tốc $\vec{e}_v = \vec{v}_{sp} - \hat{\vec{v}}$:
@@ -130,7 +130,7 @@ Do đó, toàn bộ các hệ thống điều khiển bay tiêu chuẩn đều �
 
 ---
 
-## 2.3 Bộ Chuyển Đổi Gia Tốc / Lực Nâng Sang Góc Tư Thế
+### 2.3 Bộ Chuyển Đổi Gia Tốc / Lực Nâng Sang Góc Tư Thế
 
 Do quadrotor chỉ có thể đẩy theo trục $Z$ của thân máy bay ($Z_B$), để tạo ra vector gia tốc mong muốn trong không gian $\vec{a}_{sp} = [a_x, a_y, a_z]^T$, trục $Z_B$ phải nghiêng theo hướng của vector lực tổng:
 
@@ -148,7 +148,7 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
 
 ---
 
-## 2.4 Vòng Tư thế (Attitude / Angle Loop)
+### 2.4 Vòng Tư thế (Attitude / Angle Loop)
 
 - **Mục tiêu**: Đưa hướng nghiêng của thân drone về trùng với hướng mục tiêu.
 - **Cách tiếp cận 1: Góc Euler (Dành cho hệ thống đơn giản: Betaflight Angle mode, STM32 Quadcopter)**:
@@ -167,7 +167,7 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
 
 ---
 
-## 2.5 Vòng Vận tốc góc (Angular Rate / Gyro Loop)
+### 2.5 Vòng Vận tốc góc (Angular Rate / Gyro Loop)
 
 Đây là **vòng lặp trong cùng (Inner-most Loop)**, có vai trò sống còn quyết định máy bay có ổn định hay bị rung lắc, dao động.
 
@@ -175,7 +175,7 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
 - **Giải thuật**: **PID đầy đủ + Feedforward**:
   $$\tau_x = K_p \cdot e_p + K_i \int e_p dt + K_d \cdot \frac{d(-p)}{dt} + K_{ff} \cdot p_{sp}$$
 
-### Các kỹ thuật xử lý tín hiệu bắt buộc trong Rate Loop:
+#### Các kỹ thuật xử lý tín hiệu bắt buộc trong Rate Loop
 
 1. **D-on-Measurement (Đạo hàm trên giá trị đo)**:
    Thay vì vi phân sai số $\frac{d(e)}{dt} = \frac{d(sp - meas)}{dt}$, ta chỉ lấy vi phân của tín hiệu đo $\frac{-d(meas)}{dt}$. Điều này ngăn hiện tượng "Derivative Kick" – khi tín hiệu từ cần lái nhảy đột ngột, motor không bị vọt lố công suất.
@@ -188,11 +188,11 @@ $$\vec{F}_{des} = m \cdot \begin{bmatrix} a_x \\ a_y \\ a_z - g \end{bmatrix}$$
 
 ---
 
-# 3. Thuật Toán Mixer & Phân Phối Lực Động Cơ
+## 3. Thuật Toán Mixer & Phân Phối Lực Động Cơ
 
 Sau khi vòng Rate tính ra **Mô-men xoắn 3 trục $(\tau_x, \tau_y, \tau_z)$** và **Tổng lực nâng $T$ (Collective Thrust)**, bộ phối trộn (Mixer) chịu trách nhiệm tính toán công suất phát ra cho từng động cơ.
 
-## 3.1 Ma trận Mixer hình học
+### 3.1 Ma trận Mixer hình học
 
 Quy ước chiều:
 
@@ -200,9 +200,9 @@ Quy ước chiều:
 - Pitch ($\tau_y$): Mũi ngóc lên dương $\to$ Motor phía trước tăng ga, motor phía sau giảm ga.
 - Yaw ($\tau_z$): Xoay mũi sang phải (theo chiều kim đồng hồ) dương $\to$ Motor quay CCW tăng tốc, motor quay CW giảm tốc (theo định luật bảo toàn mô-men động lượng).
 
-### Cấu hình Quad X (Chuẩn phổ biến hiện nay)
+#### Cấu hình Quad X (Chuẩn phổ biến hiện nay)
 
-```
+```text
       M4 (CW)     M1 (CCW)
          \       /
           \  ▲  /  (Mũi tên chỉ hướng đầu máy bay)
@@ -222,9 +222,9 @@ m_4 = T + \tau_{roll} + \tau_{pitch} + \tau_{yaw}
 \end{cases}
 $$
 
-### Cấu hình Quad + (Plus - thường gặp ở các dự án thử nghiệm ban đầu)
+#### Cấu hình Quad + (Plus - thường gặp ở các dự án thử nghiệm ban đầu)
 
-```
+```text
              M1 (Front)
                  ▲
      M4 (Left) ──┼── M2 (Right)
@@ -243,7 +243,7 @@ $$
 
 ---
 
-## 3.2 Ma trận hiệu dụng điều khiển & Giả nghịch đảo
+### 3.2 Ma trận hiệu dụng điều khiển & Giả nghịch đảo
 
 Trong các hệ thống cao cấp như PX4 ([ControlAllocator](../../external/repos/PX4-Autopilot/src/modules/control_allocator/ControlAllocator.cpp)), mixer không dùng công thức cộng trừ cứng mà xây dựng **Ma trận hiệu dụng điều khiển (Actuator Effectiveness Matrix $B$)**:
 
@@ -259,7 +259,7 @@ $$\vec{u} = B^+ \cdot \begin{bmatrix} \vec{\tau}_{sp} \\ \vec{T}_{sp} \end{bmatr
 
 ---
 
-## 3.3 Hiện tượng bão hòa động cơ & Thứ tự ưu tiên (Sequential Desaturation)
+### 3.3 Hiện tượng bão hòa động cơ & Thứ tự ưu tiên (Sequential Desaturation)
 
 Khoảng làm việc của động cơ chỉ nằm trong $[0.0, 1.0]$. Khi drone thực hiện thao tác cơ động mạnh ở ga cao, giá trị $m_i$ tính toán từ công thức lý thuyết có thể vượt quá $1.0$ hoặc nhỏ hơn $0.0$.
 
@@ -274,7 +274,7 @@ $$\textbf{Roll \& Pitch (Giữ cân bằng chống lật)} > \textbf{Thrust (Duy
 
 ---
 
-## 3.4 Cơ chế Air Mode (Bảo toàn mô-men khi Throttle = 0)
+### 3.4 Cơ chế Air Mode (Bảo toàn mô-men khi Throttle = 0)
 
 Trong các chuyến bay nhào lộn FPV (Betaflight) hoặc khi hạ độ cao nhanh (PX4):
 
@@ -286,7 +286,7 @@ Trong các chuyến bay nhào lộn FPV (Betaflight) hoặc khi hạ độ cao n
 
 ---
 
-## 3.5 Thuật toán Capping đối xứng (Crazyflie Method)
+### 3.5 Thuật toán Capping đối xứng (Crazyflie Method)
 
 Trong mã nguồn Crazyflie ([power_distribution_quadrotor.c](../../external/repos/crazyflie-firmware/src/modules/src/power_distribution_quadrotor.c#L160-L190)):
 
@@ -308,7 +308,7 @@ _Tác dụng_: Bằng cách trừ đều lượng dư thừa cho cả 4 động 
 
 ---
 
-## 3.6 Tuyến tính hóa lực đẩy (Thrust Linearization)
+### 3.6 Tuyến tính hóa lực đẩy (Thrust Linearization)
 
 Lực đẩy cánh quạt tỉ lệ với **bình phương tốc độ quay**:
 $$F \propto \Omega^2 \propto V_{PWM}^2$$
@@ -318,7 +318,7 @@ $$PWM_{out} = \frac{-1 + \sqrt{1 + 4 \cdot k_{lin} \cdot Thrust}}{2 \cdot k_{lin
 
 ---
 
-# 4. Phân Tích Chi Tiết Mã Nguồn Các Dự Án Thực Tế
+## 4. Phân Tích Chi Tiết Mã Nguồn Các Dự Án Thực Tế
 
 | Tiêu chí            | PX4-Autopilot     | ArduPilot              | Betaflight             | Crazyflie          | STM32 Quadcopter |
 | :------------------ | :---------------- | :--------------------- | :--------------------- | :----------------- | :--------------- |
@@ -372,11 +372,11 @@ $$PWM_{out} = \frac{-1 + \sqrt{1 + 4 \cdot k_{lin} \cdot Thrust}}{2 \cdot k_{lin
 
 ---
 
-# 5. Khuyến Nghị Và Lộ Trình Triển Khai Thiết Kế
+## 5. Khuyến Nghị Và Lộ Trình Triển Khai Thiết Kế
 
 Khi bạn bắt tay vào thiết kế bộ điều khiển cho Quadrotor của mình:
 
-```
+```text
 [GIAI ĐOẠN 1]             [GIAI ĐOẠN 2]             [GIAI ĐOẠN 3]
 Xây dựng Vòng Rate        Xây dựng Vòng Angle       Xây dựng Vòng Vị trí
 (Gyro Loop)               (Attitude Loop)           (Position & Altitude)

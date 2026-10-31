@@ -1,6 +1,6 @@
 # STM32 firmware
 
-Project CubeMX hiện nằm trong `drone/`. Giữ cấu trúc do CubeMX sinh ra; mở `drone/drone.ioc` để thay đổi cấu hình phần cứng.
+Project CubeMX hiện nằm trong `drone/`. Giữ cấu trúc do CubeMX sinh ra; mở `drone/drone.ioc` để thay đổi cấu hình phần cứng. Mã IMU được chia thành `App`, `BSP` và driver Bosch trong `Drivers/BMI270`; xem [hướng dẫn BMI270 qua SPI](drone/README.md) để gán bus và chân CS sau.
 
 ## Project configuration
 
@@ -83,10 +83,19 @@ Cấp nguồn board đúng thiết kế; chân VTref là tham chiếu điện á
 5. Khi dừng ở `main`, dùng F10 để step over; F11 để step into; F9 để đặt breakpoint. Có thể đặt breakpoint tại lời gọi `MX_GPIO_Init()` và `Error_Handler()`, rồi xem `SystemCoreClock` và `uwTick` trong Watch. Sau `SystemClock_Config()`, `SystemCoreClock` dự kiến bằng `72000000`.
 
 Preset Debug dùng `-O0 -g3`; Release dùng `-Os -g0` nên không phù hợp để bắt đầu debug theo dòng nguồn. Vòng lặp hiện còn trống; SPI1, USART1 và TIM4 đã được khởi tạo nhưng chưa có logic ứng dụng hay lệnh bắt đầu PWM/nhận UART, nên chưa có tín hiệu đầu ra ứng dụng là bình thường.
+Preset Debug dùng `-O0 -g3`; Release dùng `-Os -g0` nên không phù hợp để bắt đầu debug theo dòng nguồn. Vòng lặp gọi App IMU, nhưng chưa gán bus/chân BMI270 nên trạng thái hiện tại là `BSP_IMU_NOT_CONFIGURED`. Chưa cấu hình LED/UART/PWM, nên chưa có tín hiệu đầu ra ứng dụng là bình thường.
 
 Nếu không kết nối được, kiểm tra nguồn, GND chung, SWDIO/SWCLK, quyền USB và probe firmware. Nếu dừng tại `Error_Handler()`, kiểm tra HSE 8 MHz trên board. Nếu không tìm thấy ELF, kiểm tra đã build đúng preset Debug. Không cần thêm Cortex-Debug để dùng launch của ST này.
 
 Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF cho cả Debug và Release. Debug dùng Flash 9324 B, Release dùng Flash 5464 B; cả hai dùng vùng RAM 1816 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
+Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF, Flash dùng 3836 B và vùng RAM dùng 1584 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
+
+## Telemetry qua UART DMA (dự kiến)
+
+Có thể dùng UART DMA để truyền telemetry về PC, lưu CSV và vẽ biểu đồ/phân tích bằng công cụ khác; ST-LINK phục vụ nạp và debug, không cần đảm nhiệm toàn bộ việc thu dữ liệu. Firmware hiện chưa triển khai telemetry.
+
+- Trong vòng điều khiển, chụp một mẫu nhị phân có timestamp từ MCU và số thứ tự vào bộ đệm RAM; truyền bằng DMA ở nền, không chờ UART hoặc dùng `printf` blocking. Không ghi đè vùng nhớ DMA đang đọc; khi đầy bộ đệm, đếm mẫu bị bỏ thay vì chặn vòng điều khiển.
+- Chọn baud theo kích thước mẫu và tần số log: UART 8N1 cần khoảng `10 × byte/mẫu × mẫu/giây` bit/s, cộng dư địa. Ví dụ, **nếu dùng 115200 baud**, trần lý thuyết là 11520 byte/s; mẫu 40 byte ở 100 Hz dùng 4000 byte/s, còn ở 1 kHz vượt băng thông. DMA giảm tải CPU nhưng không tăng băng thông UART; cần đo jitter và số mẫu mất khi bật log.
 
 ## CubeMX và mã tự viết
 

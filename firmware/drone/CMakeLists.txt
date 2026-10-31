@@ -12,7 +12,6 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS ON)
 
-
 # Define the build type
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Debug")
@@ -38,16 +37,14 @@ add_executable(${CMAKE_PROJECT_NAME})
 add_subdirectory(cmake/stm32cubemx)
 
 # Link directories setup
-target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined library search paths
+target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library search paths
 )
 
 # Add user sources to executable when needed:
 # target_sources(${CMAKE_PROJECT_NAME} PRIVATE ...)
 
 # Add include paths
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
-    # Add user defined include paths
+target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined include paths
 )
 
 # Add user project symbols (macros) when needed:
@@ -57,8 +54,5 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 
 # Add linked libraries
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    stm32cubemx
-
-    # Add user defined libraries
+target_link_libraries(${CMAKE_PROJECT_NAME} stm32cubemx # Add user defined libraries
 )

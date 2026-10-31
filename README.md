@@ -20,12 +20,12 @@ Các thư mục mới có `.gitkeep` để được lưu trong Git; có thể b�
 
 Tài liệu được chia theo mục đích; xem [mục lục tài liệu](docs/README.md):
 
-| Đường dẫn | Nội dung |
-| --- | --- |
-| `docs/guides/` | Hướng dẫn công cụ và Git |
-| `docs/research/` | Ghi chú, phân tích và tổng hợp nghiên cứu |
-| `docs/references/` | Bài báo, bibliography và tài liệu tham khảo gốc |
-| `docs/external/` | Hướng dẫn lưu repo tham khảo; bản sao cục bộ trong `repos/` |
+| Đường dẫn          | Nội dung                                                    |
+| ------------------ | ----------------------------------------------------------- |
+| `docs/guides/`     | Hướng dẫn công cụ và Git                                    |
+| `docs/research/`   | Ghi chú, phân tích và tổng hợp nghiên cứu                   |
+| `docs/references/` | Bài báo, bibliography và tài liệu tham khảo gốc             |
+| `docs/external/`   | Hướng dẫn lưu repo tham khảo; bản sao cục bộ trong `repos/` |
 
 ## Bắt đầu
 

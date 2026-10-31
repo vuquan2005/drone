@@ -68,11 +68,11 @@
 % Ưu tiên Times New Roman cho văn bản chính, chỉ rõ các biến thể đậm/nghiêng.
 % Nếu máy không có font này, chuyển sang TeX Gyre Termes.
 \IfFontExistsTF{Times New Roman}{%
-  \setmainfont{Times New Roman}[
-    BoldFont=Times New Roman Bold,
-    ItalicFont=Times New Roman Italic,
-    BoldItalicFont=Times New Roman Bold Italic
-  ]%
+	\setmainfont{Times New Roman}[
+		BoldFont=Times New Roman Bold,
+		ItalicFont=Times New Roman Italic,
+		BoldItalicFont=Times New Roman Bold Italic
+	]%
 }{\setmainfont{TeX Gyre Termes}}
 % Font không chân và font đơn cách cũng có phương án dự phòng tương ứng.
 % \setsansfont dùng cho \sffamily/\textsf; \setmonofont dùng cho
@@ -82,9 +82,9 @@
 % Công thức dùng font toán OpenType riêng, độc lập với font văn bản.
 % Ưu tiên TeX Gyre Termes Math; nếu thiếu thì dùng Latin Modern Math.
 \IfFontExistsTF{TeX Gyre Termes Math}{
-  \setmathfont{TeX Gyre Termes Math}
+	\setmathfont{TeX Gyre Termes Math}
 }{
-  \setmathfont{Latin Modern Math}
+	\setmathfont{Latin Modern Math}
 }
 
 % Hạn chế ngắt trang tự động bên trong các môi trường toán nhiều dòng
@@ -124,7 +124,7 @@
 \newif\ifFistAppd
 \FistAppdfalse
 \apptocmd{\appendix}{\protect\FistAppdtrue}{}{%
-  \PackageWarning{styles/thesis}{Could not patch appendix; check appendix grouping}%
+	\PackageWarning{styles/thesis}{Could not patch appendix; check appendix grouping}%
 }
 \newcommand{\addAppdicestoToC}{\ifFistAppd\addcontentsline{toc}{chapter}{\appendicesname}\FistAppdfalse\fi}
 
@@ -134,7 +134,7 @@
 % \addcontentsline đầu tiên. Nhánh thành công rỗng giữ nguyên luồng xử lý;
 % nhánh thất bại phát cảnh báo để dễ phát hiện khi đổi lớp tài liệu.
 \patchcmd{\@chapter}{\addcontentsline}{\protect \addAppdicestoToC\addcontentsline}{}{%
-  \PackageWarning{styles/thesis}{Could not patch chapter; check appendix ToC entry}%
+	\PackageWarning{styles/thesis}{Could not patch chapter; check appendix ToC entry}%
 }
 % Tiêu đề chương có số: cách đầu vùng văn bản 6 pt, căn giữa, in đậm 16 pt
 % với bước dòng 20 pt; tên chương + số + dấu chấm đứng trước nội dung #1.
@@ -142,22 +142,22 @@
 % ngắt trang giữa các dòng tiêu đề; \nobreak giữ tiêu đề với khoảng sau nó.
 % Khoảng cách sau tiêu đề là 18 pt. \z@ = 0 pt, \m@ne = -1, \@M = 10000.
 \def\@makechapterhead#1{%
-  \vspace*{6pt}%
-  {\parindent \z@ \centering \normalfont
-    \ifnum \c@secnumdepth >\m@ne
-      \fontsize{16}{20}\bfseries \@chapapp\space\thechapter.\quad\selectfont
-    \fi
-    \interlinepenalty\@M
-    \fontsize{16}{20}\bfseries\selectfont #1\par\nobreak
-    \vskip 18pt}}
+	\vspace*{6pt}%
+	{\parindent \z@ \centering \normalfont
+		\ifnum \c@secnumdepth >\m@ne
+			\fontsize{16}{20}\bfseries \@chapapp\space\thechapter.\quad\selectfont
+		\fi
+		\interlinepenalty\@M
+		\fontsize{16}{20}\bfseries\selectfont #1\par\nobreak
+		\vskip 18pt}}
 % Tiêu đề chương không số (\chapter*): cùng cỡ chữ và khoảng cách như trên,
 % nhưng không in tên chương và số chương.
 \def\@makeschapterhead#1{%
-  \vspace*{6pt}%
-  {\parindent \z@ \centering \normalfont
-    \interlinepenalty\@M
-    \fontsize{16}{20}\bfseries\selectfont #1\par\nobreak
-    \vskip 18pt}}
+	\vspace*{6pt}%
+	{\parindent \z@ \centering \normalfont
+		\interlinepenalty\@M
+		\fontsize{16}{20}\bfseries\selectfont #1\par\nobreak
+		\vskip 18pt}}
 \makeatother
 
 \makeatletter
@@ -174,33 +174,33 @@
   {2.3ex \@plus.2ex}%
   {\normalfont\large\bfseries}}
 \renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
-  {-3.25ex\@plus -1ex \@minus -.2ex}%
-  {1.5ex \@plus .2ex}%
-  {\normalfont\normalsize\bfseries}}
+	{-3.25ex\@plus -1ex \@minus -.2ex}%
+	{1.5ex \@plus .2ex}%
+	{\normalfont\normalsize\bfseries}}
 \renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
-  {-3.25ex\@plus -1ex \@minus -.2ex}%
-  {1.5ex \@plus .2ex}%
-  {\normalfont\normalsize\bfseries}}
+	{-3.25ex\@plus -1ex \@minus -.2ex}%
+	{1.5ex \@plus .2ex}%
+	{\normalfont\normalsize\bfseries}}
 \makeatother
 
 % Chờ hết phần mở đầu để các bản vá dưới đây chạy sau khi hyperref được
 % nạp ở nhóm 5, giữ thứ tự xử lý mục lục và kiểu trang như trước khi sắp xếp.
 \AtEndPreamble{
-  % Thêm danh mục tài liệu tham khảo vào mục lục ở cấp chapter với tên bibname
-  % khi mở môi trường thebibliography (kể cả khi môi trường do tệp .bbl tạo ra).
-  % Cần biên dịch lại để nội dung mục lục và số trang được cập nhật.
-  \apptocmd{\thebibliography}{\protect \addcontentsline{toc}{chapter}{\bibname}}{}{%
-    \PackageWarning{styles/thesis}{Could not patch bibliography; check bibliography ToC entry}%
-  }
+	% Thêm danh mục tài liệu tham khảo vào mục lục ở cấp chapter với tên bibname
+	% khi mở môi trường thebibliography (kể cả khi môi trường do tệp .bbl tạo ra).
+	% Cần biên dịch lại để nội dung mục lục và số trang được cập nhật.
+	\apptocmd{\thebibliography}{\protect \addcontentsline{toc}{chapter}{\bibname}}{}{%
+		\PackageWarning{styles/thesis}{Could not patch bibliography; check bibliography ToC entry}%
+	}
 
-  % Trước bước \cleardoublepage của \chapter, chuyển kiểu trang sang plain.
-  % Với các lớp chuẩn, plain thường chỉ có số trang ở giữa chân trang.
-  % Bản vá chỉ có tác dụng nếu định nghĩa \chapter có chứa \cleardoublepage;
-  % phát cảnh báo nếu không tìm thấy đoạn cần thay thế.
-  \patchcmd{\chapter}{\cleardoublepage}{
-    \protect \pagestyle{plain}\cleardoublepage }{}{%
-    \PackageWarning{styles/thesis}{Could not patch chapter page style; check page numbering}%
-  }
+	% Trước bước \cleardoublepage của \chapter, chuyển kiểu trang sang plain.
+	% Với các lớp chuẩn, plain thường chỉ có số trang ở giữa chân trang.
+	% Bản vá chỉ có tác dụng nếu định nghĩa \chapter có chứa \cleardoublepage;
+	% phát cảnh báo nếu không tìm thấy đoạn cần thay thế.
+	\patchcmd{\chapter}{\cleardoublepage}{
+		\protect \pagestyle{plain}\cleardoublepage }{}{%
+		\PackageWarning{styles/thesis}{Could not patch chapter page style; check page numbering}%
+	}
 }
 
 % Tên hiển thị tiếng Việt và kiểu trang mặc định
@@ -210,15 +210,15 @@
 % phụ lục và chú thích hình/bảng; không dịch tên Proposition/Definition/Lemma.
 % pagestyle=plain đặt kiểu trang chung của báo cáo.
 \AtBeginDocument{
-  \renewcommand{\contentsname}{MỤC LỤC}
-  \renewcommand{\listfigurename}{DANH MỤC HÌNH VẼ}
-  \renewcommand{\listtablename}{DANH MỤC BẢNG BIỂU}
-  \renewcommand{\chaptername}{CHƯƠNG}
-  \renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
-  \renewcommand{\appendixname}{PHỤ LỤC}
-  \renewcommand{\figurename}{Hình}
-  \renewcommand{\tablename}{Bảng}
-  \pagestyle{plain}
+	\renewcommand{\contentsname}{MỤC LỤC}
+	\renewcommand{\listfigurename}{DANH MỤC HÌNH VẼ}
+	\renewcommand{\listtablename}{DANH MỤC BẢNG BIỂU}
+	\renewcommand{\chaptername}{CHƯƠNG}
+	\renewcommand{\bibname}{TÀI LIỆU THAM KHẢO}
+	\renewcommand{\appendixname}{PHỤ LỤC}
+	\renewcommand{\figurename}{Hình}
+	\renewcommand{\tablename}{Bảng}
+	\pagestyle{plain}
 }
 
 % ==========================================================================
@@ -240,20 +240,20 @@
 % phép kiểm tra tệp nháp không dùng cơ chế dò đuôi hay \graphicspath.
 % Các tùy chọn kích thước áp dụng khi có ảnh; khung giữ chỗ dùng cỡ cố định.
 \NewDocumentCommand{\thesisfigure}{O{} m}{%
-  \ifthesisdraft
-    \IfFileExists{#2}{%
-      \includegraphics[#1]{#2}%
-    }{%
-      \PackageWarning{styles/thesis}{Missing draft figure: \detokenize{#2}}%
-      \fbox{%
-        \parbox[c][4cm][c]{0.8\linewidth}{%
-          \centering Missing figure\\\texttt{\detokenize{#2}}%
-        }%
-      }%
-    }%
-  \else
-    \includegraphics[#1]{#2}%
-  \fi
+	\ifthesisdraft
+		\IfFileExists{#2}{%
+			\includegraphics[#1]{#2}%
+		}{%
+			\PackageWarning{styles/thesis}{Missing draft figure: \detokenize{#2}}%
+			\fbox{%
+				\parbox[c][4cm][c]{0.8\linewidth}{%
+					\centering Missing figure\\\texttt{\detokenize{#2}}%
+				}%
+			}%
+		}%
+	\else
+		\includegraphics[#1]{#2}%
+	\fi
 }
 
 % Cột độ rộng cố định L{...}/C{...}/R{...}: căn trái/giữa/phải,
@@ -276,8 +276,8 @@
 % Bao khung đơn và dùng nền xám 15%. Có thể ghi đè theo từng đoạn mã,
 % ví dụ \begin{lstlisting}[language=Python,caption={Ví dụ},label={code:demo}].
 \lstset{language=C++,basicstyle=\ttfamily\footnotesize,numbers=left,stepnumber=1,
-  showstringspaces=false,tabsize=2,breaklines=true,
-  breakatwhitespace=false,frame=single,backgroundcolor=\color{gray!15}}
+	showstringspaces=false,tabsize=2,breaklines=true,
+	breakatwhitespace=false,frame=single,backgroundcolor=\color{gray!15}}
 \renewcommand{\lstlistingname}{Code}
 
 % ==========================================================================

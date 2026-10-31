@@ -60,6 +60,7 @@ repos:
         name: Lint LaTeX
         language: system
         entry: chktex
-        args: [-q, -I0]
+        args: [-q, -I0, -l, report/.chktexrc]
+        files: \.tex$
         types: [tex]
         stages: [manual]

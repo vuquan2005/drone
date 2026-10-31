@@ -26,7 +26,7 @@ Dùng `pre-commit autoupdate` để cập nhật các `rev`, rồi kiểm tra di
 
 Khi commit, chỉ các formatter chạy trên tệp đã stage; lint được gọi riêng bằng `make lint`. Framework tạm cất phần chưa stage rồi khôi phục lại, không tự stage thay đổi. Nếu formatter sửa tệp, commit dừng để bạn xem diff, `git add` phần mong muốn và commit lần nữa. Khi việc khôi phục phần chưa stage xung đột với kết quả format, framework hoàn tác phần tự sửa và khôi phục thay đổi của bạn. Công cụ thiếu hoặc kiểm tra thất bại đều trả lỗi.
 
-`make format` cũng có thể trả mã thoát 1 khi formatter vừa sửa tệp; xem diff và chạy lại để xác nhận. Lint hiện gồm Markdown, CMake, LaTeX; chưa phân tích tĩnh C/C++. Không có target `test` hoặc `check` tổng hợp.
+`make format` cũng có thể trả mã thoát 1 khi formatter vừa sửa tệp; xem diff và chạy lại để xác nhận. Lint hiện gồm Markdown, CMake và tài liệu LaTeX (`*.tex`); ChkTeX dùng `report/.chktexrc` như cấu hình báo cáo trong editor. Các tệp macro `.sty`/`.cls` vẫn được format, nhưng không đưa qua linter dành cho tài liệu. Chưa phân tích tĩnh C/C++. Không có target `test` hoặc `check` tổng hợp.
 
 Có thể chạy trực tiếp `pre-commit run` để xử lý staged, `pre-commit run --all-files` để chạy các formatter trên toàn bộ tệp theo dõi, hoặc `pre-commit run black --files tools/sync_reference_pdfs.py` để format một tệp. Build/test có thể bổ sung sau; chưa được bật trong cấu hình hiện tại.
 

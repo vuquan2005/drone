@@ -1,8 +1,9 @@
 # Local reference repositories
 /docs/external/repos/
 
-docs/references/papers/papers_md/*/*_meta.json
-docs/references/papers/papers_md/*/*.jpeg
+# Local reference metadata, PDF sync state and extracted JPEG images
+/docs/references/**/*.json
+/docs/references/**/*.jpeg
 
 # C/C++ and STM32 build outputs
 build/
@@ -65,6 +66,7 @@ _autosave-*
 *.kicad_sch-bak
 *.kicad_pcb-bak
 fp-info-cache
+**/.history/
 
 # Temporary files and local version history
 ~$*

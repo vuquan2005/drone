@@ -4,7 +4,7 @@
 > **Tệp trích dẫn BibTeX:** [`references.bib`](./references.bib)  
 > **Dữ liệu trích xuất (Markdown & Hình ảnh):** [`papers_md/`](./papers_md/)  
 
-Đồng bộ PDF sang Markdown và ảnh bằng `python3 tools/sync_papers.py` từ thư mục gốc repository; dùng `--dry-run` để xem trước. Script giữ nguyên các bản Markdown biên tập thủ công hiện có. Xem [hướng dẫn và tùy chọn trích xuất](../../../tools/README.md).
+Đồng bộ PDF sang Markdown và ảnh bằng `python3 tools/sync_reference_pdfs.py` từ thư mục gốc repository; dùng `--dry-run` để xem trước. Script giữ nguyên các bản Markdown biên tập thủ công hiện có. Xem [hướng dẫn và tùy chọn trích xuất](../../../tools/README.md).
 
 ---
 

@@ -1,14 +1,17 @@
 """Integration checks with real Poppler and a small, self-contained PDF fixture."""
 
 import importlib.util
+import contextlib
+import io
 from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "sync_papers.py"
-SPEC = importlib.util.spec_from_file_location("sync_papers", SCRIPT)
+SCRIPT = Path(__file__).resolve().parents[1] / "sync_reference_pdfs.py"
+SPEC = importlib.util.spec_from_file_location("sync_reference_pdfs", SCRIPT)
 sync = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(sync)
 
@@ -50,7 +53,7 @@ def write_pdf(path, text="First version", *, image=True):
 
 
 @unittest.skipUnless(shutil.which("pdftotext") and shutil.which("pdfimages"), "Poppler required")
-class SyncPapersTests(unittest.TestCase):
+class SyncReferencePdfsTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
@@ -62,11 +65,33 @@ class SyncPapersTests(unittest.TestCase):
         write_pdf(self.pdf)
 
     def run_sync(self, **kwargs):
-        return sync.sync_paper(self.pdf, self.output, **kwargs)[0]
+        return sync.sync_pdf(self.pdf, self.output, **kwargs)[0]
 
     def test_dry_run_writes_nothing(self):
         self.assertEqual(self.run_sync(dry_run=True), "CREATE")
         self.assertFalse(self.output.exists())
+
+    def test_datasheet_collection_cli_and_output_override(self):
+        source = self.root / "datasheets"
+        source.mkdir()
+        pdf = source / "component.PDF"
+        write_pdf(pdf)
+        with patch.object(sync, "REFERENCES_DIR", self.root), contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(sync.main(["--collection", "datasheets", "--dry-run"]), 0)
+            self.assertFalse((source / "datasheets_md").exists())
+            self.assertEqual(sync.main(["--collection", "datasheets"]), 0)
+            self.assertTrue((source / "datasheets_md/component/component.md").is_file())
+            custom_output = self.root / "custom-output"
+            self.assertEqual(sync.main(["--collection", "datasheets", str(pdf),
+                                        "--output-dir", str(custom_output)]), 0)
+            self.assertTrue((custom_output / "component/component.md").is_file())
+
+    def test_source_directory_aliases_preserve_papers_default(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(sync.main(["--papers-dir", str(self.root)]), 0)
+            modified = self.md.stat().st_mtime_ns
+            self.assertEqual(sync.main(["--source-dir", str(self.root)]), 0)
+            self.assertEqual(self.md.stat().st_mtime_ns, modified)
 
     def test_create_images_and_skip_unchanged(self):
         self.assertEqual(self.run_sync(), "CREATE")

@@ -50,6 +50,9 @@
     "**/.cache/clangd": true
   },
   "prettier.requireConfig": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
   "[markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },

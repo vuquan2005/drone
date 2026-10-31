@@ -6,6 +6,7 @@
     "james-yu.latex-workshop",
     "tomoki1207.pdf",
     "esbenp.prettier-vscode",
+    "ms-python.black-formatter",
     "davidanson.vscode-markdownlint",
     "redhat.vscode-yaml",
     "cheshirekow.cmake-format"

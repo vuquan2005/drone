@@ -13,7 +13,6 @@ import sys
 import tempfile
 from urllib.parse import quote
 
-
 REFERENCES_DIR = Path(__file__).resolve().parents[1] / "docs/references"
 MANIFEST = ".pdf-sync.json"
 VERSION = 1
@@ -192,16 +191,33 @@ def sync_pdf(pdf, output_dir, *, text_mode="layout", dry_run=False, force=False)
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("pdfs", nargs="*", type=Path, help="Specific PDFs; default: all in the source directory")
-    parser.add_argument("--collection", choices=("papers", "datasheets"), default="papers",
-                        help="Reference collection; selects default source and output directories")
-    parser.add_argument("--source-dir", "--papers-dir", dest="source_dir", type=Path,
-                        help="Override source directory (--papers-dir is a compatibility alias)")
+    parser.add_argument(
+        "pdfs", nargs="*", type=Path, help="Specific PDFs; default: all in the source directory"
+    )
+    parser.add_argument(
+        "--collection",
+        choices=("papers", "datasheets"),
+        default="papers",
+        help="Reference collection; selects default source and output directories",
+    )
+    parser.add_argument(
+        "--source-dir",
+        "--papers-dir",
+        dest="source_dir",
+        type=Path,
+        help="Override source directory (--papers-dir is a compatibility alias)",
+    )
     parser.add_argument("--output-dir", type=Path, help="Default: <source-dir>/<collection>_md")
-    parser.add_argument("--text-mode", choices=("layout", "reading"), default="layout",
-                        help="Preserve columns (layout) or use Poppler's default reading order")
+    parser.add_argument(
+        "--text-mode",
+        choices=("layout", "reading"),
+        default="layout",
+        help="Preserve columns (layout) or use Poppler's default reading order",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Show actions without writing files")
-    parser.add_argument("--force", action="store_true", help="Rebuild managed outputs, preserving manual edits")
+    parser.add_argument(
+        "--force", action="store_true", help="Rebuild managed outputs, preserving manual edits"
+    )
     args = parser.parse_args(argv)
     source_dir = (args.source_dir or REFERENCES_DIR / args.collection).resolve()
     output_dir = (args.output_dir or source_dir / f"{args.collection}_md").resolve()
@@ -221,8 +237,9 @@ def main(argv=None):
     counts = {}
     for pdf in pdfs:
         try:
-            action, detail = sync_pdf(pdf, output_dir, text_mode=args.text_mode,
-                                      dry_run=args.dry_run, force=args.force)
+            action, detail = sync_pdf(
+                pdf, output_dir, text_mode=args.text_mode, dry_run=args.dry_run, force=args.force
+            )
         except (OSError, SyncError) as error:
             action, detail = "ERROR", str(error)
         counts[action] = counts.get(action, 0) + 1

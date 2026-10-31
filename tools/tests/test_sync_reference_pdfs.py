@@ -9,7 +9,6 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-
 SCRIPT = Path(__file__).resolve().parents[1] / "sync_reference_pdfs.py"
 SPEC = importlib.util.spec_from_file_location("sync_reference_pdfs", SCRIPT)
 sync = importlib.util.module_from_spec(SPEC)
@@ -76,14 +75,21 @@ class SyncReferencePdfsTests(unittest.TestCase):
         source.mkdir()
         pdf = source / "component.PDF"
         write_pdf(pdf)
-        with patch.object(sync, "REFERENCES_DIR", self.root), contextlib.redirect_stdout(io.StringIO()):
+        with (
+            patch.object(sync, "REFERENCES_DIR", self.root),
+            contextlib.redirect_stdout(io.StringIO()),
+        ):
             self.assertEqual(sync.main(["--collection", "datasheets", "--dry-run"]), 0)
             self.assertFalse((source / "datasheets_md").exists())
             self.assertEqual(sync.main(["--collection", "datasheets"]), 0)
             self.assertTrue((source / "datasheets_md/component/component.md").is_file())
             custom_output = self.root / "custom-output"
-            self.assertEqual(sync.main(["--collection", "datasheets", str(pdf),
-                                        "--output-dir", str(custom_output)]), 0)
+            self.assertEqual(
+                sync.main(
+                    ["--collection", "datasheets", str(pdf), "--output-dir", str(custom_output)]
+                ),
+                0,
+            )
             self.assertTrue((custom_output / "component/component.md").is_file())
 
     def test_source_directory_aliases_preserve_papers_default(self):

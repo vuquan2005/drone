@@ -15,22 +15,26 @@
   "workbench.iconTheme": "material-icon-theme",
   "material-icon-theme.folders.associations": {
     "control": "controller",
-    "firmware": "robot",
-    "hardware": "core",
-    "experiments": "benchmark",
-    "report": "docs",
-    "research": "review",
+    "guides": "helper",
+    "tutorials": "helper",
     "references": "bibliography",
+    "research": "review",
     "external": "import",
     "papers": "pdf",
     "papers_md": "markdown",
     "datasheets": "pdf",
     "datasheets_md": "markdown",
+    "experiments": "skills",
+    "hardware": "components",
     "cad": "container",
     "kicad": "core",
+    "firmware": "src",
     "BSP": "interface",
     "Drivers": "lib",
-    "cmake": "config"
+    "cmake": "config",
+    "chapters": "toc",
+    "appendices": "mappings",
+    "frontmatter": "custom"
   },
   "material-icon-theme.files.associations": {
     "*.ioc": "settings",
@@ -48,13 +52,15 @@
     "**/build": true,
     "**/cmake-build-*": true,
     "**/.codegraph": true,
-    "**/.cache/clangd": true
+    "**/.cache/clangd": true,
+    "**/*.kicad_prl": true
   },
   "prettier.requireConfig": true,
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
   "[markdown]": {
+    "editor.wordWrap": "on",
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[json]": {
@@ -73,6 +79,7 @@
     "editor.defaultFormatter": "cheshirekow.cmake-format"
   },
   "[latex]": {
+    "editor.wordWrap": "on",
     "editor.defaultFormatter": "James-Yu.latex-workshop"
   },
   "[latex-package]": {

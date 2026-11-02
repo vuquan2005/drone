@@ -1,11 +1,3 @@
 {
-  "exclude": [
-    "docs/",
-    "control/",
-    "experiments/",
-    "hardware/",
-    "report/",
-    "tools/",
-    ".pre-commit-config.yaml"
-  ]
+  "exclude": ["docs/", "experiments/", "hardware/", "report/", "tools/", ".pre-commit-config.yaml"]
 }

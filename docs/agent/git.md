@@ -13,7 +13,7 @@ Chạy lệnh từ gốc repository và tuân theo yêu cầu của người dù
 - Dùng Conventional Commits: `type(scope): description`. Ưu tiên scope ngắn, cụ thể; bỏ scope khi không có phạm vi rõ ràng. Viết type và scope bằng chữ thường.
 - Viết dòng đầu của commit message ngắn gọn, dễ hiểu và cụ thể, bằng tiếng Anh đơn giản; dùng tiếng Việt nếu tiếng Anh khó diễn đạt rõ. Nếu cần body, ưu tiên tiếng Việt.
 - Chọn type theo mục đích chính: `feat`, `fix`, `docs`, `refactor`, `test`, `build`, `ci`, `perf`, `style` hoặc `chore`. Ví dụ: `chore(codegraph): limit root index to firmware`.
-- Thêm body để giải thích lý do hoặc tác động khi dòng đầu chưa đủ. Với thay đổi không tương thích, dùng `!` trước dấu `:`, thêm footer `BREAKING CHANGE:` kèm cách chuyển đổi tùy ngữ cảnh.
+- Thêm body để giải thích lý do hoặc tác động khi dòng đầu chưa đủ. Với thay đổi không tương thích, đánh dấu bằng `!` trước dấu `:` hoặc footer `BREAKING CHANGE:`; thêm cách chuyển đổi khi cần.
 - Giữ mỗi commit tập trung vào một việc; tuân theo thông điệp hoặc quy ước khác nếu người dùng yêu cầu.
 
 ## Branch

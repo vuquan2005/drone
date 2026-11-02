@@ -14,7 +14,9 @@
   },
   "workbench.iconTheme": "material-icon-theme",
   "workbench.editorAssociations": {
-    "file:/**/*.md": "vscode.markdown.preview.editor"
+    "file:/**/*.md": "vscode.markdown.preview.editor",
+    "*.copilotmd": "vscode.markdown.preview.editor",
+    "*.pdf": "pdf.preview"
   },
   "material-icon-theme.folders.associations": {
     "control": "controller",

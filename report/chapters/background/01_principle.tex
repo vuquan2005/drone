@@ -5,12 +5,12 @@
 \subsection{Các thành phần chính và cấu hình rôto}
 \label{subsec:background-configuration}
 
-Quadrotor là thiết bị bay sử dụng bốn cụm động cơ--cánh quạt bố trí quanh thân. Các thành phần chính gồm khung máy bay, hệ động lực, nguồn điện, bộ điều khiển tốc độ động cơ (ESC), cảm biến quán tính và bộ xử lý điều khiển. Khung liên kết các cụm động cơ và xác định vị trí đặt lực đẩy; hệ động lực biến đổi năng lượng điện thành lực đẩy; cảm biến và bộ xử lý tạo thành hệ thống phản hồi để duy trì tư thế mong muốn~\cite{chovancova2014mathematical}. \fref{fig:background-layout} minh họa cấu tạo thực tế của quadrotor cỡ nhỏ Crazyflie 2.1, với bốn cụm động cơ--cánh quạt và bo điều khiển bố trí ở trung tâm.
+Quadrotor là thiết bị bay sử dụng bốn cụm động cơ--cánh quạt bố trí quanh thân. Các thành phần chính gồm khung máy bay, hệ động lực, nguồn điện, bộ điều khiển tốc độ động cơ (ESC), cảm biến quán tính và bộ xử lý điều khiển. Khung liên kết các cụm động cơ và xác định vị trí đặt lực đẩy; hệ động lực biến đổi năng lượng điện thành lực đẩy; cảm biến và bộ xử lý tạo thành hệ thống phản hồi để duy trì tư thế mong muốn~\cite{chovancova2014mathematical}. \fref{fig:background-layout} minh họa cấu hình quadrotor chữ X, chiều quay của các rôto và hướng các trục của hệ tọa độ gắn với thân.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.60\linewidth,trim=8.4bp 15.6bp 8.4bp 24bp,clip]{figures/ch02/crazyflie_2_1_photo.jpg}
-    \caption[Quadrotor cỡ nhỏ Crazyflie 2.1.]{Quadrotor cỡ nhỏ Crazyflie 2.1; ảnh minh họa từ Bitcraze~\cite{bitcrazeCrazyflie21}.}
+    \resizebox{\linewidth}{!}{\input{figures/ch02/quadrotor_layout.tex}}
+    \caption{Cấu hình quadrotor chữ X, chiều quay rôto và hệ trục tọa độ gắn với thân khi nhìn từ trên xuống.}
     \label{fig:background-layout}
 \end{figure}
 

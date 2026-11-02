@@ -88,44 +88,10 @@ Nếu không kết nối được, kiểm tra nguồn, GND chung, SWDIO/SWCLK, q
 
 Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF cho cả Debug và Release. Debug dùng Flash 9324 B, Release dùng Flash 5464 B; cả hai dùng vùng RAM 1816 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
 
-## Configuration ownership
+## CubeMX và mã tự viết
 
-| File                                      | Vai trò và cách quản lý                                        |
-| ----------------------------------------- | -------------------------------------------------------------- |
-| `drone/drone.ioc`                         | Cấu hình phần cứng; chỉnh bằng CubeMX                          |
-| `drone/CMakePresets.json`                 | Nguồn định nghĩa preset Debug/Release và thư mục đầu ra        |
-| `drone/.settings/ide.store.json`          | Nhận diện MCU/core/toolchain cho ST extension; giữ trong Git   |
-| `drone/.settings/bundles.store.json`      | Chọn phiên bản các tool bundle; giữ trong Git                  |
-| `drone/.settings/bundles-lock.store.json` | Khóa các bundle đã giải quyết cho từng nền tảng; giữ trong Git |
-| `../.vscode/settings.json`                | Cấu hình khi mở root repository; có cả firmware và LaTeX       |
-| `drone/.vscode/settings.json`             | Cấu hình khi mở riêng firmware; giữ phần ST đồng bộ với root   |
-| `../.vscode/launch.json`                  | Launch ST-LINK dùng khi mở root repository                     |
-| `drone/.clangd`                           | Chọn compile database tại `build/Debug`                        |
+Mở `drone/drone.ioc` trong CubeMX để thay đổi cấu hình. Trong các tệp do CubeMX quản lý, đặt mã tự viết trong vùng `USER CODE BEGIN/END` để giữ lại khi sinh mã. Với module riêng, thêm source và include vào `drone/CMakeLists.txt`; kiểm tra thay đổi sau khi Generate Code.
 
-VS Code không tự áp dụng `.vscode/settings.json` của thư mục con khi chỉ mở repo gốc như một workspace đơn. Vì vậy hai file settings phục vụ hai cách mở khác nhau. Nếu ST setup thay đổi phiên bản bundle hoặc sinh lại phần cấu hình editor, cập nhật các khóa `cmake.cmakePath`, `cmake.configureArgs`, `cmake.preferredGenerators` và `stm32cube-ide-clangd.*` tương ứng ở root. Phiên bản compiler trong `--query-driver` phải khớp `bundles.store.json`.
+Quy tắc format C/C++ dùng chung nằm tại `../.clang-format`. Các thư mục mã CubeMX sinh ra được loại khỏi format để tránh thay đổi không cần thiết.
 
-Workspace chọn clangd của ST làm dịch vụ C/C++; Microsoft C/C++ IntelliSense được tắt để tránh chạy thêm engine trùng. Không giữ `drone/.vscode/c_cpp_properties.json` trong Git vì cấu hình hiện tại không dùng tệp này; `.gitignore` bỏ qua nếu công cụ sinh lại. Khi cần dùng lại Microsoft IntelliSense, bật engine và tạo cấu hình bằng lệnh **C/C++: Edit Configurations** trong VS Code. Cấu hình build thực tế luôn lấy từ CMake và `compile_commands.json`.
-
-Các file `.settings` hiện không chứa đường dẫn home tuyệt đối hay mã probe riêng. Không bỏ qua cả thư mục `.settings` hoặc `.vscode`. Các file build, compile database sinh tự động và cache clangd được bỏ qua; đường dẫn công cụ cá nhân đặt trong User Settings hoặc `CMakeUserPresets.json`.
-
-## Regenerate and Git
-
-### Formatting
-
-Quy tắc clang-format dùng chung nằm tại `../.clang-format`: LLVM, thụt 4 dấu cách, giữ nhóm và thứ tự include. Trong VS Code, dùng **Format Document** (`Shift+Alt+F` trên Linux) cho mã tự viết; workspace dùng formatter của clangd ST và tắt format-on-save cho C/C++.
-
-`Core/`, `Drivers/` và mã tham khảo ngoài được bảo vệ bằng `.clang-format` con có `DisableFormat: true`. `.clang-format-ignore` ở root còn giúp lệnh CLI bỏ qua các thư mục đó cùng build outputs; không chỉ dựa vào ignore của CLI để bảo vệ thao tác format từ editor.
-
-Để format một file tự viết từ root repository, chạy `clang-format -i path/to/file.c` sau khi thay đường dẫn bằng file cần sửa. Commit thay đổi format riêng khi sửa nhiều file. Sau khi CubeMX regenerate hoặc import lại project, giữ các file bảo vệ format và kiểm tra thiết lập editor nếu ST sinh lại chúng.
-
-### Source control
-
-- `Keep User Code` đang bật. Trong file do CubeMX quản lý, chỉ thêm mã vào các vùng `USER CODE BEGIN/END`.
-- Khi cần viết module riêng, thêm file riêng rồi đăng ký source/include trong `drone/CMakeLists.txt`. File này có ghi chú được sinh một lần để người dùng bổ sung; `drone/cmake/stm32cubemx/CMakeLists.txt` là phần được generator cập nhật.
-- Sau khi Generate Code, xem `git diff` trước khi commit. Giữ `.ioc`, `Core/`, `Drivers/` cùng license đi kèm, startup, linker script, CMake files/presets và `.mxproject` trong Git.
-- Thư mục `build/` được bỏ qua. Cấu hình đường dẫn công cụ riêng cho máy có thể đặt trong `CMakeUserPresets.json`; file này được bỏ qua cùng `compile_commands.json` sinh tự động.
-- Không đưa đường dẫn compiler tuyệt đối của máy vào cấu hình dùng chung.
-
-Ví dụ commit cho project khởi tạo: `feat(firmware): initialize STM32F103 CubeMX project`. Thay đổi cấu hình build VS Code phục vụ firmware có thể nằm cùng commit này.
-
-Tham khảo: [STM32CubeMX](https://dev.st.com/stm32cube-docs/stm32cubemx/), [STM32CubeIDE for VS Code](https://marketplace.visualstudio.com/items?itemName=stmicroelectronics.stm32-vscode-extension), [ST hướng dẫn dành chân SWD](https://www.st.com/resource/en/application_note/an4989-stm32-microcontroller-debug-toolbox-stmicroelectronics.pdf), [hướng dẫn debug của ST](https://dev.st.com/stm32cube-docs/stm32cubeide-vscode/latest/en/docs/markup/development/debug.html).
+Tham khảo: [STM32CubeMX](https://dev.st.com/stm32cube-docs/stm32cubemx/) và [hướng dẫn debug của ST](https://dev.st.com/stm32cube-docs/stm32cubeide-vscode/latest/en/docs/markup/development/debug.html).

@@ -1,7 +1,10 @@
 # Tài nguyên cho agent
 
-Thư mục này chứa hướng dẫn thực hành dành cho agent làm việc trong repository. [AGENTS.md](../../AGENTS.md) ở gốc là điểm vào; các hướng dẫn theo công việc được đọc khi cần.
+Thư mục này chứa tài liệu tra cứu dành cho agent. [AGENTS.md](../../AGENTS.md) ở gốc đủ để bắt đầu; chọn tài liệu bên dưới khi công việc cần thêm chi tiết, không có thứ tự đọc bắt buộc.
 
+- [Công cụ](tools.md): chọn lệnh tra cứu, format, lint và kiểm tra phù hợp.
 - [Git](git.md): kiểm tra, chuẩn bị và tạo commit.
 
-Khi bổ sung hướng dẫn, đặt tên theo công việc, viết chỉ dẫn cụ thể và liên kết từ mục lục này. Tài liệu hướng dẫn cho người dùng nằm trong [docs/guides/](../guides/).
+Chỉ bổ sung file khi có nội dung riêng hữu ích. Ưu tiên ví dụ và thông tin khó suy ra từ repo; tránh tạo thêm quy trình hoặc lặp lại hướng dẫn chung.
+
+Hướng dẫn Git nhập môn hiện có cho người dùng nằm trong [docs/guides/git.md](../guides/git.md); quy trình thao tác của agent dùng [git.md](git.md).

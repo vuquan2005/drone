@@ -5,9 +5,9 @@ docs/
 ├── README.md
 ├── agent/                   # Tài nguyên hướng dẫn cho agent
 │   ├── README.md
+│   ├── tools.md
 │   └── git.md
 ├── guides/                  # Hướng dẫn làm việc
-│   ├── tools.md
 │   └── git.md
 ├── research/                # Ghi chú và phân tích nghiên cứu
 │   ├── README.md
@@ -24,7 +24,7 @@ docs/
 
 ## Đọc từ đâu?
 
-- Chuẩn bị làm việc: [công cụ](guides/tools.md) và [Git](guides/git.md).
+- Tra cứu khi cần: [công cụ](agent/tools.md) và [Git cho agent](agent/git.md).
 - Agent làm việc trong dự án: [tài nguyên cho agent](agent/README.md).
 - Xem ghi chú đã tổng hợp: [mục lục nghiên cứu](research/README.md).
 - Tìm bài báo: [chỉ mục bài báo](references/papers/README.md) và [BibTeX](references/papers/references.bib).

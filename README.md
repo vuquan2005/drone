@@ -22,16 +22,14 @@ Tài liệu được chia theo mục đích; xem [mục lục tài liệu](docs/
 
 | Đường dẫn          | Nội dung                                                    |
 | ------------------ | ----------------------------------------------------------- |
-| `docs/guides/`     | Hướng dẫn công cụ và Git                                    |
+| `docs/guides/`     | Hướng dẫn làm việc và Git                                   |
 | `docs/research/`   | Ghi chú, phân tích và tổng hợp nghiên cứu                   |
 | `docs/references/` | Bài báo, bibliography và tài liệu tham khảo gốc             |
 | `docs/external/`   | Hướng dẫn lưu repo tham khảo; bản sao cục bộ trong `repos/` |
 
 ## Bắt đầu
 
-1. Đọc [hướng dẫn công cụ](docs/guides/tools.md): cần dùng công cụ nào và dùng lúc nào.
-2. Đọc [hướng dẫn Git](docs/guides/git.md): kiểm tra thay đổi, commit và đồng bộ.
-3. Đặt tài liệu hoặc mã mới vào thư mục tương ứng; tạo thư mục con khi có nội dung thực tế.
+Đặt tài liệu hoặc mã mới vào thư mục tương ứng; tạo thư mục con khi có nội dung thực tế. Xem [hướng dẫn công cụ](tools/README.md) để cài đặt và chạy các lệnh hỗ trợ, hoặc [hướng dẫn Git](docs/guides/git.md) để làm việc với repository.
 
 Báo cáo: xem [hướng dẫn bộ khung LaTeX](report/README.md). Tệp chính là `report/main.tex`; thông tin bìa được điền tại `report/metadata.tex`.
 

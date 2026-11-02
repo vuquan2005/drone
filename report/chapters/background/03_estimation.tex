@@ -1,0 +1,97 @@
+% !TEX root = ../../main.tex
+\section{Cơ sở đo lường và ước lượng tư thế}
+\label{sec:background-estimation}
+
+Góc roll và pitch là các đại lượng phản hồi của hệ thống điều khiển tư thế. Các góc này được ước lượng từ đơn vị đo lường quán tính, gọi tắt là IMU, gồm gia tốc kế ba trục và con quay hồi chuyển ba trục. Hai nhóm cảm biến lần lượt cung cấp thông tin về phương trọng lực và vận tốc góc để phục vụ phép ước lượng.
+
+\subsection{Đặc trưng đo lường của cảm biến quán tính}
+\label{subsec:background-imu}
+
+Gia tốc kế đo gia tốc riêng, tức là chênh lệch giữa gia tốc chuyển động và gia tốc trọng trường, biểu diễn trong hệ trục cảm biến. Sau khi quy đổi dữ liệu về hệ tọa độ thân $B$, quan hệ lý tưởng giữa tín hiệu đo và chuyển động được viết dưới dạng
+\begin{equation}
+    \mathbf f_B=R^T\left(\mathbf a_E-\mathbf g_E\right),
+    \qquad
+    \mathbf g_E=\begin{bmatrix}0&0&g\end{bmatrix}^T.
+    \label{eq:background-specific-force}
+\end{equation}
+Trong đó, $\mathbf a_E$ là gia tốc tại vị trí cảm biến biểu diễn trong hệ tọa độ quán tính $E$; $g$ là độ lớn gia tốc trọng trường; $R$ là ma trận chuyển tọa độ từ $B$ sang $E$. Với hệ trục thân có $x_B$ hướng về phía trước, $y_B$ sang phải và $z_B$ xuống dưới, cảm biến đứng yên ở tư thế nằm ngang có giá trị lý tưởng $\mathbf f_B=[0,0,-g]^T$. Việc xác định góc nghiêng từ gia tốc kế vì thế gắn liền với quy ước hệ trục và dấu của tín hiệu~\cite{nxp2013tilt}.
+
+Dữ liệu cảm biến được quy đổi sang đơn vị vật lý và hệ trục thân theo hướng lắp bo mạch. Các thành phần gia tốc trong nội dung này là dữ liệu đã chuẩn hóa theo hệ trục $B$; dấu của tín hiệu thô phụ thuộc vào cách lắp và quy ước của từng cảm biến.
+
+Con quay hồi chuyển đo vận tốc góc quanh ba trục thân. Mô hình đo đơn giản có dạng
+\begin{equation}
+    \symbf\omega_m
+    =\symbf\omega+\mathbf b_\omega+\mathbf n_\omega,
+    \qquad
+    \symbf\omega=\begin{bmatrix}p&q&r\end{bmatrix}^T.
+    \label{eq:background-gyro-measurement}
+\end{equation}
+Ở đây, $\symbf\omega_m$ là vận tốc góc đo được, $\mathbf b_\omega$ là độ lệch không và $\mathbf n_\omega$ là nhiễu đo. Độ lệch không khiến tín hiệu vẫn khác không khi thiết bị đứng yên; nếu tích phân trực tiếp, sai lệch này tích lũy thành độ trôi của góc ước lượng theo thời gian.
+
+\subsection{Hiệu chỉnh và lọc tín hiệu cảm biến}
+\label{subsec:background-sensor-conditioning}
+
+Hiệu chỉnh ban đầu nhằm giảm sai lệch có tính hệ thống trước khi dữ liệu đi vào bộ ước lượng. Với con quay hồi chuyển, độ lệch không có thể được xác định bằng giá trị trung bình của $N$ mẫu khi hệ thống đứng yên. Vận tốc góc sau hiệu chỉnh được tính theo
+\begin{equation}
+    \widehat{\mathbf b}_\omega
+    =\frac{1}{N}\sum_{k=1}^{N}\symbf\omega_m[k],
+    \qquad
+    \symbf\omega_c[k]
+    =\symbf\omega_m[k]-\widehat{\mathbf b}_\omega.
+    \label{eq:background-gyro-bias-correction}
+\end{equation}
+Giá trị $N$ được lựa chọn theo thời gian thu nhận và mức dao động của tín hiệu. Kết quả hiệu chỉnh chỉ có ý nghĩa khi cảm biến không quay trong khoảng lấy mẫu; điều kiện nhiệt độ và trạng thái lắp ráp cũng ảnh hưởng đến độ lệch còn lại.
+
+Đối với gia tốc kế, hiệu chỉnh tập trung vào độ lệch không và hệ số tỷ lệ của từng trục. Ở trạng thái đứng yên, tín hiệu chứa thành phần do trọng lực nên giá trị mục tiêu phụ thuộc vào tư thế đặt cảm biến. Chẳng hạn, theo quy ước của báo cáo, trục $z_B$ ở tư thế nằm ngang có giá trị lý tưởng $-g$. Do đó, việc hiệu chỉnh phải giữ lại thông tin phương trọng lực để phục vụ tính góc nghiêng.
+
+Rung động từ cụm động cơ--cánh quạt và nhiễu điện có thể tạo ra thành phần tần số cao. Bộ lọc thông thấp giúp giảm các thành phần này, đồng thời làm tăng độ trễ phản hồi. Mức lọc được lựa chọn để cân bằng giữa giảm nhiễu và theo dõi chuyển động thực; độ lệch không được xử lý bằng bước hiệu chỉnh riêng.
+
+Gia tốc và vận tốc góc đưa vào bộ ước lượng được thu nhận nhất quán về thời gian và đơn vị. Trong các biểu thức rời rạc, $T_s$ là chu kỳ cập nhật; góc tính bằng radian và vận tốc góc tính bằng radian trên giây.
+
+\subsection{Ước lượng góc roll và pitch bằng bộ lọc bổ sung}
+\label{subsec:background-complementary-filter}
+
+Trong trạng thái gần tĩnh, gia tốc chuyển động tại cảm biến nhỏ so với gia tốc trọng trường. Thay $\mathbf a_E\approx\mathbf 0$ vào biểu thức~\eqref{eq:background-specific-force}, với thứ tự quay đã chọn $R=R_z(\psi)R_y(\theta)R_x(\phi)$, thu được
+\begin{equation}
+    \mathbf f_B\approx
+    \begin{bmatrix}
+        g\sin\theta\\
+        -g\cos\theta\sin\phi\\
+        -g\cos\theta\cos\phi
+    \end{bmatrix}.
+    \label{eq:background-gravity-components}
+\end{equation}
+Gọi $a_x$, $a_y$, $a_z$ là các thành phần gia tốc kế sau hiệu chỉnh và chuẩn hóa trục. Trong miền tư thế gần nằm ngang, các góc tham chiếu từ gia tốc kế được xác định bằng
+\begin{equation}
+    \begin{aligned}
+        \phi_a&=\operatorname{atan2}(-a_y,-a_z),\\
+        \theta_a&=\operatorname{atan2}
+        \left(a_x,\sqrt{a_y^2+a_z^2}\right).
+    \end{aligned}
+    \label{eq:background-accelerometer-angles}
+\end{equation}
+Hàm $\operatorname{atan2}$ sử dụng dấu của hai đối số để xác định góc. Các dấu trong công thức xuất phát từ quy ước gia tốc riêng của báo cáo. Gia tốc tịnh tiến kéo dài có thể làm sai lệch phương trọng lực suy ra từ tín hiệu đo; đây là giới hạn của cách xác định góc chỉ bằng gia tốc kế.
+
+Trong lân cận tư thế nằm ngang và khi liên kết giữa các chuyển động quay nhỏ, có thể sử dụng gần đúng $\dot\phi\approx p$ và $\dot\theta\approx q$. Tích phân vận tốc góc cho đáp ứng nhanh trong thời gian ngắn, trong khi góc từ gia tốc kế cung cấp thông tin hiệu chỉnh lâu dài. Bộ lọc bổ sung kết hợp hai nguồn thông tin~\cite{chovancova2014mathematical} theo biểu thức
+\begin{equation}
+    \begin{aligned}
+        \widehat\phi[k]
+        &=\alpha_f\left(\widehat\phi[k-1]+T_s p_c[k]\right)
+        +(1-\alpha_f)\phi_a[k],\\
+        \widehat\theta[k]
+        &=\alpha_f\left(\widehat\theta[k-1]+T_s q_c[k]\right)
+        +(1-\alpha_f)\theta_a[k].
+    \end{aligned}
+    \label{eq:background-complementary-update}
+\end{equation}
+Trong đó, $p_c$, $q_c$ là vận tốc góc sau hiệu chỉnh; $\widehat\phi$, $\widehat\theta$ là các góc ước lượng. Với hằng số thời gian lọc $\tau_f>0$, hệ số phối hợp có thể được chọn theo
+\begin{equation}
+    \alpha_f=\frac{\tau_f}{\tau_f+T_s},
+    \qquad 0<\alpha_f<1.
+    \label{eq:background-complementary-coefficient}
+\end{equation}
+
+\clubpenalty=10000
+Hệ số $\alpha_f$ lớn làm tăng vai trò của nhánh tích phân vận tốc góc; hệ số nhỏ tăng mức hiệu chỉnh từ gia tốc kế. Các tham số cụ thể được xác định trong phần thiết kế theo chu kỳ xử lý và đặc điểm tín hiệu. Cấu trúc này là cơ sở triển khai bộ ước lượng cho miền góc nghiêng nhỏ của đề tài.
+
+Phương trọng lực chỉ cung cấp hai thông tin độc lập về tư thế nên không xác định được góc hướng yaw. Tích phân vận tốc góc cho phép theo dõi biến thiên hướng trong thời gian ngắn, nhưng sai lệch tích lũy vẫn tồn tại khi không có nguồn tham chiếu hướng bổ sung. Vì vậy, nội dung ước lượng tập trung vào hai góc roll và pitch, phù hợp với phạm vi điều khiển đã xác định.

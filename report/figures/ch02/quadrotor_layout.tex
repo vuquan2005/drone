@@ -1,0 +1,43 @@
+\begin{tikzpicture}[
+    x=1cm,y=1cm,
+    >=latex,
+    line width=0.8pt,
+    font=\fontsize{11}{13}\selectfont,
+    every node/.style={align=center}
+]
+    % Schematic convention for this figure; viewed from above.
+    \draw[gray!55,line width=8pt,line cap=round] (-2,-2) -- (2,2);
+    \draw[gray!55,line width=8pt,line cap=round] (-2,2) -- (2,-2);
+    \draw[fill=gray!10,rounded corners=2pt] (-0.48,-0.48) rectangle (0.48,0.48);
+
+    % Opposite rotors rotate in the same direction.
+    \foreach \x/\y/\n in {-2/2/1,2/-2/3}{
+        \begin{scope}[shift={(\x,\y)}]
+            \draw[fill=white] (0,0) circle (0.73);
+            \draw[->,line width=1pt] (130:0.87) arc (130:-130:0.87);
+            \node at (0,0.19) {Rôto \n};
+            \node at (0,-0.22) {CW};
+        \end{scope}
+    }
+    \foreach \x/\y/\n in {2/2/2,-2/-2/4}{
+        \begin{scope}[shift={(\x,\y)}]
+            \draw[fill=white] (0,0) circle (0.73);
+            \draw[->,line width=1pt] (50:0.87) arc (50:310:0.87);
+            \node at (0,0.19) {Rôto \n};
+            \node at (0,-0.22) {CCW};
+        \end{scope}
+    }
+
+    % Body frame: x points forward, y points right, z points into the page.
+    \draw[->] (0,0) -- (0,3.15) node[above] {$x_B$ -- hướng mũi};
+    \draw[->] (0,0) -- (3.6,0) node[right] {$y_B$};
+    \draw[fill=white] (0,0) circle (0.13);
+    \draw (-0.085,-0.085) -- (0.085,0.085);
+    \draw (-0.085,0.085) -- (0.085,-0.085);
+    \node[anchor=north west] at (0.52,-0.32) {$z_B$};
+
+    \node[anchor=west,align=left] at (3.15,2.0)
+        {Roll: quay quanh $x_B$\\Pitch: quay quanh $y_B$\\Yaw: quay quanh $z_B$};
+    \node[anchor=west,align=left] at (3.15,-1.7)
+        {$\otimes\;z_B$: hướng vào trang\\CW: cùng chiều kim đồng hồ\\CCW: ngược chiều kim đồng hồ};
+\end{tikzpicture}

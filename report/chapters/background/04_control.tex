@@ -1,0 +1,68 @@
+% !TEX root = ../../main.tex
+\section{Cơ sở điều khiển ổn định tư thế}
+\label{sec:background-control}
+
+\subsection{Cấu trúc điều khiển xếp tầng}
+
+Điều khiển ổn định tư thế sử dụng thông tin phản hồi để tạo mômen đưa các góc về giá trị đặt. Trong miền góc nghiêng nhỏ, quan hệ động học được xấp xỉ bởi $\dot\phi\approx p$ và $\dot\theta\approx q$. Kết hợp với mô hình tại \eqref{eq:background-small-angle-dynamics}, mỗi kênh gồm quan hệ từ mômen đến vận tốc góc và từ vận tốc góc đến góc quay. Đặc điểm này cho phép tổ chức hai vòng điều khiển xếp tầng: vòng ngoài điều khiển góc, vòng trong điều khiển vận tốc góc. Cấu trúc phản hồi dựa trên mô hình đơn giản cũng là một hướng tiếp cận được khảo sát trong nghiên cứu điều khiển quadrotor~\cite{bouabdallah2004pidlqr}.
+
+Với $\hat\phi,\hat\theta$ là góc ước lượng, bộ điều khiển tỉ lệ ở vòng ngoài xác định vận tốc góc đặt:
+\begin{equation}
+    \begin{aligned}
+        p_d&=\operatorname{sat}_{[-p_{\max},p_{\max}]}
+            \!\left[K_\phi(\phi_d-\hat\phi)\right],\\
+        q_d&=\operatorname{sat}_{[-q_{\max},q_{\max}]}
+            \!\left[K_\theta(\theta_d-\hat\theta)\right].
+    \end{aligned}
+    \label{eq:background-angle-p}
+\end{equation}
+Hàm $\operatorname{sat}_{[a,b]}(v)=\min\{b,\max\{a,v\}\}$ biểu diễn phép giới hạn. Các hệ số $K_\phi,K_\theta$ có đơn vị $\mathrm{s^{-1}}$ khi góc dùng radian. Giới hạn vận tốc đặt giúp tránh yêu cầu quay vượt khả năng cơ cấu chấp hành. Vòng trong được thiết kế có đáp ứng nhanh hơn vòng ngoài để vận tốc góc có thể bám lệnh trước khi góc thay đổi đáng kể. Việc lựa chọn hệ số và chu kỳ thực hiện được tính toán trong phần thiết kế.
+
+Trong cấu trúc xếp tầng, góc ước lượng được đưa về vòng ngoài, còn vận tốc góc được đưa về vòng trong. Tổng lực đẩy $T$ là đầu vào nền của khâu phân bổ; trong phạm vi điều khiển roll và pitch, đầu vào này được lựa chọn theo điều kiện khảo sát. Việc duy trì góc không đồng thời tạo thành chức năng giữ độ cao. Mômen yaw chỉ được bổ sung khi triển khai kênh điều khiển tương ứng.
+
+\subsection{Bộ điều khiển PID vận tốc góc}
+
+Xét một kênh $j\in\{x,y\}$, đặt $\nu_x=p$, $\nu_y=q$ và $e_j=\nu_{j,d}-\hat\nu_j$. Luật PID có thành phần vi phân tác động lên tín hiệu đo được viết:
+\begin{equation}
+    \tau_j^*(t)=K_{P,j}e_j(t)+I_j(t)-K_{D,j}\dot{\hat\nu}_{j,f}(t),
+    \qquad I_j(t)=K_{I,j}\int_0^t e_j(\xi)\,\mathrm d\xi.
+    \label{eq:background-rate-pid}
+\end{equation}
+Trong đó, $\tau_j^*$ là mômen yêu cầu; chỉ số $f$ chỉ tín hiệu đã được lọc. Thành phần tỉ lệ tạo tác động theo sai lệch tức thời; tích phân bù sai lệch kéo dài; vi phân góp phần hạn chế biến thiên nhanh của vận tốc góc. Lấy vi phân theo tín hiệu đo giúp tránh xung vi phân trực tiếp do bước nhảy của giá trị đặt. Do phép vi phân khuếch đại nhiễu tần số cao, thành phần này được kết hợp với bộ lọc thông thấp~\cite{astrom2021feedback}.
+
+Nếu mômen được biểu diễn bằng $\mathrm{N\,m}$ và vận tốc góc bằng $\mathrm{rad/s}$ thì đơn vị của $K_{P,j}$, $K_{I,j}$, $K_{D,j}$ lần lượt là $\mathrm{N\,m\,s/rad}$, $\mathrm{N\,m/rad}$ và $\mathrm{N\,m\,s^2/rad}$. Như vậy, đầu ra tại \eqref{eq:background-rate-pid} là một đại lượng vật lý để đưa vào mô hình phân bổ lực đẩy. Nếu chương trình sử dụng đầu ra chuẩn hóa, hệ số chuyển đổi tương ứng phải được xác định để giữ nhất quán giữa thuật toán và mô hình.
+
+\subsection{Rời rạc hóa và hạn chế bão hòa tích phân}
+
+Với chu kỳ lấy mẫu $T_s$, đạo hàm có lọc được tính theo sai phân lùi và bộ lọc bậc nhất:
+\begin{equation}
+    d_j[k]=\beta d_j[k-1]+(1-\beta)
+        \frac{\hat\nu_j[k]-\hat\nu_j[k-1]}{T_s},
+    \qquad \beta=\frac{T_f}{T_f+T_s},
+    \label{eq:background-filtered-derivative}
+\end{equation}
+trong đó $T_f>0$ là hằng số thời gian lọc. Tăng $T_f$ làm giảm ảnh hưởng của nhiễu nhưng tăng độ trễ.
+
+\begin{samepage}
+Mômen yêu cầu ở thời điểm $k$ và trạng thái tích phân ở lượt kế tiếp được xác định bởi:
+\begin{equation}
+    \begin{aligned}
+        \tau_j^*[k]&=K_{P,j}e_j[k]+I_j[k]-K_{D,j}d_j[k],\\
+        I_j[k+1]&=\operatorname{sat}_{[I_{j,\min},I_{j,\max}]}
+            \!\left(I_j[k]+g_j[k]K_{I,j}T_s e_j[k]\right).
+    \end{aligned}
+    \label{eq:background-discrete-pid}
+\end{equation}
+\end{samepage}
+Hệ số $g_j[k]$ quyết định có tiếp tục tích phân hay không. Khi lực đẩy bị giới hạn, mômen khả dụng tính từ lệnh động cơ sau phân bổ được ký hiệu là $\tau_{j,a}[k]$. Một quy tắc tích phân có điều kiện là:
+\begin{equation}
+    g_j[k]=
+    \begin{cases}
+        0,&e_j[k]\big(\tau_j^*[k]-\tau_{j,a}[k]\big)>0,\\
+        1,&\text{các trường hợp còn lại}.
+    \end{cases}
+    \label{eq:background-conditional-integration}
+\end{equation}
+Tích phân dừng khi sai lệch đang thúc đẩy mômen yêu cầu đi xa hơn về phía không thể thực hiện; khi sai lệch đổi chiều, tích phân được phép giảm trở lại. Giới hạn $I_j$ đồng thời chặn biên độ trạng thái tích phân. Đây là cơ sở xử lý hiện tượng bão hòa tích phân khi cơ cấu chấp hành không tạo được tác động mà bộ điều khiển yêu cầu~\cite{astrom2021feedback}.
+
+Trạng thái giới hạn phải được lấy từ khâu phân bổ và giới hạn lực đẩy động cơ. Chỉ cắt biên đầu ra PID hoặc từng lệnh động cơ chưa đủ để phản ánh sai lệch mômen do bão hòa đồng thời nhiều kênh. Đại lượng $\tau_{j,a}$ ở đây là ước lượng theo lệnh khả thi, chưa bao gồm toàn bộ sai khác do đáp ứng động cơ và sai số mô hình. Vì vậy, việc phối hợp giới hạn lệnh và cập nhật tích phân là một phần của thiết kế vòng kín.

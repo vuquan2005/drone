@@ -13,6 +13,9 @@
     ".editorconfig": ".clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore"
   },
   "workbench.iconTheme": "material-icon-theme",
+  "workbench.editorAssociations": {
+    "file:/**/*.md": "vscode.markdown.preview.editor"
+  },
   "material-icon-theme.folders.associations": {
     "control": "controller",
     "guides": "helper",

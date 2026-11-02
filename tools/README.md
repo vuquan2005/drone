@@ -2,14 +2,15 @@
 
 Chạy các lệnh sau từ thư mục gốc repository:
 
-| Lệnh                   | Tác dụng                                                       |
-| ---------------------- | -------------------------------------------------------------- |
-| `make help`            | Xem danh sách lệnh                                             |
-| `make format`          | Định dạng các tệp được Git theo dõi                            |
-| `make lint`            | Kiểm tra Markdown, CMake và LaTeX                              |
-| `make sync-papers`     | Đồng bộ PDF bài báo sang Markdown                              |
-| `make sync-datasheets` | Đồng bộ PDF datasheet sang Markdown                            |
-| `make clean`           | Xóa thư mục build của firmware và báo cáo, gồm cả PDF đã build |
+| Lệnh                   | Tác dụng                                                          |
+| ---------------------- | ----------------------------------------------------------------- |
+| `make help`            | Xem danh sách lệnh                                                |
+| `make report`          | Build PDF báo cáo; xem [hướng dẫn](../report/README.md#biên-dịch) |
+| `make format`          | Định dạng các tệp được Git theo dõi                               |
+| `make lint`            | Kiểm tra Markdown, CMake và LaTeX                                 |
+| `make sync-papers`     | Đồng bộ PDF bài báo sang Markdown                                 |
+| `make sync-datasheets` | Đồng bộ PDF datasheet sang Markdown                               |
+| `make clean`           | Xóa thư mục build của firmware và báo cáo, gồm cả PDF đã build    |
 
 ## Cài đặt
 

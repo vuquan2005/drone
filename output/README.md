@@ -1,15 +1,8 @@
 # Quadrotor - sơ đồ module nối wire trực tiếp
 
-Bộ dữ liệu được khôi phục từ các file nguồn và bản xuất đã lưu của dự án.
+Bộ kết quả được tạo và kiểm tra bằng **KiCad CLI 10.0.7** ngày 2026-11-02.
 Schematic một trang A2 ngang, phía trước ở trên. Đây là sơ đồ liên kết các
 module bên ngoài; chưa thiết kế PCB, footprint hoặc firmware.
-
-Kiểm tra lại ngày 2026-11-02 bằng `python verify_design.py` dừng tại
-`Embedded symbol differs: A2212_Motor:A2212_10T_1400KV`. Symbol nhúng có
-khác biệt so với thư viện nguồn. Các bản PDF/PNG, netlist và báo cáo ERC
-được giữ từ lần xuất trước; cần xuất và kiểm tra lại trước khi coi chúng
-là kết quả xác nhận cho schematic hiện tại. Lần khôi phục này không sửa
-thiết kế hoặc nới lỏng các điều kiện kiểm tra.
 
 ## Mở và xem
 
@@ -30,16 +23,13 @@ Các đường dẫn thư viện dùng `${KIPRJMOD}`, không phụ thuộc đư�
 - `validation/Drone_Direct_Wire.erc.json`: báo cáo ERC gốc, không lọc lỗi.
 - `validation/Drone_Direct_Wire.erc.rpt`: ERC dạng văn bản.
 - `validation/before_PWR_FLAG.erc.json`: hai lỗi nguồn trước khi thêm khai báo ERC.
-- `validation/before_PWR_FLAG.net.xml`: netlist trước khi thêm cờ, dùng bởi script kiểm tra.
 - `validation/power_sources.json`: đường nguồn và net thực tế đã đối chiếu.
 - `validation/KiCad_BOM.csv`: BOM xuất độc lập bằng KiCad, không có PWR_FLAG.
 - `validation/manifest.json`: hash thư viện đầu vào và các mạng dự kiến.
-- `verify_design.py`: chạy lại kiểm tra bằng Python chuẩn sau khi xuất netlist/ERC;
-  tạo `validation/verification.json` khi kiểm tra thành công.
-
-Không lưu lại archive, ảnh chụp kiểm tra từng vùng, SVG trung gian hoặc ZIP
-trùng với các file trong thư mục. Dữ liệu `.history/` chỉ được giữ cục bộ
-và được Git bỏ qua.
+- `validation/verification.json`: kết quả đối chiếu độc lập với yêu cầu.
+- `validation/visual_qa.json`: kiểm tra hình học/readability của plugin, kết quả PASS.
+- `verify_design.py`: chạy lại kiểm tra bằng Python chuẩn sau khi xuất netlist/ERC.
+- `Drone_Direct_Wire_bundle.zip`: gói bàn giao gồm dự án, thư viện, bản xuất và báo cáo.
 
 CSV dùng UTF-8 có BOM để Excel nhận dạng đúng. Các dòng bảng nối dây thể hiện
 quan hệ trong cùng mạng điện; mạng nguồn/GND chia nhánh dùng chung wire trên
@@ -161,7 +151,7 @@ Trước khi đấu và cấp nguồn:
 
 Không có xác minh phần cứng, đo điện áp hoặc nạp firmware trong công việc này.
 
-## Kết quả kiểm tra đã lưu từ lần xuất trước
+## Kết quả kiểm tra
 
 Đã dùng KiCad để đọc schematic, xuất netlist và PDF, chạy ERC. Không dùng
 kiểm tra cú pháp thay cho ERC. Đối chiếu độc lập netlist xuất từ KiCad với

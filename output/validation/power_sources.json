@@ -1,0 +1,57 @@
+[
+  {
+    "functional_net": "VBAT",
+    "kicad_net_name": "Net-(#FLG01-Pad1)",
+    "source_pin": "BT1.1",
+    "source_type_unchanged": "passive",
+    "destinations": [
+      "U7.1",
+      "U3.1",
+      "U4.1",
+      "U5.1",
+      "U6.1"
+    ],
+    "erc_flag": "#FLG01",
+    "physical_pin_group": [
+      "BT1.1",
+      "U3.1",
+      "U4.1",
+      "U5.1",
+      "U6.1",
+      "U7.1"
+    ],
+    "verified_by": "KiCad netlist and independent wire geometry; not hardware measurement"
+  },
+  {
+    "functional_net": "5V",
+    "kicad_net_name": "Net-(U2-5V)",
+    "source_pin": "U7.3",
+    "source_type_unchanged": "power_out",
+    "destinations": [
+      "A1.LO03",
+      "U2.3"
+    ],
+    "erc_flag": null,
+    "physical_pin_group": [
+      "A1.LO03",
+      "U2.3",
+      "U7.3"
+    ],
+    "verified_by": "KiCad netlist and independent wire geometry; not hardware measurement"
+  },
+  {
+    "functional_net": "3V3",
+    "kicad_net_name": "Net-(#FLG02-Pad1)",
+    "source_pin": "A1.LI02",
+    "source_type_unchanged": "passive",
+    "destinations": [
+      "U1.1"
+    ],
+    "erc_flag": "#FLG02",
+    "physical_pin_group": [
+      "A1.LI02",
+      "U1.1"
+    ],
+    "verified_by": "KiCad netlist and independent wire geometry; not hardware measurement"
+  }
+]

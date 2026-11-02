@@ -1,0 +1,184 @@
+{
+  "source_sha256": {
+    "A2212_Motor.kicad_sym": "c170fcb611637e712bae5147addf28cd5dbe8c5a4a9ea5e92e09e6b7432d5462",
+    "BMI270_DevKit.kicad_sym": "ba1732db96e15a963914d1924a278bc73f2396f9218d0f9c0801f6387dd2f0a4",
+    "DevKit_STM32.kicad_sym": "686bc8e41715d22344d6e12b238bfd5944954c1e0379d2b1a9b281c036a773e1",
+    "ERC_Only.kicad_sym": "17950c9ba4a0ec8816624c0e689c4016dde9c000e7cdb39202f0c3bd58ea7387",
+    "ESC_30A.kicad_sym": "9539d533cd520a3ab7ddd1d8d2c3dce5db18442a37fee791603dbdb8ea719e76",
+    "LM2596_Module_Logical.kicad_sym": "8aaf3ff9d7d19d1097887e59a80ed548528bda08a96341e37286a04d1870c454",
+    "OVONIC_LiPo.kicad_sym": "9774413f7760e4f1209765efdc1f95b8ff2a4a71cd4459ae964e07fcb8867af0",
+    "SB_Nano_2G4RX_Physical.kicad_sym": "9671a1b698458bf8fdb62e97b9824805ba492dc6fb64ad1d9ff834056bca19c2"
+  },
+  "components": {
+    "A1": "DevKit_STM32:STM32F103VET6_DevKit",
+    "U1": "BMI270_DevKit:BMI270_DevKit_V1_3",
+    "U2": "SB_Nano_2G4RX_Physical:SB_Nano_2G4RX_Physical",
+    "U3": "ESC_30A:ESC_30A_BLDC",
+    "U4": "ESC_30A:ESC_30A_BLDC",
+    "U5": "ESC_30A:ESC_30A_BLDC",
+    "U6": "ESC_30A:ESC_30A_BLDC",
+    "M1": "A2212_Motor:A2212_10T_1400KV",
+    "M2": "A2212_Motor:A2212_10T_1400KV",
+    "M3": "A2212_Motor:A2212_10T_1400KV",
+    "M4": "A2212_Motor:A2212_10T_1400KV",
+    "BT1": "OVONIC_LiPo:OVONIC_LiPo_3S_5200mAh_90C",
+    "U7": "LM2596_Module_Logical:LM2596_Module_Logical"
+  },
+  "expected_nets": {
+    "SPI1_MISO": [
+      "A1.LO14",
+      "U1.3"
+    ],
+    "SPI1_MOSI": [
+      "A1.LI14",
+      "U1.4"
+    ],
+    "SPI1_SCLK": [
+      "A1.LI13",
+      "U1.5"
+    ],
+    "SPI1_CS": [
+      "A1.LO13",
+      "U1.6"
+    ],
+    "UART_TX": [
+      "A1.RO16",
+      "U2.1"
+    ],
+    "UART_RX": [
+      "A1.RI15",
+      "U2.2"
+    ],
+    "PWM_ESC1": [
+      "A1.RO05",
+      "U3.6"
+    ],
+    "PWM_ESC2": [
+      "A1.RI05",
+      "U4.6"
+    ],
+    "PWM_ESC3": [
+      "A1.RO04",
+      "U5.6"
+    ],
+    "PWM_ESC4": [
+      "A1.RI04",
+      "U6.6"
+    ],
+    "ESC1_PHASE_1": [
+      "M1.1",
+      "U3.3"
+    ],
+    "ESC1_PHASE_2": [
+      "M1.2",
+      "U3.4"
+    ],
+    "ESC1_PHASE_3": [
+      "M1.3",
+      "U3.5"
+    ],
+    "ESC2_PHASE_1": [
+      "M2.1",
+      "U4.3"
+    ],
+    "ESC2_PHASE_2": [
+      "M2.2",
+      "U4.4"
+    ],
+    "ESC2_PHASE_3": [
+      "M2.3",
+      "U4.5"
+    ],
+    "ESC3_PHASE_1": [
+      "M3.1",
+      "U5.3"
+    ],
+    "ESC3_PHASE_2": [
+      "M3.2",
+      "U5.4"
+    ],
+    "ESC3_PHASE_3": [
+      "M3.3",
+      "U5.5"
+    ],
+    "ESC4_PHASE_1": [
+      "M4.1",
+      "U6.3"
+    ],
+    "ESC4_PHASE_2": [
+      "M4.2",
+      "U6.4"
+    ],
+    "ESC4_PHASE_3": [
+      "M4.3",
+      "U6.5"
+    ],
+    "VBAT": [
+      "BT1.1",
+      "U3.1",
+      "U4.1",
+      "U5.1",
+      "U6.1",
+      "U7.1"
+    ],
+    "GND": [
+      "A1.LO01",
+      "BT1.2",
+      "U1.2",
+      "U2.4",
+      "U3.2",
+      "U3.8",
+      "U4.2",
+      "U4.8",
+      "U5.2",
+      "U5.8",
+      "U6.2",
+      "U6.8",
+      "U7.2",
+      "U7.4"
+    ],
+    "3V3": [
+      "A1.LI02",
+      "U1.1"
+    ],
+    "5V": [
+      "A1.LO03",
+      "U2.3",
+      "U7.3"
+    ]
+  },
+  "wire_segments": 133,
+  "no_connects": 93,
+  "labels": 0,
+  "power_symbols": 2,
+  "footprints": 0,
+  "erc_flags": {
+    "#FLG01": {
+      "net": "VBAT",
+      "pin": [
+        388.62,
+        104.14
+      ],
+      "wire_tap": [
+        396.24,
+        104.14
+      ],
+      "in_bom": false,
+      "on_board": false
+    },
+    "#FLG02": {
+      "net": "3V3",
+      "pin": [
+        223.52,
+        182.88
+      ],
+      "wire_tap": [
+        231.14,
+        182.88
+      ],
+      "in_bom": false,
+      "on_board": false
+    }
+  },
+  "power_assumption": "LM2596 OUT+ powers A1 and U2 at 5V; A1 3V3 powers U1. All ESC BEC pins unused. USB is not the power source."
+}

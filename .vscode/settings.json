@@ -2,117 +2,133 @@
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
-    "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*",
-    ".gitignore": ".gitattributes, .gitmodules, codegraph.json",
-    "Makefile": ".pre-commit-config.yaml, pyproject.toml",
-    "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
-    "*.ioc": ".mxproject",
-    "bundles.store.json": "bundles-lock.store.json",
-    "main.tex": "metadata.tex, latexmkrc, .chktexrc",
+    "*.ioc": ".mxproject, STM32*_FLASH.ld, startup_stm32*.s",
     "*.tex": "${capture}.aux, ${capture}.log, ${capture}.out, ${capture}.toc, ${capture}.lof, ${capture}.lot, ${capture}.bbl, ${capture}.blg, ${capture}.bcf, ${capture}.run.xml, ${capture}.fls, ${capture}.fdb_latexmk, ${capture}.synctex.gz, ${capture}.xdv, ${capture}.pdf",
-    ".editorconfig": ".clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore"
+    ".editorconfig": ".clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore",
+    ".gitignore": ".gitattributes, .gitmodules, codegraph.json",
+    "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
+    "Makefile": ".pre-commit-config.yaml, pyproject.toml",
+    "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*",
+    "bundles.store.json": "bundles-lock.store.json",
+    "main.tex": "metadata.tex, latexmkrc, .chktexrc"
   },
-  "workbench.iconTheme": "material-icon-theme",
-  "material-icon-theme.folders.associations": {
-    "control": "controller",
-    "guides": "helper",
-    "tutorials": "helper",
-    "references": "bibliography",
-    "research": "review",
-    "external": "import",
-    "papers": "pdf",
-    "papers_md": "markdown",
-    "datasheets": "pdf",
-    "datasheets_md": "markdown",
-    "experiments": "skills",
-    "hardware": "components",
-    "cad": "container",
-    "kicad": "core",
-    "firmware": "src",
-    "BSP": "interface",
-    "Drivers": "lib",
-    "cmake": "config",
-    "chapters": "toc",
-    "appendices": "mappings",
-    "frontmatter": "custom"
+  "files.exclude": {
+    "**/*.kicad_prl": true,
+    "**/.agents": true,
+    "**/.aws": true,
+    "**/.cache": true,
+    "**/.codegraph": true,
+    "**/.codex": true,
+    "**/.mypy_cache": true,
+    "**/.pdf-sync.json": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/build": true,
+    "**/cmake-build-*": true,
+    "**/temp": true,
+    "**/tmp": true
   },
   "material-icon-theme.files.associations": {
     "*.ioc": "settings",
+    "*.kicad_mod": "architecture",
+    "*.kicad_pcb": "architecture",
     "*.kicad_pro": "settings",
     "*.kicad_sch": "drawio",
-    "*.kicad_pcb": "architecture",
     "*.kicad_sym": "drawio",
-    "*.kicad_mod": "architecture",
-    ".mxproject": "settings",
-    "*.ld": "assembly"
+    "*.ld": "assembly",
+    ".mxproject": "settings"
   },
-  "files.exclude": {
-    "**/__pycache__": true,
-    "**/.pdf-sync.json": true,
-    "**/build": true,
-    "**/cmake-build-*": true,
-    "**/.codegraph": true,
-    "**/.cache/clangd": true,
-    "**/*.kicad_prl": true
+  "material-icon-theme.folders.associations": {
+    "BSP": "interface",
+    "Drivers": "lib",
+    "appendices": "mappings",
+    "cad": "container",
+    "chapters": "toc",
+    "cmake": "config",
+    "control": "controller",
+    "datasheets": "pdf",
+    "datasheets_md": "markdown",
+    "experiments": "skills",
+    "external": "import",
+    "firmware": "src",
+    "frontmatter": "custom",
+    "guides": "helper",
+    "hardware": "components",
+    "kicad": "core",
+    "papers": "pdf",
+    "papers_md": "markdown",
+    "references": "bibliography",
+    "research": "review",
+    "tutorials": "helper"
   },
+  "workbench.editorAssociations": {
+    "*.copilotmd": "vscode.markdown.preview.editor",
+    "*.pdf": "pdf.preview",
+    "file:/**/*.md": "vscode.markdown.preview.editor"
+  },
+  "workbench.iconTheme": "material-icon-theme",
+
   "prettier.requireConfig": true,
+
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "[c]": {
+    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
+  },
+  "[cmake]": {
+    "editor.defaultFormatter": "cheshirekow.cmake-format"
+  },
+  "[cpp]": {
+    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
+  },
+  "cmake.cmakePath": "cube-cmake",
+  "cmake.configureArgs": ["-DCMAKE_COMMAND=cube-cmake"],
+  "cmake.configureOnOpen": false,
+  "cmake.preferredGenerators": ["Ninja"],
+  "cmake.sourceDirectory": "${workspaceFolder}/firmware/drone",
+  "cmake.useCMakePresets": "always",
+  "stm32cube-ide-clangd.arguments": [
+    "starm-clangd",
+    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc*",
+    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++*"
+  ],
+  "stm32cube-ide-clangd.path": "cube",
+
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },
-  "[markdown]": {
-    "editor.wordWrap": "on",
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
-  },
+
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on"
+  },
   "[yaml]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.tabSize": 2
   },
-  "yaml.validate": true,
   "yaml.format.enable": false,
-  "[cmake]": {
-    "editor.defaultFormatter": "cheshirekow.cmake-format"
-  },
-  "[latex]": {
-    "editor.wordWrap": "on",
+  "yaml.validate": true,
+
+  "[bibtex]": {
     "editor.defaultFormatter": "James-Yu.latex-workshop"
   },
   "[latex-package]": {
     "editor.defaultFormatter": "James-Yu.latex-workshop"
   },
-  "[bibtex]": {
-    "editor.defaultFormatter": "James-Yu.latex-workshop"
+  "[latex]": {
+    "editor.defaultFormatter": "James-Yu.latex-workshop",
+    "editor.wordWrap": "on"
   },
   "latex-workshop.formatting.latex": "latexindent",
-  "latex-workshop.linting.chktex.enabled": true,
-  "latex-workshop.linting.run": "onSave",
-  "latex-workshop.linting.chktex.exec.args": ["-q"],
-  "cmake.sourceDirectory": "${workspaceFolder}/firmware/drone",
-  "cmake.useCMakePresets": "always",
-  "cmake.configureOnOpen": false,
-  "cmake.cmakePath": "cube-cmake",
-  "cmake.configureArgs": ["-DCMAKE_COMMAND=cube-cmake"],
-  "cmake.preferredGenerators": ["Ninja"],
-  "stm32cube-ide-clangd.path": "cube",
-  "stm32cube-ide-clangd.arguments": [
-    "starm-clangd",
-    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc*",
-    "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++*"
-  ],
-  "C_Cpp.intelliSenseEngine": "disabled",
-  "[c]": {
-    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
-  },
-  "[cpp]": {
-    "editor.defaultFormatter": "STMicroelectronics.stm32cube-ide-clangd"
-  },
-  "latex-workshop.latex.outDir": "%DIR%/build",
   "latex-workshop.latex.auxDir": "%OUTDIR%",
+  "latex-workshop.latex.outDir": "%DIR%/build",
   "latex-workshop.latex.recipe.default": "thesis (XeLaTeX)",
   "latex-workshop.latex.recipes": [
     {
@@ -122,8 +138,6 @@
   ],
   "latex-workshop.latex.tools": [
     {
-      "name": "thesis-latexmk",
-      "command": "latexmk",
       "args": [
         "-synctex=1",
         "-interaction=nonstopmode",
@@ -132,8 +146,13 @@
         "-outdir=%OUTDIR%",
         "%DOC%"
       ],
-      "cwd": "%DIR%"
+      "command": "latexmk",
+      "cwd": "%DIR%",
+      "name": "thesis-latexmk"
     }
   ],
+  "latex-workshop.linting.chktex.enabled": true,
+  "latex-workshop.linting.chktex.exec.args": ["-q"],
+  "latex-workshop.linting.run": "onSave",
   "latex-workshop.view.pdf.viewer": "tab"
 }

@@ -1,8 +1,10 @@
 # STM32F103VET6 dev kit
 
-Chọn `DevKit_STM32:STM32F103VET6_DevKit`. Đây là symbol STM32 duy nhất
-trong thư viện dự án: module 98 chân, GPIO không có tiền tố P,
-BOOT0/BOOT1 ở cạnh trên bên phải nhóm debug. Các bản cũ đã được xóa.
+Chọn `DevKit_STM32:STM32F103VET6_DevKit` hoặc
+`DevKit_STM32:STM32F103VET6_DevKit_Headers`. Cả hai tên hiện dùng cùng
+một symbol module 98 chân, GPIO không có tiền tố P, BOOT0/BOOT1 ở cạnh
+trên bên phải nhóm debug. Các phiên bản cũ lưu ở
+`DevKit_STM32_legacy.kicad_sym`, không đăng ký vào thư viện dự án.
 
 ## Bảng chân
 
@@ -23,7 +25,8 @@ Chưa gán footprint. GPIO/debug dùng bidirectional, BOOT dùng input,
 nguồn dùng passive. Kết nối bên trong board không được mô tả riêng.
 
 `DevKit_STM32_headers.csv` chứa từng ID và ô CSV nguồn.
-Tệp thư viện hiện hành: `DevKit_STM32.kicad_sym`.
+Tạo lại thư viện bằng `create_header_symbol.py`, không chạy script cũ
+`create_devkit_symbol.py` vì script đó tạo các bản logic trước đây.
 
 ## Làm mới trong KiCad
 

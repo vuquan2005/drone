@@ -5,7 +5,7 @@
 \begingroup
 \widowpenalty=10000
 
-Chương này trình bày quá trình phát triển của quadrotor, nguyên lý tạo chuyển động và những vấn đề đặt ra khi thiết kế bộ điều khiển cân bằng. Trên cơ sở đó, đối tượng, phạm vi, phương pháp nghiên cứu và kết quả dự kiến của đề tài được xác định để làm cơ sở triển khai các chương tiếp theo.
+Chương này trình bày quá trình phát triển của quadrotor và những vấn đề đặt ra khi thiết kế bộ điều khiển ổn định tư thế. Trên cơ sở đó, mục tiêu, đối tượng, phạm vi, phương pháp nghiên cứu và kết quả dự kiến của đề tài được xác định để làm cơ sở triển khai các chương tiếp theo.
 
 \section{Lịch sử nghiên cứu và phát triển}
 \label{sec:introduction-history}
@@ -31,33 +31,6 @@ Các nghiên cứu sau đó mở rộng từ ổn định tư thế sang điều
 Ở Việt Nam, bài toán mô hình hóa và điều khiển quadrotor cũng được nghiên cứu theo nhiều hướng. Năm 2024, Hoàng Văn Huy trình bày mô hình động lực học có xét cơ cấu chấp hành là động cơ điện một chiều với bộ điều khiển thích nghi, đồng thời mô phỏng hệ điều khiển trên MATLAB/Simulink. Công trình là một ví dụ về việc xét thêm đặc tính cơ cấu chấp hành khi xây dựng hệ điều khiển quadrotor~\cite{huy2024simulation}.
 
 Những công trình trên thể hiện sự phát triển từ thiết kế mô hình và ổn định tư thế đến các bài toán điều khiển có yêu cầu cơ động cao. Đối với đề tài này, mô hình hóa động lực học và điều khiển tư thế là cơ sở tham khảo trực tiếp. Hướng tiếp cận được lựa chọn là tập trung vào góc roll và pitch trong miền góc nghiêng nhỏ, tạo nền tảng để triển khai bộ điều khiển trên vi điều khiển và đánh giá bằng dữ liệu của hệ thống.
-
-\section{Nguyên lý hoạt động}
-\label{sec:introduction-principle}
-
-Quadrotor sử dụng bốn cụm động cơ--cánh quạt bố trí quanh thân để tạo lực đẩy và mômen điều khiển. Trong cấu hình thông dụng, các trục rôto song song với nhau; hai rôto đối diện quay cùng chiều, còn hai rôto kề nhau quay ngược chiều. Khi mômen phản lực của hai nhóm quay ngược chiều cân bằng, tổng mômen quanh trục đứng của thân máy bay được triệt tiêu trong điều kiện lý tưởng. Chuyển động được điều khiển bằng cách thay đổi tốc độ quay của từng rôto~\cite{bouabdallah2004design}.
-
-\fref{fig:quadrotor-principle} minh họa một cấu hình chữ X nhìn từ trên xuống. Hệ trục gắn với thân máy bay gồm trục dọc $x_B$ hướng về phía mũi, trục ngang $y_B$ hướng sang phải và trục $z_B$ hướng xuống dưới. Trong lân cận tư thế nằm ngang, chuyển động roll, pitch và yaw lần lượt tương ứng với chuyển động quay quanh các trục này. Số thứ tự rôto và chiều quay trên hình được dùng làm quy ước minh họa nguyên lý.
-
-\begin{figure}[htbp]
-    \centering
-    \input{figures/ch01/quadrotor_principle}
-    \caption{Sơ đồ bố trí rôto và các trục của quadrotor cấu hình chữ X, nhìn từ trên xuống.}
-    \label{fig:quadrotor-principle}
-\end{figure}
-
-Khi thay đổi đồng thời lực đẩy của cả bốn rôto, tổng lực tác dụng theo phương trục rôto thay đổi. Ở tư thế nằm ngang, tổng lực đẩy cân bằng trọng lực là điều kiện cân bằng lực theo phương thẳng đứng; khi lực đẩy lớn hơn hoặc nhỏ hơn trọng lực, máy bay có gia tốc tương ứng theo phương này. Để tạo mômen roll, bộ điều khiển điều chỉnh chênh lệch lực đẩy giữa các rôto ở hai phía trái và phải. Tương tự, chênh lệch lực đẩy giữa phía trước và phía sau tạo mômen pitch. Với cấu hình chữ X, mỗi rôto đều tham gia tạo mômen quanh cả trục dọc và trục ngang, nên lệnh điều khiển được phân bổ đồng thời cho bốn động cơ.
-
-Chuyển động yaw được tạo ra bằng chênh lệch tổng mômen phản lực giữa hai nhóm rôto quay ngược chiều. Khi thân máy bay nghiêng, vectơ tổng lực đẩy cũng nghiêng theo và xuất hiện thành phần lực theo phương ngang. Vì vậy, điều khiển tư thế có ảnh hưởng trực tiếp đến chuyển động tịnh tiến. Đây là đặc điểm quan trọng của quadrotor: hệ thống có sáu bậc tự do nhưng chỉ có bốn đầu vào điều khiển độc lập, gồm tổng lực đẩy và ba thành phần mômen~\cite{bouabdallah2004design}.
-
-Để duy trì tư thế mong muốn, hệ thống sử dụng thông tin phản hồi từ cảm biến. Dữ liệu gia tốc và vận tốc góc được xử lý để ước lượng góc roll, pitch; sai lệch giữa góc đặt và góc ước lượng được đưa vào bộ điều khiển. Kết quả tính toán được phân bổ thành lệnh cho các động cơ, qua đó tạo mômen hiệu chỉnh. \fref{fig:attitude-control-loop} thể hiện mối liên hệ giữa các khối chức năng ở mức tổng quát; mô hình toán học và cấu trúc các vòng điều khiển được trình bày trong \charef{chap:background} và \charef{chap:system-design}.
-
-\begin{figure}[htbp]
-    \centering
-    \input{figures/ch01/attitude_control_loop}
-    \caption{Sơ đồ nguyên lý điều khiển phản hồi góc roll và pitch.}
-    \label{fig:attitude-control-loop}
-\end{figure}
 
 \section{Các vấn đề đặt ra và mục tiêu nghiên cứu}
 \label{sec:introduction-objectives}
@@ -86,6 +59,7 @@ Phạm vi thực hiện gồm xử lý dữ liệu quán tính, ước lượng 
 
 Phương pháp mô hình hóa dựa trên các quan hệ lực và mômen tác dụng lên thân máy bay. Sau khi thống nhất hệ tọa độ, chiều dương và ký hiệu, các phương trình chuyển động được thiết lập và giản lược quanh điều kiện làm việc đã chọn. Mô hình này là cơ sở phân tích ảnh hưởng của tham số và lựa chọn ban đầu các hệ số điều khiển. Đối với dữ liệu cảm biến, phương án xử lý được xây dựng từ việc hiệu chỉnh sai lệch đo và kết hợp thông tin gia tốc với vận tốc góc để ước lượng tư thế.
 
+\clubpenalty=10000
 Thuật toán được triển khai trên STM32 theo các chức năng thu nhận dữ liệu cảm biến, ước lượng tư thế, tính toán điều khiển và phân bổ lệnh động cơ. Quá trình kiểm tra được thực hiện từ từng khối chức năng đến vòng điều khiển hoàn chỉnh. Dữ liệu cảm biến, chiều tác động của lệnh động cơ và chu kỳ thực hiện chương trình được kiểm tra trước khi khảo sát khả năng ổn định tư thế trên mô hình có giới hạn chuyển động phù hợp.
 
 Thực nghiệm điều khiển tập trung khảo sát đáp ứng khi thay đổi góc đặt, khi có sai lệch tư thế ban đầu và khi có tác động làm lệch góc. Góc đặt, góc ước lượng, vận tốc góc và lệnh động cơ được ghi nhận theo thời gian. Các hệ số điều khiển được hiệu chỉnh dựa trên đáp ứng đo được, đồng thời xét giới hạn tác động điều khiển. Dữ liệu thực nghiệm là cơ sở đánh giá sai lệch góc, mức dao động, độ quá điều chỉnh, thời gian xác lập và khả năng khôi phục tư thế; điều kiện thử và cách xác định các chỉ tiêu được trình bày tại \charef{chap:evaluation}.

@@ -26,3 +26,9 @@ Chạy lệnh từ gốc repository và tuân theo yêu cầu của người dù
 - Không tự xóa các branch khác, viết lại lịch sử đã chia sẻ hoặc force push. Chỉ push, mở PR hoặc sửa lịch sử khi được yêu cầu và trong phạm vi đã được phép.
 - Trước khi chuyển PR sang trạng thái "ready for review", kiểm tra các commit và nội dung PR; thêm commit cleanup nếu cần.
 - Mọi PR của thành viên trong nhóm vào main cần được @vuquan2005 phê duyệt trên GitHub. Nếu @vuquan2005 trực tiếp yêu cầu, không cần bước approve thủ công. Agent không tự approve, bypass quy tắc hoặc merge khi chưa được phép.
+
+## Đồng bộ nhánh làm việc với main
+
+- Khi bắt đầu công việc và trước khi chuyển PR sang "ready for review", chạy `git fetch origin` (nếu quyền cho phép) rồi kiểm tra nhánh còn thiếu commit nào từ `origin/main` bằng `git rev-list --count HEAD..origin/main`. Nếu không fetch được, nói rõ kết quả chỉ dựa trên dữ liệu local.
+- Nếu còn thiếu commit, nhắc người dùng đồng bộ. Gợi ý `git rebase origin/main` cho nhánh cá nhân, hoặc `git merge origin/main` cho nhánh nhiều người cùng làm; không tự rebase lịch sử đã chia sẻ hoặc force push.
+- Chỉ đồng bộ khi người dùng cho phép. Trước đó kiểm tra working tree; không tự stash hoặc xử lý thay đổi chưa commit ngoài phạm vi công việc.

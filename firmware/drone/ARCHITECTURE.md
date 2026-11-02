@@ -10,10 +10,10 @@ xác nhận các module dự kiến đã được cài đặt hoặc kiểm ch�
 
 | Thành phần                                                               | Trách nhiệm                                               | Trạng thái                              |
 | ------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------- |
-| `Core/`                                                                  | HAL, clock, peripheral và vector ngắt do CubeMX quản lý   | Có; hiện khởi tạo GPIO, chưa có SPI IMU |
+| `Core/`                                                                  | HAL, clock, peripheral và vector ngắt do CubeMX quản lý   | Có; khởi tạo GPIO, SPI1, USART1 và TIM4 |
 | `App/app.c`                                                              | Sở hữu trạng thái ứng dụng và điều phối module            | Có `app_init()` và `app_process()`      |
 | `App/app_imu`                                                            | Poll IMU, đổi dữ liệu thô sang SI, ghi trạng thái đọc     | Có                                      |
-| `BSP/`                                                                   | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến | Có; cấu hình board còn trả `NULL`       |
+| `BSP/`                                                                   | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến | Có; SPI1, CS PA4 và delay DWT đã gắn    |
 | `Drivers/`                                                               | Bosch Sensor API, STM32 HAL và CMSIS                      | Có                                      |
 | RC, estimator, controller, allocator, motor output, quản lý arm/failsafe | Chuỗi điều khiển dự kiến bên dưới                         | Chưa triển khai                         |
 
@@ -54,10 +54,11 @@ trong từng giao dịch. CubeMX khởi tạo SPI; BSP sử dụng handle đã s
 Đây là hai giai đoạn khác nhau của cùng tài nguyên. Không tạo thêm một hàm
 khởi tạo SPI riêng trong BSP cho bus đã do CubeMX quản lý.
 
-Hiện CMake cấp project bật `HAL_SPI_MODULE_ENABLED` và thêm source SPI HAL
-thủ công vì `.ioc` chưa chọn SPI cho IMU. Khi generate SPI từ CubeMX, kiểm tra
-macro/source đã được generator quản lý và bỏ phần bổ sung tạm tương ứng.
-Việc đưa HAL vào build chưa tạo cấu hình SPI hoạt động trên phần cứng.
+SPI HAL hiện do CubeMX quản lý trong `stm32f1xx_hal_conf.h` và
+`cmake/stm32cubemx/CMakeLists.txt`; không đăng ký thêm macro/source SPI HAL ở
+CMake cấp project. BSP gắn `hspi1` với `IMU_CS` (PA4) và bật delay DWT trước
+khi trả cấu hình. `main()` đã init clock, GPIO và SPI trước khi gọi App.
+Việc gắn board đã có trong code, nhưng chưa xác nhận cảm biến trên phần cứng.
 
 Mỗi tài nguyên dùng chung phải có nơi sở hữu và quy tắc truy cập: SPI bus,
 timer, DMA channel, bộ đệm và trạng thái module. Hiện BSP/App IMU chỉ chạy
@@ -230,7 +231,7 @@ là hai đại lượng khác nhau; chọn gain và tần số theo mô hình v�
 
 Thứ tự hoàn thiện:
 
-1. Chốt wiring, cấu hình SPI/CS và delay; xác nhận IMU trên board.
+1. Đối chiếu wiring với SPI1/CS PA4 đã gắn trong BSP; xác nhận IMU và delay trên board.
 2. Hoàn thiện timestamp, đổi trục, hiệu chuẩn, lọc và kiểm tra quá hạn.
 3. Xây dựng quản lý trạng thái, RC và output; kiểm tra hành vi lỗi trước khi
    cho phép xuất lệnh điều khiển.

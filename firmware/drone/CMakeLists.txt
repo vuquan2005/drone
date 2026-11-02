@@ -36,13 +36,6 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
-# Enable the SPI HAL while the board pin assignment is still pending in CubeMX.
-# An empty definition also matches CubeMX's definition after SPI is enabled there.
-target_compile_definitions(stm32cubemx INTERFACE HAL_SPI_MODULE_ENABLED=)
-target_sources(
-    STM32_Drivers
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_spi.c)
-
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library search paths
 )

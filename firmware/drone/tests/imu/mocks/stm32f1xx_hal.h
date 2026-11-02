@@ -9,6 +9,13 @@ typedef struct {
 typedef struct {
     int unused;
 } GPIO_TypeDef;
+typedef struct {
+    int unused;
+} TIM_HandleTypeDef;
+
+extern GPIO_TypeDef mock_gpioa;
+#define GPIOA (&mock_gpioa)
+#define GPIO_PIN_4 ((uint16_t)0x0010)
 typedef enum { HAL_OK, HAL_ERROR, HAL_BUSY, HAL_TIMEOUT } HAL_StatusTypeDef;
 typedef enum { GPIO_PIN_RESET, GPIO_PIN_SET } GPIO_PinState;
 

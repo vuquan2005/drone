@@ -1,12 +1,15 @@
 #include "app_imu.h"
 #include "bsp_board.h"
+#include "bsp_time.h"
+#include "main.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-static SPI_HandleTypeDef spi;
-static GPIO_TypeDef gpio;
+SPI_HandleTypeDef hspi1;
+GPIO_TypeDef mock_gpioa;
+static bool time_initialized;
 static uint8_t registers[128];
 static bool selected;
 static bool fail_read;
@@ -17,12 +20,21 @@ static unsigned uploaded_bytes;
 static uint8_t uploaded_config[8192];
 static uint64_t delayed_us;
 
+void bsp_time_init(void) {
+    time_initialized = true;
+}
+
+void bsp_time_delay_us(uint32_t period) {
+    assert(time_initialized);
+    delayed_us += period;
+}
+
 static void fake_delay(uint32_t period) {
     delayed_us += period;
 }
 
-static const bsp_bmi270_config_t config = {.spi = &spi,
-                                           .cs_port = &gpio,
+static const bsp_bmi270_config_t config = {.spi = &hspi1,
+                                           .cs_port = &mock_gpioa,
                                            .cs_pin = 1U << 4,
                                            .timeout_ms = 100U,
                                            .delay_us = fake_delay};
@@ -36,10 +48,11 @@ static void reset_fixture(void) {
     fail_read = fail_write = fail_config = false;
     transactions = uploaded_bytes = 0U;
     delayed_us = 0U;
+    time_initialized = false;
 }
 
 void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state) {
-    assert(port == &gpio && pin == config.cs_pin);
+    assert(port == &mock_gpioa && pin == config.cs_pin);
     if (state == GPIO_PIN_RESET) {
         assert(!selected);
         selected = true;
@@ -51,7 +64,7 @@ void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state) {
 HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *handle,
                                           uint8_t *tx, uint8_t *rx,
                                           uint16_t length, uint32_t timeout) {
-    assert(handle == &spi && selected && timeout == config.timeout_ms);
+    assert(handle == &hspi1 && selected && timeout == config.timeout_ms);
     assert(length >= 3U && length <= 34U);
     assert((tx[0] & 0x80U) != 0U);
     transactions++;
@@ -74,7 +87,7 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *handle,
 
 HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *handle, uint8_t *tx,
                                    uint16_t length, uint32_t timeout) {
-    assert(handle == &spi && selected && timeout == config.timeout_ms);
+    assert(handle == &hspi1 && selected && timeout == config.timeout_ms);
     assert(length >= 2U && length <= 33U);
     assert((tx[0] & 0x80U) == 0U);
     transactions++;
@@ -109,9 +122,7 @@ static void test_unconfigured_and_invalid(void) {
     reset_fixture();
     app_imu_t imu = {0};
     assert(app_imu_poll(&imu) == BSP_IMU_NOT_INITIALIZED);
-    assert(bsp_board_imu_config() == NULL);
-    assert(app_imu_init(&imu, bsp_board_imu_config()) ==
-           BSP_IMU_NOT_CONFIGURED);
+    assert(app_imu_init(&imu, NULL) == BSP_IMU_NOT_CONFIGURED);
     assert(app_imu_poll(&imu) == BSP_IMU_NOT_CONFIGURED);
     assert(!imu.sample_valid && transactions == 0U);
     assert(app_imu_init(NULL, &config) == BSP_IMU_INVALID_ARGUMENT);
@@ -127,6 +138,24 @@ static void test_unconfigured_and_invalid(void) {
     invalid.spi = NULL;
     assert(app_imu_init(&imu, &invalid) == BSP_IMU_INVALID_ARGUMENT);
     assert(transactions == 0U);
+}
+
+static void test_board_binding(void) {
+    reset_fixture();
+    const bsp_bmi270_config_t *board = bsp_board_imu_config();
+    assert(board != NULL && time_initialized);
+    assert(board->spi == &hspi1);
+    assert(board->cs_port == IMU_CS_GPIO_Port);
+    assert(board->cs_pin == IMU_CS_Pin);
+    assert(board->delay_us == bsp_time_delay_us);
+    assert(transactions == 0U && delayed_us == 0U);
+    app_imu_t imu;
+    assert(app_imu_init(&imu, board) == BSP_IMU_OK);
+    assert(imu.sensor.initialized && !selected && delayed_us >= 2000U);
+    assert(uploaded_bytes == imu.sensor.device.config_size);
+    registers[BMI2_STATUS_ADDR] = BMI2_DRDY_ACC | BMI2_DRDY_GYR;
+    assert(app_imu_poll(&imu) == BSP_IMU_OK);
+    assert(imu.sample_valid && imu.sample_count == 1U);
 }
 
 static void test_real_driver_init_and_samples(void) {
@@ -218,6 +247,7 @@ static void test_init_failures(void) {
 
 int main(void) {
     test_unconfigured_and_invalid();
+    test_board_binding();
     test_real_driver_init_and_samples();
     test_init_failures();
     puts("IMU tests passed (real Bosch driver, simulated SPI HAL)");

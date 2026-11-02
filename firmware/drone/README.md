@@ -40,47 +40,31 @@ Chưa cần thư mục `Lib` hoặc `ThirdParty`: driver ngoài đã nằm trong
 
 ## Trạng thái hiện tại
 
-Giao tiếp BMI270 dùng SPI. Chưa gán chân hoặc chọn SPI1/SPI2/SPI3;
-`bsp_board_imu_config()` trả về `NULL`, nên ứng dụng giữ trạng thái
-`BSP_IMU_NOT_CONFIGURED` và không truy cập SPI/GPIO của cảm biến.
-Có thể hoàn thiện sơ đồ nối dây sau mà không đổi phần App hay driver Bosch.
+BSP đã gắn BMI270 với SPI1: PA5 SCK, PA6 MISO, PA7 MOSI và PA4
+`IMU_CS`. SPI dùng mode 0, 8-bit, MSB first, software NSS, SCK 2,25 MHz.
+CubeMX khởi tạo CS High và SPI trước `app_init()`; `bsp_board_imu_config()`
+bật delay DWT rồi trả cấu hình tĩnh với timeout HAL 100 ms mỗi giao dịch.
+Ứng dụng sẽ thử khởi tạo IMU ngay khi chạy. Chưa kiểm chứng trên board.
 
-Khi board được cấu hình, BSP tải mảng cấu hình Bosch, tắt advanced power save,
+Khi khởi tạo, BSP tải mảng cấu hình Bosch, tắt advanced power save,
 cấu hình cả accelerometer và gyroscope ở 400 Hz, dải đo ±16 g và ±2000 °/s,
 rồi bật hai cảm biến. Đây là cấu hình ban đầu để kiểm tra cảm biến.
 Chưa có FIFO, ngắt DRDY, hiệu chuẩn bias, bộ lọc bổ sung hay biến đổi trục
 từ cảm biến sang thân drone.
 
-## Gán bus và chân sau
+## Cấu hình board và thay đổi wiring
 
-1. Trong `drone.ioc`, bật SPI dùng cho BMI270: master, full duplex, 8-bit,
-   MSB first, software NSS; dùng mode 0 (CPOL low, first edge) hoặc mode 3
-   (CPOL high, second edge). Chọn clock phù hợp với BMI270 và module thực tế.
-2. Gán SCK/MISO/MOSI. Tạo một GPIO output cho CS, đặt tên `IMU_CS`,
-   mức khởi tạo high. Kết nối nguồn và GND theo module thực tế.
-3. Generate Code. Đảm bảo hàm khởi tạo SPI chạy trước `app_init()`.
-4. Thay nội dung `BSP/Src/bsp_board.c` bằng cấu hình thực tế. Ví dụ sau
-   **chỉ áp dụng nếu bạn đã chọn SPI1 và tên GPIO là `IMU_CS`**:
+Ánh xạ đang sử dụng nằm trong `BSP/Src/bsp_board.c`; tên `IMU_CS` lấy từ
+`Core/Inc/main.h` do CubeMX sinh. BSP dùng `hspi1` đã có, không khởi tạo lại SPI.
+Nếu đổi bus hoặc chân:
 
-```c
-#include "bsp_board.h"
-#include "bsp_time.h"
-#include "main.h"
-
-extern SPI_HandleTypeDef hspi1; /* Handle do CubeMX sinh. */
-
-const bsp_bmi270_config_t *bsp_board_imu_config(void) {
-    static const bsp_bmi270_config_t config = {
-        .spi = &hspi1,
-        .cs_port = IMU_CS_GPIO_Port,
-        .cs_pin = IMU_CS_Pin,
-        .timeout_ms = 100U,
-        .delay_us = bsp_time_delay_us,
-    };
-    bsp_time_init();
-    return &config;
-}
-```
+1. Sửa `drone.ioc`, giữ CS là output push-pull, mức khởi tạo High và label
+   `IMU_CS`. Chọn SPI master, full duplex, 8-bit, MSB first, software NSS,
+   mode 0 hoặc 3, clock phù hợp module và dây nối.
+2. Generate Code, kiểm tra diff và bảo đảm init ngoại vi vẫn chạy trước App.
+3. Nếu đổi SPI instance, cập nhật handle trong `bsp_board.c`.
+4. Build và chạy test; sau đó kiểm tra chip ID, trạng thái khởi tạo và mẫu đo
+   trên board trước khi dùng dữ liệu cho điều khiển.
 
 `bsp_time` dùng bộ đếm DWT trên Cortex-M3. Gọi init sau khi cấu hình clock;
 không tắt bộ đếm trong khi sử dụng delay. Có thể cung cấp hàm delay micro giây
@@ -92,11 +76,9 @@ Mỗi giao dịch giữ CS low suốt địa chỉ và dữ liệu, rồi nhả 
 BSP giữ byte giả SPI cho Bosch xử lý. Bộ đệm hiện hỗ trợ truy cập thanh ghi và
 tải cấu hình theo khối 32 byte; chưa hỗ trợ đọc FIFO dài.
 
-SPI HAL được bật và đăng ký source trong `CMakeLists.txt` cấp project để
-build được trước khi chọn chân; phần CMake do CubeMX sinh được giữ nguyên.
-Sau khi bật SPI và generate lại, kiểm tra phần HAL do CubeMX đăng ký rồi bỏ
-phần bổ sung thủ công tương ứng nếu generator đã quản lý nó. Bật module HAL
-để biên dịch không thay thế việc khởi tạo ngoại vi SPI trên board.
+SPI HAL được bật bởi `Core/Inc/stm32f1xx_hal_conf.h` và source được đăng ký
+trong `cmake/stm32cubemx/CMakeLists.txt` do CubeMX quản lý. CMake cấp project
+chỉ thêm source/include cho Bosch, BSP và App.
 
 ## Dùng mẫu IMU
 
@@ -158,7 +140,8 @@ ctest --test-dir /tmp/drone-imu-tests --output-on-failure
 ```
 
 Các lệnh trên chạy từ root repository. Kiểm thử dùng driver Bosch thật và
-mô phỏng HAL SPI để kiểm tra tải cấu hình, byte giả, CS, dải đo/ODR,
+mô phỏng HAL SPI và delay để kiểm tra ánh xạ board theo header CubeMX,
+thứ tự bật delay trước init cảm biến, tải cấu hình, byte giả, CS, dải đo/ODR,
 đổi đơn vị có dấu, mẫu chưa sẵn sàng và các lỗi truyền dữ liệu/khởi tạo.
 Kiểm thử mô phỏng không xác nhận được nối dây hoặc định thời trên board.
 

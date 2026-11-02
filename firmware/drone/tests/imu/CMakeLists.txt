@@ -12,7 +12,7 @@ add_executable(
     ${FIRMWARE_ROOT}/Drivers/BMI270/bmi270.c)
 target_include_directories(
     imu_tests PRIVATE mocks ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/App/Inc
-                      ${FIRMWARE_ROOT}/Drivers/BMI270)
+                      ${FIRMWARE_ROOT}/Drivers/BMI270 ${FIRMWARE_ROOT}/Core/Inc)
 target_compile_options(imu_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 target_link_libraries(imu_tests PRIVATE m)
 add_test(NAME imu_tests COMMAND imu_tests)

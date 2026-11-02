@@ -26,9 +26,10 @@ nếu được start). Đây là cấu hình thử cho ESC PWM thông thường;
 xung, tốc độ cập nhật và mức tín hiệu theo model ESC trước khi sử dụng.
 Output 1–4 chưa quy định vị trí motor trên khung drone.
 
-Firmware hiện chỉ khởi tạo ngoại vi, chưa gọi `HAL_TIM_PWM_Start`, chưa bắt
-đầu nhận UART và chưa có driver BMI270, bộ giải mã CRSF, điều khiển motor hoặc
-arm/failsafe trong nhánh này. Generate Code không tự cung cấp các chức năng đó.
+Firmware khởi tạo ngoại vi rồi gọi App để init và poll BMI270 qua BSP SPI1/CS
+PA4. Chưa gọi `HAL_TIM_PWM_Start`, chưa bắt đầu nhận UART; bộ giải mã CRSF,
+điều khiển motor và arm/failsafe chưa được triển khai. Generate Code không tự
+cung cấp các chức năng ứng dụng đó.
 Kiểm tra sơ đồ board để xác nhận chân khả dụng và điện áp nguồn của từng module;
 nối chung GND tín hiệu. Khi thử motor, tháo cánh trước khi cấp nguồn ESC.
 
@@ -83,11 +84,11 @@ Cấp nguồn board đúng thiết kế; chân VTref là tham chiếu điện á
 5. Khi dừng ở `main`, dùng F10 để step over; F11 để step into; F9 để đặt breakpoint. Có thể đặt breakpoint tại lời gọi `MX_GPIO_Init()` và `Error_Handler()`, rồi xem `SystemCoreClock` và `uwTick` trong Watch. Sau `SystemClock_Config()`, `SystemCoreClock` dự kiến bằng `72000000`.
 
 Preset Debug dùng `-O0 -g3`; Release dùng `-Os -g0` nên không phù hợp để bắt đầu debug theo dòng nguồn. Vòng lặp hiện còn trống; SPI1, USART1 và TIM4 đã được khởi tạo nhưng chưa có logic ứng dụng hay lệnh bắt đầu PWM/nhận UART, nên chưa có tín hiệu đầu ra ứng dụng là bình thường.
-Preset Debug dùng `-O0 -g3`; Release dùng `-Os -g0` nên không phù hợp để bắt đầu debug theo dòng nguồn. Vòng lặp gọi App IMU, nhưng chưa gán bus/chân BMI270 nên trạng thái hiện tại là `BSP_IMU_NOT_CONFIGURED`. Chưa cấu hình LED/UART/PWM, nên chưa có tín hiệu đầu ra ứng dụng là bình thường.
+Preset Debug dùng `-O0 -g3`; Release dùng `-Os -g0` nên không phù hợp để bắt đầu debug theo dòng nguồn. Vòng lặp gọi App IMU với SPI1/CS PA4 đã gắn trong BSP; xem `imu.status`, `imu.sensor.driver_error` và `imu.sample_count` trong debugger để kiểm tra init/đọc mẫu. UART và TIM4 đã cấu hình nhưng chưa bắt đầu nhận UART hay phát PWM. Chưa kiểm chứng IMU trên board.
 
 Nếu không kết nối được, kiểm tra nguồn, GND chung, SWDIO/SWCLK, quyền USB và probe firmware. Nếu dừng tại `Error_Handler()`, kiểm tra HSE 8 MHz trên board. Nếu không tìm thấy ELF, kiểm tra đã build đúng preset Debug. Không cần thêm Cortex-Debug để dùng launch của ST này.
 
-Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF cho cả Debug và Release. Debug dùng Flash 9324 B, Release dùng Flash 5464 B; cả hai dùng vùng RAM 1816 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
+Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF cho cả Debug và Release. Sau khi gắn BSP BMI270, Debug dùng Flash 31228 B, Release dùng Flash 21088 B; cả hai dùng vùng RAM 2000 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
 Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF, Flash dùng 3836 B và vùng RAM dùng 1584 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
 
 ## Telemetry qua UART DMA (dự kiến)

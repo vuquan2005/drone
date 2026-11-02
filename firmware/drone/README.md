@@ -8,13 +8,26 @@ chưa được cài đặt.
 ## Phân lớp mã nguồn
 
 ```text
-Core/                 Mã khởi tạo do STM32CubeMX quản lý
-Drivers/BMI270/       Driver Bosch gốc, giữ nguyên
-Drivers/STM32F1xx_HAL_Driver/
-                      STM32 HAL, gồm phần SPI từ STM32Cube FW_F1 V1.8.7
-BSP/Inc, BSP/Src/     SPI/CS, delay micro giây, cấu hình board và BMI270
-App/Inc, App/Src/     Điều phối ứng dụng, đọc IMU và đổi đơn vị SI
-tests/imu/            Kiểm thử trên máy tính với SPI HAL mô phỏng
+firmware/drone/
+├── Core/                     # Khởi tạo, startup hooks và ngắt do CubeMX quản lý
+├── App/
+│   ├── Inc/                  # API ứng dụng và kiểu mẫu IMU
+│   └── Src/                  # Điều phối, polling và đổi đơn vị SI
+├── BSP/
+│   ├── Inc/                  # API board, bus cảm biến và delay
+│   └── Src/                  # Ánh xạ SPI/CS, callback Bosch và timing
+├── Drivers/
+│   ├── BMI270/               # Bosch Sensor API gốc
+│   ├── CMSIS/                # Định nghĩa core và thiết bị STM32
+│   └── STM32F1xx_HAL_Driver/  # STM32 HAL, gồm SPI từ FW_F1 V1.8.7
+├── cmake/                    # Toolchain và phần CMake do CubeMX sinh
+├── tests/imu/                # Test trên máy tính với HAL mô phỏng
+├── drone.ioc                 # Nguồn cấu hình ngoại vi trong CubeMX
+├── CMakeLists.txt            # Đăng ký source/include của mã tự viết
+├── CMakePresets.json         # Preset Debug và Release
+├── .clangd                   # Chọn compile database cho editor
+├── README.md                 # Bắt đầu, cấu hình board, build và test
+└── ARCHITECTURE.md           # Ranh giới module và quy ước phát triển
 ```
 
 Luồng gọi: `main.c` → `app.c` → `app_imu` → `bsp_bmi270` → Bosch Sensor API →
@@ -81,6 +94,9 @@ tải cấu hình theo khối 32 byte; chưa hỗ trợ đọc FIFO dài.
 
 SPI HAL được bật và đăng ký source trong `CMakeLists.txt` cấp project để
 build được trước khi chọn chân; phần CMake do CubeMX sinh được giữ nguyên.
+Sau khi bật SPI và generate lại, kiểm tra phần HAL do CubeMX đăng ký rồi bỏ
+phần bổ sung thủ công tương ứng nếu generator đã quản lý nó. Bật module HAL
+để biên dịch không thay thế việc khởi tạo ngoại vi SPI trên board.
 
 ## Dùng mẫu IMU
 
@@ -106,6 +122,33 @@ Việc kiểm tra định thời và điều khiển bay sẽ cần thêm bộ l
 ## Build và kiểm thử
 
 Build firmware theo [hướng dẫn chung](../README.md).
+Nếu GNU Arm Embedded, CMake và Ninja đã có trong `PATH`, chạy từ root repository:
+
+```sh
+cmake -S firmware/drone --preset Debug
+cmake --build firmware/drone/build/Debug
+```
+
+Trong VS Code với STM32 extension, chọn configure preset **Debug**, chạy
+**CMake: Configure**, rồi build target **drone**. Cấu hình đường dẫn tool bundle
+được mô tả trong [hướng dẫn chung](../README.md#configuration-ownership).
+
+### Điều hướng mã bằng clangd
+
+`CMakeLists.txt` đã bật xuất compile database; bước configure tạo
+`build/Debug/compile_commands.json`. File `.clangd` trỏ tới thư mục này để lấy
+include paths, định nghĩa macro và lệnh biên dịch ARM. Chỉ cần configure để
+cung cấp dữ liệu cho editor, không cần build toàn bộ firmware.
+
+Sau `make clean` ở root repository, thư mục build và compile database bị xóa.
+Chạy lại configure preset **Debug**. Nếu F12 vẫn không tìm được định nghĩa,
+mở **Output → STM32Cube clangd**, kiểm tra database đã được nạp và đường dẫn
+`--query-driver` khớp compiler trong database; sau đó chạy
+**Developer: Reload Window** để khởi động lại dịch vụ và chờ index.
+Không chỉnh trực tiếp `compile_commands.json` hoặc commit file này.
+
+### Kiểm thử IMU trên máy tính
+
 Chạy kiểm thử trên máy tính, không cần board hoặc toolchain ARM:
 
 ```sh
@@ -118,3 +161,11 @@ Các lệnh trên chạy từ root repository. Kiểm thử dùng driver Bosch t
 mô phỏng HAL SPI để kiểm tra tải cấu hình, byte giả, CS, dải đo/ODR,
 đổi đơn vị có dấu, mẫu chưa sẵn sàng và các lỗi truyền dữ liệu/khởi tạo.
 Kiểm thử mô phỏng không xác nhận được nối dây hoặc định thời trên board.
+
+## Khi bổ sung hoặc thay đổi mã
+
+Đọc [quy ước phát triển](ARCHITECTURE.md#quy-ước-phát-triển) trước khi thêm
+module. Đặt hợp đồng API bằng Doxygen trong header `App/Inc` và `BSP/Inc`;
+comment trong source giải thích quyết định hoặc ràng buộc khó thấy từ code.
+Giữ hướng dẫn thao tác ở README và quyết định kiến trúc ở ARCHITECTURE.
+Hiện đọc Doxygen trực tiếp trong header; chưa có bước sinh website API.

@@ -1,0 +1,45 @@
+% !TEX root = ../../main.tex
+\section{Cấu tạo và nguyên lý hoạt động của quadrotor}
+\label{sec:background-principle}
+
+\subsection{Các thành phần chính và cấu hình rôto}
+\label{subsec:background-configuration}
+
+Quadrotor là thiết bị bay sử dụng bốn cụm động cơ--cánh quạt bố trí quanh thân. Các thành phần chính gồm khung máy bay, hệ động lực, nguồn điện, bộ điều khiển tốc độ động cơ (ESC), cảm biến quán tính và bộ xử lý điều khiển. Khung liên kết các cụm động cơ và xác định vị trí đặt lực đẩy; hệ động lực biến đổi năng lượng điện thành lực đẩy; cảm biến và bộ xử lý tạo thành hệ thống phản hồi để duy trì tư thế mong muốn~\cite{chovancova2014mathematical}. \fref{fig:background-layout} minh họa cấu tạo thực tế của quadrotor cỡ nhỏ Crazyflie 2.1, với bốn cụm động cơ--cánh quạt và bo điều khiển bố trí ở trung tâm.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.60\linewidth,trim=8.4bp 15.6bp 8.4bp 24bp,clip]{figures/ch02/crazyflie_2_1_photo.jpg}
+    \caption[Quadrotor cỡ nhỏ Crazyflie 2.1.]{Quadrotor cỡ nhỏ Crazyflie 2.1; ảnh minh họa từ Bitcraze~\cite{bitcrazeCrazyflie21}.}
+    \label{fig:background-layout}
+\end{figure}
+
+\begin{samepage}
+Đối với mô hình tính toán cấu hình chữ X, báo cáo quy ước trục $x_B$ hướng về phía mũi, $y_B$ hướng sang phải và $z_B$ hướng xuống dưới. Rôto 1 nằm phía trước bên trái, rôto 2 phía trước bên phải, rôto 3 phía sau bên phải và rôto 4 phía sau bên trái. Nhìn từ trên xuống, rôto 1 và 3 quay cùng chiều kim đồng hồ (CW), rôto 2 và 4 quay ngược chiều kim đồng hồ (CCW). Quy ước này được sử dụng thống nhất để xác định dấu lực và mômen trong các phương trình động lực học và phân bổ lệnh động cơ.
+\par
+\end{samepage}
+
+\subsection{Nguyên lý tạo chuyển động}
+
+Lực đẩy của mỗi rôto tác dụng theo chiều ngược với trục $z_B$. Khi thay đổi đồng thời lực đẩy của bốn rôto, tổng lực đẩy thay đổi và ảnh hưởng đến gia tốc tịnh tiến của máy bay. Trong tư thế nằm ngang, tổng lực đẩy bằng trọng lực là điều kiện cân bằng lực theo phương thẳng đứng. Khi thân máy bay nghiêng, hướng tổng lực đẩy cũng nghiêng theo và xuất hiện thành phần lực theo phương ngang. Vì vậy, chuyển động tịnh tiến và tư thế có quan hệ chặt chẽ~\cite{bouabdallah2004design}.
+
+Để tạo mômen roll, hệ thống thay đổi chênh lệch lực đẩy giữa hai phía trái và phải. Chênh lệch lực đẩy giữa phía trước và phía sau tạo mômen pitch. Trong cấu hình chữ X, mỗi rôto đồng thời có cánh tay đòn đối với cả trục $x_B$ và $y_B$, nên điều khiển roll và pitch sử dụng sự phối hợp của cả bốn động cơ.
+
+Chuyển động yaw hình thành từ chênh lệch mômen phản lực giữa hai nhóm rôto quay ngược chiều. Với các cụm động cơ--cánh quạt có đặc tính tương đương, mômen phản lực được cân bằng khi hai nhóm tạo mômen có cùng độ lớn. Thay đổi tương quan tốc độ giữa hai nhóm làm xuất hiện mômen quay quanh $z_B$. Theo quy ước của mô hình tính toán, mômen tác dụng lên thân do rôto 1 và 3 có chiều âm $z_B$, còn rôto 2 và 4 có chiều dương $z_B$.
+
+\subsection{Quan hệ giữa tốc độ rôto, lực đẩy và mômen}
+
+Trong mô hình khí động học giản lược, lực đẩy và độ lớn mômen cản khí động của rôto được biểu diễn theo bình phương tốc độ quay~\cite{chovancova2014mathematical}:
+\begin{equation}
+    f_i=c_T\Omega_i^2,\qquad Q_i=c_Q\Omega_i^2,
+    \qquad i=1,2,3,4.
+    \label{eq:background-rotor-force}
+\end{equation}
+Trong đó, $\Omega_i$ là tốc độ góc rôto, tính bằng rad/s; $f_i$ là độ lớn lực đẩy, tính bằng N; $Q_i$ là độ lớn mômen cản, tính bằng N$\cdot$m. Các hệ số $c_T>0$ và $c_Q>0$ phụ thuộc vào cụm động cơ--cánh quạt và điều kiện làm việc. Hai hệ số này được xem là không đổi trong miền vận hành dùng để thiết kế bộ điều khiển; giá trị phục vụ tính toán được xác định từ thông số hoặc phép đo của hệ động lực.
+
+Tổng lực đẩy có độ lớn:
+\begin{equation}
+    T=\sum_{i=1}^{4}f_i=c_T\sum_{i=1}^{4}\Omega_i^2.
+    \label{eq:background-total-thrust}
+\end{equation}
+Quan hệ giữa các lực đẩy và mômen quanh ba trục được thiết lập từ hình học bố trí rôto tại mục~\ref{sec:background-allocation}. Các quan hệ này mô tả tác động cơ học của hệ động lực. Việc chuyển đổi yêu cầu lực đẩy thành tín hiệu gửi đến ESC còn phụ thuộc vào đặc tính cơ cấu chấp hành và được gắn với phương án phần cứng ở \charef{chap:system-design}.

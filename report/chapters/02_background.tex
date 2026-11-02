@@ -2,5 +2,15 @@
 \chapter{CƠ SỞ LÝ THUYẾT}
 \label{chap:background}
 
-\section{[Section title]}
-\placeholder{Background content}
+Chương này trình bày cơ sở lý thuyết phục vụ thiết kế bộ điều khiển ổn định tư thế quadrotor. Các nội dung gồm nguyên lý tạo lực đẩy và mômen, mô hình động lực học, ước lượng tư thế từ cảm biến quán tính, điều khiển xếp tầng, phân bổ lệnh động cơ và các chỉ tiêu đánh giá bằng dữ liệu thực nghiệm. Các quy ước được sử dụng thống nhất để liên kết mô hình toán học với phương án triển khai trên STM32.
+
+\begingroup
+\widowpenalty=10000
+\input{chapters/background/01_principle}
+\input{chapters/background/02_dynamics}
+\input{chapters/background/03_estimation}
+\input{chapters/background/04_control}
+\input{chapters/background/05_allocation}
+\input{chapters/background/06_metrics}
+\par
+\endgroup

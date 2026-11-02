@@ -1,86 +1,121 @@
-# Local reference repositories
-/docs/external/repos/
-
-# Local reference metadata, PDF sync state and extracted JPEG images
-/docs/references/**/*.json
-/docs/references/**/*.jpeg
-
-# C/C++ and STM32 build outputs
-build/
-cmake-build-*/
-Debug/
-Release/
-*.elf
-*.bin
-*.hex
-*.map
-*.o
-*.a
-
-# Local firmware toolchain overrides and generated editor databases
-/firmware/**/CMakeUserPresets.json
-/firmware/**/compile_commands.json
-/firmware/**/.cache/clangd/
-/firmware/**/.vscode/c_cpp_properties.json
-
-# LaTeX temporary files (keep source documents and reference PDFs)
-*.aux
-*.log
-*.out
-*.toc
-*.lof
-*.lot
-*.synctex.gz
-*.fdb_latexmk
-*.fls
-*.bbl
-*.blg
-*.bcf
-*.run.xml
-*.xdv
-
-# Python
-__pycache__/
-*.pyc
-.venv/
-.ipynb_checkpoints/
-
-# Large or intermediate experiment data
-/experiments/raw/*
-/experiments/processed/*
-!/experiments/raw/.gitkeep
-!/experiments/processed/.gitkeep
-
 # Local operating system files
 .DS_Store
 Thumbs.db
 
-# KiCad local state, locks, automatic backups and recovery files
-*.kicad_prl
-*.kicad_pro.lck
-*-backups/
-_autosave-*
-*.bak
-*.bck
-*.sch-bak
-*.pcb-bak
-*.kicad_sch-bak
-*.kicad_pcb-bak
-fp-info-cache
-**/.history/
-
-# Temporary files and local version history
-~$*
-OldVersions/
-
-# Runtime logs and temporary files
-*.log
-*.tmp
-*.swp
-*.swo
-
 # Editor
 .vscode/*
-!.vscode/settings.json
 !.vscode/extensions.json
+!.vscode/settings.json
 !.vscode/tasks.json
+
+# Runtime logs and temporary files and directories
+*.log
+*.swo
+*.swp
+*.temp
+*.tmp
+*~
+temp/
+tmp/
+
+# Temporary files and local version history
+OldVersions/
+~$*
+
+# Output and archive directories at any depth
+archive/
+archives/
+dist/
+output/
+
+# Archives and packaged outputs
+*.7z
+*.bz2
+*.gz
+*.rar
+*.tar
+*.tbz
+*.tbz2
+*.tgz
+*.txz
+*.tzst
+*.xz
+*.zip
+*.zst
+
+# Local agent and cloud configuration
+/.agents/
+/.aws/
+/.codex/
+
+# Python
+*.pyc
+.ipynb_checkpoints/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+__pycache__/
+
+# C/C++ and STM32 build outputs
+*.a
+*.bin
+*.elf
+*.hex
+*.map
+*.o
+Debug/
+Release/
+build/
+cmake-build-*/
+
+# LaTeX temporary files (keep source documents and reference PDFs)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.lot
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+
+# KiCad local state, locks, automatic backups and recovery files
+**/.history/
+*-backups/
+*.bak
+*.bck
+*.kicad_pcb-bak
+*.kicad_pcb.lck
+*.kicad_prl
+*.kicad_pro.lck
+*.kicad_sch-bak
+*.kicad_sch.lck
+*.pcb-bak
+*.sch-bak
+_autosave-*
+fp-info-cache
+~*.lck
+
+# Local firmware toolchain overrides and generated editor databases
+/firmware/**/.cache/clangd/
+/firmware/**/.vscode/c_cpp_properties.json
+/firmware/**/CMakeUserPresets.json
+/firmware/**/compile_commands.json
+
+# Local reference repositories
+/docs/external/repos/
+
+# Local reference metadata, PDF sync state and extracted JPEG images
+/docs/references/**/*.jpeg
+/docs/references/**/*.json
+
+# Large or intermediate experiment data
+/experiments/processed/*
+/experiments/raw/*
+!/experiments/processed/.gitkeep
+!/experiments/raw/.gitkeep

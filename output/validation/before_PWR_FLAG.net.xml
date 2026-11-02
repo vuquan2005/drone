@@ -1,0 +1,1099 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export version="E">
+  <design>
+    <source>D:\drone\output\Drone_Direct_Wire.kicad_sch</source>
+    <date>2026-11-02T17:03:22</date>
+    <tool>Eeschema 10.0.7</tool>
+    <sheet number="1" name="/" tstamps="/">
+      <title_block>
+        <title>QUADROTOR - DIRECT MODULE WIRING</title>
+        <company/>
+        <rev>2.0</rev>
+        <date>2026-11-02</date>
+        <source>Drone_Direct_Wire.kicad_sch</source>
+        <comment number="1" value="Front at top; LiPo -&gt; LM2596 -&gt; 5V; ESC BEC unused"/>
+        <comment number="2" value=""/>
+        <comment number="3" value=""/>
+        <comment number="4" value=""/>
+        <comment number="5" value=""/>
+        <comment number="6" value=""/>
+        <comment number="7" value=""/>
+        <comment number="8" value=""/>
+        <comment number="9" value=""/>
+      </title_block>
+    </sheet>
+  </design>
+  <components>
+    <comp ref="A1">
+      <value>STM32F103VET6_DevKit</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="DevKit_STM32" part="STM32F103VET6_DevKit" description="Module headers from user CSV, USB up. Custom position IDs, no footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>885a91fd-dfb0-589b-86e1-3ef7e082c1cd</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="LO01"/>
+            <pin num="LI01"/>
+            <pin num="LO02"/>
+            <pin num="LI02"/>
+            <pin num="LO03"/>
+            <pin num="LI03"/>
+            <pin num="LO04"/>
+            <pin num="LI04"/>
+            <pin num="LO05"/>
+            <pin num="LI05"/>
+            <pin num="LO06"/>
+            <pin num="LI06"/>
+            <pin num="LO07"/>
+            <pin num="LI07"/>
+            <pin num="LO08"/>
+            <pin num="LI08"/>
+            <pin num="LO09"/>
+            <pin num="LI09"/>
+            <pin num="LO10"/>
+            <pin num="LI10"/>
+            <pin num="LO11"/>
+            <pin num="LI11"/>
+            <pin num="LO12"/>
+            <pin num="LI12"/>
+            <pin num="LO13"/>
+            <pin num="LI13"/>
+            <pin num="LO14"/>
+            <pin num="LI14"/>
+            <pin num="LO15"/>
+            <pin num="LI15"/>
+            <pin num="LO16"/>
+            <pin num="LI16"/>
+            <pin num="LO17"/>
+            <pin num="LI17"/>
+            <pin num="LO18"/>
+            <pin num="LI18"/>
+            <pin num="BI01"/>
+            <pin num="BO01"/>
+            <pin num="BI02"/>
+            <pin num="BO02"/>
+            <pin num="BI03"/>
+            <pin num="BO03"/>
+            <pin num="BI04"/>
+            <pin num="S1"/>
+            <pin num="BO04"/>
+            <pin num="BI05"/>
+            <pin num="S2"/>
+            <pin num="BO05"/>
+            <pin num="BI06"/>
+            <pin num="S3"/>
+            <pin num="BO06"/>
+            <pin num="BI07"/>
+            <pin num="S4"/>
+            <pin num="BO07"/>
+            <pin num="BI08"/>
+            <pin num="BO08"/>
+            <pin num="BOOT0"/>
+            <pin num="BI09"/>
+            <pin num="BO09"/>
+            <pin num="BOOT1"/>
+            <pin num="BI10"/>
+            <pin num="BO10"/>
+            <pin num="RO01"/>
+            <pin num="RI01"/>
+            <pin num="RO02"/>
+            <pin num="RI02"/>
+            <pin num="RO03"/>
+            <pin num="RI03"/>
+            <pin num="RO04"/>
+            <pin num="RI04"/>
+            <pin num="RO05"/>
+            <pin num="RI05"/>
+            <pin num="RO06"/>
+            <pin num="RI06"/>
+            <pin num="RO07"/>
+            <pin num="RI07"/>
+            <pin num="RO08"/>
+            <pin num="RI08"/>
+            <pin num="RO09"/>
+            <pin num="RI09"/>
+            <pin num="RO10"/>
+            <pin num="RI10"/>
+            <pin num="RO11"/>
+            <pin num="RI11"/>
+            <pin num="RO12"/>
+            <pin num="RI12"/>
+            <pin num="RO13"/>
+            <pin num="RI13"/>
+            <pin num="RO14"/>
+            <pin num="RI14"/>
+            <pin num="RO15"/>
+            <pin num="RI15"/>
+            <pin num="RO16"/>
+            <pin num="RI16"/>
+            <pin num="RO17"/>
+            <pin num="RI17"/>
+            <pin num="RO18"/>
+            <pin num="RI18"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="BT1">
+      <value>OVONIC LiPo 3S 11.1V</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="OVONIC_LiPo" part="OVONIC_LiPo_3S_5200mAh_90C" description="OVONIC LiPo battery; photo label: 3S1P, 11.1V, 5200mAh, 90C, 57.72Wh. Main power terminals only; local pin numbering 1=positive, 2=negative. Balance connector not represented. External wired pack, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="battery LiPo OVONIC 3S 3S1P 11.1V 5200mAh 90C"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>7463284b-6aa1-5579-9d89-648b3a4ec198</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="M1">
+      <value>A2212/10T 1400KV</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="A2212_Motor" part="A2212_10T_1400KV" description="A2212/10T 1400KV brushless motor; three phase leads. Local numbering convention: 1=U, 2=V, 3=W; not manufacturer terminal numbering. External wired motor, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="motor BLDC brushless three phase A2212 10T 1400KV"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>daf78a13-c1b0-55c6-b5e3-f152256decda</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="M2">
+      <value>A2212/10T 1400KV</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="A2212_Motor" part="A2212_10T_1400KV" description="A2212/10T 1400KV brushless motor; three phase leads. Local numbering convention: 1=U, 2=V, 3=W; not manufacturer terminal numbering. External wired motor, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="motor BLDC brushless three phase A2212 10T 1400KV"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>10a20a23-84a2-5709-a6cc-5f4a856b25e6</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="M3">
+      <value>A2212/10T 1400KV</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="A2212_Motor" part="A2212_10T_1400KV" description="A2212/10T 1400KV brushless motor; three phase leads. Local numbering convention: 1=U, 2=V, 3=W; not manufacturer terminal numbering. External wired motor, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="motor BLDC brushless three phase A2212 10T 1400KV"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3594fbc0-942a-5b36-ad32-5d72a1214c4a</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="M4">
+      <value>A2212/10T 1400KV</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="A2212_Motor" part="A2212_10T_1400KV" description="A2212/10T 1400KV brushless motor; three phase leads. Local numbering convention: 1=U, 2=V, 3=W; not manufacturer terminal numbering. External wired motor, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="motor BLDC brushless three phase A2212 10T 1400KV"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>e419adf2-780e-57c0-b117-40a1974d962b</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U1">
+      <value>BMI270_DevKit_V1_3</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="BMI270_DevKit" part="BMI270_DevKit_V1_3" description="BMI270 breakout V1.3; photo-based labels; local pin numbering: right 1-7 and left 8-10 top to bottom; verify footprint mapping"/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>06a2eb43-b30d-5cb1-bbad-bf17e8ccea16</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="8"/>
+            <pin num="9"/>
+            <pin num="10"/>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+            <pin num="6"/>
+            <pin num="7"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U2">
+      <value>SB_Nano_2G4RX_Physical</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="SB_Nano_2G4RX_Physical" part="SB_Nano_2G4RX_Physical" description="SB Nano 2G4RX module from reference photo; local pin numbers left to right: 1 RX, 2 TX, 3 5V, 4 GND; verify pad mapping"/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>3892e74a-4fb1-5e6d-9f81-a916974e849c</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U3">
+      <value>ESC 30A BLDC</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="ESC_30A" part="ESC_30A_BLDC" description="Generic 30A brushless ESC based on user photo. Two battery leads, three motor phases, three-wire control lead. Local logical pin numbering, not connector cavity order. BEC/VCC function and voltage unverified; passive pin. No assumed supply range, protocol or BEC rating. External wired module, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="ESC 30A BLDC brushless motor controller PWM BEC"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>39c99a42-b5a6-55f2-819a-2d537b976665</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="6"/>
+            <pin num="7"/>
+            <pin num="8"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U4">
+      <value>ESC 30A BLDC</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="ESC_30A" part="ESC_30A_BLDC" description="Generic 30A brushless ESC based on user photo. Two battery leads, three motor phases, three-wire control lead. Local logical pin numbering, not connector cavity order. BEC/VCC function and voltage unverified; passive pin. No assumed supply range, protocol or BEC rating. External wired module, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="ESC 30A BLDC brushless motor controller PWM BEC"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>ff3ba042-4c73-5762-8a01-1f8e64d884dc</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="6"/>
+            <pin num="7"/>
+            <pin num="8"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U5">
+      <value>ESC 30A BLDC</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="ESC_30A" part="ESC_30A_BLDC" description="Generic 30A brushless ESC based on user photo. Two battery leads, three motor phases, three-wire control lead. Local logical pin numbering, not connector cavity order. BEC/VCC function and voltage unverified; passive pin. No assumed supply range, protocol or BEC rating. External wired module, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="ESC 30A BLDC brushless motor controller PWM BEC"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>a3a39d04-45df-5237-9f91-e8e5a5cf57a9</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="6"/>
+            <pin num="7"/>
+            <pin num="8"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U6">
+      <value>ESC 30A BLDC</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="ESC_30A" part="ESC_30A_BLDC" description="Generic 30A brushless ESC based on user photo. Two battery leads, three motor phases, three-wire control lead. Local logical pin numbering, not connector cavity order. BEC/VCC function and voltage unverified; passive pin. No assumed supply range, protocol or BEC rating. External wired module, no PCB footprint."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <property name="ki_keywords" value="ESC 30A BLDC brushless motor controller PWM BEC"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>b322dec9-7b14-5749-88e7-967e5016fdbc</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="6"/>
+            <pin num="7"/>
+            <pin num="8"/>
+            <pin num="3"/>
+            <pin num="4"/>
+            <pin num="5"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+    <comp ref="U7">
+      <value>LM2596 module - 5.0V</value>
+      <fields>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description"/>
+      </fields>
+      <libsource lib="LM2596_Module_Logical" part="LM2596_Module_Logical" description="Logical complete DC-DC module; local pin IDs 1=IN+,2=IN-,3=OUT+,4=OUT-. Physical terminal numbering and footprint UNVERIFIED."/>
+      <property name="Sheetname" value="Drone_Direct_Wire"/>
+      <property name="Sheetfile" value="Drone_Direct_Wire.kicad_sch"/>
+      <property name="exclude_from_board"/>
+      <sheetpath names="/" tstamps="/"/>
+      <tstamps>edb4cc02-cec7-56cd-b986-9e7698619ac7</tstamps>
+      <units>
+        <unit name="A">
+          <pins>
+            <pin num="1"/>
+            <pin num="2"/>
+            <pin num="3"/>
+            <pin num="4"/>
+          </pins>
+        </unit>
+      </units>
+    </comp>
+  </components>
+  <libparts>
+    <libpart lib="A2212_Motor" part="A2212_10T_1400KV">
+      <description>A2212/10T 1400KV brushless motor; three phase leads. Local numbering convention: 1=U, 2=V, 3=W; not manufacturer terminal numbering. External wired motor, no PCB footprint.</description>
+      <fields>
+        <field name="Reference">M</field>
+        <field name="Value">A2212/10T 1400KV</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">A2212/10T 1400KV brushless motor; three phase leads. Local numbering convention: 1=U, 2=V, 3=W; not manufacturer terminal numbering. External wired motor, no PCB footprint.</field>
+      </fields>
+      <pins>
+        <pin num="1" name="U" type="passive"/>
+        <pin num="2" name="V" type="passive"/>
+        <pin num="3" name="W" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="BMI270_DevKit" part="BMI270_DevKit_V1_3">
+      <description>BMI270 breakout V1.3; photo-based labels; local pin numbering: right 1-7 and left 8-10 top to bottom; verify footprint mapping</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">BMI270_DevKit_V1_3</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">BMI270 breakout V1.3; photo-based labels; local pin numbering: right 1-7 and left 8-10 top to bottom; verify footprint mapping</field>
+      </fields>
+      <pins>
+        <pin num="1" name="VCC" type="power_in"/>
+        <pin num="2" name="GND" type="power_in"/>
+        <pin num="3" name="AD0/MISO" type="bidirectional"/>
+        <pin num="4" name="SDA/MOSI" type="bidirectional"/>
+        <pin num="5" name="SCL/SCLK" type="input"/>
+        <pin num="6" name="CS" type="input"/>
+        <pin num="7" name="INT1" type="output"/>
+        <pin num="8" name="SDX" type="bidirectional"/>
+        <pin num="9" name="SCX" type="bidirectional"/>
+        <pin num="10" name="INT2" type="output"/>
+      </pins>
+    </libpart>
+    <libpart lib="DevKit_STM32" part="STM32F103VET6_DevKit">
+      <description>Module headers from user CSV, USB up. Custom position IDs, no footprint.</description>
+      <fields>
+        <field name="Reference">A</field>
+        <field name="Value">STM32F103VET6_DevKit</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Module headers from user CSV, USB up. Custom position IDs, no footprint.</field>
+      </fields>
+      <pins>
+        <pin num="BI01" name="E10" type="bidirectional"/>
+        <pin num="BI02" name="E12" type="bidirectional"/>
+        <pin num="BI03" name="E14" type="bidirectional"/>
+        <pin num="BI04" name="B10" type="bidirectional"/>
+        <pin num="BI05" name="B12" type="bidirectional"/>
+        <pin num="BI06" name="B14" type="bidirectional"/>
+        <pin num="BI07" name="D8" type="bidirectional"/>
+        <pin num="BI08" name="D10" type="bidirectional"/>
+        <pin num="BI09" name="D12" type="bidirectional"/>
+        <pin num="BI10" name="D14" type="bidirectional"/>
+        <pin num="BO01" name="E11" type="bidirectional"/>
+        <pin num="BO02" name="E13" type="bidirectional"/>
+        <pin num="BO03" name="E15" type="bidirectional"/>
+        <pin num="BO04" name="B11" type="bidirectional"/>
+        <pin num="BO05" name="B13" type="bidirectional"/>
+        <pin num="BO06" name="B15" type="bidirectional"/>
+        <pin num="BO07" name="D9" type="bidirectional"/>
+        <pin num="BO08" name="D11" type="bidirectional"/>
+        <pin num="BO09" name="D13" type="bidirectional"/>
+        <pin num="BO10" name="D15" type="bidirectional"/>
+        <pin num="BOOT0" name="BOOT0" type="input"/>
+        <pin num="BOOT1" name="BOOT1" type="input"/>
+        <pin num="LI01" name="GND" type="passive"/>
+        <pin num="LI02" name="3V3" type="passive"/>
+        <pin num="LI03" name="5V" type="passive"/>
+        <pin num="LI04" name="E1" type="bidirectional"/>
+        <pin num="LI05" name="E3" type="bidirectional"/>
+        <pin num="LI06" name="E5" type="bidirectional"/>
+        <pin num="LI07" name="C13" type="bidirectional"/>
+        <pin num="LI08" name="C15" type="bidirectional"/>
+        <pin num="LI09" name="C1" type="bidirectional"/>
+        <pin num="LI10" name="C3" type="bidirectional"/>
+        <pin num="LI11" name="A2" type="bidirectional"/>
+        <pin num="LI12" name="A3" type="bidirectional"/>
+        <pin num="LI13" name="A5" type="bidirectional"/>
+        <pin num="LI14" name="A7" type="bidirectional"/>
+        <pin num="LI15" name="C5" type="bidirectional"/>
+        <pin num="LI16" name="B1" type="bidirectional"/>
+        <pin num="LI17" name="E7" type="bidirectional"/>
+        <pin num="LI18" name="E9" type="bidirectional"/>
+        <pin num="LO01" name="GND" type="passive"/>
+        <pin num="LO02" name="VBAT" type="passive"/>
+        <pin num="LO03" name="5V" type="passive"/>
+        <pin num="LO04" name="E0" type="bidirectional"/>
+        <pin num="LO05" name="E2" type="bidirectional"/>
+        <pin num="LO06" name="E4" type="bidirectional"/>
+        <pin num="LO07" name="E6" type="bidirectional"/>
+        <pin num="LO08" name="C14" type="bidirectional"/>
+        <pin num="LO09" name="C0" type="bidirectional"/>
+        <pin num="LO10" name="C2" type="bidirectional"/>
+        <pin num="LO11" name="A0" type="bidirectional"/>
+        <pin num="LO12" name="A1" type="bidirectional"/>
+        <pin num="LO13" name="A4" type="bidirectional"/>
+        <pin num="LO14" name="A6" type="bidirectional"/>
+        <pin num="LO15" name="C4" type="bidirectional"/>
+        <pin num="LO16" name="B0" type="bidirectional"/>
+        <pin num="LO17" name="B2" type="bidirectional"/>
+        <pin num="LO18" name="E8" type="bidirectional"/>
+        <pin num="RI01" name="GND" type="passive"/>
+        <pin num="RI02" name="3V3" type="passive"/>
+        <pin num="RI03" name="GND" type="passive"/>
+        <pin num="RI04" name="B9" type="bidirectional"/>
+        <pin num="RI05" name="B7" type="bidirectional"/>
+        <pin num="RI06" name="B5" type="bidirectional"/>
+        <pin num="RI07" name="B3" type="bidirectional"/>
+        <pin num="RI08" name="D6" type="bidirectional"/>
+        <pin num="RI09" name="D4" type="bidirectional"/>
+        <pin num="RI10" name="D2" type="bidirectional"/>
+        <pin num="RI11" name="D0" type="bidirectional"/>
+        <pin num="RI12" name="C10" type="bidirectional"/>
+        <pin num="RI13" name="A14" type="bidirectional"/>
+        <pin num="RI14" name="A12" type="bidirectional"/>
+        <pin num="RI15" name="A10" type="bidirectional"/>
+        <pin num="RI16" name="A8" type="bidirectional"/>
+        <pin num="RI17" name="C7" type="bidirectional"/>
+        <pin num="RI18" name="C6" type="bidirectional"/>
+        <pin num="RO01" name="GND" type="passive"/>
+        <pin num="RO02" name="3V3" type="passive"/>
+        <pin num="RO03" name="GND" type="passive"/>
+        <pin num="RO04" name="B8" type="bidirectional"/>
+        <pin num="RO05" name="B6" type="bidirectional"/>
+        <pin num="RO06" name="B4" type="bidirectional"/>
+        <pin num="RO07" name="D7" type="bidirectional"/>
+        <pin num="RO08" name="D5" type="bidirectional"/>
+        <pin num="RO09" name="D3" type="bidirectional"/>
+        <pin num="RO10" name="D1" type="bidirectional"/>
+        <pin num="RO11" name="C12" type="bidirectional"/>
+        <pin num="RO12" name="C11" type="bidirectional"/>
+        <pin num="RO13" name="A15" type="bidirectional"/>
+        <pin num="RO14" name="A13" type="bidirectional"/>
+        <pin num="RO15" name="A11" type="bidirectional"/>
+        <pin num="RO16" name="A9" type="bidirectional"/>
+        <pin num="RO17" name="C9" type="bidirectional"/>
+        <pin num="RO18" name="C8" type="bidirectional"/>
+        <pin num="S1" name="GND" type="passive"/>
+        <pin num="S2" name="SWDIO" type="bidirectional"/>
+        <pin num="S3" name="SWCLK" type="bidirectional"/>
+        <pin num="S4" name="3V3" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="ESC_30A" part="ESC_30A_BLDC">
+      <description>Generic 30A brushless ESC based on user photo. Two battery leads, three motor phases, three-wire control lead. Local logical pin numbering, not connector cavity order. BEC/VCC function and voltage unverified; passive pin. No assumed supply range, protocol or BEC rating. External wired module, no PCB footprint.</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">ESC 30A BLDC</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Generic 30A brushless ESC based on user photo. Two battery leads, three motor phases, three-wire control lead. Local logical pin numbering, not connector cavity order. BEC/VCC function and voltage unverified; passive pin. No assumed supply range, protocol or BEC rating. External wired module, no PCB footprint.</field>
+      </fields>
+      <pins>
+        <pin num="1" name="BAT+" type="power_in"/>
+        <pin num="2" name="BAT-" type="power_in"/>
+        <pin num="3" name="U" type="passive"/>
+        <pin num="4" name="V" type="passive"/>
+        <pin num="5" name="W" type="passive"/>
+        <pin num="6" name="PWM" type="input"/>
+        <pin num="7" name="BEC/VCC" type="passive"/>
+        <pin num="8" name="GND" type="power_in"/>
+      </pins>
+    </libpart>
+    <libpart lib="LM2596_Module_Logical" part="LM2596_Module_Logical">
+      <description>Logical complete DC-DC module; local pin IDs 1=IN+,2=IN-,3=OUT+,4=OUT-. Physical terminal numbering and footprint UNVERIFIED.</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">LM2596 module - 5.0V</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">Logical complete DC-DC module; local pin IDs 1=IN+,2=IN-,3=OUT+,4=OUT-. Physical terminal numbering and footprint UNVERIFIED.</field>
+      </fields>
+      <pins>
+        <pin num="1" name="IN+" type="power_in"/>
+        <pin num="2" name="IN-" type="power_in"/>
+        <pin num="3" name="OUT+" type="power_out"/>
+        <pin num="4" name="OUT-" type="power_out"/>
+      </pins>
+    </libpart>
+    <libpart lib="OVONIC_LiPo" part="OVONIC_LiPo_3S_5200mAh_90C">
+      <description>OVONIC LiPo battery; photo label: 3S1P, 11.1V, 5200mAh, 90C, 57.72Wh. Main power terminals only; local pin numbering 1=positive, 2=negative. Balance connector not represented. External wired pack, no PCB footprint.</description>
+      <fields>
+        <field name="Reference">BT</field>
+        <field name="Value">OVONIC LiPo 3S 11.1V</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">OVONIC LiPo battery; photo label: 3S1P, 11.1V, 5200mAh, 90C, 57.72Wh. Main power terminals only; local pin numbering 1=positive, 2=negative. Balance connector not represented. External wired pack, no PCB footprint.</field>
+      </fields>
+      <pins>
+        <pin num="1" name="+" type="passive"/>
+        <pin num="2" name="-" type="passive"/>
+      </pins>
+    </libpart>
+    <libpart lib="SB_Nano_2G4RX_Physical" part="SB_Nano_2G4RX_Physical">
+      <description>SB Nano 2G4RX module from reference photo; local pin numbers left to right: 1 RX, 2 TX, 3 5V, 4 GND; verify pad mapping</description>
+      <fields>
+        <field name="Reference">U</field>
+        <field name="Value">SB_Nano_2G4RX_Physical</field>
+        <field name="Footprint"/>
+        <field name="Datasheet"/>
+        <field name="Description">SB Nano 2G4RX module from reference photo; local pin numbers left to right: 1 RX, 2 TX, 3 5V, 4 GND; verify pad mapping</field>
+      </fields>
+      <pins>
+        <pin num="1" name="RX" type="input"/>
+        <pin num="2" name="TX" type="output"/>
+        <pin num="3" name="5V" type="power_in"/>
+        <pin num="4" name="GND" type="power_in"/>
+      </pins>
+    </libpart>
+  </libparts>
+  <libraries>
+    <library logical="A2212_Motor">
+      <uri>${KIPRJMOD}/A2212_Motor.kicad_sym</uri>
+    </library>
+    <library logical="BMI270_DevKit">
+      <uri>${KIPRJMOD}/BMI270_DevKit.kicad_sym</uri>
+    </library>
+    <library logical="DevKit_STM32">
+      <uri>${KIPRJMOD}/DevKit_STM32.kicad_sym</uri>
+    </library>
+    <library logical="ESC_30A">
+      <uri>${KIPRJMOD}/ESC_30A.kicad_sym</uri>
+    </library>
+    <library logical="LM2596_Module_Logical">
+      <uri>${KIPRJMOD}/LM2596_Module_Logical.kicad_sym</uri>
+    </library>
+    <library logical="OVONIC_LiPo">
+      <uri>${KIPRJMOD}/OVONIC_LiPo.kicad_sym</uri>
+    </library>
+    <library logical="SB_Nano_2G4RX_Physical">
+      <uri>${KIPRJMOD}/SB_Nano_2G4RX_Physical.kicad_sym</uri>
+    </library>
+  </libraries>
+  <nets>
+    <net code="1" name="Net-(A1-A4)" class="Default">
+      <node ref="A1" pin="LO13" pinfunction="A4_LO13" pintype="bidirectional"/>
+      <node ref="U1" pin="6" pinfunction="CS_6" pintype="input"/>
+    </net>
+    <net code="2" name="Net-(A1-A5)" class="Default">
+      <node ref="A1" pin="LI13" pinfunction="A5_LI13" pintype="bidirectional"/>
+      <node ref="U1" pin="5" pinfunction="SCL/SCLK_5" pintype="input"/>
+    </net>
+    <net code="3" name="Net-(A1-A6)" class="Default">
+      <node ref="A1" pin="LO14" pinfunction="A6_LO14" pintype="bidirectional"/>
+      <node ref="U1" pin="3" pinfunction="AD0/MISO_3" pintype="bidirectional"/>
+    </net>
+    <net code="4" name="Net-(A1-A7)" class="Default">
+      <node ref="A1" pin="LI14" pinfunction="A7_LI14" pintype="bidirectional"/>
+      <node ref="U1" pin="4" pinfunction="SDA/MOSI_4" pintype="bidirectional"/>
+    </net>
+    <net code="5" name="Net-(A1-A9)" class="Default">
+      <node ref="A1" pin="RO16" pinfunction="A9_RO16" pintype="bidirectional"/>
+      <node ref="U2" pin="1" pinfunction="RX_1" pintype="input"/>
+    </net>
+    <net code="6" name="Net-(A1-A10)" class="Default">
+      <node ref="A1" pin="RI15" pinfunction="A10_RI15" pintype="bidirectional"/>
+      <node ref="U2" pin="2" pinfunction="TX_2" pintype="output"/>
+    </net>
+    <net code="7" name="Net-(A1-B6)" class="Default">
+      <node ref="A1" pin="RO05" pinfunction="B6_RO05" pintype="bidirectional"/>
+      <node ref="U3" pin="6" pinfunction="PWM_6" pintype="input"/>
+    </net>
+    <net code="8" name="Net-(A1-B7)" class="Default">
+      <node ref="A1" pin="RI05" pinfunction="B7_RI05" pintype="bidirectional"/>
+      <node ref="U4" pin="6" pinfunction="PWM_6" pintype="input"/>
+    </net>
+    <net code="9" name="Net-(A1-B8)" class="Default">
+      <node ref="A1" pin="RO04" pinfunction="B8_RO04" pintype="bidirectional"/>
+      <node ref="U5" pin="6" pinfunction="PWM_6" pintype="input"/>
+    </net>
+    <net code="10" name="Net-(A1-B9)" class="Default">
+      <node ref="A1" pin="RI04" pinfunction="B9_RI04" pintype="bidirectional"/>
+      <node ref="U6" pin="6" pinfunction="PWM_6" pintype="input"/>
+    </net>
+    <net code="11" name="Net-(BT1-+)" class="Default">
+      <node ref="BT1" pin="1" pinfunction="+_1" pintype="passive"/>
+      <node ref="U3" pin="1" pinfunction="BAT+_1" pintype="power_in"/>
+      <node ref="U4" pin="1" pinfunction="BAT+_1" pintype="power_in"/>
+      <node ref="U5" pin="1" pinfunction="BAT+_1" pintype="power_in"/>
+      <node ref="U6" pin="1" pinfunction="BAT+_1" pintype="power_in"/>
+      <node ref="U7" pin="1" pinfunction="IN+_1" pintype="power_in"/>
+    </net>
+    <net code="12" name="Net-(BT1--)" class="Default">
+      <node ref="A1" pin="LO01" pinfunction="GND_LO01" pintype="passive"/>
+      <node ref="BT1" pin="2" pinfunction="-_2" pintype="passive"/>
+      <node ref="U1" pin="2" pinfunction="GND_2" pintype="power_in"/>
+      <node ref="U2" pin="4" pinfunction="GND_4" pintype="power_in"/>
+      <node ref="U3" pin="2" pinfunction="BAT-_2" pintype="power_in"/>
+      <node ref="U3" pin="8" pinfunction="GND_8" pintype="power_in"/>
+      <node ref="U4" pin="2" pinfunction="BAT-_2" pintype="power_in"/>
+      <node ref="U4" pin="8" pinfunction="GND_8" pintype="power_in"/>
+      <node ref="U5" pin="2" pinfunction="BAT-_2" pintype="power_in"/>
+      <node ref="U5" pin="8" pinfunction="GND_8" pintype="power_in"/>
+      <node ref="U6" pin="2" pinfunction="BAT-_2" pintype="power_in"/>
+      <node ref="U6" pin="8" pinfunction="GND_8" pintype="power_in"/>
+      <node ref="U7" pin="2" pinfunction="IN-_2" pintype="power_in"/>
+      <node ref="U7" pin="4" pinfunction="OUT-_4" pintype="power_out"/>
+    </net>
+    <net code="13" name="Net-(M1-U)" class="Default">
+      <node ref="M1" pin="1" pinfunction="U_1" pintype="passive"/>
+      <node ref="U3" pin="3" pinfunction="U_3" pintype="passive"/>
+    </net>
+    <net code="14" name="Net-(M1-V)" class="Default">
+      <node ref="M1" pin="2" pinfunction="V_2" pintype="passive"/>
+      <node ref="U3" pin="4" pinfunction="V_4" pintype="passive"/>
+    </net>
+    <net code="15" name="Net-(M1-W)" class="Default">
+      <node ref="M1" pin="3" pinfunction="W_3" pintype="passive"/>
+      <node ref="U3" pin="5" pinfunction="W_5" pintype="passive"/>
+    </net>
+    <net code="16" name="Net-(M2-U)" class="Default">
+      <node ref="M2" pin="1" pinfunction="U_1" pintype="passive"/>
+      <node ref="U4" pin="3" pinfunction="U_3" pintype="passive"/>
+    </net>
+    <net code="17" name="Net-(M2-V)" class="Default">
+      <node ref="M2" pin="2" pinfunction="V_2" pintype="passive"/>
+      <node ref="U4" pin="4" pinfunction="V_4" pintype="passive"/>
+    </net>
+    <net code="18" name="Net-(M2-W)" class="Default">
+      <node ref="M2" pin="3" pinfunction="W_3" pintype="passive"/>
+      <node ref="U4" pin="5" pinfunction="W_5" pintype="passive"/>
+    </net>
+    <net code="19" name="Net-(M3-U)" class="Default">
+      <node ref="M3" pin="1" pinfunction="U_1" pintype="passive"/>
+      <node ref="U5" pin="3" pinfunction="U_3" pintype="passive"/>
+    </net>
+    <net code="20" name="Net-(M3-V)" class="Default">
+      <node ref="M3" pin="2" pinfunction="V_2" pintype="passive"/>
+      <node ref="U5" pin="4" pinfunction="V_4" pintype="passive"/>
+    </net>
+    <net code="21" name="Net-(M3-W)" class="Default">
+      <node ref="M3" pin="3" pinfunction="W_3" pintype="passive"/>
+      <node ref="U5" pin="5" pinfunction="W_5" pintype="passive"/>
+    </net>
+    <net code="22" name="Net-(M4-U)" class="Default">
+      <node ref="M4" pin="1" pinfunction="U_1" pintype="passive"/>
+      <node ref="U6" pin="3" pinfunction="U_3" pintype="passive"/>
+    </net>
+    <net code="23" name="Net-(M4-V)" class="Default">
+      <node ref="M4" pin="2" pinfunction="V_2" pintype="passive"/>
+      <node ref="U6" pin="4" pinfunction="V_4" pintype="passive"/>
+    </net>
+    <net code="24" name="Net-(M4-W)" class="Default">
+      <node ref="M4" pin="3" pinfunction="W_3" pintype="passive"/>
+      <node ref="U6" pin="5" pinfunction="W_5" pintype="passive"/>
+    </net>
+    <net code="25" name="Net-(U1-VCC)" class="Default">
+      <node ref="A1" pin="LI02" pinfunction="3V3_LI02" pintype="passive"/>
+      <node ref="U1" pin="1" pinfunction="VCC_1" pintype="power_in"/>
+    </net>
+    <net code="26" name="Net-(U2-5V)" class="Default">
+      <node ref="A1" pin="LO03" pinfunction="5V_LO03" pintype="passive"/>
+      <node ref="U2" pin="3" pinfunction="5V_3" pintype="power_in"/>
+      <node ref="U7" pin="3" pinfunction="OUT+_3" pintype="power_out"/>
+    </net>
+    <net code="27" name="unconnected-(A1-3V3-PadRI02)" class="Default">
+      <node ref="A1" pin="RI02" pinfunction="3V3_RI02" pintype="passive+no_connect"/>
+    </net>
+    <net code="28" name="unconnected-(A1-3V3-PadRO02)" class="Default">
+      <node ref="A1" pin="RO02" pinfunction="3V3_RO02" pintype="passive+no_connect"/>
+    </net>
+    <net code="29" name="unconnected-(A1-3V3-PadS4)" class="Default">
+      <node ref="A1" pin="S4" pinfunction="3V3_S4" pintype="passive+no_connect"/>
+    </net>
+    <net code="30" name="unconnected-(A1-5V-PadLI03)" class="Default">
+      <node ref="A1" pin="LI03" pinfunction="5V_LI03" pintype="passive+no_connect"/>
+    </net>
+    <net code="31" name="unconnected-(A1-A0-PadLO11)" class="Default">
+      <node ref="A1" pin="LO11" pinfunction="A0_LO11" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="32" name="unconnected-(A1-A1-PadLO12)" class="Default">
+      <node ref="A1" pin="LO12" pinfunction="A1_LO12" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="33" name="unconnected-(A1-A2-PadLI11)" class="Default">
+      <node ref="A1" pin="LI11" pinfunction="A2_LI11" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="34" name="unconnected-(A1-A3-PadLI12)" class="Default">
+      <node ref="A1" pin="LI12" pinfunction="A3_LI12" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="35" name="unconnected-(A1-A8-PadRI16)" class="Default">
+      <node ref="A1" pin="RI16" pinfunction="A8_RI16" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="36" name="unconnected-(A1-A11-PadRO15)" class="Default">
+      <node ref="A1" pin="RO15" pinfunction="A11_RO15" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="37" name="unconnected-(A1-A12-PadRI14)" class="Default">
+      <node ref="A1" pin="RI14" pinfunction="A12_RI14" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="38" name="unconnected-(A1-A13-PadRO14)" class="Default">
+      <node ref="A1" pin="RO14" pinfunction="A13_RO14" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="39" name="unconnected-(A1-A14-PadRI13)" class="Default">
+      <node ref="A1" pin="RI13" pinfunction="A14_RI13" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="40" name="unconnected-(A1-A15-PadRO13)" class="Default">
+      <node ref="A1" pin="RO13" pinfunction="A15_RO13" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="41" name="unconnected-(A1-B0-PadLO16)" class="Default">
+      <node ref="A1" pin="LO16" pinfunction="B0_LO16" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="42" name="unconnected-(A1-B1-PadLI16)" class="Default">
+      <node ref="A1" pin="LI16" pinfunction="B1_LI16" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="43" name="unconnected-(A1-B2-PadLO17)" class="Default">
+      <node ref="A1" pin="LO17" pinfunction="B2_LO17" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="44" name="unconnected-(A1-B3-PadRI07)" class="Default">
+      <node ref="A1" pin="RI07" pinfunction="B3_RI07" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="45" name="unconnected-(A1-B4-PadRO06)" class="Default">
+      <node ref="A1" pin="RO06" pinfunction="B4_RO06" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="46" name="unconnected-(A1-B5-PadRI06)" class="Default">
+      <node ref="A1" pin="RI06" pinfunction="B5_RI06" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="47" name="unconnected-(A1-B10-PadBI04)" class="Default">
+      <node ref="A1" pin="BI04" pinfunction="B10_BI04" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="48" name="unconnected-(A1-B11-PadBO04)" class="Default">
+      <node ref="A1" pin="BO04" pinfunction="B11_BO04" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="49" name="unconnected-(A1-B12-PadBI05)" class="Default">
+      <node ref="A1" pin="BI05" pinfunction="B12_BI05" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="50" name="unconnected-(A1-B13-PadBO05)" class="Default">
+      <node ref="A1" pin="BO05" pinfunction="B13_BO05" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="51" name="unconnected-(A1-B14-PadBI06)" class="Default">
+      <node ref="A1" pin="BI06" pinfunction="B14_BI06" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="52" name="unconnected-(A1-B15-PadBO06)" class="Default">
+      <node ref="A1" pin="BO06" pinfunction="B15_BO06" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="53" name="unconnected-(A1-C0-PadLO09)" class="Default">
+      <node ref="A1" pin="LO09" pinfunction="C0_LO09" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="54" name="unconnected-(A1-C1-PadLI09)" class="Default">
+      <node ref="A1" pin="LI09" pinfunction="C1_LI09" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="55" name="unconnected-(A1-C2-PadLO10)" class="Default">
+      <node ref="A1" pin="LO10" pinfunction="C2_LO10" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="56" name="unconnected-(A1-C3-PadLI10)" class="Default">
+      <node ref="A1" pin="LI10" pinfunction="C3_LI10" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="57" name="unconnected-(A1-C4-PadLO15)" class="Default">
+      <node ref="A1" pin="LO15" pinfunction="C4_LO15" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="58" name="unconnected-(A1-C5-PadLI15)" class="Default">
+      <node ref="A1" pin="LI15" pinfunction="C5_LI15" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="59" name="unconnected-(A1-C6-PadRI18)" class="Default">
+      <node ref="A1" pin="RI18" pinfunction="C6_RI18" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="60" name="unconnected-(A1-C7-PadRI17)" class="Default">
+      <node ref="A1" pin="RI17" pinfunction="C7_RI17" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="61" name="unconnected-(A1-C8-PadRO18)" class="Default">
+      <node ref="A1" pin="RO18" pinfunction="C8_RO18" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="62" name="unconnected-(A1-C9-PadRO17)" class="Default">
+      <node ref="A1" pin="RO17" pinfunction="C9_RO17" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="63" name="unconnected-(A1-C10-PadRI12)" class="Default">
+      <node ref="A1" pin="RI12" pinfunction="C10_RI12" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="64" name="unconnected-(A1-C11-PadRO12)" class="Default">
+      <node ref="A1" pin="RO12" pinfunction="C11_RO12" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="65" name="unconnected-(A1-C12-PadRO11)" class="Default">
+      <node ref="A1" pin="RO11" pinfunction="C12_RO11" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="66" name="unconnected-(A1-C13-PadLI07)" class="Default">
+      <node ref="A1" pin="LI07" pinfunction="C13_LI07" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="67" name="unconnected-(A1-C14-PadLO08)" class="Default">
+      <node ref="A1" pin="LO08" pinfunction="C14_LO08" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="68" name="unconnected-(A1-C15-PadLI08)" class="Default">
+      <node ref="A1" pin="LI08" pinfunction="C15_LI08" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="69" name="unconnected-(A1-D0-PadRI11)" class="Default">
+      <node ref="A1" pin="RI11" pinfunction="D0_RI11" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="70" name="unconnected-(A1-D1-PadRO10)" class="Default">
+      <node ref="A1" pin="RO10" pinfunction="D1_RO10" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="71" name="unconnected-(A1-D2-PadRI10)" class="Default">
+      <node ref="A1" pin="RI10" pinfunction="D2_RI10" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="72" name="unconnected-(A1-D3-PadRO09)" class="Default">
+      <node ref="A1" pin="RO09" pinfunction="D3_RO09" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="73" name="unconnected-(A1-D4-PadRI09)" class="Default">
+      <node ref="A1" pin="RI09" pinfunction="D4_RI09" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="74" name="unconnected-(A1-D5-PadRO08)" class="Default">
+      <node ref="A1" pin="RO08" pinfunction="D5_RO08" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="75" name="unconnected-(A1-D6-PadRI08)" class="Default">
+      <node ref="A1" pin="RI08" pinfunction="D6_RI08" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="76" name="unconnected-(A1-D7-PadRO07)" class="Default">
+      <node ref="A1" pin="RO07" pinfunction="D7_RO07" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="77" name="unconnected-(A1-D8-PadBI07)" class="Default">
+      <node ref="A1" pin="BI07" pinfunction="D8_BI07" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="78" name="unconnected-(A1-D9-PadBO07)" class="Default">
+      <node ref="A1" pin="BO07" pinfunction="D9_BO07" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="79" name="unconnected-(A1-D10-PadBI08)" class="Default">
+      <node ref="A1" pin="BI08" pinfunction="D10_BI08" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="80" name="unconnected-(A1-D11-PadBO08)" class="Default">
+      <node ref="A1" pin="BO08" pinfunction="D11_BO08" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="81" name="unconnected-(A1-D12-PadBI09)" class="Default">
+      <node ref="A1" pin="BI09" pinfunction="D12_BI09" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="82" name="unconnected-(A1-D13-PadBO09)" class="Default">
+      <node ref="A1" pin="BO09" pinfunction="D13_BO09" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="83" name="unconnected-(A1-D14-PadBI10)" class="Default">
+      <node ref="A1" pin="BI10" pinfunction="D14_BI10" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="84" name="unconnected-(A1-D15-PadBO10)" class="Default">
+      <node ref="A1" pin="BO10" pinfunction="D15_BO10" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="85" name="unconnected-(A1-E0-PadLO04)" class="Default">
+      <node ref="A1" pin="LO04" pinfunction="E0_LO04" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="86" name="unconnected-(A1-E1-PadLI04)" class="Default">
+      <node ref="A1" pin="LI04" pinfunction="E1_LI04" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="87" name="unconnected-(A1-E2-PadLO05)" class="Default">
+      <node ref="A1" pin="LO05" pinfunction="E2_LO05" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="88" name="unconnected-(A1-E3-PadLI05)" class="Default">
+      <node ref="A1" pin="LI05" pinfunction="E3_LI05" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="89" name="unconnected-(A1-E4-PadLO06)" class="Default">
+      <node ref="A1" pin="LO06" pinfunction="E4_LO06" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="90" name="unconnected-(A1-E5-PadLI06)" class="Default">
+      <node ref="A1" pin="LI06" pinfunction="E5_LI06" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="91" name="unconnected-(A1-E6-PadLO07)" class="Default">
+      <node ref="A1" pin="LO07" pinfunction="E6_LO07" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="92" name="unconnected-(A1-E7-PadLI17)" class="Default">
+      <node ref="A1" pin="LI17" pinfunction="E7_LI17" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="93" name="unconnected-(A1-E8-PadLO18)" class="Default">
+      <node ref="A1" pin="LO18" pinfunction="E8_LO18" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="94" name="unconnected-(A1-E9-PadLI18)" class="Default">
+      <node ref="A1" pin="LI18" pinfunction="E9_LI18" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="95" name="unconnected-(A1-E10-PadBI01)" class="Default">
+      <node ref="A1" pin="BI01" pinfunction="E10_BI01" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="96" name="unconnected-(A1-E11-PadBO01)" class="Default">
+      <node ref="A1" pin="BO01" pinfunction="E11_BO01" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="97" name="unconnected-(A1-E12-PadBI02)" class="Default">
+      <node ref="A1" pin="BI02" pinfunction="E12_BI02" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="98" name="unconnected-(A1-E13-PadBO02)" class="Default">
+      <node ref="A1" pin="BO02" pinfunction="E13_BO02" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="99" name="unconnected-(A1-E14-PadBI03)" class="Default">
+      <node ref="A1" pin="BI03" pinfunction="E14_BI03" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="100" name="unconnected-(A1-E15-PadBO03)" class="Default">
+      <node ref="A1" pin="BO03" pinfunction="E15_BO03" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="101" name="unconnected-(A1-GND-PadLI01)" class="Default">
+      <node ref="A1" pin="LI01" pinfunction="GND_LI01" pintype="passive+no_connect"/>
+    </net>
+    <net code="102" name="unconnected-(A1-GND-PadRI01)" class="Default">
+      <node ref="A1" pin="RI01" pinfunction="GND_RI01" pintype="passive+no_connect"/>
+    </net>
+    <net code="103" name="unconnected-(A1-GND-PadRI03)" class="Default">
+      <node ref="A1" pin="RI03" pinfunction="GND_RI03" pintype="passive+no_connect"/>
+    </net>
+    <net code="104" name="unconnected-(A1-GND-PadRO01)" class="Default">
+      <node ref="A1" pin="RO01" pinfunction="GND_RO01" pintype="passive+no_connect"/>
+    </net>
+    <net code="105" name="unconnected-(A1-GND-PadRO03)" class="Default">
+      <node ref="A1" pin="RO03" pinfunction="GND_RO03" pintype="passive+no_connect"/>
+    </net>
+    <net code="106" name="unconnected-(A1-GND-PadS1)" class="Default">
+      <node ref="A1" pin="S1" pinfunction="GND_S1" pintype="passive+no_connect"/>
+    </net>
+    <net code="107" name="unconnected-(A1-PadBOOT0)" class="Default">
+      <node ref="A1" pin="BOOT0" pinfunction="BOOT0_BOOT0" pintype="input+no_connect"/>
+    </net>
+    <net code="108" name="unconnected-(A1-PadBOOT1)" class="Default">
+      <node ref="A1" pin="BOOT1" pinfunction="BOOT1_BOOT1" pintype="input+no_connect"/>
+    </net>
+    <net code="109" name="unconnected-(A1-SWCLK-PadS3)" class="Default">
+      <node ref="A1" pin="S3" pinfunction="SWCLK_S3" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="110" name="unconnected-(A1-SWDIO-PadS2)" class="Default">
+      <node ref="A1" pin="S2" pinfunction="SWDIO_S2" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="111" name="unconnected-(A1-VBAT-PadLO02)" class="Default">
+      <node ref="A1" pin="LO02" pinfunction="VBAT_LO02" pintype="passive+no_connect"/>
+    </net>
+    <net code="112" name="unconnected-(U1-INT1-Pad7)" class="Default">
+      <node ref="U1" pin="7" pinfunction="INT1_7" pintype="output+no_connect"/>
+    </net>
+    <net code="113" name="unconnected-(U1-INT2-Pad10)" class="Default">
+      <node ref="U1" pin="10" pinfunction="INT2_10" pintype="output+no_connect"/>
+    </net>
+    <net code="114" name="unconnected-(U1-SCX-Pad9)" class="Default">
+      <node ref="U1" pin="9" pinfunction="SCX_9" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="115" name="unconnected-(U1-SDX-Pad8)" class="Default">
+      <node ref="U1" pin="8" pinfunction="SDX_8" pintype="bidirectional+no_connect"/>
+    </net>
+    <net code="116" name="unconnected-(U3-BEC/VCC-Pad7)" class="Default">
+      <node ref="U3" pin="7" pinfunction="BEC/VCC_7" pintype="passive+no_connect"/>
+    </net>
+    <net code="117" name="unconnected-(U4-BEC/VCC-Pad7)" class="Default">
+      <node ref="U4" pin="7" pinfunction="BEC/VCC_7" pintype="passive+no_connect"/>
+    </net>
+    <net code="118" name="unconnected-(U5-BEC/VCC-Pad7)" class="Default">
+      <node ref="U5" pin="7" pinfunction="BEC/VCC_7" pintype="passive+no_connect"/>
+    </net>
+    <net code="119" name="unconnected-(U6-BEC/VCC-Pad7)" class="Default">
+      <node ref="U6" pin="7" pinfunction="BEC/VCC_7" pintype="passive+no_connect"/>
+    </net>
+  </nets>
+</export>

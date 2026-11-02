@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "DevKit_STM32") (type "KiCad") (uri "${KIPRJMOD}/DevKit_STM32.kicad_sym") (options "") (descr "STM32F103VET6 dev-kit headers from user CSV, USB up"))
+)

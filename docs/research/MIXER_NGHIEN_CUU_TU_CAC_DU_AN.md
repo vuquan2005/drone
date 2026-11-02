@@ -1,4 +1,4 @@
-# Bộ trộn motor (mixer): học từ PX4, ArduPilot, Betaflight và Crazyflie
+    # Bộ trộn motor (mixer): học từ PX4, ArduPilot, Betaflight và Crazyflie
 
 **Ngày khảo sát:** 16/10/2026.  
 **Nguồn:** mã nguồn đang có trong `docs/external/repos`.  

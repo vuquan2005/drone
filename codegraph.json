@@ -1,11 +1,3 @@
 {
-  "include": [
-    "docs/external/repos/Arduino-Quadcopter/",
-    "docs/external/repos/MonteQuadcopter/",
-    "docs/external/repos/PX4-Autopilot/",
-    "docs/external/repos/Quadcopter/",
-    "docs/external/repos/ardupilot/",
-    "docs/external/repos/betaflight/",
-    "docs/external/repos/crazyflie-firmware/"
-  ]
+  "exclude": ["docs/", "experiments/", "hardware/", "report/", "tools/", ".pre-commit-config.yaml"]
 }

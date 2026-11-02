@@ -4,7 +4,7 @@
   "explorer.fileNesting.patterns": {
     ".gitignore": ".gitattributes, .gitmodules",
     "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
-    "*.ioc": ".mxproject",
+    "*.ioc": ".mxproject, STM32*_FLASH.ld, startup_stm32*.s",
     "bundles.store.json": "bundles-lock.store.json"
   },
   "files.exclude": {

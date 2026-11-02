@@ -10,6 +10,28 @@ Project CubeMX hiện nằm trong `drone/`. Giữ cấu trúc do CubeMX sinh ra;
 - Clock hiện tại: HSE 8 MHz, PLL x9, SYSCLK/HCLK 72 MHz; APB1 36 MHz, APB2 72 MHz, Flash latency 2. Cấu hình `HSE_ON` yêu cầu thạch anh ngoài phù hợp; nếu board dùng nguồn clock ngoài cấp trực tiếp thì cần kiểm tra lựa chọn HSE bypass trong CubeMX. Không có HSE hoạt động sẽ khiến `SystemClock_Config()` đi vào `Error_Handler()`.
 - SYS Debug hiện tại: `Serial Wire`, PA13 là SWDIO, PA14 là SWCLK. Mã khởi tạo tắt JTAG và giữ SWD bằng `__HAL_AFIO_REMAP_SWJ_NOJTAG()`.
 
+### Chân và ngoại vi đã cấu hình
+
+| Thiết bị       | Tín hiệu             | Chân STM32            | Cấu hình                                                                   |
+| -------------- | -------------------- | --------------------- | -------------------------------------------------------------------------- |
+| BMI270         | SCK / MISO / MOSI    | PA5 / PA6 / PA7       | SPI1 master, full duplex, 8-bit, MSB first, mode 0, software NSS; 2,25 MHz |
+| BMI270         | CSB                  | PA4 (`IMU_CS`)        | GPIO output push-pull, mức khởi tạo High                                   |
+| ELRS UART      | TX receiver → RX MCU | PA10                  | USART1_RX, 420000 baud, 8N1                                                |
+| ELRS UART      | RX receiver ← TX MCU | PA9                   | USART1_TX, không flow control                                              |
+| ESC output 1–4 | PWM signal           | PB6 / PB7 / PB8 / PB9 | TIM4_CH1 / CH2 / CH3 / CH4                                                 |
+
+TIM4 dùng clock 72 MHz, prescaler 71 và ARR 19999: tick 1 µs, chu kỳ 20 ms
+(50 Hz). Bốn kênh PWM mode 1, polarity High có CCR khởi tạo 1000 (xung 1000 µs
+nếu được start). Đây là cấu hình thử cho ESC PWM thông thường; xác nhận dải
+xung, tốc độ cập nhật và mức tín hiệu theo model ESC trước khi sử dụng.
+Output 1–4 chưa quy định vị trí motor trên khung drone.
+
+Firmware hiện chỉ khởi tạo ngoại vi, chưa gọi `HAL_TIM_PWM_Start`, chưa bắt
+đầu nhận UART và chưa có driver BMI270, bộ giải mã CRSF, điều khiển motor hoặc
+arm/failsafe trong nhánh này. Generate Code không tự cung cấp các chức năng đó.
+Kiểm tra sơ đồ board để xác nhận chân khả dụng và điện áp nguồn của từng module;
+nối chung GND tín hiệu. Khi thử motor, tháo cánh trước khi cấp nguồn ESC.
+
 ## Build
 
 Từ thư mục gốc repository, `make clean` xóa toàn bộ `firmware/drone/build/` (Debug, Release và cache CMake) cùng `report/build/`. Lần build tiếp theo cần configure lại CMake. Build và debug firmware bằng VS Code theo hướng dẫn bên dưới.
@@ -60,50 +82,16 @@ Cấp nguồn board đúng thiết kế; chân VTref là tham chiếu điện á
 4. Trong **Run and Debug** (`Ctrl+Shift+D`), chọn **STM32: Debug (ST-LINK)**, rồi nhấn **F5**.
 5. Khi dừng ở `main`, dùng F10 để step over; F11 để step into; F9 để đặt breakpoint. Có thể đặt breakpoint tại lời gọi `MX_GPIO_Init()` và `Error_Handler()`, rồi xem `SystemCoreClock` và `uwTick` trong Watch. Sau `SystemClock_Config()`, `SystemCoreClock` dự kiến bằng `72000000`.
 
-Preset Debug dùng `-O0 -g3`; Release dùng `-Os -g0` nên không phù hợp để bắt đầu debug theo dòng nguồn. Vòng lặp hiện còn trống và chưa cấu hình LED/UART/PWM, nên chưa có tín hiệu đầu ra ứng dụng là bình thường.
+Preset Debug dùng `-O0 -g3`; Release dùng `-Os -g0` nên không phù hợp để bắt đầu debug theo dòng nguồn. Vòng lặp hiện còn trống; SPI1, USART1 và TIM4 đã được khởi tạo nhưng chưa có logic ứng dụng hay lệnh bắt đầu PWM/nhận UART, nên chưa có tín hiệu đầu ra ứng dụng là bình thường.
 
 Nếu không kết nối được, kiểm tra nguồn, GND chung, SWDIO/SWCLK, quyền USB và probe firmware. Nếu dừng tại `Error_Handler()`, kiểm tra HSE 8 MHz trên board. Nếu không tìm thấy ELF, kiểm tra đã build đúng preset Debug. Không cần thêm Cortex-Debug để dùng launch của ST này.
 
-Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF, Flash dùng 3836 B và vùng RAM dùng 1584 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
+Đã kiểm tra build Debug bằng GNU tools for STM32 14.3.1+st.2 trong bundle cục bộ: tạo được ELF cho cả Debug và Release. Debug dùng Flash 9324 B, Release dùng Flash 5464 B; cả hai dùng vùng RAM 1816 B (gồm các vùng dự trữ do linker script khai báo). Log phiên debug của người dùng lúc 20:42 ngày 17/10/2026 xác nhận đã kết nối và dừng tại `main` ở lệnh `HAL_Init()`; điều này chưa xác nhận chương trình đã chạy qua bước cấu hình HSE/PLL.
 
-## Configuration ownership
+## CubeMX và mã tự viết
 
-| File                                      | Vai trò và cách quản lý                                        |
-| ----------------------------------------- | -------------------------------------------------------------- |
-| `drone/drone.ioc`                         | Cấu hình phần cứng; chỉnh bằng CubeMX                          |
-| `drone/CMakePresets.json`                 | Nguồn định nghĩa preset Debug/Release và thư mục đầu ra        |
-| `drone/.settings/ide.store.json`          | Nhận diện MCU/core/toolchain cho ST extension; giữ trong Git   |
-| `drone/.settings/bundles.store.json`      | Chọn phiên bản các tool bundle; giữ trong Git                  |
-| `drone/.settings/bundles-lock.store.json` | Khóa các bundle đã giải quyết cho từng nền tảng; giữ trong Git |
-| `../.vscode/settings.json`                | Cấu hình khi mở root repository; có cả firmware và LaTeX       |
-| `drone/.vscode/settings.json`             | Cấu hình khi mở riêng firmware; giữ phần ST đồng bộ với root   |
-| `../.vscode/launch.json`                  | Launch ST-LINK dùng khi mở root repository                     |
-| `drone/.clangd`                           | Chọn compile database tại `build/Debug`                        |
+Mở `drone/drone.ioc` trong CubeMX để thay đổi cấu hình. Trong các tệp do CubeMX quản lý, đặt mã tự viết trong vùng `USER CODE BEGIN/END` để giữ lại khi sinh mã. Với module riêng, thêm source và include vào `drone/CMakeLists.txt`; kiểm tra thay đổi sau khi Generate Code.
 
-VS Code không tự áp dụng `.vscode/settings.json` của thư mục con khi chỉ mở repo gốc như một workspace đơn. Vì vậy hai file settings phục vụ hai cách mở khác nhau. Nếu ST setup thay đổi phiên bản bundle hoặc sinh lại phần cấu hình editor, cập nhật các khóa `cmake.cmakePath`, `cmake.configureArgs`, `cmake.preferredGenerators` và `stm32cube-ide-clangd.*` tương ứng ở root. Phiên bản compiler trong `--query-driver` phải khớp `bundles.store.json`.
+Quy tắc format C/C++ dùng chung nằm tại `../.clang-format`. Các thư mục mã CubeMX sinh ra được loại khỏi format để tránh thay đổi không cần thiết.
 
-Workspace chọn clangd của ST làm dịch vụ C/C++; Microsoft C/C++ IntelliSense được tắt để tránh chạy thêm engine trùng. Không giữ `drone/.vscode/c_cpp_properties.json` trong Git vì cấu hình hiện tại không dùng tệp này; `.gitignore` bỏ qua nếu công cụ sinh lại. Khi cần dùng lại Microsoft IntelliSense, bật engine và tạo cấu hình bằng lệnh **C/C++: Edit Configurations** trong VS Code. Cấu hình build thực tế luôn lấy từ CMake và `compile_commands.json`.
-
-Các file `.settings` hiện không chứa đường dẫn home tuyệt đối hay mã probe riêng. Không bỏ qua cả thư mục `.settings` hoặc `.vscode`. Các file build, compile database sinh tự động và cache clangd được bỏ qua; đường dẫn công cụ cá nhân đặt trong User Settings hoặc `CMakeUserPresets.json`.
-
-## Regenerate and Git
-
-### Formatting
-
-Quy tắc clang-format dùng chung nằm tại `../.clang-format`: LLVM, thụt 4 dấu cách, giữ nhóm và thứ tự include. Trong VS Code, dùng **Format Document** (`Shift+Alt+F` trên Linux) cho mã tự viết; workspace dùng formatter của clangd ST và tắt format-on-save cho C/C++.
-
-`Core/`, `Drivers/` và mã tham khảo ngoài được bảo vệ bằng `.clang-format` con có `DisableFormat: true`. `.clang-format-ignore` ở root còn giúp lệnh CLI bỏ qua các thư mục đó cùng build outputs; không chỉ dựa vào ignore của CLI để bảo vệ thao tác format từ editor.
-
-Để format một file tự viết từ root repository, chạy `clang-format -i path/to/file.c` sau khi thay đường dẫn bằng file cần sửa. Commit thay đổi format riêng khi sửa nhiều file. Sau khi CubeMX regenerate hoặc import lại project, giữ các file bảo vệ format và kiểm tra thiết lập editor nếu ST sinh lại chúng.
-
-### Source control
-
-- `Keep User Code` đang bật. Trong file do CubeMX quản lý, chỉ thêm mã vào các vùng `USER CODE BEGIN/END`.
-- Khi cần viết module riêng, thêm file riêng rồi đăng ký source/include trong `drone/CMakeLists.txt`. File này có ghi chú được sinh một lần để người dùng bổ sung; `drone/cmake/stm32cubemx/CMakeLists.txt` là phần được generator cập nhật.
-- Sau khi Generate Code, xem `git diff` trước khi commit. Giữ `.ioc`, `Core/`, `Drivers/` cùng license đi kèm, startup, linker script, CMake files/presets và `.mxproject` trong Git.
-- Thư mục `build/` được bỏ qua. Cấu hình đường dẫn công cụ riêng cho máy có thể đặt trong `CMakeUserPresets.json`; file này được bỏ qua cùng `compile_commands.json` sinh tự động.
-- Không đưa đường dẫn compiler tuyệt đối của máy vào cấu hình dùng chung.
-
-Ví dụ commit cho project khởi tạo: `feat(firmware): initialize STM32F103 CubeMX project`. Thay đổi cấu hình build VS Code phục vụ firmware có thể nằm cùng commit này.
-
-Tham khảo: [STM32CubeMX](https://dev.st.com/stm32cube-docs/stm32cubemx/), [STM32CubeIDE for VS Code](https://marketplace.visualstudio.com/items?itemName=stmicroelectronics.stm32-vscode-extension), [ST hướng dẫn dành chân SWD](https://www.st.com/resource/en/application_note/an4989-stm32-microcontroller-debug-toolbox-stmicroelectronics.pdf), [hướng dẫn debug của ST](https://dev.st.com/stm32cube-docs/stm32cubeide-vscode/latest/en/docs/markup/development/debug.html).
+Tham khảo: [STM32CubeMX](https://dev.st.com/stm32cube-docs/stm32cubemx/) và [hướng dẫn debug của ST](https://dev.st.com/stm32cube-docs/stm32cubeide-vscode/latest/en/docs/markup/development/debug.html).

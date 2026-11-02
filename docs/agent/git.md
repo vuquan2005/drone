@@ -16,9 +16,13 @@ Chạy lệnh từ gốc repository và tuân theo yêu cầu của người dù
 - Thêm body để giải thích lý do hoặc tác động khi dòng đầu chưa đủ. Với thay đổi không tương thích, đánh dấu bằng `!` trước dấu `:` hoặc footer `BREAKING CHANGE:`; thêm cách chuyển đổi khi cần.
 - Giữ mỗi commit tập trung vào một việc; tuân theo thông điệp hoặc quy ước khác nếu người dùng yêu cầu.
 
-## Branch
+## Branch và PR
 
 - Kiểm tra branch hiện tại và trạng thái làm việc trước khi thay đổi branch. Mặc định tiếp tục trên branch hiện tại; không tự tạo hoặc chuyển branch chỉ vì bắt đầu một công việc.
 - Khi người dùng yêu cầu tạo branch mà không chỉ định tên, dùng tên ngắn mô tả công việc như `feat/imu-calibration`, `fix/pid-windup` hoặc `docs/git-guide`; giữ tên chữ thường, dùng dấu gạch ngang giữa các từ.
 - Giữ nguyên các thay đổi chưa commit khi chuyển branch. Nếu chúng ngăn việc chuyển an toàn, không tự stash, ghi đè hoặc xóa chúng; làm rõ với người dùng.
-- Không tự xóa branch, viết lại lịch sử đã chia sẻ hoặc force push. Chỉ push, mở PR hoặc sửa lịch sử khi được yêu cầu và trong phạm vi đã được phép.
+- Khi được yêu cầu merge PR, mặc định dùng squash and merge. Dùng tiêu đề PR theo Conventional Commits làm tiêu đề commit squash; chỉ dùng merge commit khi người dùng yêu cầu giữ lịch sử từng commit.
+- Sau khi merge thành công, mặc định xóa branch công việc ở local và remote; giữ lại nếu người dùng yêu cầu hoặc đó là branch làm việc lâu dài. Trước khi xóa, xác nhận PR đã merge và cả branch local lẫn remote không có commit ngoài PR đã merge. Sau squash, không chỉ dựa vào việc Git đánh dấu branch là đã merge.
+- Không tự xóa các branch khác, viết lại lịch sử đã chia sẻ hoặc force push. Chỉ push, mở PR hoặc sửa lịch sử khi được yêu cầu và trong phạm vi đã được phép.
+- Trước khi chuyển PR sang trạng thái "ready for review", kiểm tra các commit và nội dung PR; thêm commit cleanup nếu cần.
+- Mọi PR của thành viên trong nhóm vào main cần được @vuquan2005 phê duyệt trên GitHub. Nếu @vuquan2005 trực tiếp yêu cầu, không cần bước approve thủ công. Agent không tự approve, bypass quy tắc hoặc merge khi chưa được phép.

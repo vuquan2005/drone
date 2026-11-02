@@ -10,5 +10,3 @@
 
 The project-local `sym-lib-table` registers the library. In the project's Schematic Editor,
 press **A**, then search for `A2212_10T_1400KV` to place it.
-
-Preview: `A2212_Motor.png`.

@@ -24,7 +24,6 @@ nguồn dùng passive. Kết nối bên trong board không được mô tả ri�
 
 `DevKit_STM32_headers.csv` chứa từng ID và ô CSV nguồn.
 Tệp thư viện hiện hành: `DevKit_STM32.kicad_sym`.
-Hình mới nhất đặt cạnh thư viện: `DevKit_STM32.png`.
 
 ## Làm mới trong KiCad
 

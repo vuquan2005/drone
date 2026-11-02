@@ -21,4 +21,3 @@ are not established from the image. Pin 7 is intentionally passive until verifie
 against the actual ESC. Motor phase U/V/W names are a local convention.
 
 Add from the project's symbol chooser with `ESC_30A_BLDC`.
-Preview: `ESC_30A.png`.

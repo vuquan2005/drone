@@ -5,7 +5,6 @@ docs/
 ├── README.md
 ├── agent/                   # Tài nguyên hướng dẫn cho agent
 │   ├── README.md
-│   ├── tools.md
 │   └── git.md
 ├── guides/                  # Hướng dẫn làm việc
 │   └── git.md
@@ -14,6 +13,7 @@ docs/
 │   ├── MIXER_NGHIEN_CUU_TU_CAC_DU_AN.md
 │   └── control/             # Các tài liệu khảo sát kiến trúc điều khiển
 ├── references/              # Tài liệu tham khảo gốc
+│   ├── datasheets/          # Datasheet và bản trích xuất Markdown
 │   ├── papers/              # PDF, chỉ mục bài báo và references.bib
 │   │   └── papers_md/       # Bản trích xuất Markdown và ảnh đi kèm
 │   └── tutorials/           # Bài hướng dẫn lưu từ bên ngoài
@@ -24,10 +24,9 @@ docs/
 
 ## Đọc từ đâu?
 
-- Tra cứu khi cần: [công cụ](agent/tools.md) và [Git cho agent](agent/git.md).
 - Agent làm việc trong dự án: [tài nguyên cho agent](agent/README.md).
 - Xem ghi chú đã tổng hợp: [mục lục nghiên cứu](research/README.md).
-- Tìm bài báo: [chỉ mục bài báo](references/papers/README.md) và [BibTeX](references/papers/references.bib).
+- Tìm [datasheet](references/datasheets/README.md), [bài báo](references/papers/README.md) và [BibTeX](references/papers/references.bib).
 - Đọc tài liệu ngoài: [Arduino drone](references/tutorials/arduino_drone/arduino_drone.html.md) và [Mixer Theory](<references/tutorials/mixer_theory/Mixer Theory.html>).
 - Xem mã nguồn tham khảo: [repo bên ngoài](external/README.md).
 
@@ -36,7 +35,7 @@ docs/
 - Hướng dẫn cài đặt hoặc thao tác đặt trong `guides/`.
 - Hướng dẫn thực hành dành cho agent đặt trong `agent/` và liên kết từ mục lục của thư mục đó.
 - Ghi chú, phân tích và nhận xét của đồ án đặt trong `research/`.
-- Bài báo PDF đặt trong `references/papers/`; thông tin trích dẫn lưu trong `references/papers/references.bib`.
+- Datasheet đặt trong `references/datasheets/`; bài báo PDF đặt trong `references/papers/` và thông tin trích dẫn lưu trong `references/papers/references.bib`.
 - Bài hướng dẫn bên ngoài đặt trong `references/tutorials/`, giữ ảnh và tệp đi kèm trong cùng thư mục của bài.
 - Repo tham khảo chỉ để đọc đặt trong `external/repos/`; ghi nguồn vào `external/README.md`.
 

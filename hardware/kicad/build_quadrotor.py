@@ -12,18 +12,21 @@ import re
 import shutil
 import uuid
 
-SOURCE = Path(__file__).resolve().parent
-ROOT = SOURCE.parent.parent / 'output'
+LIBRARY = Path(__file__).resolve().parent
+SOURCE = LIBRARY / 'symbols'
+ROOT = LIBRARY / 'Drone_Direct_Wire'
+SYMBOLS = ROOT / 'symbols'
+SYMBOLS.mkdir(parents=True, exist_ok=True)
 ROOT.mkdir(exist_ok=True)
 OUT = ROOT / "Drone_Direct_Wire.kicad_sch"
-VALID = ROOT / "validation"
-VALID.mkdir(exist_ok=True)
+VALID = LIBRARY.parent.parent / "output" / "validation"
+VALID.mkdir(parents=True, exist_ok=True)
 
 # Existing symbol files are copied byte for byte; only this explicitly allowed
 # logical module symbol is new. Its numbering is NOT a physical pad map.
 for file in SOURCE.glob('*.kicad_sym'):
-    shutil.copy2(file, ROOT / file.name)
-lm_file = ROOT / 'LM2596_Module_Logical.kicad_sym'
+    shutil.copy2(file, SYMBOLS / file.name)
+lm_file = SYMBOLS / 'LM2596_Module_Logical.kicad_sym'
 lm_file.write_text('''(kicad_symbol_lib (version 20231120) (generator "kicad_symbol_editor")
   (symbol "LM2596_Module_Logical"
     (pin_names (offset 1.016)) (in_bom yes) (on_board no)
@@ -44,8 +47,8 @@ lm_file.write_text('''(kicad_symbol_lib (version 20231120) (generator "kicad_sym
     )
   )
 )\n''', encoding='utf-8')
-table = (SOURCE / 'sym-lib-table').read_text(encoding='utf-8-sig').rstrip()
-table = table[:-1] + '  (lib (name "LM2596_Module_Logical") (type "KiCad") (uri "${KIPRJMOD}/LM2596_Module_Logical.kicad_sym") (options "") (descr "Logical module; physical pin IDs and footprint unverified"))\n  (lib (name "ERC_Only") (type "KiCad") (uri "${KIPRJMOD}/ERC_Only.kicad_sym") (options "") (descr "KiCad PWR_FLAG - ERC declarations only, no physical component"))\n)\n'
+table = (LIBRARY / 'sym-lib-table').read_text(encoding='utf-8-sig').rstrip()
+table = table[:-1] + '  (lib (name "LM2596_Module_Logical") (type "KiCad") (uri "${KIPRJMOD}/symbols/LM2596_Module_Logical.kicad_sym") (options "") (descr "Logical module; physical pin IDs and footprint unverified"))\n  (lib (name "ERC_Only") (type "KiCad") (uri "${KIPRJMOD}/symbols/ERC_Only.kicad_sym") (options "") (descr "KiCad PWR_FLAG - ERC declarations only, no physical component"))\n)\n'
 (ROOT / 'sym-lib-table').write_text(table, encoding='utf-8')
 (ROOT / 'Drone_Direct_Wire.kicad_pro').write_text(json.dumps({'meta': {'filename': 'Drone_Direct_Wire.kicad_pro', 'version': 1}}, indent=2) + '\n', encoding='utf-8')
 
@@ -91,7 +94,7 @@ def fmt(n):
     return f'{n:.4f}'.rstrip('0').rstrip('.') or '0'
 
 # Copy KiCad's actual PWR_FLAG definition; do not change any module symbol.
-flag_file = ROOT / 'ERC_Only.kicad_sym'
+flag_file = SYMBOLS / 'ERC_Only.kicad_sym'
 if not flag_file.exists():
     standard_power = Path(r'C:\Program Files\KiCad\10.0\share\kicad\symbols\power.kicad_sym')
     power_library = parse(standard_power.read_text(encoding='utf-8-sig'))
@@ -100,7 +103,7 @@ if not flag_file.exists():
 
 libraries = {}
 input_hashes = {}
-for file in sorted(ROOT.glob('*.kicad_sym')):
+for file in sorted(SYMBOLS.glob('*.kicad_sym')):
     input_hashes[file.name] = hashlib.sha256(file.read_bytes()).hexdigest()
     lib = parse(file.read_text(encoding='utf-8-sig'))
     for sym in kids(lib, 'symbol'):

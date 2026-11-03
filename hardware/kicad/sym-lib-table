@@ -1,10 +1,10 @@
 (sym_lib_table
   (version 7)
-  (lib (name "DevKit_STM32") (type "KiCad") (uri "${KIPRJMOD}/DevKit_STM32.kicad_sym") (options "") (descr "STM32F103VET6 dev-kit headers from user CSV, USB up"))
-  (lib (name "BMI270_DevKit") (type "KiCad") (uri "${KIPRJMOD}/BMI270_DevKit.kicad_sym") (options "") (descr "Project-local module symbol"))
-  (lib (name "SB_Nano_2G4RX_Physical") (type "KiCad") (uri "${KIPRJMOD}/SB_Nano_2G4RX_Physical.kicad_sym") (options "") (descr "Project-local module symbol"))
-  (lib (name "A2212_Motor") (type "KiCad") (uri "${KIPRJMOD}/A2212_Motor.kicad_sym") (options "") (descr "A2212/10T 1400KV three-phase brushless motor"))
-  (lib (name "OVONIC_LiPo") (type "KiCad") (uri "${KIPRJMOD}/OVONIC_LiPo.kicad_sym") (options "") (descr "OVONIC 3S 5200mAh 90C LiPo battery"))
-  (lib (name "ESC_30A") (type "KiCad") (uri "${KIPRJMOD}/ESC_30A.kicad_sym") (options "") (descr "Generic external 30A brushless ESC module"))
+  (lib (name "DevKit_STM32") (type "KiCad") (uri "${KIPRJMOD}/symbols/DevKit_STM32.kicad_sym") (options "") (descr "STM32F103VET6 dev-kit headers from user CSV, USB up"))
+  (lib (name "BMI270_DevKit") (type "KiCad") (uri "${KIPRJMOD}/symbols/BMI270_DevKit.kicad_sym") (options "") (descr "Project-local module symbol"))
+  (lib (name "SB_Nano_2G4RX_Physical") (type "KiCad") (uri "${KIPRJMOD}/symbols/SB_Nano_2G4RX_Physical.kicad_sym") (options "") (descr "Project-local module symbol"))
+  (lib (name "A2212_Motor") (type "KiCad") (uri "${KIPRJMOD}/symbols/A2212_Motor.kicad_sym") (options "") (descr "A2212/10T 1400KV three-phase brushless motor"))
+  (lib (name "OVONIC_LiPo") (type "KiCad") (uri "${KIPRJMOD}/symbols/OVONIC_LiPo.kicad_sym") (options "") (descr "OVONIC 3S 5200mAh 90C LiPo battery"))
+  (lib (name "ESC_30A") (type "KiCad") (uri "${KIPRJMOD}/symbols/ESC_30A.kicad_sym") (options "") (descr "Generic external 30A brushless ESC module"))
 )
 

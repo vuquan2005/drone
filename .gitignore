@@ -119,3 +119,7 @@ fp-info-cache
 /experiments/raw/*
 !/experiments/processed/.gitkeep
 !/experiments/raw/.gitkeep
+
+# KiCad manufacturing and rendered outputs (keep editable design sources)
+/hardware/kicad/**/gerber/
+/hardware/kicad/**/exports/

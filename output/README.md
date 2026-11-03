@@ -4,9 +4,16 @@ Bộ kết quả được tạo và kiểm tra bằng **KiCad CLI 10.0.7** ngày
 Schematic một trang A2 ngang, phía trước ở trên. Đây là sơ đồ liên kết các
 module bên ngoài; chưa thiết kế PCB, footprint hoặc firmware.
 
+## Vị trí nguồn hiện hành
+
+Nguồn chỉnh sửa đã chuyển sang [dự án KiCad](../hardware/kicad/Drone_Direct_Wire/README.md).
+Thư mục này giữ bản xuất và bằng chứng kiểm tra trước khi dọn dẹp; các thư viện
+ở đây là bản sao lịch sử, không chỉnh sửa chúng. Bản perfboard cục bộ được giữ nguyên.
+Các số liệu và đường dẫn trong phần bàn giao bên dưới mô tả bộ kết quả cũ.
+
 ## Mở và xem
 
-Mở `Drone_Direct_Wire.kicad_pro` bằng KiCad, sau đó mở schematic cùng tên.
+Mở `../hardware/kicad/Drone_Direct_Wire/Drone_Direct_Wire.kicad_pro` bằng KiCad, sau đó mở schematic cùng tên.
 Cũng có thể mở trực tiếp `Drone_Direct_Wire.kicad_sch` bằng Schematic Editor.
 Để tra cứu thư viện, giữ các `.kicad_sym` và `sym-lib-table` cạnh schematic.
 Tất cả symbol đã dùng cũng được **nhúng trong `lib_symbols`** của schematic.
@@ -202,8 +209,8 @@ không tạo PCB để vượt qua cổng đó.
 Các lệnh có thể chạy lại từ thư mục này (đưa `kicad-cli` vào PATH):
 
 ```powershell
-kicad-cli sch export netlist --format kicadxml -o validation/Drone_Direct_Wire.net.xml Drone_Direct_Wire.kicad_sch
-kicad-cli sch erc --format json --exit-code-violations -o validation/Drone_Direct_Wire.erc.json Drone_Direct_Wire.kicad_sch
+kicad-cli sch export netlist --format kicadxml -o validation/Drone_Direct_Wire.net.xml ../hardware/kicad/Drone_Direct_Wire/Drone_Direct_Wire.kicad_sch
+kicad-cli sch erc --format json --exit-code-violations -o validation/Drone_Direct_Wire.erc.json ../hardware/kicad/Drone_Direct_Wire/Drone_Direct_Wire.kicad_sch
 python verify_design.py
 ```
 

@@ -22,5 +22,5 @@ Chưa gán footprint vì ảnh không cung cấp kích thước và khoảng cá
 
 ## Thêm vào KiCad
 Symbol Editor → Preferences → Manage Symbol Libraries → Add existing library.
-Chọn SB_Nano_2G4RX_Physical.kicad_sym và lưu, sau đó nhấn A trong schematic để tìm SB_Nano_2G4RX_Physical.
+Chọn symbols/SB_Nano_2G4RX_Physical.kicad_sym và lưu, sau đó nhấn A trong schematic để tìm SB_Nano_2G4RX_Physical.
 

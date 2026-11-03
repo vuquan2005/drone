@@ -12,8 +12,9 @@ import math
 import re
 import xml.etree.ElementTree as ET
 
-ROOT = Path(__file__).resolve().parent
-VALID = ROOT / 'validation'
+EXPORTS = Path(__file__).resolve().parent
+ROOT = EXPORTS.parent / 'hardware' / 'kicad' / 'Drone_Direct_Wire'
+VALID = EXPORTS / 'validation'
 
 def parse(text):
     tokens = re.findall(r'"(?:\\.|[^"\\])*"|[()]|[^\s()]+', text)
@@ -38,8 +39,8 @@ sch = parse((ROOT / 'Drone_Direct_Wire.kicad_sch').read_text(encoding='utf-8'))
 embedded = {s[1]: s for s in kids(one(sch, 'lib_symbols'), 'symbol')}
 manifest = json.loads((VALID / 'manifest.json').read_text())
 for file, digest in manifest['source_sha256'].items():
-    assert hashlib.sha256((ROOT / file).read_bytes()).hexdigest() == digest, file
-    for sym in kids(parse((ROOT / file).read_text(encoding='utf-8-sig')), 'symbol'):
+    assert hashlib.sha256((ROOT / 'symbols' / file).read_bytes()).hexdigest() == digest, file
+    for sym in kids(parse((ROOT / 'symbols' / file).read_text(encoding='utf-8-sig')), 'symbol'):
         libid = Path(file).stem + ':' + sym[1]
         if libid in embedded:
             original = list(sym)
@@ -241,7 +242,7 @@ for i, header in enumerate(['RO05', 'RI05', 'RO04', 'RI04'], 1):
     for ep, mp, phase in [(3, 1, 'U'), (4, 2, 'V'), (5, 3, 'W')]:
         csvrow(f'U{i+2}.{ep}', f'M{i}.{mp}', f'ESC{i} -> M{i} phase {phase}')
 assert len(rows) == 43
-with (ROOT / 'Bang_noi_day.csv').open('w', encoding='utf-8-sig', newline='') as f:
+with (EXPORTS / 'Bang_noi_day.csv').open('w', encoding='utf-8-sig', newline='') as f:
     w = csv.writer(f)
     w.writerow(['Thiet_bi_nguon', 'Ma_chan_nguon', 'Ten_chan_nguon', 'Thiet_bi_dich', 'Ma_chan_dich', 'Ten_chan_dich', 'Chuc_nang'])
     w.writerows(rows)
@@ -255,7 +256,7 @@ bom = [
     ('BT1', 1, 'OVONIC LiPo 3S 11.1V 5200mAh 90C', 'OVONIC_LiPo', '12.6V fully charged'),
     ('U7', 1, 'LM2596 complete DC-DC module / set 5.0V', 'LM2596_Module_Logical', 'LOGICAL PIN IDs; physical pin numbering and footprint UNVERIFIED'),
 ]
-with (ROOT / 'BOM.csv').open('w', encoding='utf-8-sig', newline='') as f:
+with (EXPORTS / 'BOM.csv').open('w', encoding='utf-8-sig', newline='') as f:
     w = csv.writer(f)
     w.writerow(['Reference', 'Quantity', 'Description', 'Symbol_library', 'Notes'])
     w.writerows(bom)

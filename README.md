@@ -14,3 +14,5 @@ drone/
 ```
 
 Các thư mục đang trống có thể chưa xuất hiện sau khi clone. Xem hướng dẫn tại [firmware](firmware/README.md), [báo cáo](report/README.md), [tài liệu](docs/README.md) và [công cụ](tools/README.md).
+
+Thiết kế KiCad và quy ước thư viện được mô tả tại [phần cứng](hardware/README.md).

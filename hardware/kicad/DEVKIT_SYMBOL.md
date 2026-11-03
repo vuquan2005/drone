@@ -23,7 +23,7 @@ Chưa gán footprint. GPIO/debug dùng bidirectional, BOOT dùng input,
 nguồn dùng passive. Kết nối bên trong board không được mô tả riêng.
 
 `DevKit_STM32_headers.csv` chứa từng ID và ô CSV nguồn.
-Tệp thư viện hiện hành: `DevKit_STM32.kicad_sym`.
+Tệp thư viện hiện hành: `symbols/DevKit_STM32.kicad_sym`.
 
 ## Làm mới trong KiCad
 

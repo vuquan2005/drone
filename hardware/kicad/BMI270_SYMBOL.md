@@ -1,12 +1,12 @@
 # Symbol module BMI270 V1.3
 
-Thư viện: BMI270_DevKit.kicad_sym
+Thư viện: symbols/BMI270_DevKit.kicad_sym
 Symbol: BMI270_DevKit:BMI270_DevKit_V1_3
 
 ## Thêm vào KiCad
 1. Mở Symbol Editor → Preferences → Manage Symbol Libraries.
 2. Chọn Project Specific hoặc Global → Add existing library.
-3. Chọn BMI270_DevKit.kicad_sym, lưu lại.
+3. Chọn symbols/BMI270_DevKit.kicad_sym, lưu lại.
 4. Trong Schematic Editor, nhấn A rồi tìm BMI270_DevKit_V1_3.
 
 File sym-lib-table chỉ dùng trực tiếp khi thư viện nằm cùng thư mục gốc project.

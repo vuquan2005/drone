@@ -4,7 +4,8 @@ Mở `Drone_Direct_Wire.kicad_pro` bằng KiCad, sau đó mở schematic cùng t
 Đây là sơ đồ nối dây giữa các module; chưa có PCB hoặc footprint được xác minh.
 
 - `.kicad_pro` và `.kicad_sch`: nguồn thiết kế được lưu trong Git.
-- `symbols/`: tám thư viện riêng, là nguồn symbol duy nhất của dự án.
+- `symbols/`: thư viện `DA_Drone`, chứa các symbol tự tạo của dự án.
+- `PWR_FLAG` dùng thư viện chuẩn `power` của KiCad, không lưu trong `DA_Drone`.
 - `sym-lib-table`: đăng ký bằng `${KIPRJMOD}/symbols/`, dùng được khi đổi máy.
 - `.kicad_prl`, lock, cache và backup: trạng thái cục bộ, được Git bỏ qua.
 - `gerber/`, `exports/`: đầu ra tự sinh khi cần, được Git bỏ qua.
@@ -48,9 +49,9 @@ kicad/
 ├── Drone_Direct_Wire.kicad_pro
 ├── Drone_Direct_Wire.kicad_sch
 ├── sym-lib-table
-├── symbols/                 # Một bộ gồm tám thư viện
+├── symbols/                 # DA_Drone.kicad_sym chứa bảy symbol
 ├── resources/
-│   ├── DevKit_STM32_headers.csv
+│   ├── STM32_DevKit_headers.csv
 │   └── stm32_header_layout.csv
 ├── README.md                # Hướng dẫn và quy ước symbol
 └── exports/                 # Đối chiếu cục bộ, Git bỏ qua
@@ -65,6 +66,10 @@ trong `temp/` vì đây là công cụ có thể dùng lại. Chạy từ gốc 
 python tools/build_quadrotor.py
 ```
 
+Script đọc thêm `power:PWR_FLAG` từ thư viện chuẩn KiCad 10. Trên Linux,
+mặc định là `/usr/share/kicad/symbols`; đặt biến môi trường `KICAD10_SYMBOL_DIR`
+nếu cài thư viện ở đường dẫn khác.
+
 Lệnh này **ghi đè schematic và cấu hình dự án**, đồng thời cập nhật manifest
 trong `output/validation/`. Chỉ chạy khi chủ ý dựng lại; symbol và bảng thư viện
 được giữ nguyên. Các chỉnh sửa schematic thủ công có thể bị mất.
@@ -77,10 +82,34 @@ chúng biểu diễn dữ liệu ở hai dạng khác nhau.
 
 ## Quy ước symbol
 
+Thư viện riêng của dự án mang tên `DA_Drone`. Tên symbol dùng loại linh kiện
+hoặc họ module, không chứa thông số điện, phiên bản hay hậu tố bố trí.
+Ví dụ ID đầy đủ: `DA_Drone:BLDC_Motor`. Value mặc định trùng tên symbol.
+Chỉ giữ năm property chuẩn: Reference, Value, Footprint, Datasheet, Description.
+Reference và Value hiển thị; các trường còn lại ẩn. Description chỉ mô tả chức
+năng ngắn gọn. Footprint và Datasheet để trống khi chưa xác minh.
+Thông số linh kiện thực tế và quy ước chân được ghi trong tài liệu bên dưới.
+
+| Symbol           | Linh kiện dùng trong dự án                                |
+| ---------------- | --------------------------------------------------------- |
+| BLDC_Motor       | A2212/10T, 1400 KV                                        |
+| LiPo_Battery     | OVONIC, 3S1P, 11.1 V, 5200 mAh, 90C, 57.72 Wh (theo nhãn) |
+| BLDC_ESC         | ESC 30 A; chức năng/điện áp BEC chưa xác minh             |
+| STM32_DevKit     | STM32F103VET6 dev kit, hướng USB lên                      |
+| BMI270_Module    | Breakout V1.3                                             |
+| SB_Nano_Receiver | SB Nano 2G4RX                                             |
+| LM2596_Module    | Module LM2596, đặt đầu ra 5.0 V; cần đo kiểm              |
+
+Số chân là quy ước cục bộ, chưa có footprint xác minh. Pin LiPo chỉ biểu diễn
+hai cực nguồn chính (1 dương, 2 âm), không có đầu nối cân bằng.
+Tên mới đã được cập nhật trong schematic hiện tại, gồm symbol nhúng và instance;
+không cần dựng lại sơ đồ. Khi sửa thư viện về sau, dùng **Tools → Update Symbols
+from Library** và kiểm tra tùy chọn cập nhật property/trạng thái hiển thị.
+
 ### A2212/10T 1400KV
 
-- Library: `symbols/A2212_Motor.kicad_sym`
-- KiCad symbol: `A2212_Motor:A2212_10T_1400KV`
+- Library: `symbols/DA_Drone.kicad_sym`
+- KiCad symbol: `DA_Drone:BLDC_Motor`
 - Reference prefix: `M`
 - Pins: `1 = U`, `2 = V`, `3 = W`, all passive.
 - Pin numbers are a local schematic convention, not manufacturer terminal numbers or wire colors.
@@ -88,38 +117,40 @@ chúng biểu diễn dữ liệu ở hai dạng khác nhau.
 - Connect U/V/W to the three motor outputs of the ESC.
 
 The project-local `sym-lib-table` registers the library. In the project's Schematic Editor,
-press **A**, then search for `A2212_10T_1400KV` to place it.
+press **A**, then search for `BLDC_Motor` to place it.
 
 ### Symbol module BMI270 V1.3
 
-Thư viện: symbols/BMI270_DevKit.kicad_sym
-Symbol: BMI270_DevKit:BMI270_DevKit_V1_3
+Thư viện: symbols/DA_Drone.kicad_sym
+Symbol: DA_Drone:BMI270_Module
 
 #### Thêm vào KiCad
+
 1. Mở Symbol Editor → Preferences → Manage Symbol Libraries.
 2. Chọn Project Specific hoặc Global → Add existing library.
-3. Chọn symbols/BMI270_DevKit.kicad_sym, lưu lại.
-4. Trong Schematic Editor, nhấn A rồi tìm BMI270_DevKit_V1_3.
+3. Chọn symbols/DA_Drone.kicad_sym, lưu lại.
+4. Trong Schematic Editor, nhấn A rồi tìm BMI270_Module.
 
 Bảng sym-lib-table đăng ký thư viện tương đối với thư mục dự án.
 Không ghi đè sym-lib-table đã có; dùng Manage Symbol Libraries để thêm.
 
 #### Quy ước chân
+
 Nhìn mặt có chữ như ảnh tham chiếu, VCC ở góc trên bên phải.
 Đây là số chân tự quy ước, không phải pinout chính thức của nhà sản xuất.
 
-| Số | Nhãn | Vị trí trên ảnh |
-|---|---|---|
-| 1 | VCC | Phải |
-| 2 | GND | Phải |
-| 3 | AD0/MISO | Phải |
-| 4 | SDA/MOSI | Phải |
-| 5 | SCL/SCLK | Phải |
-| 6 | CS | Phải |
-| 7 | INT1 | Phải |
-| 8 | SDX | Trái |
-| 9 | SCX | Trái |
-| 10 | INT2 | Trái |
+| Số  | Nhãn     | Vị trí trên ảnh |
+| --- | -------- | --------------- |
+| 1   | VCC      | Phải            |
+| 2   | GND      | Phải            |
+| 3   | AD0/MISO | Phải            |
+| 4   | SDA/MOSI | Phải            |
+| 5   | SCL/SCLK | Phải            |
+| 6   | CS       | Phải            |
+| 7   | INT1     | Phải            |
+| 8   | SDX      | Trái            |
+| 9   | SCX      | Trái            |
+| 10  | INT2     | Trái            |
 
 Hàng phải: 1–7 từ trên xuống. Hàng trái: 8–10 từ trên xuống.
 AD0 dùng chữ số 0; các nhãn còn lại theo ảnh.
@@ -133,7 +164,7 @@ Không dùng số chân IC BMI270 thay cho số chân module.
 
 ### STM32F103VET6 dev kit
 
-Chọn `DevKit_STM32:STM32F103VET6_DevKit`. Đây là symbol STM32 duy nhất
+Chọn `DA_Drone:STM32_DevKit`. Đây là symbol STM32 duy nhất
 trong thư viện dự án: module 98 chân, GPIO không có tiền tố P,
 BOOT0/BOOT1 ở cạnh trên bên phải nhóm debug. Các bản cũ đã được xóa.
 
@@ -156,7 +187,7 @@ Chưa gán footprint. GPIO/debug dùng bidirectional, BOOT dùng input,
 nguồn dùng passive. Kết nối bên trong board không được mô tả riêng.
 
 `resources/DevKit_STM32_headers.csv` chứa từng ID và ô CSV nguồn.
-Tệp thư viện hiện hành: `symbols/DevKit_STM32.kicad_sym`.
+Tệp thư viện hiện hành: `symbols/DA_Drone.kicad_sym`.
 
 #### Làm mới trong KiCad
 
@@ -164,23 +195,23 @@ Nếu symbol đã được đặt trên schematic, dùng **Tools → Update Symb
 from Library…** để lấy phiên bản mới; KiCad lưu bản sao symbol trong
 schematic nên sửa thư viện không tự thay bản đã đặt.
 Nếu vẫn thấy bản cũ trong hộp chọn, đóng/mở lại KiCad và kiểm tra đường
-dẫn thư viện DevKit_STM32 trỏ tới thư mục dự án này.
+dẫn thư viện DA_Drone trỏ tới thư mục dự án này.
 
 ### ESC 30A BLDC
 
-Symbol: `ESC_30A:ESC_30A_BLDC`. Reference prefix: `U`.
+Symbol: `DA_Drone:BLDC_ESC`. Reference prefix: `U`.
 External wired module; no PCB footprint assigned.
 
-| Pin | Name | Electrical type |
-| --- | --- | --- |
-| 1 | BAT+ | power_in |
-| 2 | BAT- | power_in |
-| 3 | U | passive |
-| 4 | V | passive |
-| 5 | W | passive |
-| 6 | PWM | input |
-| 7 | BEC/VCC | passive |
-| 8 | GND | power_in |
+| Pin | Name    | Electrical type |
+| --- | ------- | --------------- |
+| 1   | BAT+    | power_in        |
+| 2   | BAT-    | power_in        |
+| 3   | U       | passive         |
+| 4   | V       | passive         |
+| 5   | W       | passive         |
+| 6   | PWM     | input           |
+| 7   | BEC/VCC | passive         |
+| 8   | GND     | power_in        |
 
 Numbers are a local logical convention, not physical connector cavity numbers.
 The photo shows a 30A marking, two power leads, three motor leads and a three-wire
@@ -188,21 +219,22 @@ control lead. Exact model, supply range, control protocol and BEC function/volta
 are not established from the image. Pin 7 is intentionally passive until verified
 against the actual ESC. Motor phase U/V/W names are a local convention.
 
-Add from the project's symbol chooser with `ESC_30A_BLDC`.
+Add from the project's symbol chooser with `BLDC_ESC`.
 
 ### Symbol SB Nano 2G4RX
 
 Tạo theo nhãn trên ảnh người dùng cung cấp, chưa xác minh bằng schematic nhà sản xuất.
 
 #### Quy ước số chân
+
 Nhìn mặt có linh kiện và chữ như ảnh, bốn pad ở cạnh dưới, từ trái sang phải:
 
 | Số chân | Nhãn | Loại chân trong symbol |
-|---|---|---|
-| 1 | RX | Input |
-| 2 | TX | Output |
-| 3 | 5V | Power input |
-| 4 | GND | Power input |
+| ------- | ---- | ---------------------- |
+| 1       | RX   | Input                  |
+| 2       | TX   | Output                 |
+| 3       | 5V   | Power input            |
+| 4       | GND  | Power input            |
 
 Số chân là quy ước tự đặt; phải khớp với số pad footprint khi thiết kế PCB.
 RX/TX được hiểu theo phía module: RX nhận, TX phát. Ảnh không xác nhận mức điện áp logic.
@@ -213,8 +245,9 @@ Chưa gán footprint vì ảnh không cung cấp kích thước và khoảng cá
 Đầu nối anten không được biểu diễn thành chân schematic ngoài vì đây là symbol của cả module.
 
 #### Thêm vào KiCad
+
 Symbol Editor → Preferences → Manage Symbol Libraries → Add existing library.
-Chọn symbols/SB_Nano_2G4RX_Physical.kicad_sym và lưu, sau đó nhấn A trong schematic để tìm SB_Nano_2G4RX_Physical.
+Chọn symbols/DA_Drone.kicad_sym và lưu, sau đó nhấn A trong schematic để tìm SB_Nano_Receiver.
 
 ## Kiểm tra sau khi gộp thư mục
 

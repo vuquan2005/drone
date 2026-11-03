@@ -11,3256 +11,392 @@
 		(comment 1 "Direct wires retained; two PWR_FLAG declarations for ERC only")
 	)
 	(lib_symbols
-		(symbol "A2212_Motor:A2212_10T_1400KV"
-			(pin_names
-				(offset 0.762)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board no)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "M"
-				(at 0 12.7 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "A2212/10T 1400KV"
-				(at 0 10.16 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "A2212/10T 1400KV brushless motor; three phase leads. Local numbering convention: 1=U, 2=V, 3=W; not manufacturer terminal numbering. External wired motor, no PCB footprint."
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "motor BLDC brushless three phase A2212 10T 1400KV"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "A2212_10T_1400KV_0_1"
-				(rectangle
-					(start -7.62 7.62)
-					(end 7.62 -7.62)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(circle
-					(center 1.27 0)
-					(radius 4.445)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(text "M"
-					(at 1.27 1.016 0)
-					(effects
-						(font
-							(size 2.032 2.032)
-						)
-					)
-				)
-				(text "3~"
-					(at 1.27 -1.778 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(symbol "A2212_10T_1400KV_1_1"
-				(pin passive line
-					(at -12.7 5.08 0)
-					(length 5.08)
-					(name "U"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -12.7 0 0)
-					(length 5.08)
-					(name "V"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -12.7 -5.08 0)
-					(length 5.08)
-					(name "W"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
+		(symbol "DA_Drone:BLDC_Motor"
+    (pin_names (offset 0.762))
+    (in_bom yes) (on_board no)
+    (property "Reference" "M" (at 0 12.7 0) (effects (font (size 1.27 1.27))))
+    (property "Value" "BLDC_Motor" (at 0 10.16 0) (effects (font (size 1.27 1.27))))
+    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "Three-phase brushless motor." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (symbol "BLDC_Motor_0_1"
+      (rectangle (start -7.62 7.62) (end 7.62 -7.62)
+        (stroke (width 0.254) (type default)) (fill (type background)))
+      (circle (center 1.27 0) (radius 4.445)
+        (stroke (width 0.254) (type default)) (fill (type none)))
+      (text "M" (at 1.27 1.016 0) (effects (font (size 2.032 2.032))))
+      (text "3~" (at 1.27 -1.778 0) (effects (font (size 1.27 1.27))))
+    )
+    (symbol "BLDC_Motor_1_1"
+      (pin passive line (at -12.7 5.08 0) (length 5.08)
+        (name "U" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.27 1.27)))))
+      (pin passive line (at -12.7 0 0) (length 5.08)
+        (name "V" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.27 1.27)))))
+      (pin passive line (at -12.7 -5.08 0) (length 5.08)
+        (name "W" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.27 1.27)))))
+    )
+  )
+		(symbol "DA_Drone:BMI270_Module"
+    (pin_names (offset 1.016))
+    (in_bom yes) (on_board yes)
+    (property "Reference" "U" (at 0 20.32 0) (effects (font (size 1.27 1.27))))
+    (property "Value" "BMI270_Module" (at 0 17.78 0) (effects (font (size 1.27 1.27))))
+    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "BMI270 sensor module." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (symbol "BMI270_Module_0_1"
+      (rectangle (start -15.24 15.24) (end 15.24 -25.4)
+        (stroke (width 0.254) (type default)) (fill (type background)))
+    )
+    (symbol "BMI270_Module_1_1"
+      (pin power_in line (at 20.32 10.16 180) (length 5.08)
+        (name "VCC" (effects (font (size 1.016 1.016))))
+        (number "1" (effects (font (size 1.016 1.016)))))
+      (pin power_in line (at 20.32 5.08 180) (length 5.08)
+        (name "GND" (effects (font (size 1.016 1.016))))
+        (number "2" (effects (font (size 1.016 1.016)))))
+      (pin bidirectional line (at 20.32 0 180) (length 5.08)
+        (name "AD0/MISO" (effects (font (size 1.016 1.016))))
+        (number "3" (effects (font (size 1.016 1.016)))))
+      (pin bidirectional line (at 20.32 -5.08 180) (length 5.08)
+        (name "SDA/MOSI" (effects (font (size 1.016 1.016))))
+        (number "4" (effects (font (size 1.016 1.016)))))
+      (pin input line (at 20.32 -10.16 180) (length 5.08)
+        (name "SCL/SCLK" (effects (font (size 1.016 1.016))))
+        (number "5" (effects (font (size 1.016 1.016)))))
+      (pin input line (at 20.32 -15.24 180) (length 5.08)
+        (name "CS" (effects (font (size 1.016 1.016))))
+        (number "6" (effects (font (size 1.016 1.016)))))
+      (pin output line (at 20.32 -20.32 180) (length 5.08)
+        (name "INT1" (effects (font (size 1.016 1.016))))
+        (number "7" (effects (font (size 1.016 1.016)))))
+      (pin bidirectional line (at -20.32 0 0) (length 5.08)
+        (name "SDX" (effects (font (size 1.016 1.016))))
+        (number "8" (effects (font (size 1.016 1.016)))))
+      (pin bidirectional line (at -20.32 -5.08 0) (length 5.08)
+        (name "SCX" (effects (font (size 1.016 1.016))))
+        (number "9" (effects (font (size 1.016 1.016)))))
+      (pin output line (at -20.32 -10.16 0) (length 5.08)
+        (name "INT2" (effects (font (size 1.016 1.016))))
+        (number "10" (effects (font (size 1.016 1.016)))))
+    )
+  )
+		(symbol "DA_Drone:STM32_DevKit" (pin_names (offset 1.016)) (in_bom yes) (on_board yes)
+(property "Reference" "A" (at 0 76.2 0) (effects (font (size 1.27 1.27))))
+(property "Value" "STM32_DevKit" (at 0 73.66 0) (effects (font (size 1.27 1.27))))
+(property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+(property "Description" "STM32 development board." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+(property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+
+(symbol "STM32_DevKit_0_1" (rectangle (start -55.88 55.88) (end 55.88 -58.42) (stroke (width 0.254) (type default)) (fill (type background)))
+(text "USB UP" (at 0 48.26 0) (effects (font (size 1.27 1.27))))
+)
+(symbol "STM32_DevKit_1_1"
+(pin passive line (at -60.96 45.72 0) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "LO01" (effects (font (size 0.762 0.762)))))
+(pin passive line (at -60.96 43.18 0) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "LI01" (effects (font (size 0.762 0.762)))))
+(pin passive line (at -60.96 40.64 0) (length 5.08) (name "VBAT" (effects (font (size 1.016 1.016)))) (number "LO02" (effects (font (size 0.762 0.762)))))
+(pin passive line (at -60.96 38.10 0) (length 5.08) (name "3V3" (effects (font (size 1.016 1.016)))) (number "LI02" (effects (font (size 0.762 0.762)))))
+(pin passive line (at -60.96 35.56 0) (length 5.08) (name "5V" (effects (font (size 1.016 1.016)))) (number "LO03" (effects (font (size 0.762 0.762)))))
+(pin passive line (at -60.96 33.02 0) (length 5.08) (name "5V" (effects (font (size 1.016 1.016)))) (number "LI03" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 30.48 0) (length 5.08) (name "E0" (effects (font (size 1.016 1.016)))) (number "LO04" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 27.94 0) (length 5.08) (name "E1" (effects (font (size 1.016 1.016)))) (number "LI04" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 25.40 0) (length 5.08) (name "E2" (effects (font (size 1.016 1.016)))) (number "LO05" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 22.86 0) (length 5.08) (name "E3" (effects (font (size 1.016 1.016)))) (number "LI05" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 20.32 0) (length 5.08) (name "E4" (effects (font (size 1.016 1.016)))) (number "LO06" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 17.78 0) (length 5.08) (name "E5" (effects (font (size 1.016 1.016)))) (number "LI06" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 15.24 0) (length 5.08) (name "E6" (effects (font (size 1.016 1.016)))) (number "LO07" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 12.70 0) (length 5.08) (name "C13" (effects (font (size 1.016 1.016)))) (number "LI07" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 10.16 0) (length 5.08) (name "C14" (effects (font (size 1.016 1.016)))) (number "LO08" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 7.62 0) (length 5.08) (name "C15" (effects (font (size 1.016 1.016)))) (number "LI08" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 5.08 0) (length 5.08) (name "C0" (effects (font (size 1.016 1.016)))) (number "LO09" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 2.54 0) (length 5.08) (name "C1" (effects (font (size 1.016 1.016)))) (number "LI09" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 0.00 0) (length 5.08) (name "C2" (effects (font (size 1.016 1.016)))) (number "LO10" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -2.54 0) (length 5.08) (name "C3" (effects (font (size 1.016 1.016)))) (number "LI10" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -5.08 0) (length 5.08) (name "A0" (effects (font (size 1.016 1.016)))) (number "LO11" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -7.62 0) (length 5.08) (name "A2" (effects (font (size 1.016 1.016)))) (number "LI11" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -10.16 0) (length 5.08) (name "A1" (effects (font (size 1.016 1.016)))) (number "LO12" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -12.70 0) (length 5.08) (name "A3" (effects (font (size 1.016 1.016)))) (number "LI12" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -15.24 0) (length 5.08) (name "A4" (effects (font (size 1.016 1.016)))) (number "LO13" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -17.78 0) (length 5.08) (name "A5" (effects (font (size 1.016 1.016)))) (number "LI13" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -20.32 0) (length 5.08) (name "A6" (effects (font (size 1.016 1.016)))) (number "LO14" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -22.86 0) (length 5.08) (name "A7" (effects (font (size 1.016 1.016)))) (number "LI14" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -25.40 0) (length 5.08) (name "C4" (effects (font (size 1.016 1.016)))) (number "LO15" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -27.94 0) (length 5.08) (name "C5" (effects (font (size 1.016 1.016)))) (number "LI15" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -30.48 0) (length 5.08) (name "B0" (effects (font (size 1.016 1.016)))) (number "LO16" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -33.02 0) (length 5.08) (name "B1" (effects (font (size 1.016 1.016)))) (number "LI16" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -35.56 0) (length 5.08) (name "B2" (effects (font (size 1.016 1.016)))) (number "LO17" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -38.10 0) (length 5.08) (name "E7" (effects (font (size 1.016 1.016)))) (number "LI17" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -40.64 0) (length 5.08) (name "E8" (effects (font (size 1.016 1.016)))) (number "LO18" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -60.96 -43.18 0) (length 5.08) (name "E9" (effects (font (size 1.016 1.016)))) (number "LI18" (effects (font (size 0.762 0.762)))))
+(pin passive line (at 60.96 45.72 180) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "RO01" (effects (font (size 0.762 0.762)))))
+(pin passive line (at 60.96 43.18 180) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "RI01" (effects (font (size 0.762 0.762)))))
+(pin passive line (at 60.96 40.64 180) (length 5.08) (name "3V3" (effects (font (size 1.016 1.016)))) (number "RO02" (effects (font (size 0.762 0.762)))))
+(pin passive line (at 60.96 38.10 180) (length 5.08) (name "3V3" (effects (font (size 1.016 1.016)))) (number "RI02" (effects (font (size 0.762 0.762)))))
+(pin passive line (at 60.96 35.56 180) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "RO03" (effects (font (size 0.762 0.762)))))
+(pin passive line (at 60.96 33.02 180) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "RI03" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 30.48 180) (length 5.08) (name "B8" (effects (font (size 1.016 1.016)))) (number "RO04" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 27.94 180) (length 5.08) (name "B9" (effects (font (size 1.016 1.016)))) (number "RI04" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 25.40 180) (length 5.08) (name "B6" (effects (font (size 1.016 1.016)))) (number "RO05" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 22.86 180) (length 5.08) (name "B7" (effects (font (size 1.016 1.016)))) (number "RI05" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 20.32 180) (length 5.08) (name "B4" (effects (font (size 1.016 1.016)))) (number "RO06" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 17.78 180) (length 5.08) (name "B5" (effects (font (size 1.016 1.016)))) (number "RI06" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 15.24 180) (length 5.08) (name "D7" (effects (font (size 1.016 1.016)))) (number "RO07" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 12.70 180) (length 5.08) (name "B3" (effects (font (size 1.016 1.016)))) (number "RI07" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 10.16 180) (length 5.08) (name "D5" (effects (font (size 1.016 1.016)))) (number "RO08" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 7.62 180) (length 5.08) (name "D6" (effects (font (size 1.016 1.016)))) (number "RI08" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 5.08 180) (length 5.08) (name "D3" (effects (font (size 1.016 1.016)))) (number "RO09" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 2.54 180) (length 5.08) (name "D4" (effects (font (size 1.016 1.016)))) (number "RI09" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 0.00 180) (length 5.08) (name "D1" (effects (font (size 1.016 1.016)))) (number "RO10" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -2.54 180) (length 5.08) (name "D2" (effects (font (size 1.016 1.016)))) (number "RI10" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -5.08 180) (length 5.08) (name "C12" (effects (font (size 1.016 1.016)))) (number "RO11" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -7.62 180) (length 5.08) (name "D0" (effects (font (size 1.016 1.016)))) (number "RI11" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -10.16 180) (length 5.08) (name "C11" (effects (font (size 1.016 1.016)))) (number "RO12" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -12.70 180) (length 5.08) (name "C10" (effects (font (size 1.016 1.016)))) (number "RI12" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -15.24 180) (length 5.08) (name "A15" (effects (font (size 1.016 1.016)))) (number "RO13" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -17.78 180) (length 5.08) (name "A14" (effects (font (size 1.016 1.016)))) (number "RI13" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -20.32 180) (length 5.08) (name "A13" (effects (font (size 1.016 1.016)))) (number "RO14" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -22.86 180) (length 5.08) (name "A12" (effects (font (size 1.016 1.016)))) (number "RI14" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -25.40 180) (length 5.08) (name "A11" (effects (font (size 1.016 1.016)))) (number "RO15" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -27.94 180) (length 5.08) (name "A10" (effects (font (size 1.016 1.016)))) (number "RI15" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -30.48 180) (length 5.08) (name "A9" (effects (font (size 1.016 1.016)))) (number "RO16" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -33.02 180) (length 5.08) (name "A8" (effects (font (size 1.016 1.016)))) (number "RI16" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -35.56 180) (length 5.08) (name "C9" (effects (font (size 1.016 1.016)))) (number "RO17" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -38.10 180) (length 5.08) (name "C7" (effects (font (size 1.016 1.016)))) (number "RI17" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -40.64 180) (length 5.08) (name "C8" (effects (font (size 1.016 1.016)))) (number "RO18" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 60.96 -43.18 180) (length 5.08) (name "C6" (effects (font (size 1.016 1.016)))) (number "RI18" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -48.26 -63.50 90) (length 5.08) (name "E10" (effects (font (size 1.016 1.016)))) (number "BI01" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -43.18 -63.50 90) (length 5.08) (name "E11" (effects (font (size 1.016 1.016)))) (number "BO01" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -38.10 -63.50 90) (length 5.08) (name "E12" (effects (font (size 1.016 1.016)))) (number "BI02" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -33.02 -63.50 90) (length 5.08) (name "E13" (effects (font (size 1.016 1.016)))) (number "BO02" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -27.94 -63.50 90) (length 5.08) (name "E14" (effects (font (size 1.016 1.016)))) (number "BI03" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -22.86 -63.50 90) (length 5.08) (name "E15" (effects (font (size 1.016 1.016)))) (number "BO03" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -17.78 -63.50 90) (length 5.08) (name "B10" (effects (font (size 1.016 1.016)))) (number "BI04" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -12.70 -63.50 90) (length 5.08) (name "B11" (effects (font (size 1.016 1.016)))) (number "BO04" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -7.62 -63.50 90) (length 5.08) (name "B12" (effects (font (size 1.016 1.016)))) (number "BI05" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -2.54 -63.50 90) (length 5.08) (name "B13" (effects (font (size 1.016 1.016)))) (number "BO05" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 2.54 -63.50 90) (length 5.08) (name "B14" (effects (font (size 1.016 1.016)))) (number "BI06" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 7.62 -63.50 90) (length 5.08) (name "B15" (effects (font (size 1.016 1.016)))) (number "BO06" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 12.70 -63.50 90) (length 5.08) (name "D8" (effects (font (size 1.016 1.016)))) (number "BI07" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 17.78 -63.50 90) (length 5.08) (name "D9" (effects (font (size 1.016 1.016)))) (number "BO07" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 22.86 -63.50 90) (length 5.08) (name "D10" (effects (font (size 1.016 1.016)))) (number "BI08" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 27.94 -63.50 90) (length 5.08) (name "D11" (effects (font (size 1.016 1.016)))) (number "BO08" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 33.02 -63.50 90) (length 5.08) (name "D12" (effects (font (size 1.016 1.016)))) (number "BI09" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 38.10 -63.50 90) (length 5.08) (name "D13" (effects (font (size 1.016 1.016)))) (number "BO09" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 43.18 -63.50 90) (length 5.08) (name "D14" (effects (font (size 1.016 1.016)))) (number "BI10" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 48.26 -63.50 90) (length 5.08) (name "D15" (effects (font (size 1.016 1.016)))) (number "BO10" (effects (font (size 0.762 0.762)))))
+(pin passive line (at -15.24 60.96 270) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "S1" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at -5.08 60.96 270) (length 5.08) (name "SWDIO" (effects (font (size 1.016 1.016)))) (number "S2" (effects (font (size 0.762 0.762)))))
+(pin bidirectional line (at 5.08 60.96 270) (length 5.08) (name "SWCLK" (effects (font (size 1.016 1.016)))) (number "S3" (effects (font (size 0.762 0.762)))))
+(pin passive line (at 15.24 60.96 270) (length 5.08) (name "3V3" (effects (font (size 1.016 1.016)))) (number "S4" (effects (font (size 0.762 0.762)))))
+(pin input line (at 30.48 60.96 270) (length 5.08) (name "BOOT0" (effects (font (size 1.016 1.016)))) (number "BOOT0" (effects (font (size 0.762 0.762)))))
+(pin input line (at 40.64 60.96 270) (length 5.08) (name "BOOT1" (effects (font (size 1.016 1.016)))) (number "BOOT1" (effects (font (size 0.762 0.762)))))
+)
+)
+		(symbol "power:PWR_FLAG"
+		(power global)
+		(pin_numbers
+			(hide yes)
 		)
-		(symbol "BMI270_DevKit:BMI270_DevKit_V1_3"
-			(pin_names
-				(offset 1.016)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 0 20.32 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "BMI270_DevKit_V1_3"
-				(at 0 17.78 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "BMI270 breakout V1.3; photo-based labels; local pin numbering: right 1-7 and left 8-10 top to bottom; verify footprint mapping"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "BMI270_DevKit_V1_3_0_1"
-				(rectangle
-					(start -15.24 15.24)
-					(end 15.24 -25.4)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(text "BMI270"
-					(at 0 10.16 0)
-					(effects
-						(font
-							(size 1.524 1.524)
-						)
-					)
-				)
-				(text "V1.3"
-					(at 0 7.62 0)
-					(effects
-						(font
-							(size 1.016 1.016)
-						)
-					)
-				)
-			)
-			(symbol "BMI270_DevKit_V1_3_1_1"
-				(pin power_in line
-					(at 20.32 10.16 180)
-					(length 5.08)
-					(name "VCC"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 20.32 5.08 180)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 20.32 0 180)
-					(length 5.08)
-					(name "AD0/MISO"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 20.32 -5.08 180)
-					(length 5.08)
-					(name "SDA/MOSI"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 20.32 -10.16 180)
-					(length 5.08)
-					(name "SCL/SCLK"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 20.32 -15.24 180)
-					(length 5.08)
-					(name "CS"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at 20.32 -20.32 180)
-					(length 5.08)
-					(name "INT1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "7"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -20.32 0 0)
-					(length 5.08)
-					(name "SDX"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "8"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -20.32 -5.08 0)
-					(length 5.08)
-					(name "SCX"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "9"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at -20.32 -10.16 0)
-					(length 5.08)
-					(name "INT2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "10"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
+		(pin_names
+			(offset 0)
+			(hide yes)
 		)
-		(symbol "DevKit_STM32:STM32F103VET6_DevKit"
-			(pin_names
-				(offset 1.016)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "A1"
-				(at 0 35.56 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(duplicate_pin_numbers_are_jumpers no)
+		(property "Reference" "#FLG"
+			(at 0 1.905 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
 				)
 			)
-			(property "Value" ""
-				(at 0 33.02 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "STM32F103VET6_DevKit_0_1"
-				(rectangle
-					(start -55.88 55.88)
-					(end 55.88 -58.42)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(text ""
-					(at 0 -5.08 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(symbol "STM32F103VET6_DevKit_1_1"
-				(text ""
-					(at 0 48.26 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(text "STM32F103VET6"
-					(at 0 10.16 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(text ""
-					(at 0 5.08 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(text ""
-					(at 0 0 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -48.26 -63.5 90)
-					(length 5.08)
-					(name "E10"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI01"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -38.1 -63.5 90)
-					(length 5.08)
-					(name "E12"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI02"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -27.94 -63.5 90)
-					(length 5.08)
-					(name "E14"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI03"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -17.78 -63.5 90)
-					(length 5.08)
-					(name "B10"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI04"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -7.62 -63.5 90)
-					(length 5.08)
-					(name "B12"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI05"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 2.54 -63.5 90)
-					(length 5.08)
-					(name "B14"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI06"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 12.7 -63.5 90)
-					(length 5.08)
-					(name "D8"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI07"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 22.86 -63.5 90)
-					(length 5.08)
-					(name "D10"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI08"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 33.02 -63.5 90)
-					(length 5.08)
-					(name "D12"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI09"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 43.18 -63.5 90)
-					(length 5.08)
-					(name "D14"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BI10"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -43.18 -63.5 90)
-					(length 5.08)
-					(name "E11"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO01"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -33.02 -63.5 90)
-					(length 5.08)
-					(name "E13"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO02"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -22.86 -63.5 90)
-					(length 5.08)
-					(name "E15"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO03"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -12.7 -63.5 90)
-					(length 5.08)
-					(name "B11"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO04"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -2.54 -63.5 90)
-					(length 5.08)
-					(name "B13"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO05"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 7.62 -63.5 90)
-					(length 5.08)
-					(name "B15"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO06"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 17.78 -63.5 90)
-					(length 5.08)
-					(name "D9"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO07"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 27.94 -63.5 90)
-					(length 5.08)
-					(name "D11"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO08"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 38.1 -63.5 90)
-					(length 5.08)
-					(name "D13"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO09"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 48.26 -63.5 90)
-					(length 5.08)
-					(name "D15"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BO10"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 30.48 60.96 270)
-					(length 5.08)
-					(name "BOOT0"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BOOT0"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 40.64 60.96 270)
-					(length 5.08)
-					(name "BOOT1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "BOOT1"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -60.96 43.18 0)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI01"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -60.96 38.1 0)
-					(length 5.08)
-					(name "3V3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI02"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -60.96 33.02 0)
-					(length 5.08)
-					(name "5V"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI03"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 27.94 0)
-					(length 5.08)
-					(name "E1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI04"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 22.86 0)
-					(length 5.08)
-					(name "E3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI05"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 17.78 0)
-					(length 5.08)
-					(name "E5"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI06"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 12.7 0)
-					(length 5.08)
-					(name "C13"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI07"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 7.62 0)
-					(length 5.08)
-					(name "C15"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI08"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 2.54 0)
-					(length 5.08)
-					(name "C1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI09"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -2.54 0)
-					(length 5.08)
-					(name "C3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI10"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -7.62 0)
-					(length 5.08)
-					(name "A2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI11"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -12.7 0)
-					(length 5.08)
-					(name "A3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI12"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -17.78 0)
-					(length 5.08)
-					(name "A5"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI13"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -22.86 0)
-					(length 5.08)
-					(name "A7"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI14"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -27.94 0)
-					(length 5.08)
-					(name "C5"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI15"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -33.02 0)
-					(length 5.08)
-					(name "B1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI16"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -38.1 0)
-					(length 5.08)
-					(name "E7"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI17"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -43.18 0)
-					(length 5.08)
-					(name "E9"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LI18"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -60.96 45.72 0)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO01"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -60.96 40.64 0)
-					(length 5.08)
-					(name "VBAT"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO02"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -60.96 35.56 0)
-					(length 5.08)
-					(name "5V"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO03"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 30.48 0)
-					(length 5.08)
-					(name "E0"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO04"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 25.4 0)
-					(length 5.08)
-					(name "E2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO05"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 20.32 0)
-					(length 5.08)
-					(name "E4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO06"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 15.24 0)
-					(length 5.08)
-					(name "E6"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO07"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 10.16 0)
-					(length 5.08)
-					(name "C14"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO08"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 5.08 0)
-					(length 5.08)
-					(name "C0"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO09"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 0 0)
-					(length 5.08)
-					(name "C2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO10"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -5.08 0)
-					(length 5.08)
-					(name "A0"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO11"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -10.16 0)
-					(length 5.08)
-					(name "A1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO12"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -15.24 0)
-					(length 5.08)
-					(name "A4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO13"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -20.32 0)
-					(length 5.08)
-					(name "A6"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO14"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -25.4 0)
-					(length 5.08)
-					(name "C4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO15"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -30.48 0)
-					(length 5.08)
-					(name "B0"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO16"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -35.56 0)
-					(length 5.08)
-					(name "B2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO17"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -60.96 -40.64 0)
-					(length 5.08)
-					(name "E8"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "LO18"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 60.96 43.18 180)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI01"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 60.96 38.1 180)
-					(length 5.08)
-					(name "3V3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI02"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 60.96 33.02 180)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI03"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 27.94 180)
-					(length 5.08)
-					(name "B9"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI04"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 22.86 180)
-					(length 5.08)
-					(name "B7"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI05"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 17.78 180)
-					(length 5.08)
-					(name "B5"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI06"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 12.7 180)
-					(length 5.08)
-					(name "B3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI07"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 7.62 180)
-					(length 5.08)
-					(name "D6"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI08"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 2.54 180)
-					(length 5.08)
-					(name "D4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI09"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -2.54 180)
-					(length 5.08)
-					(name "D2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI10"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -7.62 180)
-					(length 5.08)
-					(name "D0"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI11"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -12.7 180)
-					(length 5.08)
-					(name "C10"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI12"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -17.78 180)
-					(length 5.08)
-					(name "A14"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI13"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -22.86 180)
-					(length 5.08)
-					(name "A12"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI14"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -27.94 180)
-					(length 5.08)
-					(name "A10"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI15"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -33.02 180)
-					(length 5.08)
-					(name "A8"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI16"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -38.1 180)
-					(length 5.08)
-					(name "C7"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI17"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -43.18 180)
-					(length 5.08)
-					(name "C6"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RI18"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 60.96 45.72 180)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO01"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 60.96 40.64 180)
-					(length 5.08)
-					(name "3V3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO02"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 60.96 35.56 180)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO03"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 30.48 180)
-					(length 5.08)
-					(name "B8"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO04"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 25.4 180)
-					(length 5.08)
-					(name "B6"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO05"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 20.32 180)
-					(length 5.08)
-					(name "B4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO06"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 15.24 180)
-					(length 5.08)
-					(name "D7"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO07"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 10.16 180)
-					(length 5.08)
-					(name "D5"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO08"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 5.08 180)
-					(length 5.08)
-					(name "D3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO09"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 0 180)
-					(length 5.08)
-					(name "D1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO10"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -5.08 180)
-					(length 5.08)
-					(name "C12"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO11"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -10.16 180)
-					(length 5.08)
-					(name "C11"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO12"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -15.24 180)
-					(length 5.08)
-					(name "A15"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO13"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -20.32 180)
-					(length 5.08)
-					(name "A13"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO14"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -25.4 180)
-					(length 5.08)
-					(name "A11"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO15"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -30.48 180)
-					(length 5.08)
-					(name "A9"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO16"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -35.56 180)
-					(length 5.08)
-					(name "C9"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO17"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 60.96 -40.64 180)
-					(length 5.08)
-					(name "C8"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "RO18"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -15.24 60.96 270)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "S1"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at -5.08 60.96 270)
-					(length 5.08)
-					(name "SWDIO"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "S2"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin bidirectional line
-					(at 5.08 60.96 270)
-					(length 5.08)
-					(name "SWCLK"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "S3"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 15.24 60.96 270)
-					(length 5.08)
-					(name "3V3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "S4"
-						(effects
-							(font
-								(size 0.762 0.762)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
 		)
-		(symbol "ERC_Only:PWR_FLAG"
-			(power global)
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 0)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "#FLG"
-				(at 0 1.905 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
+		(property "Value" "PWR_FLAG"
+			(at 0 3.81 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
 				)
 			)
-			(property "Value" "PWR_FLAG"
-				(at 0 3.81 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "Special symbol for telling ERC where power comes from"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "flag power"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "PWR_FLAG_0_0"
-				(pin power_out line
-					(at 0 0 90)
-					(length 0)
-					(name ""
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(symbol "PWR_FLAG_0_1"
-				(polyline
-					(pts
-						(xy 0 0) (xy 0 1.27) (xy -1.016 1.905) (xy 0 2.54) (xy 1.016 1.905) (xy 0 1.27)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(embedded_fonts no)
 		)
-		(symbol "ESC_30A:ESC_30A_BLDC"
-			(pin_names
-				(offset 0.762)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board no)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 0 22.86 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
+		(property "Footprint" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
 				)
 			)
-			(property "Value" "ESC 30A BLDC"
-				(at 0 20.32 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "Generic 30A brushless ESC based on user photo. Two battery leads, three motor phases, three-wire control lead. Local logical pin numbering, not connector cavity order. BEC/VCC function and voltage unverified; passive pin. No assumed supply range, protocol or BEC rating. External wired module, no PCB footprint."
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "ESC 30A BLDC brushless motor controller PWM BEC"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "ESC_30A_BLDC_0_1"
-				(rectangle
-					(start -15.24 17.78)
-					(end 15.24 -17.78)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(text "ESC"
-					(at 0 5.08 0)
-					(effects
-						(font
-							(size 2.032 2.032)
-						)
-					)
-				)
-				(text "30A"
-					(at 0 1.27 0)
-					(effects
-						(font
-							(size 1.524 1.524)
-						)
-					)
-				)
-				(text "BLDC"
-					(at 0 -2.54 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(symbol "ESC_30A_BLDC_1_1"
-				(pin power_in line
-					(at -20.32 12.7 0)
-					(length 5.08)
-					(name "BAT+"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at -20.32 7.62 0)
-					(length 5.08)
-					(name "BAT-"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 20.32 10.16 180)
-					(length 5.08)
-					(name "U"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 20.32 0 180)
-					(length 5.08)
-					(name "V"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 20.32 -10.16 180)
-					(length 5.08)
-					(name "W"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "5"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at -20.32 -2.54 0)
-					(length 5.08)
-					(name "PWM"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -20.32 -7.62 0)
-					(length 5.08)
-					(name "BEC/VCC"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "7"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at -20.32 -12.7 0)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "8"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
 		)
-		(symbol "LM2596_Module_Logical:LM2596_Module_Logical"
-			(pin_names
-				(offset 1.016)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board no)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 0 17.78 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
+		(property "Datasheet" ""
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
 				)
 			)
-			(property "Value" "LM2596 module - 5.0V"
-				(at 0 15.24 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "Logical complete DC-DC module; local pin IDs 1=IN+,2=IN-,3=OUT+,4=OUT-. Physical terminal numbering and footprint UNVERIFIED."
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "LM2596_Module_Logical_0_1"
-				(rectangle
-					(start -17.78 12.7)
-					(end 17.78 -12.7)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-				(text "LM2596 MODULE"
-					(at 0 2.54 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(text "SET OUT = 5.0 V"
-					(at 0 -2.54 0)
-					(effects
-						(font
-							(size 1.016 1.016)
-						)
-					)
-				)
-				(text "LOGICAL PIN IDs ONLY"
-					(at 0 -7.62 0)
-					(effects
-						(font
-							(size 0.889 0.889)
-						)
-					)
-				)
-			)
-			(symbol "LM2596_Module_Logical_1_1"
-				(pin power_in line
-					(at -22.86 5.08 0)
-					(length 5.08)
-					(name "IN+"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at -22.86 -5.08 0)
-					(length 5.08)
-					(name "IN-"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_out line
-					(at 22.86 5.08 180)
-					(length 5.08)
-					(name "OUT+"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_out line
-					(at 22.86 -5.08 180)
-					(length 5.08)
-					(name "OUT-"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
 		)
-		(symbol "OVONIC_LiPo:OVONIC_LiPo_3S_5200mAh_90C"
-			(pin_names
-				(offset 0)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board no)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "BT"
-				(at 7.62 5.08 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
+		(property "Description" "Special symbol for telling ERC where power comes from"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
 				)
 			)
-			(property "Value" "OVONIC LiPo 3S 11.1V"
-				(at 7.62 2.54 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-					(justify left)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "OVONIC LiPo battery; photo label: 3S1P, 11.1V, 5200mAh, 90C, 57.72Wh. Main power terminals only; local pin numbering 1=positive, 2=negative. Balance connector not represented. External wired pack, no PCB footprint."
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "battery LiPo OVONIC 3S 3S1P 11.1V 5200mAh 90C"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "OVONIC_LiPo_3S_5200mAh_90C_0_1"
-				(polyline
-					(pts
-						(xy -3.81 5.08) (xy 3.81 5.08)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -3.81 0) (xy 3.81 0)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -3.81 -5.08) (xy 3.81 -5.08)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 2.54) (xy 1.27 2.54)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -2.54) (xy 1.27 -2.54)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(polyline
-					(pts
-						(xy -1.27 -7.62) (xy 1.27 -7.62)
-					)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-				(text "+"
-					(at -5.08 5.08 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(text "-"
-					(at -3.81 -7.62 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(text "5200mAh / 90C"
-					(at 7.62 0 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-						(justify left)
-					)
-				)
-				(text "3S1P / 57.72Wh"
-					(at 7.62 -2.54 0)
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-						(justify left)
-					)
-				)
-			)
-			(symbol "OVONIC_LiPo_3S_5200mAh_90C_1_1"
-				(pin passive line
-					(at 0 10.16 270)
-					(length 5.08)
-					(name "+"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 -12.7 90)
-					(length 5.08)
-					(name "-"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
 		)
-		(symbol "SB_Nano_2G4RX_Physical:SB_Nano_2G4RX_Physical"
-			(pin_names
-				(offset 1.016)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "U"
-				(at 0 20.32 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
+		(property "ki_keywords" "flag power"
+			(at 0 0 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
 				)
 			)
-			(property "Value" "SB_Nano_2G4RX_Physical"
-				(at 0 17.78 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "SB Nano 2G4RX module from reference photo; local pin numbers left to right: 1 RX, 2 TX, 3 5V, 4 GND; verify pad mapping"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "SB_Nano_2G4RX_Physical_0_1"
-				(rectangle
-					(start -12.7 15.24)
-					(end 12.7 -15.24)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "SB_Nano_2G4RX_Physical_1_1"
-				(pin input line
-					(at -7.62 -20.32 90)
-					(length 5.08)
-					(name "RX"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin output line
-					(at -2.54 -20.32 90)
-					(length 5.08)
-					(name "TX"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "2"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 2.54 -20.32 90)
-					(length 5.08)
-					(name "5V"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "3"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-				(pin power_in line
-					(at 7.62 -20.32 90)
-					(length 5.08)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "4"
-						(effects
-							(font
-								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
 		)
+		(symbol "PWR_FLAG_0_0"
+			(pin power_out line
+				(at 0 0 90)
+				(length 0)
+				(name ""
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+				(number "1"
+					(effects
+						(font
+							(size 1.27 1.27)
+						)
+					)
+				)
+			)
+		)
+		(symbol "PWR_FLAG_0_1"
+			(polyline
+				(pts
+					(xy 0 0) (xy 0 1.27) (xy -1.016 1.905) (xy 0 2.54) (xy 1.016 1.905) (xy 0 1.27)
+				)
+				(stroke
+					(width 0)
+					(type default)
+				)
+				(fill
+					(type none)
+				)
+			)
+		)
+		(embedded_fonts no)
+	)
+		(symbol "DA_Drone:BLDC_ESC"
+    (pin_names (offset 0.762))
+    (in_bom yes) (on_board no)
+    (property "Reference" "U" (at 0 22.86 0) (effects (font (size 1.27 1.27))))
+    (property "Value" "BLDC_ESC" (at 0 20.32 0) (effects (font (size 1.27 1.27))))
+    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "Brushless motor speed controller." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (symbol "BLDC_ESC_0_1"
+      (rectangle (start -15.24 17.78) (end 15.24 -17.78) (stroke (width 0.254) (type default)) (fill (type background)))
+    )
+    (symbol "BLDC_ESC_1_1"
+      (pin power_in line (at -20.32 12.7 0) (length 5.08) (name "BAT+" (effects (font (size 1.016 1.016)))) (number "1" (effects (font (size 1.016 1.016)))))
+      (pin power_in line (at -20.32 7.62 0) (length 5.08) (name "BAT-" (effects (font (size 1.016 1.016)))) (number "2" (effects (font (size 1.016 1.016)))))
+      (pin passive line (at 20.32 10.16 180) (length 5.08) (name "U" (effects (font (size 1.016 1.016)))) (number "3" (effects (font (size 1.016 1.016)))))
+      (pin passive line (at 20.32 0 180) (length 5.08) (name "V" (effects (font (size 1.016 1.016)))) (number "4" (effects (font (size 1.016 1.016)))))
+      (pin passive line (at 20.32 -10.16 180) (length 5.08) (name "W" (effects (font (size 1.016 1.016)))) (number "5" (effects (font (size 1.016 1.016)))))
+      (pin input line (at -20.32 -2.54 0) (length 5.08) (name "PWM" (effects (font (size 1.016 1.016)))) (number "6" (effects (font (size 1.016 1.016)))))
+      (pin passive line (at -20.32 -7.62 0) (length 5.08) (name "BEC/VCC" (effects (font (size 1.016 1.016)))) (number "7" (effects (font (size 1.016 1.016)))))
+      (pin power_in line (at -20.32 -12.7 0) (length 5.08) (name "GND" (effects (font (size 1.016 1.016)))) (number "8" (effects (font (size 1.016 1.016)))))
+    )
+  )
+		(symbol "DA_Drone:LM2596_Module"
+    (pin_names (offset 1.016)) (in_bom yes) (on_board no)
+    (property "Reference" "U" (at 0 17.78 0) (effects (font (size 1.27 1.27))))
+    (property "Value" "LM2596_Module" (at 0 15.24 0) (effects (font (size 1.27 1.27))))
+    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "LM2596 DC-DC converter module." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (symbol "LM2596_Module_0_1"
+      (rectangle (start -17.78 12.7) (end 17.78 -12.7) (stroke (width 0.254) (type default)) (fill (type background)))
+    )
+    (symbol "LM2596_Module_1_1"
+      (pin power_in line (at -22.86 5.08 0) (length 5.08) (name "IN+" (effects (font (size 1.016 1.016)))) (number "1" (effects (font (size 1.016 1.016)))))
+      (pin power_in line (at -22.86 -5.08 0) (length 5.08) (name "IN-" (effects (font (size 1.016 1.016)))) (number "2" (effects (font (size 1.016 1.016)))))
+      (pin power_out line (at 22.86 5.08 180) (length 5.08) (name "OUT+" (effects (font (size 1.016 1.016)))) (number "3" (effects (font (size 1.016 1.016)))))
+      (pin power_out line (at 22.86 -5.08 180) (length 5.08) (name "OUT-" (effects (font (size 1.016 1.016)))) (number "4" (effects (font (size 1.016 1.016)))))
+    )
+  )
+		(symbol "DA_Drone:LiPo_Battery"
+    (pin_names (offset 0) hide)
+    (in_bom yes) (on_board no)
+    (property "Reference" "BT" (at 7.62 5.08 0) (effects (font (size 1.27 1.27)) (justify left)))
+    (property "Value" "LiPo_Battery" (at 7.62 2.54 0) (effects (font (size 1.27 1.27)) (justify left)))
+    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "LiPo battery, main terminals." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (symbol "LiPo_Battery_0_1"
+      (polyline (pts (xy -3.81 5.08) (xy 3.81 5.08)) (stroke (width 0.254) (type default)) (fill (type none)))
+      (polyline (pts (xy -1.27 2.54) (xy 1.27 2.54)) (stroke (width 0.254) (type default)) (fill (type none)))
+      (polyline (pts (xy -3.81 0) (xy 3.81 0)) (stroke (width 0.254) (type default)) (fill (type none)))
+      (polyline (pts (xy -1.27 -2.54) (xy 1.27 -2.54)) (stroke (width 0.254) (type default)) (fill (type none)))
+      (polyline (pts (xy -3.81 -5.08) (xy 3.81 -5.08)) (stroke (width 0.254) (type default)) (fill (type none)))
+      (polyline (pts (xy -1.27 -7.62) (xy 1.27 -7.62)) (stroke (width 0.254) (type default)) (fill (type none)))
+      (text "+" (at -5.08 5.08 0) (effects (font (size 1.27 1.27))))
+      (text "-" (at -3.81 -7.62 0) (effects (font (size 1.27 1.27))))
+    )
+    (symbol "LiPo_Battery_1_1"
+      (pin passive line (at 0 10.16 270) (length 5.08) (name "+" (effects (font (size 1.27 1.27)))) (number "1" (effects (font (size 1.27 1.27)))))
+      (pin passive line (at 0 -12.7 90) (length 5.08) (name "-" (effects (font (size 1.27 1.27)))) (number "2" (effects (font (size 1.27 1.27)))))
+    )
+  )
+		(symbol "DA_Drone:SB_Nano_Receiver"
+    (pin_names (offset 1.016)) (in_bom yes) (on_board yes)
+    (property "Reference" "U" (at 0 20.32 0) (effects (font (size 1.27 1.27))))
+    (property "Value" "SB_Nano_Receiver" (at 0 17.78 0) (effects (font (size 1.27 1.27))))
+    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Datasheet" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (property "Description" "SB Nano radio receiver module." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
+    (symbol "SB_Nano_Receiver_0_1"
+      (rectangle (start -12.7 15.24) (end 12.7 -15.24)
+        (stroke (width 0.254) (type default)) (fill (type background))))
+    (symbol "SB_Nano_Receiver_1_1"
+      (pin input line (at -7.62 -20.32 90) (length 5.08)
+        (name "RX" (effects (font (size 1.27 1.27))))
+        (number "1" (effects (font (size 1.016 1.016)))))
+      (pin output line (at -2.54 -20.32 90) (length 5.08)
+        (name "TX" (effects (font (size 1.27 1.27))))
+        (number "2" (effects (font (size 1.016 1.016)))))
+      (pin power_in line (at 2.54 -20.32 90) (length 5.08)
+        (name "5V" (effects (font (size 1.27 1.27))))
+        (number "3" (effects (font (size 1.016 1.016)))))
+      (pin power_in line (at 7.62 -20.32 90) (length 5.08)
+        (name "GND" (effects (font (size 1.27 1.27))))
+        (number "4" (effects (font (size 1.016 1.016)))))
+    )
+  )
 	)
 	(text "Never connect LM2596 5 V output to 3V3."
 		(exclude_from_sim no)
@@ -5413,7 +2549,7 @@
 		(uuid "fd14782f-e252-54d1-af0b-d9b4a690dd78")
 	)
 	(symbol
-		(lib_id "ERC_Only:PWR_FLAG")
+		(lib_id "power:PWR_FLAG")
 		(at 388.62 104.14 0)
 		(unit 1)
 		(body_style 1)
@@ -5488,7 +2624,7 @@
 		)
 	)
 	(symbol
-		(lib_id "BMI270_DevKit:BMI270_DevKit_V1_3")
+		(lib_id "DA_Drone:BMI270_Module")
 		(at 210.82 218.44 0)
 		(unit 1)
 		(body_style 1)
@@ -5508,7 +2644,7 @@
 				)
 			)
 		)
-		(property "Value" "BMI270_DevKit_V1_3"
+		(property "Value" "BMI270_Module"
 			(at 210.82 200.66 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5539,7 +2675,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "BMI270 sensor module."
 			(at 210.82 218.44 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5589,7 +2725,7 @@
 		)
 	)
 	(symbol
-		(lib_id "A2212_Motor:A2212_10T_1400KV")
+		(lib_id "DA_Drone:BLDC_Motor")
 		(at 520.7 203.2 0)
 		(unit 1)
 		(body_style 1)
@@ -5609,7 +2745,7 @@
 				)
 			)
 		)
-		(property "Value" "A2212/10T 1400KV"
+		(property "Value" "BLDC_Motor"
 			(at 520.7 189.23 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5640,7 +2776,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Three-phase brushless motor."
 			(at 520.7 203.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5669,7 +2805,7 @@
 		)
 	)
 	(symbol
-		(lib_id "A2212_Motor:A2212_10T_1400KV")
+		(lib_id "DA_Drone:BLDC_Motor")
 		(at 304.8 375.92 270)
 		(unit 1)
 		(body_style 1)
@@ -5689,7 +2825,7 @@
 				)
 			)
 		)
-		(property "Value" "A2212/10T 1400KV"
+		(property "Value" "BLDC_Motor"
 			(at 340.36 375.92 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5720,7 +2856,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Three-phase brushless motor."
 			(at 304.8 375.92 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5749,7 +2885,7 @@
 		)
 	)
 	(symbol
-		(lib_id "SB_Nano_2G4RX_Physical:SB_Nano_2G4RX_Physical")
+		(lib_id "DA_Drone:SB_Nano_Receiver")
 		(at 400.05 264.16 270)
 		(unit 1)
 		(body_style 1)
@@ -5769,7 +2905,7 @@
 				)
 			)
 		)
-		(property "Value" "SB_Nano_2G4RX_Physical"
+		(property "Value" "SB_Nano_Receiver"
 			(at 400.05 246.54 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5800,7 +2936,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "SB Nano radio receiver module."
 			(at 400.05 264.16 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5832,7 +2968,7 @@
 		)
 	)
 	(symbol
-		(lib_id "ESC_30A:ESC_30A_BLDC")
+		(lib_id "DA_Drone:BLDC_ESC")
 		(at 304.8 91.44 90)
 		(unit 1)
 		(body_style 1)
@@ -5852,7 +2988,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC 30A BLDC"
+		(property "Value" "BLDC_ESC"
 			(at 352.8 90.17 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5883,7 +3019,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 304.8 91.44 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5927,7 +3063,7 @@
 		)
 	)
 	(symbol
-		(lib_id "ERC_Only:PWR_FLAG")
+		(lib_id "power:PWR_FLAG")
 		(at 223.52 182.88 0)
 		(unit 1)
 		(body_style 1)
@@ -6002,7 +3138,7 @@
 		)
 	)
 	(symbol
-		(lib_id "OVONIC_LiPo:OVONIC_LiPo_3S_5200mAh_90C")
+		(lib_id "DA_Drone:LiPo_Battery")
 		(at 403.86 63.5 0)
 		(unit 1)
 		(body_style 1)
@@ -6022,7 +3158,7 @@
 				)
 			)
 		)
-		(property "Value" "OVONIC LiPo 3S 11.1V"
+		(property "Value" "LiPo_Battery"
 			(at 410.21 40.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6053,7 +3189,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "LiPo battery, main terminals."
 			(at 403.86 63.5 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6079,7 +3215,7 @@
 		)
 	)
 	(symbol
-		(lib_id "DevKit_STM32:STM32F103VET6_DevKit")
+		(lib_id "DA_Drone:STM32_DevKit")
 		(at 304.8 203.2 0)
 		(unit 1)
 		(body_style 1)
@@ -6099,7 +3235,7 @@
 				)
 			)
 		)
-		(property "Value" ""
+		(property "Value" "STM32_DevKit"
 			(at 304.8 170.18 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6130,7 +3266,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "STM32 development board."
 			(at 304.8 203.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6444,7 +3580,7 @@
 		)
 	)
 	(symbol
-		(lib_id "ESC_30A:ESC_30A_BLDC")
+		(lib_id "DA_Drone:BLDC_ESC")
 		(at 304.8 325.12 270)
 		(unit 1)
 		(body_style 1)
@@ -6464,7 +3600,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC 30A BLDC"
+		(property "Value" "BLDC_ESC"
 			(at 352.8 323.85 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6495,7 +3631,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 304.8 325.12 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6539,7 +3675,7 @@
 		)
 	)
 	(symbol
-		(lib_id "ESC_30A:ESC_30A_BLDC")
+		(lib_id "DA_Drone:BLDC_ESC")
 		(at 114.3 203.2 180)
 		(unit 1)
 		(body_style 1)
@@ -6559,7 +3695,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC 30A BLDC"
+		(property "Value" "BLDC_ESC"
 			(at 114.3 180.34 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6590,7 +3726,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 114.3 203.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6634,7 +3770,7 @@
 		)
 	)
 	(symbol
-		(lib_id "A2212_Motor:A2212_10T_1400KV")
+		(lib_id "DA_Drone:BLDC_Motor")
 		(at 304.8 40.64 90)
 		(unit 1)
 		(body_style 1)
@@ -6654,7 +3790,7 @@
 				)
 			)
 		)
-		(property "Value" "A2212/10T 1400KV"
+		(property "Value" "BLDC_Motor"
 			(at 340.36 40.64 90)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6685,7 +3821,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Three-phase brushless motor."
 			(at 304.8 40.64 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6714,7 +3850,7 @@
 		)
 	)
 	(symbol
-		(lib_id "A2212_Motor:A2212_10T_1400KV")
+		(lib_id "DA_Drone:BLDC_Motor")
 		(at 50.8 203.2 180)
 		(unit 1)
 		(body_style 1)
@@ -6734,7 +3870,7 @@
 				)
 			)
 		)
-		(property "Value" "A2212/10T 1400KV"
+		(property "Value" "BLDC_Motor"
 			(at 50.8 189.23 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6765,7 +3901,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Three-phase brushless motor."
 			(at 50.8 203.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6794,7 +3930,7 @@
 		)
 	)
 	(symbol
-		(lib_id "LM2596_Module_Logical:LM2596_Module_Logical")
+		(lib_id "DA_Drone:LM2596_Module")
 		(at 457.2 93.98 0)
 		(unit 1)
 		(body_style 1)
@@ -6814,7 +3950,7 @@
 				)
 			)
 		)
-		(property "Value" "LM2596 module - 5.0V"
+		(property "Value" "LM2596_Module"
 			(at 457.2 76.2 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6845,7 +3981,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "LM2596 DC-DC converter module."
 			(at 457.2 93.98 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6877,7 +4013,7 @@
 		)
 	)
 	(symbol
-		(lib_id "ESC_30A:ESC_30A_BLDC")
+		(lib_id "DA_Drone:BLDC_ESC")
 		(at 457.2 203.2 0)
 		(unit 1)
 		(body_style 1)
@@ -6897,7 +4033,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC 30A BLDC"
+		(property "Value" "BLDC_ESC"
 			(at 457.2 180.34 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -6928,7 +4064,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 457.2 203.2 0)
 			(show_name no)
 			(do_not_autoplace no)

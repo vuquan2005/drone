@@ -6,5 +6,6 @@
   (lib (name "A2212_Motor") (type "KiCad") (uri "${KIPRJMOD}/symbols/A2212_Motor.kicad_sym") (options "") (descr "A2212/10T 1400KV three-phase brushless motor"))
   (lib (name "OVONIC_LiPo") (type "KiCad") (uri "${KIPRJMOD}/symbols/OVONIC_LiPo.kicad_sym") (options "") (descr "OVONIC 3S 5200mAh 90C LiPo battery"))
   (lib (name "ESC_30A") (type "KiCad") (uri "${KIPRJMOD}/symbols/ESC_30A.kicad_sym") (options "") (descr "Generic external 30A brushless ESC module"))
+  (lib (name "LM2596_Module_Logical") (type "KiCad") (uri "${KIPRJMOD}/symbols/LM2596_Module_Logical.kicad_sym") (options "") (descr "Logical module; physical pin IDs and footprint unverified"))
+  (lib (name "ERC_Only") (type "KiCad") (uri "${KIPRJMOD}/symbols/ERC_Only.kicad_sym") (options "") (descr "KiCad PWR_FLAG - ERC declarations only, no physical component"))
 )
-

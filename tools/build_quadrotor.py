@@ -9,47 +9,29 @@ import hashlib
 import json
 import math
 import re
-import shutil
 import uuid
 
-LIBRARY = Path(__file__).resolve().parent
-SOURCE = LIBRARY / 'symbols'
-ROOT = LIBRARY / 'Drone_Direct_Wire'
+REPO_ROOT = Path(__file__).resolve().parents[1]
+ROOT = REPO_ROOT / 'hardware' / 'kicad'
 SYMBOLS = ROOT / 'symbols'
 SYMBOLS.mkdir(parents=True, exist_ok=True)
 ROOT.mkdir(exist_ok=True)
 OUT = ROOT / "Drone_Direct_Wire.kicad_sch"
-VALID = LIBRARY.parent.parent / "output" / "validation"
+VALID = REPO_ROOT / "output" / "validation"
 VALID.mkdir(parents=True, exist_ok=True)
 
-# Existing symbol files are copied byte for byte; only this explicitly allowed
-# logical module symbol is new. Its numbering is NOT a physical pad map.
-for file in SOURCE.glob('*.kicad_sym'):
-    shutil.copy2(file, SYMBOLS / file.name)
-lm_file = SYMBOLS / 'LM2596_Module_Logical.kicad_sym'
-lm_file.write_text('''(kicad_symbol_lib (version 20231120) (generator "kicad_symbol_editor")
-  (symbol "LM2596_Module_Logical"
-    (pin_names (offset 1.016)) (in_bom yes) (on_board no)
-    (property "Reference" "U" (at 0 17.78 0) (effects (font (size 1.27 1.27))))
-    (property "Value" "LM2596 module - 5.0V" (at 0 15.24 0) (effects (font (size 1.27 1.27))))
-    (property "Footprint" "" (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
-    (property "Description" "Logical complete DC-DC module; local pin IDs 1=IN+,2=IN-,3=OUT+,4=OUT-. Physical terminal numbering and footprint UNVERIFIED." (at 0 0 0) (effects (font (size 1.27 1.27)) hide))
-    (symbol "LM2596_Module_Logical_0_1"
-      (rectangle (start -17.78 12.7) (end 17.78 -12.7) (stroke (width 0.254) (type default)) (fill (type background)))
-      (text "LM2596 MODULE" (at 0 2.54 0) (effects (font (size 1.27 1.27))))
-      (text "SET OUT = 5.0 V" (at 0 -2.54 0) (effects (font (size 1.016 1.016))))
-      (text "LOGICAL PIN IDs ONLY" (at 0 -7.62 0) (effects (font (size 0.889 0.889)))))
-    (symbol "LM2596_Module_Logical_1_1"
-      (pin power_in line (at -22.86 5.08 0) (length 5.08) (name "IN+" (effects (font (size 1.016 1.016)))) (number "1" (effects (font (size 1.016 1.016)))))
-      (pin power_in line (at -22.86 -5.08 0) (length 5.08) (name "IN-" (effects (font (size 1.016 1.016)))) (number "2" (effects (font (size 1.016 1.016)))))
-      (pin power_out line (at 22.86 5.08 180) (length 5.08) (name "OUT+" (effects (font (size 1.016 1.016)))) (number "3" (effects (font (size 1.016 1.016)))))
-      (pin power_out line (at 22.86 -5.08 180) (length 5.08) (name "OUT-" (effects (font (size 1.016 1.016)))) (number "4" (effects (font (size 1.016 1.016)))))
-    )
-  )
-)\n''', encoding='utf-8')
-table = (LIBRARY / 'sym-lib-table').read_text(encoding='utf-8-sig').rstrip()
-table = table[:-1] + '  (lib (name "LM2596_Module_Logical") (type "KiCad") (uri "${KIPRJMOD}/symbols/LM2596_Module_Logical.kicad_sym") (options "") (descr "Logical module; physical pin IDs and footprint unverified"))\n  (lib (name "ERC_Only") (type "KiCad") (uri "${KIPRJMOD}/symbols/ERC_Only.kicad_sym") (options "") (descr "KiCad PWR_FLAG - ERC declarations only, no physical component"))\n)\n'
-(ROOT / 'sym-lib-table').write_text(table, encoding='utf-8')
+# Project-local libraries and their registration table are maintained in KiCad.
+# Read them as inputs; rebuilding the schematic must not overwrite libraries.
+for name in (
+    'A2212_Motor', 'BMI270_DevKit', 'DevKit_STM32', 'ERC_Only',
+    'ESC_30A', 'LM2596_Module_Logical', 'OVONIC_LiPo',
+    'SB_Nano_2G4RX_Physical',
+):
+    if not (SYMBOLS / (name + '.kicad_sym')).is_file():
+        raise FileNotFoundError('Missing project symbol library: ' + name)
+if not (ROOT / 'sym-lib-table').is_file():
+    raise FileNotFoundError('Missing project sym-lib-table')
+
 (ROOT / 'Drone_Direct_Wire.kicad_pro').write_text(json.dumps({'meta': {'filename': 'Drone_Direct_Wire.kicad_pro', 'version': 1}}, indent=2) + '\n', encoding='utf-8')
 
 class Atom(str):
@@ -92,14 +74,6 @@ def uid(key):
 
 def fmt(n):
     return f'{n:.4f}'.rstrip('0').rstrip('.') or '0'
-
-# Copy KiCad's actual PWR_FLAG definition; do not change any module symbol.
-flag_file = SYMBOLS / 'ERC_Only.kicad_sym'
-if not flag_file.exists():
-    standard_power = Path(r'C:\Program Files\KiCad\10.0\share\kicad\symbols\power.kicad_sym')
-    power_library = parse(standard_power.read_text(encoding='utf-8-sig'))
-    flag_symbol = next(s for s in kids(power_library, 'symbol') if s[1] == 'PWR_FLAG')
-    flag_file.write_text('(kicad_symbol_lib (version 20251024) (generator "kicad_symbol_editor")\n' + dumps(flag_symbol) + '\n)\n', encoding='utf-8')
 
 libraries = {}
 input_hashes = {}

@@ -156,7 +156,7 @@ def stage_schematic():
     pads={}; parts={}
     def pad(ref,num,c,r):
         pads[ref+'.'+str(num)]={'ref':ref,'pad':str(num),'column':c,'row':r,'hole':hole(c,r),'xy':xy(c,r),'name':pn.get(ref+'.'+str(num),'')}
-    for row in csv.DictReader((BASE/'hardware/kicad/DevKit_STM32_headers.csv').open()):
+    for row in csv.DictReader((BASE/'hardware/kicad/resources/DevKit_STM32_headers.csv').open()):
         n=row['position_id']; idx=int(row['row_from_top_or_left'])
         if n in ['BOOT0','BOOT1']: c,r=9,11 if n=='BOOT0' else 13
         elif n[:2] in ['RO','RI']: c,r=idx+4,5 if n[:2]=='RO' else 6

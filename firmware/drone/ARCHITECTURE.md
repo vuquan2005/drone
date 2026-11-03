@@ -35,94 +35,6 @@ truy cập HAL trực tiếp. Khi thêm controller, tách kiểu mẫu IMU dùng
 estimator chỉ cần dữ liệu đo, đơn vị, hệ trục, timestamp và trạng thái hợp lệ.
 Không cần tạo trước thư mục hoặc module rỗng cho toàn bộ sơ đồ.
 
-## Quy ước phát triển
-
-### Quyền quản lý cấu hình và tài nguyên
-
-| Thành phần                                             | Nơi quản lý                                | Quy tắc thay đổi                                                                                        |
-| ------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- |
-| Clock, pin mux, GPIO mode, SPI mode/clock, DMA và NVIC | `drone.ioc` và phần `Core/` do CubeMX sinh | Chỉnh `.ioc`, generate rồi kiểm tra diff; mã tự viết trong file sinh tự động nằm trong vùng `USER CODE` |
-| Ánh xạ cảm biến với SPI handle và chân CS              | `BSP/Src/bsp_board.c`                      | Tham chiếu handle và tên chân do CubeMX sinh; không khởi tạo lại SPI hoặc pin mux                       |
-| Giao dịch cảm biến                                     | `BSP/Src/bsp_bmi270.c`                     | Gắn callback Bosch, quản lý CS theo giao dịch, gọi HAL và trả trạng thái                                |
-| Delay micro giây                                       | `BSP/Src/bsp_time.c`                       | Quản lý DWT; khởi tạo sau clock, trước khi sử dụng; không tự đổi system clock                           |
-| Cấu hình thanh ghi BMI270                              | `bsp_bmi270_init()`                        | Đổi ODR/range cùng hằng số mô tả và hệ số chuyển đổi liên quan; cập nhật test                           |
-| Trạng thái ứng dụng và sử dụng mẫu đo                  | `App/`                                     | Điều phối, đổi đơn vị, xử lý trạng thái; không cấu hình lại ngoại vi MCU                                |
-| Source và include của module tự viết                   | `CMakeLists.txt` cấp project               | Đăng ký tại đây; để CubeMX quản lý `cmake/stm32cubemx/`                                                 |
-
-CubeMX cấu hình CS là GPIO output có mức ban đầu high; BSP kéo CS low/high
-trong từng giao dịch. CubeMX khởi tạo SPI; BSP sử dụng handle đã sẵn sàng.
-Đây là hai giai đoạn khác nhau của cùng tài nguyên. Không tạo thêm một hàm
-khởi tạo SPI riêng trong BSP cho bus đã do CubeMX quản lý.
-
-SPI HAL hiện do CubeMX quản lý trong `stm32f1xx_hal_conf.h` và
-`cmake/stm32cubemx/CMakeLists.txt`; không đăng ký thêm macro/source SPI HAL ở
-CMake cấp project. BSP gắn `hspi1` với `IMU_CS` (PA4) và bật delay DWT trước
-khi trả cấu hình. `main()` đã init clock, GPIO và SPI trước khi gọi App.
-Việc gắn board đã có trong code, nhưng chưa xác nhận cảm biến trên phần cứng.
-
-Mỗi tài nguyên dùng chung phải có nơi sở hữu và quy tắc truy cập: SPI bus,
-timer, DMA channel, bộ đệm và trạng thái module. Hiện BSP/App IMU chỉ chạy
-trong một foreground context; caller phải tuần tự hóa bus SPI nếu có thêm
-thiết bị dùng chung. Khi thêm DMA hoặc ISR, ghi rõ bên ghi, bên đọc và thời
-điểm chuyển quyền dùng buffer trước khi triển khai.
-
-### Đặt module và hướng phụ thuộc
-
-- `Core/`: mã do CubeMX quản lý và các điểm gọi App trong vùng `USER CODE`.
-- `App/Inc`, `App/Src`: điều phối và xử lý ứng dụng. `app.c` sở hữu trạng thái
-  và gọi các module; tránh dồn mọi thuật toán vào file này.
-- `BSP/Inc`, `BSP/Src`: mã phụ thuộc board, cổng giao tiếp driver và timing.
-  Dùng tiền tố `bsp_`; không đưa thuật toán điều khiển bay vào BSP.
-- `Drivers/`: driver bên thứ ba, HAL và CMSIS. Giữ nguyên mã upstream;
-  nếu bắt buộc vá, ghi nguồn/phiên bản, lý do và nội dung bản vá trong tài liệu
-  đi kèm driver. Đặt phần tích hợp STM32 trong BSP khi có thể.
-- `tests/`: kiểm thử trên máy tính; tách HAL mô phỏng khỏi source firmware.
-  Thêm thư mục theo module khi có test thực tế, không tạo trước các khung rỗng.
-
-Luồng tích hợp IMU hiện tại là App → BSP → driver Bosch → callback BSP → HAL.
-Driver Bosch không phụ thuộc App; BSP không gọi ngược App. Khi thêm estimator
-hoặc controller, dùng kiểu dữ liệu đo chung không kéo theo HAL/Bosch; API tính
-toán nhận mẫu, trạng thái và `dt` rõ ràng.
-
-### Hợp đồng API và Doxygen
-
-Viết Doxygen bằng tiếng Anh cho API công khai và các kiểu có ràng buộc sử dụng
-trong header tự viết. README và tài liệu kiến trúc dùng tiếng Việt như hiện tại.
-Comment trong `.c` giải thích lý do, giới hạn hoặc trình tự bắt buộc; không
-lặp lại từng câu lệnh và không sao chép hợp đồng API từ header sang source.
-
-Tùy API, mô tả các mục có ảnh hưởng tới cách gọi:
-
-- `@brief`: hành vi của hàm; `@param[in]`, `@param[out]`, `@param[in,out]`:
-  hướng dữ liệu, đơn vị, phạm vi hợp lệ và trường hợp chấp nhận `NULL`.
-- `@pre`: thứ tự khởi tạo và trạng thái tài nguyên cần có trước khi gọi.
-- `@return` hoặc `@retval`: trạng thái thành công, chưa có dữ liệu và lỗi;
-  dữ liệu đầu ra có được giữ nguyên khi thất bại hay không.
-- `@note`: foreground/ISR, blocking, quyền sở hữu con trỏ/buffer, thời gian
-  tồn tại, địa chỉ cố định và yêu cầu tuần tự hóa truy cập.
-- Với mẫu đo: ghi đơn vị, thứ tự trục, hệ trục, nguồn timestamp và quy tắc tràn.
-  Phân biệt mẫu mới hợp lệ với mẫu còn đủ mới để điều khiển.
-
-Sửa tài liệu cùng commit khi thay đổi hành vi API. Chưa cần sinh website
-Doxygen; hợp đồng phải đọc được trực tiếp trong header và editor.
-
-### Kiểm tra trước khi commit
-
-1. Khi thay đổi ngoại vi, cập nhật `.ioc`, generate và xem diff để phát hiện
-   thay đổi ngoài ý muốn; kiểm tra thứ tự init trước khi gọi App.
-2. Đăng ký source/include nếu thêm module. Format mã tự viết theo cấu hình repo;
-   không format lại `Core/`, driver upstream hoặc các file generator quản lý.
-3. Chạy build firmware khi đổi C/header, cấu hình phần cứng hoặc build. Chạy
-   bộ test liên quan khi đổi logic BSP/App; lệnh nằm trong
-   [README](README.md#build-và-kiểm-thử). Thay đổi chỉ có comment/tài liệu cần
-   kiểm tra format, link và tính khớp với code.
-4. Với thay đổi giao tiếp hoặc timing, ghi rõ phần đã test bằng HAL mô phỏng
-   và phần đã kiểm tra trên board. Kết quả mô phỏng không xác nhận wiring,
-   tần số SPI, delay thực tế hoặc jitter.
-5. Cập nhật README khi đổi thao tác/trạng thái hỗ trợ, ARCHITECTURE khi đổi
-   ranh giới hoặc quyết định thiết kế. Không commit build output, compile
-   database, cache hoặc đường dẫn công cụ cá nhân.
-
 ## Chuỗi điều khiển dự kiến
 
 Phạm vi ban đầu là điều khiển tay với roll/pitch đặt góc, yaw đặt tốc độ thay
@@ -247,8 +159,8 @@ HAL với driver Bosch thật, không xác nhận nối dây hoặc định th�
 
 - [Quy trình và kiến trúc PX4, ArduPilot](../../docs/research/PX4_ARDUPILOT_ENGINEERING.md):
   đối chiếu các bản sao cục bộ và đề xuất quy ước phát triển phù hợp với đồ án.
-- [Build, cấu hình board và kiểm thử IMU](README.md).
-- [Hướng dẫn firmware chung](../README.md).
+- [IMU và kiểm thử](README.md).
+- [Cấu hình board, build và debug](../README.md).
 - [Khảo sát các vòng điều khiển](../../docs/research/control/01_CHI_TIET_CAC_VONG_DIEU_KHIEN_INPUT_OUTPUT.md).
 - [Giao diện SI và chuẩn hóa khi chuyển lực sang PWM/DShot](../../docs/research/HAI_CACH_CHUYEN_LUC_SANG_PWM_DSHOT.md).
 - [PX4 Controller Diagrams](https://docs.px4.io/main/en/flight_stack/controller_diagrams):

@@ -3,6 +3,7 @@
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
     "*.ioc": ".mxproject, STM32*_FLASH.ld, startup_stm32*.s",
+    "*.kicad_pro": "sym-lib-table, fp-lib-table",
     "*.tex": "${capture}.aux, ${capture}.log, ${capture}.out, ${capture}.toc, ${capture}.lof, ${capture}.lot, ${capture}.bbl, ${capture}.blg, ${capture}.bcf, ${capture}.run.xml, ${capture}.fls, ${capture}.fdb_latexmk, ${capture}.synctex.gz, ${capture}.xdv, ${capture}.pdf",
     ".editorconfig": ".clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore",
     ".gitignore": ".gitattributes, .gitmodules, codegraph.json",
@@ -32,13 +33,15 @@
   },
   "material-icon-theme.files.associations": {
     "*.ioc": "settings",
+    ".mxproject": "settings",
     "*.kicad_mod": "architecture",
     "*.kicad_pcb": "architecture",
     "*.kicad_pro": "settings",
     "*.kicad_sch": "drawio",
     "*.kicad_sym": "drawio",
     "*.ld": "assembly",
-    ".mxproject": "settings"
+    "sym-lib-table": "settings",
+    "fp-lib-table": "settings"
   },
   "material-icon-theme.folders.associations": {
     "BSP": "interface",

@@ -1,8 +1,0 @@
-﻿Reference,Quantity,Description,Symbol_library,Notes
-A1,1,STM32F103VET6_DevKit,DevKit_STM32,Original module symbol
-U1,1,BMI270_DevKit_V1_3,BMI270_DevKit,Verify 3.3V supply and SDX/SCX auxiliary interface
-U2,1,SB_Nano_2G4RX_Physical / ELRS 2.4 GHz,SB_Nano_2G4RX_Physical,5V supply; UART logic level must match STM32
-U3 U4 U5 U6,4,ESC 30A BLDC,ESC_30A,All BEC pins NC; verify actual supply/PWM requirements
-M1 M2 M3 M4,4,A2212/10T 1400KV,A2212_Motor,No rotation or motor mixer assigned
-BT1,1,OVONIC LiPo 3S 11.1V 5200mAh 90C,OVONIC_LiPo,12.6V fully charged
-U7,1,LM2596 complete DC-DC module / set 5.0V,LM2596_Module_Logical,LOGICAL PIN IDs; physical pin numbering and footprint UNVERIFIED

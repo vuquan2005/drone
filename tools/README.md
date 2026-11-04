@@ -43,10 +43,3 @@ python3 tools/sync_reference_pdfs.py docs/references/papers/huy2024-262.pdf --ou
 Đầu ra mặc định nằm trong `docs/references/papers/papers_md/` hoặc `docs/references/datasheets/datasheets_md/`. Script giữ nguyên thư mục đã có nội dung nhưng không có manifest và bảo vệ các tệp đầu ra đã sửa thủ công. Manifest chỉ lưu trạng thái cục bộ, không được đưa vào Git; sau khi clone, dùng `--output-dir` khác nếu muốn tạo bản trích xuất để đối chiếu.
 
 Văn bản và ảnh được trích xuất tự động, không thay thế việc kiểm tra PDF gốc. PDF không có lớp văn bản cần OCR; sơ đồ vector, công thức và bảng có thể không được trích xuất đầy đủ. Xem thêm tùy chọn bằng `python3 tools/sync_reference_pdfs.py --help`.
-
-## Dựng sơ đồ quadrotor
-
-`python tools/build_quadrotor.py` đọc thư viện tại `hardware/kicad/symbols/`
-và dựng lại schematic cùng cấu hình dự án. Lệnh ghi đè các bản chỉnh sửa thủ công;
-xem [hướng dẫn KiCad](../hardware/kicad/README.md#dựng-lại-sơ-đồ) trước khi chạy.
-Dữ liệu chân CSV được lưu tại `hardware/kicad/resources/`.

@@ -4,6 +4,7 @@
 extern UART_HandleTypeDef huart1;
 
 #define RX_CAPACITY 256U
+#define DMA_CAPACITY 64U
 
 typedef struct {
     uint32_t timestamp_ms;
@@ -15,10 +16,13 @@ static volatile uint16_t head;
 static volatile uint16_t tail;
 static volatile bool discontinuity;
 static volatile bool retry_rx;
-static uint8_t rx_byte;
+static uint8_t dma_buffer[DMA_CAPACITY];
+static uint16_t dma_position;
 
 static void start_rx(void) {
-    retry_rx = HAL_UART_Receive_IT(&huart1, &rx_byte, 1) != HAL_OK;
+    dma_position = 0;
+    retry_rx = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, dma_buffer,
+                                            DMA_CAPACITY) != HAL_OK;
     if (retry_rx) {
         discontinuity = true;
     }
@@ -33,6 +37,9 @@ bool bsp_receiver_init(void) {
     discontinuity = false;
     HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(USART1_IRQn);
+    // Both callbacks share producer state and must not preempt each other.
+    HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
     start_rx();
     bool started = !retry_rx;
     __set_PRIMASK(primask);
@@ -60,27 +67,32 @@ bsp_receiver_result_t bsp_receiver_read(uint8_t *byte, uint32_t *timestamp_ms) {
     return result;
 }
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {
+    (void)size;
     if (huart != &huart1) {
         return;
     }
-    // HAL may invoke this callback before its error callback. Do not clear
-    // ErrorCode by rearming here: HAL still needs it to handle ORE/FE/NE.
-    if (huart->ErrorCode != HAL_UART_ERROR_NONE) {
+    if (huart->ErrorCode != HAL_UART_ERROR_NONE || retry_rx) {
         discontinuity = true;
         return;
     }
-    uint8_t byte = rx_byte;
+    // Read the live DMA cursor: an IDLE IRQ can precede a pending HT/TC IRQ.
+    // Using the callback's older Size in that case would replay stale bytes.
+    uint16_t position =
+        (uint16_t)(DMA_CAPACITY - __HAL_DMA_GET_COUNTER(huart->hdmarx));
+    position %= DMA_CAPACITY;
     uint32_t now_ms = HAL_GetTick();
-    start_rx();
-    uint16_t next = (uint16_t)((head + 1U) % RX_CAPACITY);
-    if (next == tail) {
-        discontinuity = true;
-    }
-    if (!discontinuity) {
-        queue[head].byte = byte;
-        queue[head].timestamp_ms = now_ms;
-        head = next;
+    while (dma_position != position) {
+        uint16_t next = (uint16_t)((head + 1U) % RX_CAPACITY);
+        if (next == tail) {
+            discontinuity = true;
+        }
+        if (!discontinuity) {
+            queue[head].byte = dma_buffer[dma_position];
+            queue[head].timestamp_ms = now_ms;
+            head = next;
+        }
+        dma_position = (uint16_t)((dma_position + 1U) % DMA_CAPACITY);
     }
 }
 

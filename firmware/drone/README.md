@@ -82,15 +82,22 @@ nhất. Thứ tự kênh và ý nghĩa arm/throttle phụ thuộc cấu hình ta
 Đây chưa phải logic arm hoặc failsafe điều khiển động cơ; hệ thống điều khiển
 phải tự xử lý mất tín hiệu và kiểm tra các điều kiện an toàn trước khi chạy.
 
-Ngắt USART1 chỉ đưa byte và HAL tick lúc nhận vào bộ đệm BSP (255 byte hữu
-ích). `app_receiver_poll()` giải mã trong foreground; gọi thường xuyên, mục
+USART1 RX dùng DMA1 Channel 5 circular, buffer DMA 64 byte. Ngắt IDLE và
+DMA half/full chuyển phần dữ liệu mới vào bộ đệm BSP (255 byte hữu ích),
+không khởi động lại DMA sau mỗi sự kiện. Hai IRQ cùng priority 5 để tránh
+tranh chấp trạng thái ghi. Khi đường truyền liên tục ở 420 kbaud, DMA phát
+ngắt mỗi 32 byte (khoảng 0,76 ms); cần phục vụ ngắt trong khoảng này để tránh
+DMA ghi đè dữ liệu chưa sao chép. Mất cả vòng DMA không tự phát hiện được.
+Timestamp là HAL tick tại sự kiện DMA/IDLE, dùng chung cho byte trong batch;
+độ trễ gồm thời gian gom batch, độ trễ IRQ và lượng tử tick 1 ms.
+`app_receiver_poll()` giải mã trong foreground; gọi thường xuyên, mục
 tiêu không quá 2 ms giữa các lần poll. Bộ đệm đầy hoặc lỗi UART sẽ bỏ dữ liệu
 đang chờ và vô hiệu trạng thái kết nối cho đến khi nhận khung RC mới. SPI IMU
 có thể chặn lâu khi lỗi; bộ đệm hiện tại không bảo đảm giữ được RC trong
 khoảng chặn đó. Cần đo lịch chạy và độ trễ trên board.
 
 Parser chỉ hỗ trợ khung RC `0x16` đủ 16 kênh, kiểm tra độ dài và CRC, giới
-hạn tổng thời gian ghép khung là 3 ms theo HAL tick lúc nhận. Khung khác được
+hạn tổng thời gian ghép khung là 3 ms theo HAL tick của batch nhận (không phải timestamp chính xác từng byte). Khung khác được
 kiểm tra và bỏ qua; không hỗ trợ subset `0x17`, link statistics hoặc telemetry.
 Giá trị kênh cũ được giữ khi `connected = false`; trạng thái này phản ánh tuổi
 khung RC, không xác nhận chất lượng liên kết RF.
@@ -105,7 +112,7 @@ ctest --test-dir /tmp/drone-crsf-tests --output-on-failure
 
 Các ca kiểm tra gồm CRC sai, độ dài sai, khung thiếu, đồng bộ lại trong dữ
 liệu lỗi, timeout toàn khung, tràn timestamp, tràn bộ đệm, lỗi UART và phục
-hồi sau khi yêu cầu nhận thất bại. Test chạy mã parser, BSP và App thật;
+hồi sau khi yêu cầu nhận thất bại, wrap DMA và callback HT đến sau IDLE. Test chạy mã parser, BSP và App thật;
 HAL được mô phỏng nên chưa xác nhận timing hoặc phần cứng.
 
 Thiết kế được đối chiếu với bản sao cục bộ của

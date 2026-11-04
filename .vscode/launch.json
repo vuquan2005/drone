@@ -7,7 +7,7 @@
       "request": "launch",
       "origin": "snippet",
       "cwd": "${workspaceFolder}/firmware/drone",
-      "preBuild": "${command:st-stm32-ide-debug-launch.build}",
+      "preLaunchTask": "firmware: build Debug",
       "runEntry": "main",
       "imagesAndSymbols": [
         {

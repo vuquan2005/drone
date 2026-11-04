@@ -50,12 +50,40 @@ không mặc định cấp nguồn board. JTAG đã tắt, SWD vẫn hoạt đ�
 
 1. Để ST extension discover project và cài các bundle GNU tools/GDB,
    ST-LINK GDB Server, STM32CubeProgrammer trước lần debug đầu tiên.
-2. Chọn preset **Debug** và build. Launch trỏ cố định tới ELF Debug,
-   còn bước preBuild dùng preset đang chọn.
+2. Launch trỏ cố định tới ELF Debug. Trước khi debug, task
+   `firmware: build Debug` tự configure rồi build đúng preset **Debug**.
+   Có thể chạy task riêng bằng **Terminal → Run Build Task**.
 3. Chọn **STM32: Debug (ST-LINK)** trong Run and Debug, nhấn **F5**.
    Thao tác này nạp/reset board rồi dừng tại `main`.
 4. Chạy qua `SystemClock_Config()`, kiểm tra `SystemCoreClock = 72000000`;
    xem [các biến IMU](drone/README.md#kiểm-tra-imu) để kiểm tra cảm biến.
+
+Task build ở gốc repo lấy vị trí CLI bằng lệnh
+`stm32cube-ide-core.get-cube-path` của extension ST rồi gọi `cube cmake`.
+Không cần ghi đường dẫn cài extension hoặc sửa `PATH` trong task; CLI chọn công cụ
+theo bundle của project tại thư mục làm việc `firmware/drone`.
+Semihosting đang tắt; debug thông thường không cần bật tính năng này.
+
+Gốc repo có task configure/build cho cả **Debug** và **Release**; build task tự
+chạy configure tương ứng trước. `Ctrl+Shift+B` mặc định build Debug;
+**Terminal → Run Task → firmware: build Release** build Release mà không nạp board.
+Task in lỗi compiler ra terminal; không phụ thuộc problem matcher `$gcc` của
+extension khác.
+
+Khi mở trực tiếp `firmware/drone`, project root cũng là workspace root nên
+extension nhận ngữ cảnh project và `.vscode` tại đó. Khi mở gốc repo, VS Code
+không tự nạp `.vscode` của thư mục con; `cmake.sourceDirectory` chỉ định nguồn
+cho CMake, không thay thế toàn bộ ngữ cảnh project của extension ST.
+Nếu cần làm việc cùng nhiều thư mục, có thể thêm `firmware/drone` thành một
+workspace folder riêng trong workspace nhiều root để dùng cấu hình của project.
+
+Nếu mở trực tiếp `firmware/drone`, chọn configure/build preset **Debug** trong
+CMake Tools rồi configure/build. Cấu hình launch và task ở gốc repo không tự
+được nạp trong cửa sổ này. Để debug, tạo cấu hình ST-LINK bằng extension ST tại
+`.vscode/launch.json` của project rồi nhấn **F5**; cấu hình do ST tạo dùng bước
+build và đường dẫn binary theo project/preset đang chọn.
+Muốn build Release, chọn cả configure/build preset **Release** rồi chạy Build;
+chọn lại Debug trước phiên debug cần thông tin symbol đầy đủ.
 
 <details>
 <summary>Khi debug hoặc điều hướng mã gặp lỗi</summary>

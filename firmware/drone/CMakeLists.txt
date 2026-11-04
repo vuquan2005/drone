@@ -41,11 +41,24 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library
 )
 
 # Add user sources to executable when needed:
-# target_sources(${CMAKE_PROJECT_NAME} PRIVATE ...)
+target_sources(
+    ${CMAKE_PROJECT_NAME}
+    PRIVATE Drivers/BMI270/bmi2.c
+            Drivers/BMI270/bmi270.c
+            BSP/Src/bsp_bmi270.c
+            BSP/Src/bsp_board.c
+            BSP/Src/bsp_time.c
+            BSP/Src/bsp_receiver.c
+            App/Src/app.c
+            App/Src/app_imu.c
+            App/Src/app_receiver.c
+            App/Src/crsf.c)
 
 # Add include paths
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined include paths
-)
+target_include_directories(
+    ${CMAKE_PROJECT_NAME}
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BMI270 ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc)
 
 # Add user project symbols (macros) when needed:
 # target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ...)

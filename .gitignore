@@ -119,3 +119,9 @@ fp-info-cache
 /experiments/raw/*
 !/experiments/processed/.gitkeep
 !/experiments/raw/.gitkeep
+
+# KiCad manufacturing and rendered outputs (keep editable design sources)
+/hardware/kicad/**/gerber/
+/hardware/kicad/**/exports/*
+!/hardware/kicad/exports/Drone_Direct_Wire_A3.pdf
+!/hardware/kicad/exports/Drone_Direct_Wire_A3.png

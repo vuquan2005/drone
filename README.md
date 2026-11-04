@@ -14,3 +14,5 @@ drone/
 ```
 
 Các thư mục đang trống có thể chưa xuất hiện sau khi clone. Xem hướng dẫn tại [firmware](firmware/README.md), [báo cáo](report/README.md), [tài liệu](docs/README.md) và [công cụ](tools/README.md).
+
+Mở [project KiCad](hardware/kicad/Drone_Direct_Wire.kicad_pro) để chỉnh sửa sơ đồ nối dây quadrotor. Thư viện symbol nằm tại `hardware/kicad/symbols/`; xem [quy ước phần cứng](hardware/AGENTS.md) khi chỉnh sửa.

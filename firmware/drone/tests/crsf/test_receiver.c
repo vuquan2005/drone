@@ -13,6 +13,8 @@ static uint32_t tick;
 static uint32_t mask;
 static HAL_StatusTypeDef next_result;
 static unsigned aborts;
+// TODO: Add a frame with distinct channel values through the full receiver
+// path; reversing App channel order still passes with all channels at 992.
 static const uint8_t frame[] = {0xc8, 0x18, 0x16, 0xe0, 0x03, 0x1f, 0xf8,
                                 0xc0, 0x07, 0x3e, 0xf0, 0x81, 0x0f, 0x7c,
                                 0xe0, 0x03, 0x1f, 0xf8, 0xc0, 0x07, 0x3e,
@@ -94,6 +96,8 @@ int main(void) {
     send_frame();
     assert(app_receiver_get_sample(&sample) && sample.connected);
     // DMA events with a pending UART error must not publish data.
+    // TODO: Send a complete valid frame under the pending error and poll before
+    // ErrorCallback; this single byte does not expose a missing RX error guard.
     huart1.ErrorCode = 8;
     send(0xc8);
     HAL_UARTEx_RxEventCallback(&huart1, rx_position);
@@ -118,6 +122,8 @@ int main(void) {
     assert(aborts == previous_aborts);
     app_receiver_init();
     assert(app_receiver_get_sample(&sample) && !sample.connected);
+    // TODO: Assert IRQ exclusion during shared queue access, not just
+    // restoration of PRIMASK; deleting __disable_irq() currently passes.
     mask = 1;
     app_receiver_poll();
     assert(mask == 1);

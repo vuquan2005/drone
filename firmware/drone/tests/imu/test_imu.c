@@ -164,6 +164,8 @@ static void test_real_driver_init_and_samples(void) {
     assert(app_imu_init(&imu, &config) == BSP_IMU_OK);
     assert(imu.sensor.initialized && !selected);
     assert(imu.sensor.driver_error == BMI2_OK);
+    // TODO: Assert the startup delay occurs before the first SPI transaction;
+    // Bosch delays alone can satisfy this cumulative lower bound.
     assert(delayed_us >= 2000U);
     assert(uploaded_bytes == imu.sensor.device.config_size);
     assert(memcmp(uploaded_config, imu.sensor.device.config_file_ptr,
@@ -172,6 +174,8 @@ static void test_real_driver_init_and_samples(void) {
     assert((registers[BMI2_ACC_CONF_ADDR + 1U] & 3U) == BMI2_ACC_RANGE_16G);
     assert((registers[BMI2_GYR_CONF_ADDR] & 0xfU) == BMI2_GYR_ODR_400HZ);
     assert((registers[BMI2_GYR_CONF_ADDR + 1U] & 7U) == BMI2_GYR_RANGE_2000);
+    // TODO: Check bandwidth and performance bits too; wrong accel filtering
+    // currently passes despite the ODR/range checks.
     assert((registers[BMI2_PWR_CTRL_ADDR] & 6U) == 6U);
     assert((registers[BMI2_PWR_CONF_ADDR] & 1U) == 0U);
 
@@ -197,6 +201,7 @@ static void test_real_driver_init_and_samples(void) {
     assert(fabsf(imu.sample.accel_mps2[2] + 156.9064f) < 0.0001f);
     assert(fabsf(imu.sample.gyro_radps[0] - 17.4532925f) < 0.0001f);
     assert(fabsf(imu.sample.gyro_radps[1] + 17.4532925f) < 0.0001f);
+    // TODO: Use an expected value with tolerance; doubling Z still passes.
     assert(imu.sample.gyro_radps[2] > 34.9f);
     assert(imu.sample.sensor_time_ticks == 0x123456U);
     assert(registers[BMI2_STATUS_ADDR] == 0U);
@@ -207,6 +212,8 @@ static void test_real_driver_init_and_samples(void) {
     assert(!imu.sample_valid && imu.sample_count == 1U);
     assert(memcmp(&previous, &imu.sample, sizeof(previous)) == 0);
     assert(imu.read_error_count == 0U);
+    // TODO: Inject a failure in the data burst after a successful status read;
+    // this global flag only exercises failure of the first status read.
     fail_read = true;
     assert(app_imu_poll(&imu) == BSP_IMU_DRIVER_ERROR);
     assert(!selected && !imu.sample_valid && imu.read_error_count == 1U);
@@ -224,6 +231,8 @@ static void test_real_driver_init_and_samples(void) {
 }
 
 static void test_init_failures(void) {
+    // TODO: Inject errors at later init transactions, especially sensor config
+    // writes; ignoring their return code currently passes these early failures.
     app_imu_t imu;
     reset_fixture();
     registers[BMI2_CHIP_ID_ADDR] = 0U;

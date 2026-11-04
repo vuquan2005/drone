@@ -18,6 +18,9 @@ int main(void) {
     assert(decoder.valid && decoder.last_frame_ms == 10);
     for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; i++)
         assert(decoder.channels[i] == 992);
+    // TODO: Snapshot and assert channels/valid as well as freshness after
+    // corrupt frames; modifying a stored channel during resynchronization still
+    // passes.
     for (unsigned i = 0; i < sizeof(frame); i++) {
         assert(!crsf_feed(&decoder, i == 4 ? frame[i] ^ 1 : frame[i], 11));
     }
@@ -57,6 +60,8 @@ int main(void) {
         crsf_feed(&decoder, frame[i], 50);
     assert(decoder.valid && decoder.length == 0);
     // Reject slow trickles even though individual inter-byte gaps are small.
+    // TODO: Check complete frames spanning exactly 3 ms (accepted) and 4 ms
+    // (rejected); changing the timeout comparison from > to >= still passes.
     crsf_init(&decoder);
     for (unsigned i = 0; i < sizeof(frame); i++)
         assert(!crsf_feed(&decoder, frame[i], i));
@@ -88,6 +93,8 @@ int main(void) {
         crsf_feed(&decoder, frame[i], 4000);
     assert(decoder.last_frame_ms == 4000);
     // CRC-valid non-RC and undersized RC frames never renew RC freshness.
+    // TODO: Add a CRC-valid oversized RC frame; accepting lengths >= 24 instead
+    // of exactly 24 currently passes. Assert stored channels remain unchanged.
     const uint8_t ignored[] = {0xc8, 2, 0, 0, 0xc8, 3, 0x16, 0, 138};
     uint32_t last_rc = decoder.last_frame_ms;
     for (unsigned i = 0; i < sizeof(ignored); i++)

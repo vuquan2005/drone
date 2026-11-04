@@ -8,7 +8,7 @@
 #include <string.h>
 
 SPI_HandleTypeDef hspi1;
-GPIO_TypeDef mock_gpioa;
+GPIO_TypeDef mock_gpiod;
 static bool time_initialized;
 static uint8_t registers[128];
 static bool selected;
@@ -34,8 +34,8 @@ static void fake_delay(uint32_t period) {
 }
 
 static const bsp_bmi270_config_t config = {.spi = &hspi1,
-                                           .cs_port = &mock_gpioa,
-                                           .cs_pin = 1U << 4,
+                                           .cs_port = &mock_gpiod,
+                                           .cs_pin = 1U << 7,
                                            .timeout_ms = 100U,
                                            .delay_us = fake_delay};
 
@@ -52,7 +52,7 @@ static void reset_fixture(void) {
 }
 
 void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state) {
-    assert(port == &mock_gpioa && pin == config.cs_pin);
+    assert(port == &mock_gpiod && pin == config.cs_pin);
     if (state == GPIO_PIN_RESET) {
         assert(!selected);
         selected = true;

@@ -10,7 +10,7 @@
 /**
  * @brief Get the BMI270 bus and pin mapping for this board.
  * @pre CubeMX clock, GPIO and SPI initialization has completed.
- * @return Static board-owned configuration for SPI1 and IMU_CS (PA4).
+ * @return Static board-owned configuration for SPI1 and IMU_CS (PD7).
  * @note Call from the foreground. Enables the DWT delay provider before
  * returning. Does not initialize SPI/GPIO or probe the sensor.
  */

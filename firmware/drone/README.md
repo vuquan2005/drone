@@ -1,6 +1,6 @@
 # Firmware drone
 
-Ứng dụng hiện khởi tạo và poll BMI270 qua SPI1/CS PA4, đổi mẫu đo sang SI.
+Ứng dụng hiện khởi tạo và poll BMI270 qua SPI1/CS PD7, đổi mẫu đo sang SI.
 Đã nhận 16 kênh RC qua CRSF; chưa có estimator, vòng điều khiển, motor output
 hay arm/failsafe.
 Xem [cấu hình chân, build và debug](../README.md) để bắt đầu.

@@ -28,6 +28,6 @@ Lớp `BSP/Src/bsp_bmi270.c` đã cung cấp callback SPI dùng STM32 HAL,
 khởi tạo và cấu hình cảm biến. `App/Src/app_imu.c` đọc mẫu và đổi đơn vị SI.
 `main.c` đã gọi App trong các vùng `USER CODE`.
 
-BSP đã gắn SPI1 và CS PA4 tại `BSP/Src/bsp_board.c`.
+BSP đã gắn SPI1 và CS PD7 tại `BSP/Src/bsp_board.c`.
 Xem [kiểm tra IMU](../../README.md#kiểm-tra-imu) để theo dõi mẫu và trạng thái lỗi;
 IMU chưa được kiểm chứng trên board.

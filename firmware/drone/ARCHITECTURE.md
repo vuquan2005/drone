@@ -13,7 +13,7 @@ xác nhận các module dự kiến đã được cài đặt hoặc kiểm ch�
 | `Core/`                                                              | HAL, clock, peripheral và vector ngắt do CubeMX quản lý               | Có; khởi tạo GPIO, SPI1, USART1 và TIM4         |
 | `App/app.c`                                                          | Sở hữu trạng thái ứng dụng và điều phối module                        | Có `app_init()` và `app_process()`              |
 | `App/app_imu`                                                        | Poll IMU, đổi dữ liệu thô sang SI, ghi trạng thái đọc                 | Có                                              |
-| `BSP/`                                                               | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến             | Có; SPI1, CS PA4 và delay DWT đã gắn            |
+| `BSP/`                                                               | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến             | Có; SPI1, CS PD7 và delay DWT đã gắn            |
 | `Drivers/`                                                           | Bosch Sensor API, STM32 HAL và CMSIS                                  | Có                                              |
 | `App/app_receiver`, `App/crsf`, `BSP/bsp_receiver`                   | Nhận UART trong ISR, giải mã CRSF và kiểm tra tuổi khung ở foreground | Có; khung RC `0x16`, chưa kiểm chứng trên board |
 | Estimator, controller, allocator, motor output, quản lý arm/failsafe | Chuỗi điều khiển dự kiến bên dưới                                     | Chưa triển khai                                 |
@@ -144,7 +144,7 @@ là hai đại lượng khác nhau; chọn gain và tần số theo mô hình v�
 
 Thứ tự hoàn thiện:
 
-1. Đối chiếu wiring với SPI1/CS PA4 đã gắn trong BSP; xác nhận IMU và delay trên board.
+1. Đối chiếu wiring với SPI1/CS PD7 đã gắn trong BSP; xác nhận IMU và delay trên board.
 2. Hoàn thiện timestamp, đổi trục, hiệu chuẩn, lọc và kiểm tra quá hạn.
 3. Xây dựng quản lý trạng thái, RC và output; kiểm tra hành vi lỗi trước khi
    cho phép xuất lệnh điều khiển.

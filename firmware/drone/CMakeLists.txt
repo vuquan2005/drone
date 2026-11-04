@@ -48,8 +48,11 @@ target_sources(
             BSP/Src/bsp_bmi270.c
             BSP/Src/bsp_board.c
             BSP/Src/bsp_time.c
+            BSP/Src/bsp_receiver.c
             App/Src/app.c
-            App/Src/app_imu.c)
+            App/Src/app_imu.c
+            App/Src/app_receiver.c
+            App/Src/crsf.c)
 
 # Add include paths
 target_include_directories(

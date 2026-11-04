@@ -1,7 +1,7 @@
 # STM32 firmware
 
 Firmware cho STM32F103VET6 nằm trong [`drone/`](drone/README.md).
-Hiện đã có khởi tạo ngoại vi và đọc BMI270; chưa có CRSF, điều khiển motor,
+Hiện đã có khởi tạo ngoại vi, đọc BMI270 và nhận CRSF; chưa có điều khiển motor,
 arm/failsafe hay telemetry. IMU chưa được kiểm chứng trên board.
 
 ## Cấu hình board
@@ -18,7 +18,7 @@ arm/failsafe hay telemetry. IMU chưa được kiểm chứng trên board.
 | ELRS     | TX receiver → RX MCU / RX receiver ← TX MCU | PA10 / PA9            | USART1, 420000 baud, 8N1, không flow control           |
 | ESC 1–4  | PWM                                         | PB6 / PB7 / PB8 / PB9 | TIM4_CH1–4, 50 Hz, tick 1 µs, CCR ban đầu 1000 µs      |
 
-UART và PWM mới được cấu hình, chưa bắt đầu nhận/phát. Output 1–4 chưa gán
+USART1 đã nhận CRSF bằng ngắt; TIM4 chưa bắt đầu phát PWM. Output 1–4 chưa gán
 vị trí motor. Xác nhận chân, nguồn và mức tín hiệu theo board/module, nối chung
 GND; tháo cánh trước khi thử motor. Dải xung và tốc độ PWM cần phù hợp ESC.
 

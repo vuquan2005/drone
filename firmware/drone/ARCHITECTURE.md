@@ -8,14 +8,15 @@ Giữ cấu trúc `Core → App → BSP → Drivers` của khung tích hợp IMU
 Tài liệu này ghi quyết định tổ chức mã và hướng triển khai tiếp theo, không
 xác nhận các module dự kiến đã được cài đặt hoặc kiểm chứng trên board.
 
-| Thành phần                                                               | Trách nhiệm                                               | Trạng thái                              |
-| ------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------- |
-| `Core/`                                                                  | HAL, clock, peripheral và vector ngắt do CubeMX quản lý   | Có; khởi tạo GPIO, SPI1, USART1 và TIM4 |
-| `App/app.c`                                                              | Sở hữu trạng thái ứng dụng và điều phối module            | Có `app_init()` và `app_process()`      |
-| `App/app_imu`                                                            | Poll IMU, đổi dữ liệu thô sang SI, ghi trạng thái đọc     | Có                                      |
-| `BSP/`                                                                   | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến | Có; SPI1, CS PA4 và delay DWT đã gắn    |
-| `Drivers/`                                                               | Bosch Sensor API, STM32 HAL và CMSIS                      | Có                                      |
-| RC, estimator, controller, allocator, motor output, quản lý arm/failsafe | Chuỗi điều khiển dự kiến bên dưới                         | Chưa triển khai                         |
+| Thành phần                                                           | Trách nhiệm                                                           | Trạng thái                                      |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------------- |
+| `Core/`                                                              | HAL, clock, peripheral và vector ngắt do CubeMX quản lý               | Có; khởi tạo GPIO, SPI1, USART1 và TIM4         |
+| `App/app.c`                                                          | Sở hữu trạng thái ứng dụng và điều phối module                        | Có `app_init()` và `app_process()`              |
+| `App/app_imu`                                                        | Poll IMU, đổi dữ liệu thô sang SI, ghi trạng thái đọc                 | Có                                              |
+| `BSP/`                                                               | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến             | Có; SPI1, CS PA4 và delay DWT đã gắn            |
+| `Drivers/`                                                           | Bosch Sensor API, STM32 HAL và CMSIS                                  | Có                                              |
+| `App/app_receiver`, `App/crsf`, `BSP/bsp_receiver`                   | Nhận UART trong ISR, giải mã CRSF và kiểm tra tuổi khung ở foreground | Có; khung RC `0x16`, chưa kiểm chứng trên board |
+| Estimator, controller, allocator, motor output, quản lý arm/failsafe | Chuỗi điều khiển dự kiến bên dưới                                     | Chưa triển khai                                 |
 
 ## Điểm gọi ứng dụng và ranh giới module
 

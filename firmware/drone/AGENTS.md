@@ -1,7 +1,7 @@
 # Firmware drone
 
 Project STM32F103VET6 này hiện có khung ứng dụng và đọc BMI270;
-RC, điều khiển motor và arm/failsafe chưa triển khai.
+nhận RC qua CRSF; điều khiển motor và arm/failsafe chưa triển khai.
 
 ## Kiến trúc cơ bản
 

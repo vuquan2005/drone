@@ -1,7 +1,8 @@
 # Firmware drone
 
 Ứng dụng hiện khởi tạo và poll BMI270 qua SPI1/CS PA4, đổi mẫu đo sang SI.
-Chưa có RC, estimator, vòng điều khiển, motor output hay arm/failsafe.
+Đã nhận 16 kênh RC qua CRSF; chưa có estimator, vòng điều khiển, motor output
+hay arm/failsafe.
 Xem [cấu hình chân, build và debug](../README.md) để bắt đầu.
 
 ## Mã nguồn
@@ -9,8 +10,8 @@ Xem [cấu hình chân, build và debug](../README.md) để bắt đầu.
 | Thư mục / tệp                  | Nội dung                                         |
 | ------------------------------ | ------------------------------------------------ |
 | `Core/`, `drone.ioc`, `cmake/` | Khởi tạo và cấu hình do CubeMX quản lý           |
-| `App/`                         | Điều phối ứng dụng, polling IMU và đổi đơn vị SI |
-| `BSP/`                         | Ánh xạ board, callback SPI/CS và delay DWT       |
+| `App/`                         | Điều phối ứng dụng, polling IMU và CRSF          |
+| `BSP/`                         | Ánh xạ board, SPI/CS, UART receiver và delay DWT |
 | `Drivers/`                     | Bosch Sensor API, STM32 HAL và CMSIS             |
 | `tests/imu/`                   | Kiểm thử trên máy tính với HAL mô phỏng          |
 | `CMakeLists.txt`               | Source/include cho mã tự viết                    |
@@ -67,3 +68,49 @@ ctest --test-dir /tmp/drone-imu-tests --output-on-failure
 Test dùng driver Bosch thật và HAL mô phỏng để kiểm tra gắn board, khởi tạo,
 SPI/CS/byte giả, ODR/range, đổi đơn vị, trạng thái mẫu và lỗi giao tiếp.
 Kết quả này không xác nhận nối dây hoặc định thời trên board.
+
+### Receiver ExpressLRS
+
+USART1 nhận CRSF ở 420000 baud, 8N1: nối TX của receiver vào PA10 (RX)
+STM32 và nối chung GND; cấp nguồn receiver theo thông số của thiết bị. Chọn
+serial protocol CRSF trên receiver. PA9 là TX của STM32 nhưng telemetry chưa
+được triển khai.
+
+`app_receiver_get_sample()` trả về 16 kênh CRSF thô và trạng thái `connected`;
+trạng thái này chỉ đúng khi đã nhận frame RC có CRC hợp lệ trong 100 ms gần
+nhất. Thứ tự kênh và ý nghĩa arm/throttle phụ thuộc cấu hình tay điều khiển.
+Đây chưa phải logic arm hoặc failsafe điều khiển động cơ; hệ thống điều khiển
+phải tự xử lý mất tín hiệu và kiểm tra các điều kiện an toàn trước khi chạy.
+
+Ngắt USART1 chỉ đưa byte và HAL tick lúc nhận vào bộ đệm BSP (255 byte hữu
+ích). `app_receiver_poll()` giải mã trong foreground; gọi thường xuyên, mục
+tiêu không quá 2 ms giữa các lần poll. Bộ đệm đầy hoặc lỗi UART sẽ bỏ dữ liệu
+đang chờ và vô hiệu trạng thái kết nối cho đến khi nhận khung RC mới. SPI IMU
+có thể chặn lâu khi lỗi; bộ đệm hiện tại không bảo đảm giữ được RC trong
+khoảng chặn đó. Cần đo lịch chạy và độ trễ trên board.
+
+Parser chỉ hỗ trợ khung RC `0x16` đủ 16 kênh, kiểm tra độ dài và CRC, giới
+hạn tổng thời gian ghép khung là 3 ms theo HAL tick lúc nhận. Khung khác được
+kiểm tra và bỏ qua; không hỗ trợ subset `0x17`, link statistics hoặc telemetry.
+Giá trị kênh cũ được giữ khi `connected = false`; trạng thái này phản ánh tuổi
+khung RC, không xác nhận chất lượng liên kết RF.
+
+Kiểm thử CRSF và tích hợp UART với HAL mô phỏng:
+
+```sh
+cmake -S firmware/drone/tests/crsf -B /tmp/drone-crsf-tests -G Ninja
+cmake --build /tmp/drone-crsf-tests
+ctest --test-dir /tmp/drone-crsf-tests --output-on-failure
+```
+
+Các ca kiểm tra gồm CRC sai, độ dài sai, khung thiếu, đồng bộ lại trong dữ
+liệu lỗi, timeout toàn khung, tràn timestamp, tràn bộ đệm, lỗi UART và phục
+hồi sau khi yêu cầu nhận thất bại. Test chạy mã parser, BSP và App thật;
+HAL được mô phỏng nên chưa xác nhận timing hoặc phần cứng.
+
+Thiết kế được đối chiếu với bản sao cục bộ của
+[Betaflight CRSF](../../docs/external/repos/betaflight/src/main/rx/crsf.c)
+và [ArduPilot CRSF](../../docs/external/repos/ardupilot/libraries/AP_RCProtocol/AP_RCProtocol_CRSF.cpp):
+giới hạn độ dài và thời gian toàn khung, kiểm tra CRC, phục hồi đồng bộ, chỉ
+cập nhật thời điểm RC khi nhận đúng khung kênh. Mã triển khai riêng cho project;
+không nhập nguyên module từ hai firmware này.

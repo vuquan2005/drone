@@ -1,8 +1,9 @@
 # STM32 firmware
 
 Firmware cho STM32F103VET6 nằm trong [`drone/`](drone/README.md).
-Hiện đã có khởi tạo ngoại vi, đọc BMI270 và nhận CRSF; chưa có điều khiển motor,
-arm/failsafe hay telemetry. IMU chưa được kiểm chứng trên board.
+Hiện đã có khởi tạo ngoại vi, đọc BMI270, nhận CRSF và xuất PWM ESC;
+chưa có mixer, điều khiển motor từ RC, arm/failsafe hay telemetry.
+IMU và PWM chưa được kiểm chứng trên board.
 
 ## Cấu hình board
 
@@ -16,9 +17,10 @@ arm/failsafe hay telemetry. IMU chưa được kiểm chứng trên board.
 | BMI270   | SCK / MISO / MOSI                           | PB3 / PB4 / PB5       | SPI1 remap, mode 0, 8-bit, MSB first, software NSS; 2,25 MHz |
 | BMI270   | CSB                                         | PD7 (`IMU_CS`)        | Output push-pull, khởi tạo High                              |
 | ELRS     | TX receiver → RX MCU / RX receiver ← TX MCU | PA10 / PA9            | USART1, 420000 baud, 8N1, không flow control                 |
-| ESC 1–4  | PWM                                         | PB6 / PB7 / PB8 / PB9 | TIM4_CH1–4, 50 Hz, tick 1 µs, CCR ban đầu 1000 µs            |
+| ESC 1–4  | PWM                                         | PB6 / PB7 / PB8 / PB9 | TIM4_CH1–4, 400 Hz, tick 1 µs, CCR ban đầu 1000 µs           |
 
-USART1 đã nhận CRSF bằng DMA circular và ngắt IDLE; TIM4 chưa bắt đầu phát PWM. Output 1–4 chưa gán
+USART1 đã nhận CRSF bằng DMA circular và ngắt IDLE; TIM4 phát PWM 1000 µs
+trên cả bốn kênh sau `app_init()`. Output 1–4 chưa gán
 vị trí motor. Xác nhận chân, nguồn và mức tín hiệu theo board/module, nối chung
 GND; tháo cánh trước khi thử motor. Dải xung và tốc độ PWM cần phù hợp ESC.
 

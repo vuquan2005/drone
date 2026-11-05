@@ -1,20 +1,20 @@
 # Firmware drone
 
 Ứng dụng hiện khởi tạo và poll BMI270 qua SPI1/CS PD7, đổi mẫu đo sang SI.
-Đã nhận 16 kênh RC qua CRSF; chưa có estimator, vòng điều khiển, motor output
-hay arm/failsafe.
+Đã nhận 16 kênh RC qua CRSF và xuất PWM ESC qua TIM4; chưa có estimator,
+vòng điều khiển, mixer hay arm/failsafe.
 Xem [cấu hình chân, build và debug](../README.md) để bắt đầu.
 
 ## Mã nguồn
 
-| Thư mục / tệp                  | Nội dung                                         |
-| ------------------------------ | ------------------------------------------------ |
-| `Core/`, `drone.ioc`, `cmake/` | Khởi tạo và cấu hình do CubeMX quản lý           |
-| `App/`                         | Điều phối ứng dụng, polling IMU và CRSF          |
-| `BSP/`                         | Ánh xạ board, SPI/CS, UART receiver và delay DWT |
-| `Drivers/`                     | Bosch Sensor API, STM32 HAL và CMSIS             |
-| `tests/imu/`                   | Kiểm thử trên máy tính với HAL mô phỏng          |
-| `CMakeLists.txt`               | Source/include cho mã tự viết                    |
+| Thư mục / tệp                  | Nội dung                                              |
+| ------------------------------ | ----------------------------------------------------- |
+| `Core/`, `drone.ioc`, `cmake/` | Khởi tạo và cấu hình do CubeMX quản lý                |
+| `App/`                         | Điều phối ứng dụng, polling IMU và CRSF               |
+| `BSP/`                         | Ánh xạ board, SPI/CS, UART receiver, PWM và delay DWT |
+| `Drivers/`                     | Bosch Sensor API, STM32 HAL và CMSIS                  |
+| `tests/imu/`                   | Kiểm thử trên máy tính với HAL mô phỏng               |
+| `CMakeLists.txt`               | Source/include cho mã tự viết                         |
 
 Luồng gọi: `main` → `app` → `app_imu` → `bsp_bmi270` → Bosch API → callback HAL.
 CubeMX khởi tạo HAL, clock và ngoại vi trước `app_init()`; vòng lặp gọi
@@ -41,6 +41,47 @@ Xem biến `imu` trong `App/Src/app.c` bằng debugger:
 Chỉ cập nhật mẫu khi cả accel và gyro sẵn sàng. Khi chưa có mẫu mới hoặc lỗi,
 dữ liệu cũ được giữ nhưng `sample_valid = false`; lần poll sau tiếp tục đọc.
 Sau lỗi khởi tạo, có thể gọi lại `app_init()` để khởi tạo lại ứng dụng.
+
+## PWM ESC
+
+`bsp_pwm` dùng TIM4 đã được CubeMX cấu hình: clock timer 72 MHz,
+prescaler 71, ARR 2499, tick 1 µs, chu kỳ 2,5 ms (400 Hz), PWM1 active high.
+Kênh 1–4 tương ứng PB6–PB9; chưa gán vị trí motor trên khung drone.
+
+`app_init()` khởi động cả bốn kênh ở 1000 µs trước khi khởi tạo IMU/receiver.
+Xem `pwm_ready` trong `App/Src/app.c` bằng debugger để biết kết quả. Nếu một
+kênh khởi động lỗi, BSP tắt cả bốn đầu ra và từ chối lệnh ghi; gọi lại
+`bsp_pwm_init()` để thử lại. Hiện `app_process()` giữ nguyên xung tối thiểu,
+chưa nối throttle RC với PWM.
+
+API tại `BSP/Inc/bsp_pwm.h`, chỉ gọi trong foreground sau khởi tạo ngoại vi:
+
+```c
+/* Ví dụ gọi sau khi bsp_pwm_init() thành công. */
+bool ok = bsp_pwm_set_pulse_us(1U, 1200U); /* Kênh 1 / PB6. */
+const uint16_t pulse_us[4] = {1000U, 1000U, 1000U, 1000U};
+ok = bsp_pwm_set_all_us(pulse_us);
+bsp_pwm_stop();
+```
+
+Lệnh ghi chỉ chấp nhận 1000–2000 µs; sai kênh, sai dải hoặc NULL trả về
+`false` và giữ nguyên các thanh ghi compare. Preload áp dụng xung mới tại
+update của timer; lệnh ghi cả bốn kênh ngăn update trong lúc ghi để tránh
+trộn hai bộ giá trị trong một frame. Update trùng lúc ghi có thể bị bỏ qua,
+khi đó giá trị mới áp dụng ở frame kế tiếp. `bsp_pwm_stop()` ngừng phát xung;
+gọi init lại luôn bắt đầu từ 1000 µs. Tắt tín hiệu khác với gửi ga tối thiểu;
+phản ứng khi mất tín hiệu phụ thuộc ESC. Module chưa có arm hoặc failsafe.
+
+Kiểm tra dải xung/tần số theo ESC, nối chung GND và tháo cánh trước khi thử.
+Cần đo PB6–PB9 trên board để xác nhận chu kỳ, độ rộng và hành vi start/stop.
+Kiểm thử host dùng macro thanh ghi HAL thật, thanh ghi TIM giả trong RAM và
+mock hàm HAL start/stop; không xác nhận timing phần cứng:
+
+```sh
+cmake -S firmware/drone/tests/pwm -B /tmp/drone-pwm-tests -G Ninja
+cmake --build /tmp/drone-pwm-tests
+ctest --test-dir /tmp/drone-pwm-tests --output-on-failure
+```
 
 ## Khi đổi wiring
 

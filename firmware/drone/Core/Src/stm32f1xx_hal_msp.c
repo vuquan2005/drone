@@ -22,6 +22,7 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
+extern DMA_HandleTypeDef hdma_usart1_rx;
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */
@@ -52,8 +53,6 @@
 /* USER CODE BEGIN ExternalFunctions */
 
 /* USER CODE END ExternalFunctions */
-
-DMA_HandleTypeDef hdma_usart1_rx;
 
 /* USER CODE BEGIN 0 */
 
@@ -263,7 +262,8 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-    __HAL_RCC_DMA1_CLK_ENABLE();
+    /* USART1 DMA Init */
+    /* USART1_RX Init */
     hdma_usart1_rx.Instance = DMA1_Channel5;
     hdma_usart1_rx.Init.Direction = DMA_PERIPH_TO_MEMORY;
     hdma_usart1_rx.Init.PeriphInc = DMA_PINC_DISABLE;
@@ -276,8 +276,12 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     {
       Error_Handler();
     }
-    __HAL_LINKDMA(huart, hdmarx, hdma_usart1_rx);
 
+    __HAL_LINKDMA(huart,hdmarx,hdma_usart1_rx);
+
+    /* USART1 interrupt Init */
+    HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
+    HAL_NVIC_EnableIRQ(USART1_IRQn);
     /* USER CODE BEGIN USART1_MspInit 1 */
 
     /* USER CODE END USART1_MspInit 1 */
@@ -308,8 +312,10 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
     */
     HAL_GPIO_DeInit(GPIOA, GPIO_PIN_9|GPIO_PIN_10);
 
+    /* USART1 DMA DeInit */
     HAL_DMA_DeInit(huart->hdmarx);
-    HAL_NVIC_DisableIRQ(DMA1_Channel5_IRQn);
+
+    /* USART1 interrupt DeInit */
     HAL_NVIC_DisableIRQ(USART1_IRQn);
     /* USER CODE BEGIN USART1_MspDeInit 1 */
 

@@ -49,6 +49,7 @@ target_sources(
             BSP/Src/bsp_board.c
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
+            BSP/Src/bsp_pwm.c
             App/Src/app.c
             App/Src/app_imu.c
             App/Src/app_receiver.c

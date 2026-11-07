@@ -23,6 +23,12 @@ Giữ `app.c` làm nơi điều phối; thuật toán tính toán nhận mẫu, 
 `dt` qua API, không phụ thuộc HAL/Bosch. BSP không gọi ngược App hoặc chứa
 thuật toán điều khiển bay.
 
+## CubeMX và file `.ioc`
+
+- Giữ `drone.ioc` đồng bộ với mã khởi tạo; ưu tiên đổi cấu hình qua CubeMX.
+  Khi sửa `.ioc`, chạy STM32CubeMX
+  sinh lại mã khởi tạo; nếu không chạy được, báo người dùng thực hiện.
+
 ## Coding style
 
 - Format code: C dùng 4 dấu cách, không tab; để formatter quyết định cách xuống dòng và đặt ngoặc.

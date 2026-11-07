@@ -13,7 +13,7 @@ drone/
 └── tools/         # Công cụ hỗ trợ
 ```
 
-Các thư mục đang trống có thể chưa xuất hiện sau khi clone. Xem hướng dẫn tại [firmware](firmware/README.md), [báo cáo](report/README.md), [tài liệu](docs/README.md) và [công cụ](tools/README.md).
+Các thư mục đang trống có thể chưa xuất hiện sau khi clone. Xem hướng dẫn tại [firmware](firmware/README.md), [báo cáo](report/AGENTS.md), [tài liệu](docs/README.md) và [công cụ](tools/README.md).
 
 Xem [quy trình làm việc nhóm](CONTRIBUTING.md) để nhận nhiệm vụ, mở Pull Request và review.
 

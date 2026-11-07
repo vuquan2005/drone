@@ -1,4 +1,13 @@
 % !TEX root = ../main.tex
 \chapter*{MỞ ĐẦU}
 \addcontentsline{toc}{chapter}{MỞ ĐẦU}
-\placeholder{Preface}
+
+Thiết bị bay không người lái được ứng dụng trong thu thập hình ảnh, đo đạc và kiểm tra những khu vực khó tiếp cận. Đối với quadrotor, khả năng thực hiện các nhiệm vụ này phụ thuộc vào việc duy trì tư thế ổn định. Rung động, nhiễu cảm biến và sai lệch đặc tính động cơ ảnh hưởng đến đáp ứng của hệ thống, đặt ra yêu cầu phối hợp giữa xử lý tín hiệu, thuật toán điều khiển và phần cứng nhúng.
+
+Xuất phát từ yêu cầu trên, nhóm lựa chọn đề tài \textbf{``Nghiên cứu, thiết kế bộ điều khiển cân bằng quadrotor''}. Mục tiêu là nghiên cứu nguyên lý hoạt động, xây dựng mô hình động lực học và thiết kế bộ điều khiển ổn định tư thế, tập trung vào góc lăn (roll) và góc chúc ngóc (pitch) trong lân cận tư thế nằm ngang, với giả thiết góc nghiêng nhỏ. Bộ điều khiển hướng đến duy trì các góc tại giá trị đặt và hiệu chỉnh sai lệch để khôi phục tư thế mong muốn.
+
+Nội dung nghiên cứu gồm mô hình hóa chuyển động quay, xử lý dữ liệu cảm biến quán tính và ước lượng tư thế. Cấu trúc điều khiển xếp tầng được khảo sát với vòng góc bên ngoài và vòng vận tốc góc bên trong, trong đó PID là phương án tập trung nghiên cứu cho vòng trong. Thuật toán được triển khai trên vi điều khiển STM32; tác động điều khiển được phân bổ thành lệnh cho bốn động cơ nhằm tạo mômen hiệu chỉnh roll và pitch.
+
+Điều khiển góc hướng (yaw) được xem xét như nội dung bổ sung theo cấu hình cảm biến và yêu cầu thiết kế. Các chức năng giữ độ cao, giữ vị trí và bay tự động được xác định là hướng phát triển tiếp theo. Phạm vi đánh giá tập trung vào khả năng ổn định tư thế trong miền góc nghiêng nhỏ.
+
+Phương pháp nghiên cứu kết hợp khảo sát tài liệu, phân tích và mô hình hóa toán học với thực nghiệm trên mô hình vật lý. Dữ liệu góc đặt, góc ước lượng, vận tốc góc và lệnh động cơ được thu nhận để hiệu chỉnh bộ điều khiển và đánh giá sai lệch góc, mức dao động, độ quá điều chỉnh, thời gian xác lập cùng khả năng khôi phục tư thế sau tác động nhiễu. Kết quả dự kiến là phương án điều khiển phù hợp với phần cứng sử dụng và dữ liệu thực nghiệm phục vụ đánh giá hệ thống.

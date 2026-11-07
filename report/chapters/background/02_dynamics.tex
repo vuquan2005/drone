@@ -1,0 +1,112 @@
+% !TEX root = ../../main.tex
+\section{Mô hình động lực học của quadrotor}
+\label{sec:background-dynamics}
+
+Mô hình động lực học mô tả quan hệ giữa lực đẩy, mômen tác dụng và chuyển động của quadrotor. Trong đề tài, mô hình được xây dựng theo phương pháp Newton--Euler để làm cơ sở phân tích và thiết kế bộ điều khiển tư thế. Cách tiếp cận này phân biệt chuyển động tịnh tiến của trọng tâm với chuyển động quay của thân máy bay, đồng thời thể hiện quan hệ giữa hai chuyển động thông qua hướng lực đẩy~\cite{bouabdallah2004design,chovancova2014mathematical}.
+
+\subsection{Hệ tọa độ và giả thiết mô hình hóa}
+
+Hệ tọa độ quán tính cục bộ $E$ được chọn theo quy ước Bắc--Đông--Xuống (NED), với các trục $x_N$, $y_E$, $z_D$. Hệ tọa độ thân $B$ có gốc tại trọng tâm, theo quy ước Trước--Phải--Xuống (FRD): $x_B$ hướng về mũi, $y_B$ hướng sang phải và $z_B$ hướng xuống dưới thân. Chiều quay dương tuân theo quy tắc bàn tay phải. Các góc Euler $\phi$, $\theta$, $\psi$ lần lượt biểu diễn roll, pitch và yaw theo thứ tự quay $Z$--$Y$--$X$.
+
+\begin{samepage}
+Ma trận $R$ biến đổi tọa độ vectơ từ $B$ sang $E$. Với $c_\alpha=\cos\alpha$ và $s_\alpha=\sin\alpha$, ta có
+\begin{equation}
+    \begin{aligned}
+        R&=R_z(\psi)R_y(\theta)R_x(\phi)\\
+         &=\begin{bmatrix}
+             c_\psi c_\theta & c_\psi s_\theta s_\phi-s_\psi c_\phi & c_\psi s_\theta c_\phi+s_\psi s_\phi\\
+             s_\psi c_\theta & s_\psi s_\theta s_\phi+c_\psi c_\phi & s_\psi s_\theta c_\phi-c_\psi s_\phi\\
+             -s_\theta      & c_\theta s_\phi                       & c_\theta c_\phi
+         \end{bmatrix}.
+    \end{aligned}
+    \label{eq:background-rotation-matrix}
+\end{equation}
+\end{samepage}
+
+Thân máy bay được xem là vật rắn có khối lượng $m$ không đổi. Các trục thân được giả thiết trùng với các trục quán tính chính, nên ma trận mômen quán tính có dạng đường chéo. Vectơ vận tốc góc được biểu diễn trong hệ $B$:
+\begin{equation}
+    J=\operatorname{diag}(J_x,J_y,J_z),\qquad
+    \symbf{\omega}=\begin{bmatrix}p&q&r\end{bmatrix}^{\mathsf T}.
+    \label{eq:background-inertia-angular-velocity}
+\end{equation}
+Các đại lượng $J_x$, $J_y$, $J_z$ là mômen quán tính quanh từng trục; $p$, $q$, $r$ là các thành phần vận tốc góc tương ứng. Các mômen quán tính được xác định từ phân bố khối lượng thực tế của mô hình. Giả thiết ma trận đường chéo không yêu cầu $J_x=J_y$: cách bố trí pin, bo mạch và các chi tiết khác có thể làm hai giá trị này khác nhau.
+
+\subsection{Phương trình chuyển động tịnh tiến}
+
+Tổng lực đẩy $T=\sum_{i=1}^{4}f_i$ có độ lớn không âm và hướng theo $-z_B$. Gọi $\symbf{v}_E$ là vận tốc trọng tâm trong hệ $E$, $\symbf{e}_3=[0\;0\;1]^{\mathsf T}$ và $g$ là gia tốc trọng trường. Phương trình động lực học tịnh tiến được viết
+\begin{equation}
+    m\dot{\symbf{v}}_E
+    =mg\symbf{e}_3-TR\symbf{e}_3+\symbf{d}_F,
+    \label{eq:background-translational-dynamics}
+\end{equation}
+trong đó $\symbf{d}_F$ biểu diễn lực ngoài chưa được mô tả riêng, tính trong hệ $E$. Dấu của hai thành phần trọng lực và lực đẩy phù hợp với quy ước trục hướng xuống. Khi thân nghiêng, vectơ $R\symbf{e}_3$ thay đổi, làm xuất hiện thành phần lực đẩy theo phương ngang. Phương trình này giải thích ảnh hưởng của tư thế đến chuyển động tịnh tiến; nội dung thiết kế tiếp theo tập trung vào động lực học quay.
+
+\subsection{Phương trình chuyển động quay}
+
+Gọi $\symbf{\tau}_c=[\tau_x\;\tau_y\;\tau_z]^{\mathsf T}$ là mômen điều khiển do các rôto tạo ra và $\symbf{\tau}_d=[d_x\;d_y\;d_z]^{\mathsf T}$ là mômen nhiễu tổng hợp, cùng biểu diễn trong hệ $B$. Phương trình Euler quanh trọng tâm có dạng
+\begin{equation}
+    J\dot{\symbf{\omega}}
+    +\symbf{\omega}\times(J\symbf{\omega})
+    =\symbf{\tau}_c+\symbf{\tau}_d.
+    \label{eq:background-rotational-dynamics}
+\end{equation}
+Mômen điều khiển được xác định từ lực đẩy, mômen phản lực và vị trí từng rôto theo quy ước tại Mục~\ref{sec:background-allocation}. Những ảnh hưởng như cản quay, mất cân bằng và hiệu ứng con quay của rôto được gộp vào $\symbf{\tau}_d$ trong mô hình phục vụ thiết kế. Việc gộp này thể hiện phần động lực học chưa được tách riêng, không đồng nghĩa các ảnh hưởng đó luôn nhỏ~\cite{bouabdallah2004design,chovancova2014mathematical}.
+
+Khai triển \eqref{eq:background-rotational-dynamics} với ma trận $J$ đường chéo, thu được
+\begin{equation}
+    \begin{aligned}
+        J_x\dot p&=(J_y-J_z)qr+\tau_x+d_x,\\
+        J_y\dot q&=(J_z-J_x)rp+\tau_y+d_y,\\
+        J_z\dot r&=(J_x-J_y)pq+\tau_z+d_z.
+    \end{aligned}
+    \label{eq:background-angular-dynamics-components}
+\end{equation}
+Các tích $qr$, $rp$, $pq$ thể hiện sự ghép giữa những chuyển động quay. Vì vậy, mỗi thành phần gia tốc góc phụ thuộc cả mômen quanh trục đang xét và vận tốc góc quanh các trục còn lại. Với gốc hệ thân tại trọng tâm, trọng lực không trực tiếp tạo mômen trong phương trình quay.
+
+\subsection{Quan hệ giữa vận tốc góc và góc Euler}
+
+Vận tốc góc đo theo các trục thân khác với đạo hàm của các góc Euler. Với thứ tự quay đã chọn, quan hệ động học là~\cite{chovancova2014mathematical}
+\begin{equation}
+    \begin{bmatrix}\dot\phi\\\dot\theta\\\dot\psi\end{bmatrix}
+    =\begin{bmatrix}
+        1&\sin\phi\tan\theta&\cos\phi\tan\theta\\
+        0&\cos\phi&-\sin\phi\\
+        0&\dfrac{\sin\phi}{\cos\theta}&\dfrac{\cos\phi}{\cos\theta}
+    \end{bmatrix}
+    \begin{bmatrix}p\\q\\r\end{bmatrix}.
+    \label{eq:background-euler-rate-mapping}
+\end{equation}
+Quan hệ này xác định tốc độ biến thiên của tư thế từ vận tốc góc thân, đồng thời cho thấy ảnh hưởng của chuyển động yaw đến roll và pitch khi thân nghiêng. Ma trận có điểm kỳ dị tại $\cos\theta=0$. Miền làm việc góc nhỏ của đề tài nằm xa các cấu hình này, nên biểu diễn Euler phù hợp với mục tiêu ổn định tư thế.
+
+\subsection{Mô hình giản lược và hàm truyền roll, pitch}
+
+Để xây dựng mô hình phục vụ điều khiển xếp tầng, xét lân cận trạng thái $\phi=\theta=0$ và $p=q=r=0$. Trong miền góc nhỏ, các hàm lượng giác được xấp xỉ theo thành phần bậc nhất:
+\begin{equation}
+    \sin\phi\approx\phi,\quad \sin\theta\approx\theta,\quad
+    \cos\phi\approx\cos\theta\approx1,\qquad
+    \dot\phi\approx p,\quad\dot\theta\approx q.
+    \label{eq:background-small-angle-kinematics}
+\end{equation}
+Phép giản lược còn giả thiết vận tốc góc đủ nhỏ để bỏ qua các tích ghép trong \eqref{eq:background-angular-dynamics-components} và những thành phần bậc cao của quan hệ động học. Góc nhỏ riêng lẻ không đủ để loại bỏ sự ghép nếu máy bay vẫn quay nhanh. Với các giả thiết trên, mô hình hai kênh là
+\begin{equation}
+    \begin{aligned}
+        J_x\ddot\phi&=\tau_x+d_x,\\
+        J_y\ddot\theta&=\tau_y+d_y.
+    \end{aligned}
+    \label{eq:background-small-angle-dynamics}
+\end{equation}
+Hai kênh roll và pitch có cùng dạng phương trình nhưng có thể khác tham số quán tính. Với cùng mômen tác dụng, trục có mômen quán tính lớn hơn sẽ có gia tốc góc nhỏ hơn. Đặc điểm này được xét khi lựa chọn hệ số điều khiển cho từng trục.
+
+Xét hệ danh định với $d_x=d_y=0$ và điều kiện đầu bằng không. Biến đổi Laplace cho hàm truyền từ mômen điều khiển đến góc:
+\begin{equation}
+    G_\phi(s)=\frac{\Phi(s)}{\mathcal{T}_x(s)}=\frac{1}{J_xs^2},\qquad
+    G_\theta(s)=\frac{\Theta(s)}{\mathcal{T}_y(s)}=\frac{1}{J_ys^2},
+    \label{eq:background-angle-transfer-functions}
+\end{equation}
+trong đó $\Phi(s)$, $\Theta(s)$, $\mathcal{T}_x(s)$, $\mathcal{T}_y(s)$ lần lượt là biến đổi Laplace của các đại lượng tương ứng và $s$ là biến phức. Đối với vận tốc góc, ta có
+\begin{equation}
+    G_p(s)=\frac{P(s)}{\mathcal{T}_x(s)}=\frac{1}{J_xs},\qquad
+    G_q(s)=\frac{Q(s)}{\mathcal{T}_y(s)}=\frac{1}{J_ys}.
+    \label{eq:background-rate-transfer-functions}
+\end{equation}
+Các hàm truyền này mô tả động lực học từ mômen đến chuyển động quay, chưa bao gồm quan hệ từ lệnh điện đến tốc độ động cơ. Chúng làm cơ sở lựa chọn cấu trúc vòng vận tốc góc bên trong và vòng góc bên ngoài tại Mục~\ref{sec:background-control}. Chất lượng điều khiển được đánh giá bằng dữ liệu thực nghiệm trong miền làm việc đã nêu; ảnh hưởng của cơ cấu chấp hành và điều kiện liên kết trên mô hình vật lý được xem xét khi triển khai và hiệu chỉnh hệ thống.

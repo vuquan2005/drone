@@ -6,11 +6,9 @@ labels: ""
 assignees: ""
 ---
 
-## Mục tiêu
+## Mô tả
 
-<!-- Cần đạt được điều gì? Nếu báo lỗi, ghi hiện tượng và cách tái hiện. -->
-
-## Công việc
+## Check list
 
 - [ ] ...
 

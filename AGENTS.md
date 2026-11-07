@@ -4,11 +4,9 @@
 
 ## Cách làm việc
 
-- Chọn cách thực hiện và mức kiểm tra theo quy mô thay đổi; việc nhỏ có thể xử lý trực tiếp.
-- Giữ nguyên thay đổi có sẵn không thuộc công việc. Báo rõ kết quả đã kiểm tra và phần chưa xác minh.
-- Ưu tiên cấu trúc và công cụ hiện có; điều chỉnh cách làm theo yêu cầu của người dùng và tình trạng thực tế của repo.
-- Khi commit, dùng Conventional Commits, mô tả ngắn bằng tiếng Anh đơn giản; có thể dùng tiếng Việt nếu cần rõ hơn. Mặc định làm trên branch hiện tại; thao tác chia sẻ hoặc viết lại lịch sử theo phạm vi người dùng cho phép.
-- Khi làm thuật toán, chú ý đơn vị, hệ tọa độ và chu kỳ lấy mẫu. Với firmware, chú ý vùng code sinh tự động; với thí nghiệm, giữ dữ liệu gốc và khả năng tái lập.
+- Đọc `AGENTS.md` trong module liên quan trước khi sửa; ưu tiên cấu trúc và công cụ hiện có.
+- Giữ nguyên thay đổi ngoài phạm vi; kiểm tra tương xứng với thay đổi và báo rõ phần chưa xác minh.
+- Với thuật toán và thí nghiệm, làm rõ đơn vị, hệ tọa độ, chu kỳ lấy mẫu; giữ dữ liệu gốc và khả năng tái lập.
 
 ## Lệnh thường dùng
 

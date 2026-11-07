@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "academic-prose": {
+      "source": "mxuanvan02/academic-prose",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "8e77711663b7f08e69f460a03d07afe5913023f962d72cd2c799fde58f67fce5"
+    }
+  }
+}

@@ -15,6 +15,7 @@ Chạy từ gốc repository; chọn phạm vi kiểm tra phù hợp với thay 
 | Lệnh                   | Tác dụng                                                     |
 | ---------------------- | ------------------------------------------------------------ |
 | `make report`          | Build `report/build/main.pdf` bằng latexmk.                  |
+| `make cubemx`          | Sinh lại firmware từ `drone.ioc` bằng CubeMX CLI.            |
 | `make format`          | Format toàn bộ tệp Git theo dõi qua pre-commit.              |
 | `make lint`            | Lint Markdown, CMake và LaTeX trên toàn bộ tệp Git theo dõi. |
 | `make sync-papers`     | Trích xuất PDF bài báo sang Markdown và ảnh.                 |

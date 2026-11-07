@@ -26,8 +26,8 @@ thuật toán điều khiển bay.
 ## CubeMX và file `.ioc`
 
 - Giữ `drone.ioc` đồng bộ với mã khởi tạo; ưu tiên đổi cấu hình qua CubeMX.
-  Khi sửa `.ioc`, chạy STM32CubeMX
-  sinh lại mã khởi tạo; nếu không chạy được, báo người dùng thực hiện.
+  Khi sửa `.ioc`, chạy `make cubemx` từ gốc repo để sinh lại code bằng CLI,
+  rồi kiểm tra diff; nếu không chạy được, báo người dùng thực hiện.
 
 ## Coding style
 

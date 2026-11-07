@@ -2,6 +2,31 @@
 
 Áp dụng cho nội dung và tài nguyên trong `report/`. Đây là báo cáo đồ án cơ điện tử bằng tiếng Việt, biên soạn bằng LaTeX. Ưu tiên nội dung cơ bản, mạch lạc, nhất quán.
 
+## Cấu trúc
+
+```text
+report/
+├── main.tex          # Điều phối thứ tự các phần của báo cáo
+├── metadata.tex      # Thông tin đề tài, giảng viên và sinh viên
+├── frontmatter/      # Bìa, mở đầu, cảm ơn và các danh mục
+├── chapters/         # Nội dung các chương
+├── appendices/       # Phụ lục
+├── figures/          # Hình và sơ đồ; template/ chứa tài nguyên bìa
+├── bibliography/     # Tài liệu được trích dẫn trong báo cáo
+├── styles/           # Định dạng và các lệnh dùng chung
+├── latexmkrc         # Cấu hình biên dịch
+└── .chktexrc         # Quy tắc kiểm tra LaTeX
+```
+
+## Nguyên tắc
+
+- Viết nội dung trong từng chương; thêm hoặc bớt chương tại `main.tex`.
+- Sửa thông tin bìa trong `metadata.tex`.
+- Dùng tên file tiếng Anh, chữ thường, không có khoảng trắng và đường dẫn tương đối.
+- Lưu nguồn trích dẫn trong `bibliography/references.bib`. Khi lấy nguồn từ [thư viện nghiên cứu](../docs/references/papers/references.bib), giữ nguyên khóa BibTeX và cập nhật thông tin nhất quán ở cả hai nơi.
+- Thay hết placeholder trước khi nộp.
+- Chạy `make clean` từ gốc repository để xóa `report/build/` (gồm PDF) cùng toàn bộ build và cache CMake của firmware. Build lại báo cáo bằng LaTeX Workshop hoặc `make report`.
+
 ## Văn phong và mức độ chi tiết
 
 - Viết thành nội dung có thể đưa trực tiếp vào báo cáo: nêu vấn đề, trình bày cách giải quyết, tính toán và kết luận lựa chọn.
@@ -37,3 +62,15 @@
 - Bản PDF sinh tại `build/main.pdf`; giữ file build trong thư mục đang được Git bỏ qua.
 - Nếu bản Markdown đối chiếu vẫn còn trong workspace và thuộc phạm vi công việc, đồng bộ với nội dung báo cáo. Không tự tạo lại file người dùng đã xóa.
 - Trước commit, xem `git status`, `git diff` và chạy `git diff --check`; chỉ đưa vào commit các thay đổi thuộc công việc được yêu cầu.
+
+## Biên dịch
+
+Từ thư mục gốc dự án:
+
+```sh
+make report
+```
+
+Lệnh cần latexmk, XeLaTeX và BibTeX; cấu hình dùng chung nằm trong `report/latexmkrc`. Có thể build trực tiếp bằng `latexmk main.tex` khi đang ở thư mục `report/`.
+
+Kết quả: `report/build/main.pdf`. Trong VS Code, mở `report/main.tex` và chạy **LaTeX Workshop: Build LaTeX project**. Trên Overleaf, tải thư mục `report/` lên và chọn compiler **XeLaTeX**.

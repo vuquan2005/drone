@@ -2,16 +2,18 @@
 PYTHON ?= python3
 PRE_COMMIT ?= pre-commit
 LATEXMK ?= latexmk
+CUBEMX ?= $(if $(STM32CubeMX_PATH),$(STM32CubeMX_PATH),$(HOME)/STM32CubeMX)/STM32CubeMX
 ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 
 FORMAT_HOOKS := prettier black clang-format cmake-format format-latex
 LINT_HOOKS := markdownlint-cli2 cmake-lint lint-latex
 
-.PHONY: help report clean format lint sync-papers sync-datasheets
+.PHONY: help report cubemx clean format lint sync-papers sync-datasheets
 
 help:
 	@printf '%s\n' \
 	  'make report                         Build report/build/main.pdf with latexmk' \
+	  'make cubemx                         Regenerate firmware from drone.ioc (CLI)' \
 	  'make clean                          Remove firmware and report build directories' \
 	  'make format                         Format maintained source and document files' \
 	  'make lint                           Lint Markdown, CMake and LaTeX' \
@@ -20,6 +22,15 @@ help:
 
 report:
 	cd "$(ROOT_DIR)report" && $(LATEXMK) main.tex
+
+cubemx:
+	@set -eu; script=$$(mktemp); trap 'rm -f "$$script"' EXIT HUP INT TERM; \
+	printf '%s\n' \
+	  'config load "$(ROOT_DIR)firmware/drone/drone.ioc"' \
+	  'project path "$(ROOT_DIR)firmware/drone"' \
+	  'project generate' \
+	  'exit' > "$$script"; \
+	"$(CUBEMX)" -q "$$script"
 
 clean:
 	$(RM) -r -- "$(ROOT_DIR)firmware/drone/build" "$(ROOT_DIR)report/build"

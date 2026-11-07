@@ -39,4 +39,4 @@ docs/
 - Bài hướng dẫn bên ngoài đặt trong `references/tutorials/`, giữ ảnh và tệp đi kèm trong cùng thư mục của bài.
 - Repo tham khảo chỉ để đọc đặt trong `external/repos/`; ghi nguồn vào `external/README.md`.
 
-Dùng đường dẫn tương đối khi liên kết tài liệu để có thể mở trên máy khác. Nguồn báo cáo LaTeX nằm ở `report/` tại gốc dự án. Khi chọn tài liệu từ thư viện nghiên cứu để đưa vào báo cáo, làm theo [nguyên tắc của báo cáo](../report/README.md#nguyên-tắc); giữ nguyên khóa BibTeX giữa thư viện và báo cáo.
+Dùng đường dẫn tương đối khi liên kết tài liệu để có thể mở trên máy khác. Nguồn báo cáo LaTeX nằm ở `report/` tại gốc dự án. Khi chọn tài liệu từ thư viện nghiên cứu để đưa vào báo cáo, làm theo [nguyên tắc của báo cáo](../report/AGENTS.md#nguyên-tắc); giữ nguyên khóa BibTeX giữa thư viện và báo cáo.

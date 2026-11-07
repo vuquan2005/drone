@@ -5,7 +5,7 @@ Chạy các lệnh sau từ thư mục gốc repository:
 | Lệnh                   | Tác dụng                                                          |
 | ---------------------- | ----------------------------------------------------------------- |
 | `make help`            | Xem danh sách lệnh                                                |
-| `make report`          | Build PDF báo cáo; xem [hướng dẫn](../report/README.md#biên-dịch) |
+| `make report`          | Build PDF báo cáo; xem [hướng dẫn](../report/AGENTS.md#biên-dịch) |
 | `make format`          | Định dạng các tệp được Git theo dõi                               |
 | `make lint`            | Kiểm tra Markdown, CMake và LaTeX                                 |
 | `make sync-papers`     | Đồng bộ PDF bài báo sang Markdown                                 |

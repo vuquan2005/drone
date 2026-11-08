@@ -4,7 +4,6 @@ Repository chứa firmware, thiết kế phần cứng, tài liệu nghiên cứ
 
 ```text
 drone/
-├── control/       # Thuật toán điều khiển và ước lượng (dự kiến)
 ├── firmware/      # Project STM32 và hướng dẫn build, debug
 ├── hardware/      # Thiết kế phần cứng
 ├── experiments/   # Cấu hình, dữ liệu và kết quả thí nghiệm (dự kiến)
@@ -14,6 +13,12 @@ drone/
 ```
 
 Các thư mục đang trống có thể chưa xuất hiện sau khi clone. Xem hướng dẫn tại [firmware](firmware/README.md), [báo cáo](report/AGENTS.md), [tài liệu](docs/README.md) và [công cụ](tools/README.md).
+
+Thuật toán lọc, ước lượng và điều khiển dự kiến đặt trong
+`firmware/drone/Control/`, dùng API độc lập HAL và do `App/` điều phối.
+Kiểm chứng bằng kiểm thử thuật toán nhỏ trên máy tính và đo trên board/bộ gá;
+kế hoạch hiện tại không triển khai mô phỏng vòng kín hoặc SITL.
+Xem [kiến trúc firmware](firmware/drone/ARCHITECTURE.md).
 
 Xem [quy trình làm việc nhóm](CONTRIBUTING.md) để nhận nhiệm vụ, mở Pull Request và review.
 

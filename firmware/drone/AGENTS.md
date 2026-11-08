@@ -10,18 +10,25 @@ Luồng gọi hiện tại: `Core/main` → `App` → `BSP` → driver → callb
 `main()` khởi tạo HAL, clock, ngoại vi rồi gọi `app_init()`; vòng lặp gọi
 `app_process()`.
 
-| Thành phần                     | Trách nhiệm                                                  |
-| ------------------------------ | ------------------------------------------------------------ |
-| `Core/`, `drone.ioc`, `cmake/` | Khởi tạo và cấu hình do CubeMX quản lý                       |
-| `App/`                         | Trạng thái ứng dụng, điều phối module, đọc IMU và đổi đơn vị |
-| `BSP/`                         | Ánh xạ board, SPI/CS, delay và tích hợp driver với HAL       |
-| `Drivers/`                     | Sensor API, STM32 HAL và CMSIS                               |
-| `tests/`                       | Kiểm thử trên máy tính, HAL mô phỏng tách khỏi firmware      |
-| `control/` ở gốc repo          | Thuật toán điều khiển và ước lượng độc lập phần cứng         |
+| Thành phần                     | Trách nhiệm                                                              |
+| ------------------------------ | ------------------------------------------------------------------------ |
+| `Core/`, `drone.ioc`, `cmake/` | Khởi tạo và cấu hình do CubeMX quản lý                                   |
+| `App/`                         | Trạng thái ứng dụng, điều phối module, đọc IMU và đổi đơn vị             |
+| `BSP/`                         | Ánh xạ board, SPI/CS, delay và tích hợp driver với HAL                   |
+| `Drivers/`                     | Sensor API, STM32 HAL và CMSIS                                           |
+| `tests/`                       | Kiểm thử trên máy tính, HAL mô phỏng tách khỏi firmware                  |
+| `Control/` (dự kiến)           | Lọc, quaternion, estimator, PID, allocator và mô hình motor; độc lập HAL |
 
 Giữ `app.c` làm nơi điều phối; thuật toán tính toán nhận mẫu, trạng thái và
 `dt` qua API, không phụ thuộc HAL/Bosch. BSP không gọi ngược App hoặc chứa
 thuật toán điều khiển bay.
+
+Khi thêm thuật toán, dùng `Control/Inc/` cho API và `Control/Src/` cho triển
+khai; chỉ tạo thư mục khi có module thực. `App/` sở hữu trạng thái và điều
+phối hiệu chuẩn, lịch chạy, RC, arm/failsafe và output. `Control/` nhận mẫu,
+cấu hình và trạng thái qua API; không include HAL/Bosch, tự đọc clock hoặc
+truy cập ngoại vi. Kiểu dữ liệu chung cho thuật toán đặt trong header độc lập
+phần cứng ở `Control/Inc/`.
 
 ## CubeMX và file `.ioc`
 

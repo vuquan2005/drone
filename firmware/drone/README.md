@@ -7,19 +7,26 @@ Xem [cấu hình chân, build và debug](../README.md) để bắt đầu.
 
 ## Mã nguồn
 
-| Thư mục / tệp                  | Nội dung                                              |
-| ------------------------------ | ----------------------------------------------------- |
-| `Core/`, `drone.ioc`, `cmake/` | Khởi tạo và cấu hình do CubeMX quản lý                |
-| `App/`                         | Điều phối ứng dụng, polling IMU và CRSF               |
-| `BSP/`                         | Ánh xạ board, SPI/CS, UART receiver, PWM và delay DWT |
-| `Drivers/`                     | Bosch Sensor API, STM32 HAL và CMSIS                  |
-| `tests/imu/`                   | Kiểm thử trên máy tính với HAL mô phỏng               |
-| `CMakeLists.txt`               | Source/include cho mã tự viết                         |
+| Thư mục / tệp                  | Nội dung                                                                     |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| `Core/`, `drone.ioc`, `cmake/` | Khởi tạo và cấu hình do CubeMX quản lý                                       |
+| `App/`                         | Điều phối ứng dụng, polling IMU và CRSF                                      |
+| `Control/` (dự kiến)           | Lọc, quaternion, estimator, PID, allocator và mô hình motor; API độc lập HAL |
+| `BSP/`                         | Ánh xạ board, SPI/CS, UART receiver, PWM và delay DWT                        |
+| `Drivers/`                     | Bosch Sensor API, STM32 HAL và CMSIS                                         |
+| `tests/imu/`                   | Kiểm thử trên máy tính với HAL mô phỏng                                      |
+| `CMakeLists.txt`               | Source/include cho mã tự viết                                                |
 
 Luồng gọi: `main` → `app` → `app_imu` → `bsp_bmi270` → Bosch API → callback HAL.
 CubeMX khởi tạo HAL, clock và ngoại vi trước `app_init()`; vòng lặp gọi
 `app_process()`. [Kiến trúc](ARCHITECTURE.md) giải thích ranh giới module và
 chuỗi điều khiển dự kiến.
+
+Mã thuật toán sẽ nằm trong `Control/Inc/` và `Control/Src/`; App sở hữu trạng
+thái, cung cấp dữ liệu/`dt` và gọi thuật toán. Chỉ tạo module khi triển khai.
+Kế hoạch kiểm chứng gồm kiểm thử nhỏ trên máy tính, đo trên board và bộ gá;
+không triển khai mô phỏng vòng kín/SITL. Các test dùng HAL mô phỏng bên dưới
+vẫn được giữ để kiểm tra driver/giao thức, không thay thế phép đo phần cứng.
 
 ## Kiểm tra IMU
 

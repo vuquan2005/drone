@@ -3,21 +3,26 @@
 ## Quyết định và phạm vi
 
 Giữ cấu trúc `Core → App → BSP → Drivers` của khung tích hợp IMU hiện tại.
+Khi thêm thuật toán, dùng thư viện nội bộ `Control/` trong `firmware/drone/`,
+do `App/` gọi và có API độc lập HAL. Kiểm chứng bằng kiểm thử nhỏ trên máy
+tính và đo trên board/bộ gá; kế hoạch hiện tại không triển khai mô phỏng
+vòng kín hoặc SITL.
 Đây là nền tảng để phát triển
 điều khiển tư thế và tốc độ góc; chưa phải firmware điều khiển bay hoàn chỉnh.
 Tài liệu này ghi quyết định tổ chức mã và hướng triển khai tiếp theo, không
 xác nhận các module dự kiến đã được cài đặt hoặc kiểm chứng trên board.
 
-| Thành phần                                                                         | Trách nhiệm                                                           | Trạng thái                                                                |
-| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| `Core/`                                                                            | HAL, clock, peripheral và vector ngắt do CubeMX quản lý               | Có; khởi tạo GPIO, SPI1, USART1 và TIM4                                   |
-| `App/app.c`                                                                        | Sở hữu trạng thái ứng dụng và điều phối module                        | Có `app_init()` và `app_process()`                                        |
-| `App/app_imu`                                                                      | Poll IMU, đổi dữ liệu thô sang SI, ghi trạng thái đọc                 | Có                                                                        |
-| `BSP/`                                                                             | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến             | Có; SPI1, CS PD7 và delay DWT đã gắn                                      |
-| `Drivers/`                                                                         | Bosch Sensor API, STM32 HAL và CMSIS                                  | Có                                                                        |
-| `App/app_receiver`, `App/crsf`, `BSP/bsp_receiver`                                 | Nhận UART trong ISR, giải mã CRSF và kiểm tra tuổi khung ở foreground | Có; khung RC `0x16`, chưa kiểm chứng trên board                           |
-| `BSP/bsp_pwm`                                                                      | Xuất xung ESC trên TIM4 CH1–4, PB6–PB9                                | Có; 400 Hz, 1000–2000 µs, khởi động ở 1000 µs; chưa kiểm chứng trên board |
-| Estimator, controller, allocator, cổng cho phép motor output, quản lý arm/failsafe | Chuỗi điều khiển dự kiến bên dưới                                     | Chưa triển khai                                                           |
+| Thành phần                                                                         | Trách nhiệm                                                                   | Trạng thái                                                                |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `Core/`                                                                            | HAL, clock, peripheral và vector ngắt do CubeMX quản lý                       | Có; khởi tạo GPIO, SPI1, USART1 và TIM4                                   |
+| `App/app.c`                                                                        | Sở hữu trạng thái ứng dụng và điều phối module                                | Có `app_init()` và `app_process()`                                        |
+| `App/app_imu`                                                                      | Poll IMU, đổi dữ liệu thô sang SI, ghi trạng thái đọc                         | Có                                                                        |
+| `Control/`                                                                         | Lọc, toán quaternion, estimator, PID, allocator và mô hình motor; độc lập HAL | Dự kiến; chưa tạo thư mục/module                                          |
+| `BSP/`                                                                             | Gắn board với driver: SPI, CS, delay và cấu hình cảm biến                     | Có; SPI1, CS PD7 và delay DWT đã gắn                                      |
+| `Drivers/`                                                                         | Bosch Sensor API, STM32 HAL và CMSIS                                          | Có                                                                        |
+| `App/app_receiver`, `App/crsf`, `BSP/bsp_receiver`                                 | Nhận UART trong ISR, giải mã CRSF và kiểm tra tuổi khung ở foreground         | Có; khung RC `0x16`, chưa kiểm chứng trên board                           |
+| `BSP/bsp_pwm`                                                                      | Xuất xung ESC trên TIM4 CH1–4, PB6–PB9                                        | Có; 400 Hz, 1000–2000 µs, khởi động ở 1000 µs; chưa kiểm chứng trên board |
+| Estimator, controller, allocator, cổng cho phép motor output, quản lý arm/failsafe | Chuỗi điều khiển dự kiến bên dưới                                             | Chưa triển khai                                                           |
 
 ## Điểm gọi ứng dụng và ranh giới module
 
@@ -36,6 +41,58 @@ truy cập HAL trực tiếp. Khi thêm controller, tách kiểu mẫu IMU dùng
 `app_imu.h`: header hiện kéo theo kiểu BSP, Bosch và STM32 HAL. Controller và
 estimator chỉ cần dữ liệu đo, đơn vị, hệ trục, timestamp và trạng thái hợp lệ.
 Không cần tạo trước thư mục hoặc module rỗng cho toàn bộ sơ đồ.
+
+### Tổ chức mã khi thêm thuật toán
+
+```text
+firmware/drone/
+├── Core/             # CubeMX, main và khởi tạo ngoại vi
+├── App/              # Điều phối, trạng thái, RC, hiệu chuẩn và output
+├── Control/          # Dự kiến tạo khi có module đầu tiên
+│   ├── Inc/          # API và kiểu dữ liệu độc lập phần cứng
+│   └── Src/          # Thuật toán tính toán
+├── BSP/              # Ánh xạ board và tích hợp ngoại vi
+├── Drivers/          # HAL, CMSIS và driver bên ngoài
+└── tests/            # Kiểm thử nhỏ trên máy tính
+```
+
+Ban đầu giữ `Control/Inc/` và `Control/Src/` phẳng; chia nhóm khi số lượng
+module thực sự cần. Cập nhật source/include trong CMake khi thêm mã; không
+tạo build target, tầng trừu tượng hoặc framework mô phỏng trước nhu cầu.
+`app.c` giữ thứ tự gọi; trạng thái từng khối có thể được sở hữu bởi module
+App tương ứng, tránh dồn mọi hành vi vào một tệp.
+
+| Công việc  | App                                                          | Control                               | BSP                                         |
+| ---------- | ------------------------------------------------------------ | ------------------------------------- | ------------------------------------------- |
+| IMU        | Lấy mẫu, đổi SI, kiểm tra tuổi dữ liệu, điều phối hiệu chuẩn | Tính/áp dụng bias, đổi trục và lọc    | Giao tiếp và cấu hình BMI270                |
+| Tư thế     | Cung cấp mẫu/`dt`, quản lý khởi tạo và sức khỏe              | Toán quaternion và estimator          | Không tính tư thế                           |
+| Điều khiển | RC, tham chiếu, lịch chạy và chuyển trạng thái               | PID rate/attitude và allocator        | Không tính lệnh điều khiển bay              |
+| Motor      | Chế độ thử, quyền output và xử lý lỗi                        | Mô hình thuận/nghịch lực–lệnh–điện áp | Phát PWM/DShot theo giao thức đã triển khai |
+
+Trạng thái bộ lọc, estimator và PID được truyền vào API; thuật toán không tự
+đọc sensor, clock hay quyết định quyền arm. Header kiểu dữ liệu chung đặt
+trong `Control/Inc/`, không include App/BSP/HAL/Bosch. Cấu hình board và tham
+số tính toán được tách riêng dù cùng nằm trong project firmware.
+
+### Hiệu chuẩn, quaternion và đặc tính motor
+
+App quyết định khi nào thu mẫu hiệu chuẩn IMU, kiểm tra đứng yên và nạp/lưu
+tham số; Control tính và áp dụng hiệu chỉnh. Sau đổi SI, hiệu chuẩn và đổi
+trục sang body, dữ liệu tách sang đường rate và estimator với cấu hình lọc
+phù hợp từng nhánh. Bộ lọc tín hiệu và estimator tư thế có trạng thái/API
+riêng. Quaternion là biểu diễn tư thế; toán quaternion dùng chung giữa
+estimator và vòng attitude.
+
+Căn chỉnh motor gồm các việc riêng: xác nhận thứ tự/chiều quay và dải ESC,
+hiệu chuẩn endpoint nếu loại ESC yêu cầu, đo đặc tính từng motor và cấu hình
+allocator. App điều phối chế độ thử qua cổng output; BSP phát tín hiệu;
+Control dùng hình học và mô hình lực để phân bổ/chuyển lệnh.
+
+Đo đường phi tuyến lực–lệnh–điện áp trên bộ gá đo lực. Dữ liệu gốc, cấu hình
+và kết quả đặt trong `experiments/`; script vẽ/khớp mô hình đặt trong `tools/`.
+Firmware chứa tham số có phiên bản và mã đánh giá mô hình, không chạy bước
+khớp đường cong trong vòng điều khiển. Giữ riêng dữ liệu đã đo và tham số
+ước lượng, kể cả mô-men phản lực dùng cho yaw.
 
 ## Chuỗi điều khiển dự kiến
 
@@ -76,7 +133,7 @@ flowchart TB
 - Chọn hệ trục body FRD: X tiến, Y phải, Z xuống; hệ thế giới NED. Tổng lực
   đẩy `T_req` là độ lớn không âm, lực tác dụng theo hướng `-Z_body`.
   Ghi rõ thứ tự thành phần quaternion và chiều phép quay trong API trước khi
-  triển khai estimator/controller; dùng cùng quy ước trong mô phỏng và test.
+  triển khai estimator/controller; dùng cùng quy ước trong test và phép đo.
 - Chuyển trục sensor sang body trước khi đưa gyro vào vòng rate. Mẫu hiện tại
   vẫn theo package BMI270, chưa hiệu chuẩn bias hay đổi trục.
 - `psi_dot_cmd` là đạo hàm heading Euler, không mặc định bằng tốc độ quay
@@ -149,8 +206,10 @@ Thứ tự hoàn thiện:
 2. Hoàn thiện timestamp, đổi trục, hiệu chuẩn, lọc và kiểm tra quá hạn.
 3. Xây dựng quản lý trạng thái, RC và output; kiểm tra hành vi lỗi trước khi
    cho phép xuất lệnh điều khiển.
-4. Kiểm thử vòng rate, allocator và motor model trong mô phỏng và trên bộ
-   gá thử phù hợp, sau đó thêm estimator và vòng attitude.
+4. Kiểm thử nhỏ cho PID, allocator và motor model trên máy tính; xác minh
+   output khi tháo cánh, đo đặc tính motor và kiểm chứng/chỉnh gain vòng rate
+   trên bộ gá phù hợp. Sau đó tích hợp estimator và vòng attitude; có thể
+   phát triển estimator bằng dữ liệu tổng hợp và replay log trước đó.
 5. Đo deadline và độ trễ toàn chuỗi; telemetry chạy nền, không chặn điều khiển.
 
 Các module tính toán cần kiểm thử độc lập, đặc biệt dấu trục, thứ tự motor,

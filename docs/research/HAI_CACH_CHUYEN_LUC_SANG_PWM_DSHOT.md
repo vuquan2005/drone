@@ -609,7 +609,7 @@ Nếu chỉ cắt PWM ở cuối, lực và mô-men tổng có thể lệch kh�
 
 ## 9. Đề xuất tổ chức cho đồ án STM32
 
-Với mục tiêu nối mô hình mô phỏng với firmware, có thể chọn giao diện SI tại ranh giới bộ phân bổ để dễ kiểm tra phương trình. Đây là đề xuất thiết kế, chưa phải tính năng đã triển khai trong repository.
+Đồ án chọn giao diện SI tại ranh giới bộ phân bổ để liên kết yêu cầu điều khiển với lực motor được đo trên bộ gá. Thuật toán đặt trong `firmware/drone/Control/`, do App điều phối; không triển khai mô phỏng vòng kín/SITL trong kế hoạch hiện tại. Đây là quyết định thiết kế, chưa xác nhận chuỗi điều khiển đã được triển khai.
 
 ```text
 controller
@@ -626,7 +626,7 @@ Các lớp cần trao đổi giới hạn khả dụng và trạng thái bão h�
 
 Nếu ưu tiên bắt đầu bằng điều khiển tốc độ góc và tuning trực tiếp trên phần cứng, có thể chọn giao diện chuẩn hóa. Khi đó cần định nghĩa rõ `thrust`, `roll`, `pitch`, `yaw` là yêu cầu ở thang nào; không ghi chúng là N/N·m nếu chưa có phép chuyển tương ứng.
 
-Nên đặt tên biến thể hiện ý nghĩa như `force_N`, `torque_Nm`, `thrust_norm`, `command_norm`, `pulse_us`, `dshot_value`. Phần thuật toán độc lập có thể nằm trong `control/`, phần timer/DMA/HAL nằm trong `firmware/`, phù hợp quy ước hiện tại của repository.
+Nên đặt tên biến thể hiện ý nghĩa như `force_N`, `torque_Nm`, `thrust_norm`, `command_norm`, `pulse_us`, `dshot_value`. Phần thuật toán nằm trong `firmware/drone/Control/Inc/` và `Control/Src/`, không phụ thuộc HAL. `App/` quản lý lịch chạy, trạng thái và quyền output; `BSP/` tích hợp timer/DMA/HAL. Dữ liệu đo và đường cong motor nằm trong `experiments/`, script vẽ/khớp mô hình trong `tools/`; firmware dùng tham số và mô hình đã kiểm chứng.
 
 Các phép kiểm tra phù hợp khi triển khai gồm: dựng lại `w = A f` khi chưa bão hòa; kiểm tra mô hình thuận/nghịch trên miền hiệu chuẩn; kiểm tra cùng yêu cầu vật lý cho kết quả tương đương giữa hai biểu diễn; và kiểm tra đầu ra riêng cho disarm, idle, vận hành, failsafe. Ví dụ trong báo cáo chỉ kiểm tra tính toán tĩnh, chưa xác nhận đặc tính motor thực tế.
 

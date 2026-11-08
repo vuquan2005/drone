@@ -24,8 +24,7 @@ Chạy từ gốc repository; chọn phạm vi kiểm tra phù hợp với thay 
 
 ## Kiến trúc
 
-- `control/`: thuật toán điều khiển và ước lượng độc lập phần cứng; phần phụ thuộc STM32 HAL đặt trong `firmware/`.
-- `firmware/`: project STM32, cấu hình board, driver và tích hợp thuật toán. `firmware/drone/AGENTS.md` hướng dẫn khi làm việc trong `firmware/drone/`.
+- `firmware/`: project STM32, cấu hình board, driver và tích hợp thuật toán. Thuật toán lọc, ước lượng và điều khiển đặt trong `firmware/drone/Control/`, độc lập HAL; `App/` điều phối và quản lý trạng thái. `firmware/drone/AGENTS.md` hướng dẫn khi làm việc trong `firmware/drone/`.
 - `hardware/`: sơ đồ điện, PCB, CAD và thông số linh kiện.
 - `experiments/`: cấu hình, dữ liệu và kết quả thí nghiệm.
 - `report/`: báo cáo LaTeX. `report/AGENTS.md` hướng dẫn khi làm việc trong `report/`.
@@ -33,6 +32,11 @@ Chạy từ gốc repository; chọn phạm vi kiểm tra phù hợp với thay 
 - `tools/`: script hỗ trợ. `tools/AGENTS.md` hướng dẫn khi làm việc trong `tools/`.
 
 Thêm `AGENTS.md` trong module khi có hướng dẫn riêng hữu ích. Ưu tiên ít file, nội dung cụ thể và tránh lặp lại quy tắc chung.
+
+Kế hoạch hiện tại không triển khai mô phỏng vòng kín hoặc SITL. Giữ kiểm thử
+thuật toán nhỏ trên máy tính khi có ý nghĩa; kiểm chứng I/O, timing và đáp ứng
+điều khiển trên board/bộ gá. Lưu dữ liệu đo tại `experiments/`, script phân tích
+tại `tools/`.
 
 ## CodeGraph
 

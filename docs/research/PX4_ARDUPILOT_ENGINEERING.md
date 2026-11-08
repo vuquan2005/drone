@@ -48,16 +48,16 @@ thanh ghi cảm biến. Đây là các ví dụ cụ thể về lịch chạy c�
 giao diện che chi tiết thiết bị. Bảng scheduler này không có nghĩa toàn bộ
 ArduPilot chỉ chạy trong một luồng hoặc không dùng RTOS.
 
-| Khía cạnh           | Đề xuất cho firmware hiện tại                                                                       |
-| ------------------- | --------------------------------------------------------------------------------------------------- |
-| Phân lớp            | Giữ `Core`, `App`, `BSP`, `Drivers`; App điều phối các module tính toán độc lập                     |
-| Ranh giới phần cứng | HAL và kiểu Bosch nằm ở phần tích hợp thiết bị; estimator/controller dùng kiểu dữ liệu C độc lập    |
-| Trao đổi dữ liệu    | Truyền mẫu và trạng thái qua API rõ ràng; ban đầu dùng lời gọi hàm và snapshot trong foreground     |
-| Lập lịch            | Chuỗi điều khiển theo mẫu IMU mới; công việc chậm chạy theo lịch riêng, có đo thời gian             |
-| Trạng thái          | Quản lý điều kiện arm, lỗi và quyền output ở nơi xác định; controller không tự quyết quyền arm      |
-| Quan sát            | Có timestamp, số mẫu, số lỗi, mất mẫu, quá hạn, thời gian thực thi và bão hòa                       |
-| Cấu hình            | Tách wiring/cấu hình board khỏi tham số cảm biến và gain điều khiển; ghi đơn vị, miền giá trị       |
-| Kiểm chứng          | Thuật toán kiểm thử trên host, hành vi chuỗi kiểm thử mô phỏng, I/O và timing kiểm chứng trên board |
+| Khía cạnh           | Đề xuất cho firmware hiện tại                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------------------------ |
+| Phân lớp            | Giữ `Core`, `App`, `BSP`, `Drivers`; thêm `Control/` trong `firmware/drone/` cho thuật toán do App gọi |
+| Ranh giới phần cứng | HAL và kiểu Bosch nằm ở phần tích hợp thiết bị; estimator/controller dùng kiểu dữ liệu C độc lập       |
+| Trao đổi dữ liệu    | Truyền mẫu và trạng thái qua API rõ ràng; ban đầu dùng lời gọi hàm và snapshot trong foreground        |
+| Lập lịch            | Chuỗi điều khiển theo mẫu IMU mới; công việc chậm chạy theo lịch riêng, có đo thời gian                |
+| Trạng thái          | Quản lý điều kiện arm, lỗi và quyền output ở nơi xác định; controller không tự quyết quyền arm         |
+| Quan sát            | Có timestamp, số mẫu, số lỗi, mất mẫu, quá hạn, thời gian thực thi và bão hòa                          |
+| Cấu hình            | Tách wiring/cấu hình board khỏi tham số cảm biến và gain điều khiển; ghi đơn vị, miền giá trị          |
+| Kiểm chứng          | Kiểm thử nhỏ cho thuật toán trên host; I/O, timing và đáp ứng điều khiển đo trên board/bộ gá           |
 
 Chưa cần đưa uORB, NuttX, hệ plugin hoặc toàn bộ hệ thống parameter vào đồ án.
 Chỉ thêm hàng đợi/task khi có nhu cầu độc lập về tốc độ, đồng thời, I/O hoặc
@@ -107,6 +107,12 @@ Không đồng nhất kiểm thử host, mô phỏng điều khiển, SITL và t
 Bộ test IMU hiện có dùng Bosch thật với HAL mô phỏng; nó chưa phải SITL và
 không chứng minh thời gian đáp ứng trên board. Chỉ thêm test cho hành vi có
 ý nghĩa; tránh test chỉ lặp lại cấu trúc cài đặt.
+
+Kế hoạch đồ án hiện tại không triển khai mô phỏng vòng kín hoặc SITL. Các
+nguồn SITL ở trên mô tả cách dự án tham khảo làm việc, không phải yêu cầu
+cho đồ án. Thuật toán đặt trong `firmware/drone/Control/Inc/` và
+`Control/Src/`, độc lập HAL; App điều phối và quản lý trạng thái. Dữ liệu
+tổng hợp/replay log phục vụ test module, còn đáp ứng vòng kín đo trên bộ gá.
 
 ## Hướng dẫn agent và tổ chức quy trình
 
@@ -161,7 +167,7 @@ Các điểm cần điều chỉnh trước khi tái sử dụng:
   cầu thêm dòng khai báo ở thân PR. Không khẳng định bản sao có chính sách
   thống nhất; khi đóng góp upstream cần giải quyết theo hướng dẫn áp dụng.
 - Skill PR nói build và unit test không thuộc mục Testing. Với đồ án, vẫn
-  ghi riêng build, unit test, mô phỏng và thử board cùng kết quả thật để
+  ghi riêng build, unit test và thử board/bộ gá cùng kết quả thật để
   người review thấy mức độ kiểm chứng; không coi các mức này tương đương.
 - ArduPilot có chỉ dẫn chèn dấu hiệu ẩn nếu người gửi muốn giấu AI hỗ trợ.
   Không áp dụng cách này; khai báo phải rõ ràng, không dùng tín hiệu bí mật.
@@ -187,7 +193,8 @@ symlink hoặc tự động hóa Git cho dự án.
 
 ## Thứ tự áp dụng
 
-1. Giữ khung `main → App → BSP → Drivers`; hoàn thiện bring-up IMU và đo I/O.
+1. Giữ khung `main → App → BSP → Drivers`; thuật toán thêm vào `Control/`
+   trong project firmware, do App gọi. Hoàn thiện bring-up IMU và đo I/O.
 2. Khi thêm module tính toán đầu tiên, tách kiểu mẫu IMU khỏi header kéo theo
    BSP/HAL; chốt timestamp, hệ trục và API nhận `dt`.
 3. Bổ sung lịch foreground có thứ tự rõ ràng và đo deadline/độ trễ; xác định
@@ -195,7 +202,8 @@ symlink hoặc tự động hóa Git cho dự án.
 4. Xây dựng quản lý trạng thái và output gate cùng các trường hợp thử lỗi;
    sau đó nối controller, allocator và motor model theo kế hoạch kiến trúc.
 5. Tự động hóa build và test phù hợp khi các bước thủ công đã tái lập được;
-   mở rộng mô phỏng và log theo chức năng thực sự triển khai.
+   mở rộng test module, replay log và đo trên board/bộ gá theo chức năng
+   thực sự triển khai.
 
 Các bước này chưa triển khai scheduler, state machine, controller hoặc CI.
 Chúng cụ thể hóa cách học từ hai dự án lớn trong phạm vi đồ án hiện tại.

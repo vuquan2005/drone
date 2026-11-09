@@ -1,10 +1,12 @@
 % !TEX root = ../../main.tex
-\section{Phân bổ lệnh điều khiển cho các động cơ}
+\section{Phân bổ tác động điều khiển cho các động cơ}
 \label{sec:background-allocation}
 
-\subsection{Quan hệ giữa lực đẩy rôto và tác động điều khiển}
+\subsection{Quan hệ giữa lực đẩy rôto và mômen điều khiển}
 
-Khâu phân bổ chuyển tổng lực đẩy và mômen yêu cầu thành lực đẩy của bốn rôto. Vị trí khâu này trong chuỗi điều khiển multirotor được minh họa trên \fref{fig:background-allocation-chain}. Trong hình, RC biểu diễn tín hiệu từ người điều khiển, Sensor là cảm biến, Controller là khối điều khiển, còn Mixer là khâu phân bổ lệnh cho các động cơ. Sơ đồ thể hiện quan hệ chức năng giữa các khối; cấu trúc hai vòng góc và vận tốc góc của đề tài được xác lập tại mục~\ref{sec:background-control}.
+Đầu ra của bộ điều khiển vận tốc góc là mômen yêu cầu để hiệu chỉnh chuyển động quay của thân máy bay. Mômen này được tạo ra bằng cách phối hợp lực đẩy của bốn rôto. Khâu phân bổ tác động điều khiển, thường gọi là mixer, xác định lực đẩy từng rôto từ tổng lực đẩy và các mômen yêu cầu. Đây là bước nối giữa luật điều khiển và hệ động lực.
+
+Vị trí của khâu phân bổ trong hệ thống được minh họa trên \fref{fig:background-allocation-chain}. Trong hình, RC là tín hiệu từ người điều khiển, Sensor là cảm biến, Controller là bộ điều khiển và Mixer là khâu phân bổ. Sơ đồ thể hiện luồng tín hiệu chung; các tín hiệu đưa vào khâu phân bổ gồm yêu cầu tổng lực đẩy và mômen quanh các trục thân.
 
 \begin{figure}[htbp]
     \centering
@@ -13,12 +15,10 @@ Khâu phân bổ chuyển tổng lực đẩy và mômen yêu cầu thành lực
     \label{fig:background-allocation-chain}
 \end{figure}
 
-\begin{samepage}
-Theo quy ước cấu hình chữ X tại mục~\ref{subsec:background-configuration}, khoảng cách từ tâm thân đến mỗi trục rôto là $l$, với $a=l/\sqrt{2}$. Vị trí rôto 1 đến 4 lần lượt là trước trái, trước phải, sau phải và sau trái. Rôto 1 và 3 quay cùng chiều kim đồng hồ, rôto 2 và 4 quay ngược chiều kim đồng hồ khi nhìn từ trên xuống. Mômen phản lực truyền lên thân có chiều ngược với mômen dẫn động rôto. Do $z_B$ hướng xuống, rôto 1 và 3 tạo mômen yaw âm, rôto 2 và 4 tạo mômen yaw dương.
-\par
-\end{samepage}
+Với cấu hình chữ X đã quy ước, gọi $l$ là khoảng cách từ trọng tâm đến trục rôto và $a=l/\sqrt{2}$ là độ lớn hình chiếu khoảng cách này lên mỗi trục $x_B$, $y_B$. Các tọa độ của rôto thứ $i$ trong hệ thân là $x_i,y_i$; vectơ lực đẩy là $[0,0,-f_i]^{\mathsf T}$. Tích có hướng giữa vectơ vị trí và lực cho các thành phần mômen $\tau_{x,i}=-y_i f_i$, $\tau_{y,i}=x_i f_i$. Vì thế, dấu mômen roll và pitch phụ thuộc vào vị trí rôto so với trọng tâm. Mômen yaw phụ thuộc chiều quay: rôto 1 và 3 tạo mômen phản lực âm quanh $z_B$, rôto 2 và 4 tạo mômen dương.
 
-Đặt $\mathbf f=[f_1,f_2,f_3,f_4]^\mathsf T$ và $\kappa=c_Q/c_T>0$. Từ tích có hướng giữa cánh tay đòn và lực $[0,0,-f_i]^\mathsf T$, quan hệ phân bổ được xác định:
+\begin{samepage}
+Đặt $\mathbf f=[f_1,f_2,f_3,f_4]^{\mathsf T}$ và $\kappa=c_Q/c_T>0$. Quan hệ phân bổ là:
 \begin{equation}
     \underbrace{\begin{bmatrix}T\\\tau_x\\\tau_y\\\tau_z\end{bmatrix}}_{\mathbf U}
     =\underbrace{\begin{bmatrix}
@@ -30,7 +30,10 @@ Theo quy ước cấu hình chữ X tại mục~\ref{subsec:background-configura
     \begin{bmatrix}f_1\\f_2\\f_3\\f_4\end{bmatrix}.
     \label{eq:background-allocation-matrix}
 \end{equation}
-Ở đây $f_i,T$ có đơn vị newton, $a,\kappa$ có đơn vị mét và $\tau_x,\tau_y,\tau_z$ có đơn vị $\mathrm{N\,m}$. Với $a,\kappa\ne0$, ma trận $\mathbf A$ khả nghịch; lực đẩy yêu cầu là:
+\end{samepage}
+Trong đó, $f_i$ và $T$ có đơn vị N; $a$ và $\kappa$ có đơn vị m; các mômen có đơn vị N$\cdot$m. Hàng đầu của ma trận $\mathbf A$ cộng lực đẩy của bốn rôto; ba hàng còn lại xác định mômen do chênh lệch lực đẩy và mômen phản lực. Khi các cụm động cơ--cánh quạt có cùng đặc tính, tăng đều bốn lực đẩy làm tăng $T$ mà không tạo thêm mômen.
+
+Với $a,\kappa\ne0$, ma trận $\mathbf A$ khả nghịch. Ký hiệu dấu $*$ cho giá trị yêu cầu, lực đẩy từng rôto được tính từ $\mathbf U^*=[T,\tau_x^*,\tau_y^*,\tau_z^*]^{\mathsf T}$:
 \begin{equation}
     \begin{aligned}
         f_1^*&=\frac T4+\frac{\tau_x^*}{4a}+\frac{\tau_y^*}{4a}
@@ -44,39 +47,45 @@ Theo quy ước cấu hình chữ X tại mục~\ref{subsec:background-configura
     \end{aligned}
     \label{eq:background-inverse-allocation}
 \end{equation}
-Các dấu trong \eqref{eq:background-inverse-allocation} phụ thuộc trực tiếp vào hệ trục, vị trí và chiều quay đã quy ước. Với bài toán roll và pitch, có thể đặt $\tau_z^*=0$ khi chưa triển khai vòng yaw. Khi đó, lực đẩy nền được phân phối đều, còn chênh lệch giữa các rôto tạo mômen hiệu chỉnh tư thế.
+Thành phần $T/4$ là lực đẩy nền; các thành phần còn lại tạo chênh lệch lực đẩy để điều chỉnh tư thế. Khi chỉ khảo sát roll và pitch, có thể đặt $\tau_z^*=0$ trong phép phân bổ. Điều kiện này biểu diễn yêu cầu mômen yaw bằng không, không tạo ra chức năng giữ góc hướng. Thứ tự rôto trong ma trận là quy ước của mô hình tính toán và phải được phân biệt với thứ tự các chân xuất tín hiệu trên vi điều khiển.
 
-\subsection{Giới hạn lực đẩy và sai lệch sau phân bổ}
+\subsection{Giới hạn lực đẩy và ảnh hưởng đến bộ điều khiển}
 
-Độ lớn lực đẩy mỗi rôto thỏa mãn \mbox{$f_{\min}\le f_i\le f_{\max}$}. Giới hạn dưới có thể khác không khi động cơ duy trì tốc độ quay nền. Phép cắt biên trực tiếp cho lệnh khả thi:
+Nghiệm của phép phân bổ tuyến tính có thể đòi hỏi lực đẩy âm hoặc vượt khả năng hệ động lực. Để khảo sát giới hạn này, giả sử bốn cụm có cùng miền lực đẩy khả dụng $0\leq f_{\min}\leq f_i\leq f_{\max}$. Giới hạn dưới có thể khác không khi động cơ duy trì tốc độ quay nền. Cách xử lý đơn giản là cắt biên từng lệnh:
 \begin{equation}
     f_{i,a}=\operatorname{sat}_{[f_{\min},f_{\max}]}(f_i^*),
     \qquad \mathbf U_a=\mathbf A\mathbf f_a.
     \label{eq:background-allocation-saturation}
 \end{equation}
-Sau cắt biên, tổng lực đẩy và các mômen khả dụng nhìn chung khác giá trị yêu cầu. Sai lệch $\mathbf U^*-\mathbf U_a$ cho biết phần tác động không được thực hiện và cung cấp thông tin giới hạn cho bộ điều khiển. Nếu chỉ theo dõi từng lệnh riêng lẻ, ảnh hưởng của bão hòa đến khả năng ổn định tư thế có thể bị bỏ sót.
+Ở đây, $\mathbf f_a$ là vectơ lực đẩy sau giới hạn và $\mathbf U_a$ là tổng lực đẩy cùng các mômen tương ứng theo mô hình. Sau cắt biên, $\mathbf U_a$ thường khác $\mathbf U^*$. Chẳng hạn, khi một rôto đã đạt lực đẩy cực đại, tăng thêm mômen yêu cầu không còn tạo được chênh lệch lực đẩy như tính toán ban đầu.
 
-Một cách xử lý đơn giản là dịch cùng một lượng $\Delta f$ cho cả bốn lệnh trước khi cắt biên. Với các giới hạn giống nhau, điều kiện tồn tại lượng dịch khả thi là:
+Các thành phần mômen của $\mathbf U_a$ cung cấp giá trị $\tau_{j,a}$ cho cơ chế hạn chế bão hòa tích phân. Nếu tiếp tục tích phân sai lệch theo hướng tăng mômen mà hệ động lực không đáp ứng được, trạng thái tích phân tăng lên và có thể kéo dài quá trình hồi phục sau khi hết bão hòa. Vì vậy, thông tin giới hạn được xét ở cấp tổng lực và mômen, thay vì chỉ chặn độc lập đầu ra PID. Giá trị $\tau_{j,a}$ là ước lượng theo lệnh sau giới hạn, chưa phải mômen thực đo trên thân máy bay.
+
+Một phương án phân bổ khác là dịch cùng một lượng $\Delta f$ cho cả bốn lực đẩy yêu cầu. Với các giới hạn giống nhau, tồn tại lượng dịch đưa tất cả lệnh vào miền khả dụng khi:
 \begin{equation}
-    f_{\min}-\min_i f_i^*\ \le\ \Delta f\ \le\
+    f_{\min}-\min_i f_i^*\ \leq\ \Delta f\ \leq\
     f_{\max}-\max_i f_i^*.
     \label{eq:background-collective-shift}
 \end{equation}
-Do tổng hệ số của ba hàng mômen trong $\mathbf A$ bằng không, phép dịch chung bảo toàn các mômen yêu cầu và làm tổng lực đẩy đổi thành $T_a=T+4\Delta f$. Vì vậy, biện pháp này dành khoảng điều khiển cho tư thế bằng cách điều chỉnh lực đẩy nền; nó chỉ khả thi khi khoảng trong \eqref{eq:background-collective-shift} không rỗng. Khi độ chênh giữa các lệnh vượt $f_{\max}-f_{\min}$, cần giảm yêu cầu mômen hoặc dùng bài toán phân bổ có ràng buộc để thể hiện thứ tự ưu tiên. Phép cắt biên đơn thuần không bảo đảm đồng thời mọi yêu cầu điều khiển.
+Tổng hệ số của mỗi hàng mômen trong $\mathbf A$ bằng không, nên phép dịch chung bảo toàn các mômen yêu cầu và thay đổi tổng lực đẩy thành $T_a=T+4\Delta f$. Phương án này dành thêm khả năng điều chỉnh tư thế bằng cách chấp nhận thay đổi lực đẩy nền. Nếu khoảng giá trị trong~\eqref{eq:background-collective-shift} rỗng, dịch chung không đủ để xử lý giới hạn; khi đó phải giảm yêu cầu mômen hoặc sử dụng cách phân bổ có xét thứ tự ưu tiên giữa các kênh.
 
-\subsection{Chuyển lực đẩy thành lệnh động cơ}
+% Cần bổ sung giới hạn lực đẩy theo cụm động cơ--cánh quạt--ESC và điều kiện nguồn thực tế.
 
-Với mô hình tĩnh $f_i=c_T\Omega_i^2$, tốc độ quay yêu cầu sau giới hạn là:
+\subsection{Chuyển lực đẩy thành lệnh điều khiển ESC}
+
+Sau phân bổ, lực đẩy khả dụng được chuyển thành tốc độ rôto yêu cầu theo mô hình tĩnh $f_i=c_T\Omega_i^2$:
 \begin{equation}
     \Omega_{i,d}=\sqrt{\frac{f_{i,a}}{c_T}},
-    \qquad u_i=\mathcal H_i(\Omega_{i,d}),
+    \qquad u_i=\mathcal H_i(\Omega_{i,d}).
     \label{eq:background-motor-command}
 \end{equation}
-trong đó $u_i$ là lệnh gửi đến bộ điều khiển tốc độ động cơ (ESC), còn $\mathcal H_i$ là quan hệ hiệu chuẩn trong miền làm việc. Quan hệ này phụ thuộc vào động cơ, cánh quạt, ESC và điều kiện nguồn. Lệnh PWM hoặc lệnh số chuẩn hóa biểu diễn mức yêu cầu của ESC; giá trị đó chỉ chuyển thành tốc độ quay thông qua đặc tính của cụm truyền động. Do đó, việc chuyển đổi được xây dựng từ mô hình hoặc dữ liệu hiệu chuẩn thay vì đồng nhất trực tiếp tốc độ rôto với giá trị lệnh.
+Trong đó, $u_i$ là lệnh gửi đến ESC và $\mathcal H_i$ là quan hệ chuyển đổi từ tốc độ yêu cầu sang lệnh trong miền làm việc. Quan hệ này phụ thuộc động cơ, cánh quạt, ESC và điện áp nguồn. Với giao tiếp PWM, lệnh được mã hóa bằng độ rộng xung điều khiển; độ rộng xung không trực tiếp biểu diễn tốc độ quay hay lực đẩy. Do đó, ma trận phân bổ hình học và quan hệ chuyển đổi sang lệnh ESC là hai khâu có ý nghĩa khác nhau.
 
-Trong quá trình quá độ, tốc độ thực còn chịu quán tính của động cơ và cánh quạt. Có thể biểu diễn ảnh hưởng cơ bản bằng mô hình bậc nhất:
+Lực đẩy cũng không thay đổi tức thời theo lệnh vì động cơ và cánh quạt có quán tính. Để biểu diễn đặc tính đáp ứng này, có thể xét mô hình bậc nhất với hằng số thời gian tương đương $T_m>0$:
 \begin{equation}
-    T_m\dot\Omega_i+\Omega_i=\Omega_{i,d},
+    T_m\dot\Omega_i+\Omega_i=\Omega_{i,d}.
     \label{eq:background-motor-lag}
 \end{equation}
-với $T_m$ là hằng số thời gian tương đương. Mô hình này cho thấy lực đẩy không thay đổi tức thời theo lệnh, đồng thời giải thích vì sao tốc độ cập nhật cao của vi điều khiển không tự làm tăng tương ứng băng thông cơ cấu chấp hành. Các tham số hình học, giới hạn lực đẩy và quan hệ lệnh--tốc độ được xác định trong phần thiết kế để hoàn thiện chuỗi từ mômen yêu cầu đến tác động lên quadrotor.
+Đây là mô hình xấp xỉ trong miền làm việc, chưa xác định đặc tính của một cụm động cơ cụ thể. Mô hình cho thấy việc tăng tốc độ cập nhật lệnh trên STM32 không đồng nghĩa với tăng tương ứng tốc độ đáp ứng của hệ động lực. Khi phân tích chất lượng điều khiển, diễn biến góc và vận tốc góc vì thế được xem xét cùng lệnh động cơ và tình trạng bão hòa.
+
+% Cần bổ sung c_T, quan hệ chuyển đổi H_i và T_m nếu dùng mô hình này để tính toán hoặc mô phỏng định lượng.

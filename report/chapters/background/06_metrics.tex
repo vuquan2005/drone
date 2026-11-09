@@ -1,27 +1,28 @@
 % !TEX root = ../../main.tex
-\section{Các chỉ tiêu đánh giá chất lượng điều khiển}
+\section{Cơ sở đánh giá chất lượng điều khiển cân bằng}
 \label{sec:background-metrics}
 
 \subsection{Sai lệch bám và dao động trong trạng thái xác lập}
 
-Chất lượng điều khiển được đánh giá từ đáp ứng đo trên mô hình vật lý. Các chỉ tiêu được tính riêng cho roll và pitch, với cùng quy ước đơn vị và khoảng thời gian khảo sát. Ký hiệu $\chi$ đại diện cho một trong hai góc $\phi$ hoặc $\theta$, $\chi_d[k]$ là góc đặt và $\hat\chi[k]$ là góc ước lượng tại mẫu thứ $k$. Sai lệch bám được xác định bởi:
+Đáp ứng của hệ điều khiển được mô tả qua khả năng duy trì tư thế, mức lệch góc khi có kích thích và quá trình trở về giá trị đặt. Để so sánh các đáp ứng từ mô phỏng hoặc thử nghiệm, các chỉ tiêu được xác định riêng cho roll và pitch trên những khoảng thời gian có cùng ý nghĩa.
+
+Ký hiệu $\chi$ đại diện cho góc $\phi$ hoặc $\theta$, $\chi_d[k]$ là góc đặt và $\hat\chi[k]$ là góc ước lượng tại mẫu thứ $k$. Sai lệch bám theo tín hiệu phản hồi được xác định bởi:
 \begin{equation}
     e_\chi[k]=\chi_d[k]-\hat\chi[k].
     \label{eq:background-angle-error}
 \end{equation}
-Góc trong các phương trình điều khiển sử dụng radian; khi biểu diễn bằng độ trên đồ thị, cả góc đặt và góc ước lượng được chuyển đổi theo cùng hệ số. Việc ghi nhận thời điểm lấy mẫu cho phép liên hệ biến thiên góc với đáp ứng của lệnh động cơ.
+Đối với bài toán trở về tư thế nằm ngang, góc đặt roll và pitch bằng không. Khi khảo sát một góc đặt khác không, cùng định nghĩa sai lệch này vẫn được sử dụng. Góc trong thuật toán tính bằng radian; nếu đồ thị dùng độ thì cả tín hiệu đặt và phản hồi đều được chuyển đổi về cùng đơn vị.
 
-Trên một tập gồm $N$ mẫu, căn quân phương của sai lệch (RMSE) và sai lệch tuyệt đối lớn nhất được tính theo:
+\clubpenalty=10000
+Trên một tập gồm $N$ mẫu, căn quân phương của sai lệch (RMSE) và sai lệch tuyệt đối lớn nhất được tính như sau:
 \begin{equation}
     e_{\mathrm{RMS},\chi}=\sqrt{\frac{1}{N}\sum_{k=1}^{N}e_\chi^2[k]},
     \qquad e_{\max,\chi}=\max_{1\leq k\leq N}|e_\chi[k]|.
     \label{eq:background-error-indices}
 \end{equation}
+RMSE phản ánh mức sai lệch trong toàn khoảng đánh giá và có cùng đơn vị với góc; sai lệch cực đại cho biết độ lệch lớn nhất, kể cả ở những thời điểm ngắn. Hai chỉ tiêu được so sánh trên các khoảng dữ liệu có cùng ý nghĩa.
 
-\clubpenalty=10000
-RMSE phản ánh mức sai lệch trong toàn khoảng đánh giá, còn $e_{\max,\chi}$ cho biết độ lệch lớn nhất xuất hiện trong khoảng đó. Hai chỉ tiêu bổ sung cho nhau khi đáp ứng có những thời điểm lệch góc ngắn nhưng biên độ lớn.
-
-Khi góc đặt không đổi, chọn một khoảng xác lập gồm $N_w$ mẫu để tính sai lệch trung bình và độ lệch chuẩn:
+Khi góc đặt không đổi, xét khoảng xác lập $\mathcal W$ gồm $N_w$ mẫu. Sai lệch trung bình và độ lệch chuẩn của sai lệch trên khoảng này là:
 \begin{equation}
     \begin{aligned}
         \bar e_\chi&=\frac{1}{N_w}\sum_{k\in\mathcal W}e_\chi[k],\\
@@ -30,36 +31,41 @@ Khi góc đặt không đổi, chọn một khoảng xác lập gồm $N_w$ mẫ
     \end{aligned}
     \label{eq:background-steady-error}
 \end{equation}
-Ở đây, $\mathcal W$ là tập chỉ số thuộc khoảng xác lập. Giá trị $\bar e_\chi$ thể hiện sai lệch duy trì, còn $\sigma_{e,\chi}$ mô tả mức phân tán của tín hiệu phản hồi quanh giá trị trung bình. Dao động cơ học và nhiễu đo đều có thể ảnh hưởng đến đại lượng này, nên diễn biến góc được xem xét cùng vận tốc góc và lệnh động cơ.
+Giá trị $\bar e_\chi$ mô tả sai lệch duy trì, còn $\sigma_{e,\chi}$ phản ánh mức phân tán quanh giá trị trung bình. Hai đại lượng bổ sung cho nhau khi xét đáp ứng vừa có sai lệch vừa dao động. Nhiễu đo cũng ảnh hưởng đến các chỉ tiêu, nên góc ước lượng được xem xét cùng vận tốc góc và lệnh động cơ.
 
 \subsection{Độ quá điều chỉnh và thời gian xác lập}
 
-Đáp ứng quá độ được khảo sát khi thay đổi góc đặt hoặc khi tư thế bị lệch khỏi trạng thái mong muốn. Độ quá điều chỉnh và thời gian xác lập là các chỉ tiêu thường dùng để mô tả mức vượt giá trị cuối và tốc độ ổn định của đáp ứng~\cite{astrom2021feedback}.
+Các chỉ tiêu xác lập chưa phản ánh đầy đủ quá trình chuyển từ trạng thái ban đầu đến tư thế mong muốn. Độ quá điều chỉnh và thời gian xác lập mô tả lần lượt mức vượt giá trị cuối và tốc độ ổn định của đáp ứng~\cite{astrom2021feedback}.
 
-Với bước thay đổi góc đặt từ $\chi_{d0}$ sang $\chi_{d1}$ tại thời điểm $t_0$, đặt $\Delta\chi_d=\chi_{d1}-\chi_{d0}\ne0$ và $s_\chi=\operatorname{sgn}(\Delta\chi_d)$. Độ quá điều chỉnh theo phần trăm được xác định theo hướng của bước đặt:
+Với bước thay đổi góc đặt từ $\chi_{d0}$ sang $\chi_{d1}$ tại thời điểm $t_0$, đặt $\Delta\chi_d=\chi_{d1}-\chi_{d0}\ne0$ và $s_\chi=\operatorname{sgn}(\Delta\chi_d)$. Độ quá điều chỉnh theo phần trăm được xác định theo chiều thay đổi của góc đặt:
 \begin{equation}
     M_{p,\chi}=\frac{\max\!\left(0,\ \max_{k\in\mathcal K}
         \left[s_\chi\bigl(\hat\chi[k]-\chi_{d1}\bigr)\right]\right)}
         {|\Delta\chi_d|}\,100\%.
     \label{eq:background-overshoot}
 \end{equation}
-Trong đó, $\mathcal K$ là tập mẫu sau bước đặt và trước lần thay đổi lệnh tiếp theo. Cách xác định này áp dụng cho cả bước tăng và bước giảm góc đặt. Với phép thử khôi phục tư thế về góc đặt không đổi, độ lệch cực đại được biểu diễn trực tiếp bằng độ hoặc radian để tránh chuẩn hóa theo một bước đặt bằng không.
+Ở đây, $\mathcal K$ là tập mẫu sau bước đặt và trước lần thay đổi lệnh tiếp theo. Hệ số $s_\chi$ cho phép sử dụng cùng biểu thức cho bước tăng và bước giảm. Nếu góc đặt không đổi và hệ thống chỉ chịu tác động gây lệch tư thế, $\Delta\chi_d=0$; khi đó dùng độ lệch góc cực đại theo đơn vị độ hoặc radian, thay vì tính độ quá điều chỉnh theo biểu thức trên.
 
-\begin{samepage}
-Thời gian xác lập được tính từ thời điểm kích thích đến khi sai lệch đi vào dải cho phép và duy trì trong dải đó đến hết khoảng quan sát. Với chu kỳ lấy mẫu $T_s$, mẫu bắt đầu $k_0$ và mẫu kết thúc $k_f$, chọn $N_h\geq2$ là số mẫu duy trì tối thiểu để xác nhận đáp ứng. Tập chỉ số xét là $\mathcal K_s=\{k_0,\ldots,k_f-N_h+1\}$, từ đó:
+Thời gian xác lập là khoảng từ thời điểm kích thích đến khi sai lệch đi vào dải cho phép và duy trì trong dải đó trong phần còn lại của khoảng quan sát. Gọi $k_0$, $k_f$ là mẫu bắt đầu và kết thúc, $T_s$ là chu kỳ lấy mẫu đều. Chọn $N_h\geq2$ là số mẫu duy trì tối thiểu để xác nhận đáp ứng và đặt $\mathcal K_s=\{k_0,\ldots,k_f-N_h+1\}$. Khi tồn tại chỉ số thỏa mãn, ta có:
 \begin{equation}
-    t_{s,\chi}=\min_{k\in\mathcal K_s}\left\{(k-k_0)T_s:\
-        |e_\chi[j]|\leq\varepsilon_\chi,
-        \ \forall j=k,\ldots,k_f\right\}.
+    \begin{aligned}
+        t_{s,\chi}&=(k_s-k_0)T_s,\\
+        k_s&=\min\left\{k\in\mathcal K_s:\
+            |e_\chi[j]|\leq\varepsilon_\chi,
+            \quad \forall j=k,\ldots,k_f\right\}.
+    \end{aligned}
     \label{eq:background-settling-time}
 \end{equation}
-\end{samepage}
-Ngưỡng $\varepsilon_\chi$ được chọn phù hợp với yêu cầu giữ góc và độ phân giải của phép đo. Số mẫu $N_h$ xác định khoảng duy trì tối thiểu $(N_h-1)T_s$; cả hai thông số được sử dụng thống nhất giữa các lần thử. Khi không có chỉ số thỏa mãn hoặc dữ liệu sau lần vào dải chưa đủ $N_h$ mẫu, thời gian xác lập được ghi nhận là chưa xác định trong khoảng quan sát. Với chu kỳ lấy mẫu không đều, khoảng thời gian được tính từ dấu thời gian thực tế và điều kiện duy trì được kiểm tra theo thời gian.
+Ngưỡng $\varepsilon_\chi$ biểu diễn dải sai lệch cho phép; $(N_h-1)T_s$ là thời gian duy trì tối thiểu. Hai đại lượng này được lựa chọn theo yêu cầu giữ góc và khả năng đo, rồi giữ thống nhất giữa các đáp ứng được so sánh. Nếu sai lệch chưa vào dải hoặc thời gian duy trì chưa đủ, thời gian xác lập chưa xác định được trong khoảng quan sát. Khi lấy mẫu không đều, khoảng thời gian được tính từ dấu thời gian của dữ liệu thay vì nhân số mẫu với $T_s$.
 
-\subsection{Khả năng khôi phục tư thế và điều kiện đánh giá}
+% Cần bổ sung dải sai lệch cho phép, thời gian duy trì tối thiểu và khoảng dữ liệu đánh giá theo yêu cầu thực tế.
 
-Khả năng khôi phục tư thế được khảo sát bằng tác động gây lệch góc trong miền làm việc của hệ thống. Khi tác động kết thúc, góc đặt được giữ không đổi và theo dõi diễn biến góc trở về dải sai lệch cho phép. Các đại lượng dùng để đánh giá gồm độ lệch góc cực đại, thời gian khôi phục, mức dao động còn lại và sự xuất hiện bão hòa lệnh động cơ. Những đại lượng này phản ánh đồng thời khả năng hiệu chỉnh sai lệch và giới hạn tác động của hệ động lực.
+\subsection{Khả năng khôi phục tư thế và giới hạn đánh giá}
 
-Các phép thử được mô tả cùng cấu hình phần cứng, điều kiện nguồn điện, góc đặt, cách tạo sai lệch và khoảng thời gian ghi dữ liệu. Khi so sánh các bộ hệ số điều khiển, điều kiện thử và cách tính chỉ tiêu được giữ thống nhất.
+Khả năng khôi phục tư thế được khảo sát khi giữ góc đặt không đổi và có góc lệch ban đầu hoặc mômen nhiễu. Độ lệch cực đại, thời gian khôi phục và dao động còn lại mô tả quá trình trở về. Thời gian khôi phục dùng cùng tiêu chí vào dải và duy trì như thời gian xác lập, tính từ lúc kết thúc nhiễu hoặc bắt đầu khảo sát từ góc lệch ban đầu. Lệnh động cơ cho biết yêu cầu điều khiển có bị giới hạn hay không.
 
-Các chỉ tiêu bám tính theo $\hat\chi$ phản ánh chất lượng điều khiển đối với tín hiệu tư thế ước lượng; độ chính xác tuyệt đối của góc được xác định bằng phép đối chiếu với chuẩn đo góc độc lập. Phương án đo, điều kiện thực nghiệm và kết quả đánh giá của đề tài được trình bày trong \charef{chap:evaluation}.
+Điều kiện đánh giá gồm mô hình và tham số khi mô phỏng, hoặc phần cứng, nguồn điện và liên kết cơ khí khi thử nghiệm. Phản lực, mômen liên kết và ma sát trên bệ có thể làm thay đổi chuyển động; kết quả trên bệ vì thế chỉ phản ánh điều kiện thử tương ứng. Khả năng cân bằng khi bay tự do đòi hỏi kiểm chứng riêng. Điều kiện kích thích, khoảng ghi nhận và cách tính chỉ tiêu được giữ thống nhất khi so sánh.
+
+Sai lệch tính theo $\hat\chi$ phản ánh chất lượng bám của tín hiệu tư thế ước lượng, vốn còn chịu sai số cảm biến và bộ ước lượng. Độ chính xác tuyệt đối của góc thực đòi hỏi đối chiếu với nguồn đo độc lập có độ chính xác phù hợp.
+
+% Cần bổ sung phương án kiểm chứng thực tế và nguồn đo góc độc lập nếu đánh giá độ chính xác tuyệt đối.

@@ -2,7 +2,7 @@
 \chapter{CƠ SỞ LÝ THUYẾT}
 \label{chap:background}
 
-Chương này trình bày cơ sở lý thuyết phục vụ thiết kế bộ điều khiển ổn định tư thế quadrotor. Các nội dung gồm nguyên lý tạo lực đẩy và mômen, mô hình động lực học, ước lượng tư thế từ cảm biến quán tính, điều khiển xếp tầng, phân bổ lệnh động cơ và các chỉ tiêu đánh giá bằng dữ liệu thực nghiệm. Các quy ước được sử dụng thống nhất để liên kết mô hình toán học với phương án triển khai trên STM32.
+Để điều khiển cân bằng quadrotor, cần xác định thân máy bay đang nghiêng như thế nào và mômen nào có thể làm giảm sai lệch đó. Mô hình động lực học mô tả quan hệ giữa mômen và chuyển động quay; cảm biến quán tính cung cấp dữ liệu để ước lượng góc và vận tốc góc. Từ các đại lượng phản hồi này, bộ điều khiển tính tác động yêu cầu, còn khâu phân bổ chuyển yêu cầu thành lệnh cho bốn động cơ. Các nội dung lý thuyết được xây dựng theo chuỗi quan hệ trên, với trọng tâm là roll và pitch gần tư thế nằm ngang. Bộ lọc bổ sung và điều khiển xếp tầng được xét như những phương án nghiên cứu, với các tham số giữ dưới dạng ký hiệu khi chưa có dữ liệu xác định.
 
 \begingroup
 \widowpenalty=10000

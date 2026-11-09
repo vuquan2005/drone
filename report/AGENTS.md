@@ -14,6 +14,7 @@
 
 - Giữ kiểu bảng thống nhất, có chú thích và `\label`; tránh hàng bị chia trang, chữ tràn ô và tiêu đề bảng đứng tách khỏi bảng.
 - Xem ảnh trước khi chèn. Chú thích phải đúng đối tượng; ảnh chip không gọi là ảnh cả bo mạch, ảnh của một dòng sản phẩm không khẳng định là đúng mọi biến thể.
+- Trước khi thay hoặc chỉnh ảnh, đối chiếu nội dung liên quan trong báo cáo: đoạn mô tả, chú thích, tham chiếu, quy ước trục, chiều quay, ký hiệu, thông số và công thức sử dụng hình. Ảnh thay thế phải thể hiện đủ thông tin cần thiết và nhất quán với các nội dung này; cập nhật phần liên quan khi cần.
 - Dùng ảnh trong `figures/chXX/` ở đúng phần mô tả thiết bị. Giữ nguyên tỉ lệ, cắt lề trắng khi cần và không che mất nội dung ảnh.
 - Kích thước ảnh phải đủ để nhận biết linh kiện ở khổ A4. Có thể bắt đầu khoảng 0,4–0,6 chiều rộng dòng cho ảnh thiết bị, rồi điều chỉnh theo phần vật thể thực sự nhìn thấy và độ phân giải.
 - Có thể đặt hai ảnh liên quan cạnh nhau, như cell pin và BMS. Sơ đồ phải có chữ đọc được ở kích thước in.

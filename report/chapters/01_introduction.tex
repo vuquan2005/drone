@@ -5,16 +5,16 @@
 \begingroup
 \widowpenalty=10000
 
-Chương này trình bày quá trình phát triển của quadrotor và những vấn đề đặt ra khi thiết kế bộ điều khiển ổn định tư thế. Trên cơ sở đó, mục tiêu, đối tượng, phạm vi, phương pháp nghiên cứu và kết quả dự kiến của đề tài được xác định để làm cơ sở triển khai các chương tiếp theo.
+Quadrotor tạo lực đẩy và mômen điều khiển bằng bốn cụm động cơ--cánh quạt. Khi lực đẩy giữa các rôto thay đổi, thân máy bay có thể nghiêng hoặc quay, làm thay đổi cả tư thế và hướng tác dụng của tổng lực đẩy. Vì vậy, khả năng duy trì tư thế là một yêu cầu cơ bản đối với bộ điều khiển quadrotor. Đề tài \textbf{Nghiên cứu, thiết kế bộ điều khiển cân bằng quadrotor} tập trung nghiên cứu quan hệ giữa chuyển động quay, thông tin cảm biến và tác động điều khiển để xây dựng phương án ổn định thân máy bay gần tư thế nằm ngang.
 
-\section{Lịch sử nghiên cứu và phát triển}
+\section{Tổng quan tình hình nghiên cứu và phát triển}
 \label{sec:introduction-history}
 
-Cấu hình thiết bị bay sử dụng bốn rôto đã xuất hiện từ đầu thế kỷ XX. Năm 1907, Gyroplane Breguet--Richet số 1 được thử nghiệm nâng khỏi mặt đất, song vẫn cần sự hỗ trợ từ người dưới mặt đất để duy trì ổn định~\cite{artsmetiers1907gyroplane}.
+Cấu hình thiết bị bay bốn rôto đã xuất hiện từ đầu thế kỷ XX. Năm 1907, Gyroplane Breguet--Richet số 1 được thử nghiệm nâng khỏi mặt đất nhưng vẫn cần người dưới mặt đất hỗ trợ giữ ổn định~\cite{artsmetiers1907gyroplane}. Việc tạo đủ lực nâng do đó mới chỉ đáp ứng một phần yêu cầu hoạt động; thiết bị còn cần khả năng điều chỉnh tư thế khi có sai lệch.
 
-Sự phát triển của quadrotor cỡ nhỏ gắn liền với tiến bộ của cảm biến quán tính, cơ cấu chấp hành, nguồn điện và bộ xử lý nhúng. Vào đầu những năm 2000, việc tích hợp các thành phần này đã tạo điều kiện xây dựng những mô hình có khả năng thu nhận trạng thái chuyển động và ổn định tư thế bằng điều khiển phản hồi. Hướng nghiên cứu kết hợp thiết kế cơ khí, mô hình hóa động lực học, đo lường và điều khiển~\cite{bouabdallah2004design}.
+Sự phát triển của cảm biến quán tính vi cơ điện tử, nguồn điện và bộ xử lý nhúng tạo điều kiện thu nhỏ hệ thống đo lường và điều khiển. Các quadrotor cỡ nhỏ có thể tích hợp cảm biến để đo chuyển động, bộ xử lý để tính toán và cơ cấu chấp hành để thay đổi lực đẩy. Đây là cơ sở xây dựng vòng điều khiển phản hồi, trong đó trạng thái đo hoặc ước lượng được so sánh với giá trị mong muốn để xác định tác động hiệu chỉnh~\cite{bouabdallah2004design}.
 
-Năm 2004, Bouabdallah, Murrieri và Siegwart công bố nghiên cứu về thiết kế và điều khiển quadrotor OS4 tại Trường Bách khoa Liên bang Lausanne (EPFL). Công trình trình bày kết cấu cơ khí, mô hình động lực học, hệ thống cảm biến và bệ thử phục vụ khảo sát bộ điều khiển. Mô hình OS4 trên bệ thử được minh họa trong \fref{fig:os4-test-bench}; việc giới hạn một số bậc tự do cho phép nghiên cứu chuyển động quay trước khi mở rộng sang thử nghiệm bay~\cite{bouabdallah2004design}.
+Năm 2004, Bouabdallah, Murrieri và Siegwart công bố nghiên cứu thiết kế và điều khiển quadrotor OS4 tại Trường Bách khoa Liên bang Lausanne (EPFL). Công trình kết hợp thiết kế cơ khí, mô hình động lực học, hệ thống cảm biến và thử nghiệm điều khiển tư thế~\cite{bouabdallah2004design}. Bệ thử trong \fref{fig:os4-test-bench} giới hạn một số bậc tự do để khảo sát chuyển động quay. Cách tiếp cận này cho phép nghiên cứu đáp ứng tư thế trong điều kiện có ràng buộc trước khi mở rộng sang thử nghiệm bay.
 
 \begin{figure}[htbp]
     \centering
@@ -23,54 +23,52 @@ Năm 2004, Bouabdallah, Murrieri và Siegwart công bố nghiên cứu về thi�
     \label{fig:os4-test-bench}
 \end{figure}
 
-Cũng trong năm 2004, Bouabdallah, Noth và Siegwart khảo sát điều khiển tỉ lệ--tích phân--vi phân (PID) và điều khiển tối ưu tuyến tính toàn phương (LQ) cho OS4. Các phương án được xây dựng từ những mức độ giản lược mô hình khác nhau và được đánh giá bằng mô phỏng, thử nghiệm trên bệ cùng các kết quả thử bay ban đầu. Nghiên cứu cho thấy mô hình toán học và thực nghiệm có vai trò bổ sung cho nhau trong quá trình thiết kế bộ điều khiển~\cite{bouabdallah2004pidlqr}.
+Cũng trong năm 2004, Bouabdallah, Noth và Siegwart khảo sát điều khiển tỉ lệ--tích phân--vi phân (PID) và điều khiển tối ưu tuyến tính toàn phương (LQ) cho OS4. Các phương án được đánh giá bằng mô phỏng và thử nghiệm trên bệ; kết quả thử bay ban đầu với PID cho thấy khả năng ổn định tư thế khi nhiễu nhỏ. Nghiên cứu đồng thời chỉ ra ảnh hưởng của sai số mô hình và động lực học cơ cấu chấp hành đến đáp ứng~\cite{bouabdallah2004pidlqr}. Điều này cho thấy chất lượng điều khiển phụ thuộc cả luật điều khiển lẫn mức độ mô tả đúng hệ động lực.
+
+Các nghiên cứu về sau mở rộng sang chuyển động có góc nghiêng lớn và bám quỹ đạo. Năm 2010, Lee, Leok và McClamroch đề xuất điều khiển hình học sử dụng ma trận quay để biểu diễn tư thế, tránh điểm kỳ dị của biểu diễn góc Euler; các tính chất của hệ kín được phân tích và minh họa bằng mô phỏng~\cite{lee2010geometric}. Năm 2011, Mellinger và Kumar kết hợp sinh quỹ đạo tối ưu với điều khiển phi tuyến, đồng thời kiểm chứng khả năng bám quỹ đạo ba chiều bằng thực nghiệm~\cite{mellinger2011minimum}. Những công trình này xét miền chuyển động rộng hơn bài toán cân bằng quanh tư thế nằm ngang.
+
+Ở Việt Nam, Hoàng Văn Huy công bố nghiên cứu năm 2024 về mô hình quadrotor có xét cơ cấu chấp hành là động cơ điện một chiều với bộ điều khiển thích nghi. Hệ thống được kiểm chứng bằng mô phỏng trên MATLAB/Simulink~\cite{huy2024simulation}. Nội dung có liên quan đến đề tài là việc đưa đặc tính cơ cấu chấp hành vào quá trình phân tích, thay vì xem lực đẩy thay đổi tức thời theo lệnh điều khiển.
 
 \clubpenalty=10000
-Các nghiên cứu sau đó mở rộng từ ổn định tư thế sang điều khiển phi tuyến và bám quỹ đạo. Năm 2010, Lee, Leok và McClamroch đề xuất phương pháp điều khiển bám hình học trên nhóm Euclid đặc biệt $SE(3)$, biểu diễn đồng thời vị trí và tư thế của quadrotor. Việc sử dụng ma trận quay cho phép tránh điểm kỳ dị của biểu diễn góc Euler và xem xét chuyển động có góc quay lớn; các tính chất của hệ kín được phân tích lý thuyết và minh họa bằng mô phỏng~\cite{lee2010geometric}. Năm 2011, Mellinger và Kumar kết hợp sinh quỹ đạo theo tiêu chuẩn minimum snap với điều khiển phi tuyến để thực hiện bám quỹ đạo ba chiều, đồng thời kiểm chứng bằng thực nghiệm~\cite{mellinger2011minimum}.
-
-Ở Việt Nam, bài toán mô hình hóa và điều khiển quadrotor cũng được nghiên cứu theo nhiều hướng. Năm 2024, Hoàng Văn Huy trình bày mô hình động lực học có xét cơ cấu chấp hành là động cơ điện một chiều với bộ điều khiển thích nghi, đồng thời mô phỏng hệ điều khiển trên MATLAB/Simulink. Công trình là một ví dụ về việc xét thêm đặc tính cơ cấu chấp hành khi xây dựng hệ điều khiển quadrotor~\cite{huy2024simulation}.
-
-Những công trình trên thể hiện sự phát triển từ thiết kế mô hình và ổn định tư thế đến các bài toán điều khiển có yêu cầu cơ động cao. Đối với đề tài này, mô hình hóa động lực học và điều khiển tư thế là cơ sở tham khảo trực tiếp. Hướng tiếp cận được lựa chọn là tập trung vào góc roll và pitch trong miền góc nghiêng nhỏ, tạo nền tảng để triển khai bộ điều khiển trên vi điều khiển và đánh giá bằng dữ liệu của hệ thống.
+Từ các hướng nghiên cứu đã khảo sát, đề tài tập trung vào bài toán cân bằng gần tư thế nằm ngang. Mô hình giản lược trong miền làm việc này giúp làm rõ quan hệ từ mômen đến vận tốc góc và góc nghiêng, đồng thời phù hợp để nghiên cứu điều khiển phản hồi trên STM32. Vấn đề cần giải quyết là phối hợp mô hình, ước lượng tư thế và tác động của bốn động cơ trong cùng một hệ thống điều khiển.
 
 \section{Các vấn đề đặt ra và mục tiêu nghiên cứu}
 \label{sec:introduction-objectives}
 
-Vấn đề đầu tiên là xác định mô hình phù hợp để mô tả quan hệ giữa lực đẩy, mômen và chuyển động quay của quadrotor. Mô hình phải phản ánh được các yếu tố chi phối đáp ứng tư thế, đồng thời có mức độ phức tạp phù hợp với việc thiết kế và triển khai bộ điều khiển. Khối lượng, vị trí trọng tâm, mômen quán tính và đặc tính của cụm động cơ--cánh quạt là những yếu tố ảnh hưởng đến quan hệ này. Sai lệch giữa mô hình và hệ thống thực có thể làm thay đổi đáp ứng sau khi lựa chọn các hệ số điều khiển.
+Khi quadrotor bị nghiêng, bộ điều khiển phải tạo mômen phù hợp với sai lệch góc và vận tốc quay để đưa thân về tư thế mong muốn. Để xác định tác động này, cần mô tả được quan hệ giữa lực đẩy từng rôto, mômen tác dụng và chuyển động quay của thân máy bay. Phân bố khối lượng và mômen quán tính ảnh hưởng đến đáp ứng của từng trục; các chuyển động quay còn có liên kết với nhau. Vì vậy, việc sử dụng mô hình giản lược phải đi kèm giả thiết về tư thế và vận tốc góc.
 
-Vấn đề tiếp theo là thu nhận thông tin phản hồi đủ tin cậy. Con quay hồi chuyển cung cấp vận tốc góc nhưng sai lệch đo có thể tích lũy khi tích phân để tính góc; gia tốc kế cung cấp thông tin liên quan đến phương trọng lực nhưng chịu ảnh hưởng của rung động và gia tốc chuyển động. Việc kết hợp và lọc dữ liệu phải cân bằng giữa khả năng giảm nhiễu với độ trễ của tín hiệu. Bên cạnh đó, giới hạn lệnh động cơ và thời gian thực hiện chương trình trên vi điều khiển ảnh hưởng đến khả năng đáp ứng của vòng điều khiển.
+Thông tin phản hồi cũng ảnh hưởng trực tiếp đến kết quả điều khiển. Con quay hồi chuyển đo vận tốc góc, nhưng sai lệch điểm không của cảm biến gây trôi góc khi tích phân. Gia tốc kế hỗ trợ xác định phương trọng lực khi gia tốc chuyển động nhỏ, song chịu ảnh hưởng của rung động và chuyển động tịnh tiến. Bài toán đặt ra là kết hợp các tín hiệu đo để ước lượng tư thế, đồng thời hạn chế nhiễu và độ trễ phản hồi.
 
-Từ các vấn đề trên, mục tiêu tổng quát của đề tài là xây dựng cơ sở mô hình hóa và thiết kế bộ điều khiển ổn định tư thế cho quadrotor, tập trung vào điều khiển góc roll và pitch trong lân cận tư thế nằm ngang. Bộ điều khiển hướng đến duy trì các góc tại giá trị đặt và hiệu chỉnh sai lệch để khôi phục tư thế mong muốn khi có tác động làm lệch góc.
+Mômen yêu cầu còn phải nằm trong khả năng thực hiện của hệ động lực. Lực đẩy có giới hạn và phụ thuộc vào đặc tính động cơ, cánh quạt, bộ điều khiển tốc độ động cơ (ESC) và nguồn điện. Khi lệnh vượt giới hạn, mômen tạo ra có thể khác giá trị mà bộ điều khiển yêu cầu. Đối với bộ điều khiển số, chu kỳ lấy mẫu và thời gian tính toán cũng phải phù hợp với tốc độ biến thiên của chuyển động.
 
-Để thực hiện mục tiêu đó, đề tài xác lập hệ tọa độ và mô hình động lực học phục vụ thiết kế; xây dựng phương án thu nhận, hiệu chỉnh và xử lý dữ liệu cảm biến; lựa chọn cấu trúc điều khiển và phương pháp phân bổ lệnh cho bốn động cơ. Cấu trúc điều khiển xếp tầng, gồm vòng góc bên ngoài và vòng vận tốc góc bên trong, được lựa chọn để nghiên cứu, trong đó PID là phương án tập trung khảo sát cho vòng trong. Khả năng đáp ứng được đánh giá qua sai lệch góc, mức dao động, độ quá điều chỉnh, thời gian xác lập và khả năng khôi phục tư thế sau tác động nhiễu.
+Mục tiêu tổng quát của đề tài là nghiên cứu, thiết kế bộ điều khiển cân bằng quadrotor theo hướng ổn định góc lăn (roll) và góc chúc ngóc (pitch) gần tư thế nằm ngang, với nền tảng xử lý là vi điều khiển STM32. Bộ điều khiển hướng đến giảm sai lệch giữa góc mong muốn và góc phản hồi, hạn chế dao động và tạo tác động đưa thân máy bay trở lại tư thế mong muốn sau nhiễu trong miền khảo sát.
+
+Các nhiệm vụ chuyên môn gồm thiết lập mô hình động lực học quay, nghiên cứu phương pháp ước lượng tư thế từ cảm biến quán tính, xây dựng luật điều khiển và phân bổ tác động cho bốn động cơ. Bộ lọc bổ sung và cấu trúc điều khiển xếp tầng là các phương án được khảo sát. Trong đó, vòng ngoài xử lý sai lệch góc, còn vòng trong xử lý sai lệch vận tốc góc. Chất lượng đáp ứng được xem xét thông qua sai lệch, dao động, độ quá điều chỉnh và thời gian xác lập, thay vì chỉ dựa vào quan sát thân máy bay có trở về nằm ngang hay không.
 
 \section{Đối tượng và phạm vi nghiên cứu}
 \label{sec:introduction-scope}
 
-Đối tượng nghiên cứu là hệ thống điều khiển tư thế của quadrotor, bao gồm động lực học quay của thân máy bay, các cụm động cơ--cánh quạt, cảm biến quán tính và bộ điều khiển thực hiện trên vi điều khiển STM32. Mối quan hệ giữa phần cơ khí, tín hiệu đo và thuật toán điều khiển được xem xét nhằm xây dựng một hệ thống có thể triển khai và đánh giá trên mô hình của đề tài.
+Đối tượng nghiên cứu là hệ thống điều khiển cân bằng quadrotor, gồm chuyển động quay của thân máy bay, các cụm động cơ--cánh quạt, bộ điều khiển tốc độ động cơ (ESC), đơn vị đo lường quán tính (IMU) và bộ xử lý STM32. Nội dung tập trung vào chuỗi quan hệ từ tín hiệu cảm biến đến tư thế ước lượng, từ sai lệch tư thế đến mômen yêu cầu và từ mômen yêu cầu đến lệnh động cơ.
 
-Phạm vi mô hình hóa tập trung vào chuyển động quay quanh các trục thân máy bay. Thân máy bay được xem là vật rắn; điều kiện làm việc được giới hạn trong miền góc roll và pitch nhỏ quanh tư thế nằm ngang. Trên cơ sở này, mô hình được giản lược để phục vụ thiết kế bộ điều khiển và phân tích đáp ứng. Các kết luận về chất lượng điều khiển được gắn với miền làm việc và điều kiện thử nghiệm tương ứng, không mở rộng sang chuyển động cơ động có góc nghiêng lớn.
+Trong phạm vi lý thuyết đang khảo sát, cân bằng được hiểu là ổn định roll và pitch quanh tư thế nằm ngang. Thân máy bay được xem là vật rắn; mô hình điều khiển được giản lược khi góc nghiêng và vận tốc góc nhỏ. Cấu hình chữ X, hệ trục và số thứ tự rôto được sử dụng như quy ước của mô hình tính toán. Các quy ước này xác định dấu lực và mômen, không thay thế việc đối chiếu với cách bố trí và đấu nối trên mô hình thực tế.
 
-Phạm vi thực hiện gồm xử lý dữ liệu quán tính, ước lượng roll và pitch, tính toán tác động điều khiển, phân bổ lệnh động cơ và ghi nhận các đại lượng phục vụ đánh giá. Điều khiển góc hướng yaw được xem xét như nội dung bổ sung theo cấu hình cảm biến và yêu cầu thiết kế. Giữ độ cao, giữ vị trí, dẫn đường và bay tự động được xác định là những hướng phát triển tiếp theo; việc đánh giá trong đề tài tập trung vào khả năng ổn định tư thế.
+Chuyển động yaw được xét trong mô hình tổng quát để mô tả mômen phản lực và quan hệ giữa các chuyển động quay. Phần tổng hợp luật điều khiển tập trung vào roll và pitch. Ổn định hai góc này không đồng thời bảo đảm giữ độ cao hoặc vị trí, vì chuyển động tịnh tiến còn phụ thuộc vào tổng lực đẩy và các lực bên ngoài.
+
+% Cần bổ sung: xác nhận cấu hình phần cứng thực tế, phạm vi điều khiển yaw và hình thức kiểm chứng của nhóm.
+Phạm vi trình bày hiện gồm cơ sở mô hình hóa và phương án thiết kế điều khiển. Các tham số phần cứng, mức độ triển khai chương trình và điều kiện kiểm chứng cụ thể cần được xác lập từ hệ thống của đề tài. Kết luận về khả năng vận hành được giới hạn theo mô hình và dữ liệu kiểm chứng tương ứng; với phép thử trên bệ, ảnh hưởng của liên kết cơ khí phải được xét cùng chuyển động quay.
 
 \section{Phương pháp nghiên cứu}
 \label{sec:introduction-methods}
 
-Đề tài kết hợp nghiên cứu tài liệu, phân tích và mô hình hóa toán học, triển khai thuật toán trên vi điều khiển và thực nghiệm trên mô hình vật lý. Việc khảo sát tài liệu tập trung vào nguyên lý quadrotor, động lực học vật rắn, ước lượng tư thế và điều khiển phản hồi. Các công trình đã công bố được sử dụng để lựa chọn cách biểu diễn trạng thái, cấu trúc bộ điều khiển và phương thức kiểm chứng phù hợp với mục tiêu roll, pitch góc nhỏ.
+Đề tài sử dụng phương pháp nghiên cứu tài liệu kết hợp mô hình hóa toán học và thiết kế điều khiển số. Tài liệu về quadrotor được đối chiếu theo ba nội dung: nguyên lý tạo lực và mômen, phương pháp xác định tư thế, cấu trúc điều khiển phản hồi. Kết quả khảo sát được dùng để xây dựng phương án phù hợp với mục tiêu cân bằng và nền tảng STM32.
 
-Phương pháp mô hình hóa dựa trên các quan hệ lực và mômen tác dụng lên thân máy bay. Sau khi thống nhất hệ tọa độ, chiều dương và ký hiệu, các phương trình chuyển động được thiết lập và giản lược quanh điều kiện làm việc đã chọn. Mô hình này là cơ sở phân tích ảnh hưởng của tham số và lựa chọn ban đầu các hệ số điều khiển. Đối với dữ liệu cảm biến, phương án xử lý được xây dựng từ việc hiệu chỉnh sai lệch đo và kết hợp thông tin gia tốc với vận tốc góc để ước lượng tư thế.
+Mô hình động lực học được thiết lập theo phương pháp Newton--Euler, với hệ tọa độ, chiều dương và đơn vị thống nhất. Từ phương trình quay tổng quát, mô hình được giản lược quanh tư thế nằm ngang để phân tích quan hệ giữa mômen, vận tốc góc và góc nghiêng. Các tham số chưa có dữ liệu xác nhận được giữ dưới dạng ký hiệu, làm cơ sở xác định yêu cầu đo đạc hoặc tính toán.
 
-\clubpenalty=10000
-Thuật toán được triển khai trên STM32 theo các chức năng thu nhận dữ liệu cảm biến, ước lượng tư thế, tính toán điều khiển và phân bổ lệnh động cơ. Quá trình kiểm tra được thực hiện từ từng khối chức năng đến vòng điều khiển hoàn chỉnh. Dữ liệu cảm biến, chiều tác động của lệnh động cơ và chu kỳ thực hiện chương trình được kiểm tra trước khi khảo sát khả năng ổn định tư thế trên mô hình có giới hạn chuyển động phù hợp.
+Đối với đo lường, hướng nghiên cứu là hiệu chỉnh sai lệch điểm không, quy đổi dữ liệu về hệ trục thân và kết hợp gia tốc kế với con quay hồi chuyển bằng bộ lọc bổ sung. Đối với điều khiển, phương án khảo sát gồm bộ điều khiển tỉ lệ ở vòng góc và PID ở vòng vận tốc góc. Luật điều khiển được biểu diễn ở dạng rời rạc để phân tích ảnh hưởng của chu kỳ lấy mẫu, lọc thành phần vi phân và giới hạn tích phân. Khâu phân bổ chuyển tổng lực đẩy và mômen yêu cầu thành lực đẩy từng rôto, sau đó liên hệ với tín hiệu gửi đến ESC.
 
-Thực nghiệm điều khiển tập trung khảo sát đáp ứng khi thay đổi góc đặt, khi có sai lệch tư thế ban đầu và khi có tác động làm lệch góc. Góc đặt, góc ước lượng, vận tốc góc và lệnh động cơ được ghi nhận theo thời gian. Các hệ số điều khiển được hiệu chỉnh dựa trên đáp ứng đo được, đồng thời xét giới hạn tác động điều khiển. Dữ liệu thực nghiệm là cơ sở đánh giá sai lệch góc, mức dao động, độ quá điều chỉnh, thời gian xác lập và khả năng khôi phục tư thế; điều kiện thử và cách xác định các chỉ tiêu được trình bày tại \charef{chap:evaluation}.
+Phương án chương trình trên STM32 tổ chức các chức năng thu nhận dữ liệu, ước lượng tư thế, tính toán điều khiển và cập nhật lệnh động cơ theo chu kỳ. Việc kiểm chứng từng khối tập trung vào chiều trục cảm biến, dấu phản hồi, chiều mômen và thời gian thực hiện. Các điều kiện này giúp phân biệt sai lệch do quy ước hoặc kết nối với sai lệch do hệ số điều khiển.
 
-\section{Dự kiến kết quả đạt được}
-\label{sec:introduction-expected-results}
-
-Về lý thuyết, đề tài dự kiến xây dựng được mô hình động lực học phục vụ điều khiển tư thế quadrotor, thống nhất các quy ước về hệ tọa độ, góc quay và đầu vào điều khiển. Mô hình làm rõ quan hệ giữa lệnh tác động lên các động cơ với mômen quay và đáp ứng roll, pitch trong miền góc nghiêng nhỏ.
-
-Về thiết kế, kết quả dự kiến là phương án điều khiển gồm các khối thu nhận dữ liệu quán tính, ước lượng tư thế, điều khiển xếp tầng và phân bổ lệnh động cơ. Chương trình trên STM32 dự kiến thực hiện các chức năng này theo chu kỳ xác định, đồng thời cung cấp dữ liệu để theo dõi và hiệu chỉnh hệ thống.
-
-Về đánh giá, đề tài hướng đến thu được dữ liệu đo đạc và các đồ thị đáp ứng thực nghiệm thể hiện khả năng duy trì góc đặt, hiệu chỉnh sai lệch roll, pitch và khôi phục tư thế sau tác động nhiễu trong điều kiện khảo sát. Các chỉ tiêu được xác định từ dữ liệu thực nghiệm để đánh giá mức độ đạt mục tiêu, giới hạn của phương án và cơ sở phát triển hệ thống trong các nghiên cứu tiếp theo.
+% Cần bổ sung: hình thức kiểm chứng, điều kiện thử, dữ liệu đã thu được và các ngưỡng chất lượng điều khiển được chấp nhận.
+Phương án đánh giá dự kiến xét đáp ứng khi có góc lệch ban đầu, thay đổi nhỏ của góc đặt hoặc tác động gây nhiễu mômen. Góc đặt, góc phản hồi, vận tốc góc và lệnh động cơ là các đại lượng phục vụ phân tích. Sai lệch bám, dao động trong trạng thái xác lập, độ quá điều chỉnh và thời gian khôi phục được tính theo cùng điều kiện đánh giá. Các chỉ tiêu này phản ánh đáp ứng của vòng điều khiển; việc xác định độ chính xác tuyệt đối của góc đòi hỏi phép đo tham chiếu độc lập.
 \par
 \endgroup

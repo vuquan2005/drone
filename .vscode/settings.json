@@ -3,18 +3,28 @@
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
     "*.ioc": ".mxproject, STM32*_FLASH.ld, startup_stm32*.s",
+    "*.kicad_pro": "sym-lib-table, fp-lib-table",
     "*.tex": "${capture}.aux, ${capture}.log, ${capture}.out, ${capture}.toc, ${capture}.lof, ${capture}.lot, ${capture}.bbl, ${capture}.blg, ${capture}.bcf, ${capture}.run.xml, ${capture}.fls, ${capture}.fdb_latexmk, ${capture}.synctex.gz, ${capture}.xdv, ${capture}.pdf",
     ".editorconfig": ".clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore",
-    ".gitignore": ".gitattributes, .gitmodules, codegraph.json",
+    ".gitignore": ".gitattributes, .gitmodules",
     "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
-    "Makefile": ".pre-commit-config.yaml, pyproject.toml",
+    "Makefile": ".pre-commit-config.yaml, codegraph.json, pyproject.toml, skills-lock.json",
     "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*",
     "bundles.store.json": "bundles-lock.store.json",
     "main.tex": "metadata.tex, latexmkrc, .chktexrc"
   },
   "files.exclude": {
     "**/*.kicad_prl": true,
-    "**/.agents": true,
+    "**/~*.lck": true,
+    "**/*.kicad_*.lck": true,
+    "**/*-backups": true,
+    "**/*.kicad_sch-bak": true,
+    "**/*.kicad_pcb-bak": true,
+    "**/_autosave-*": true,
+    "**/fp-info-cache": true,
+    "**/.history": true,
+    "hardware/kicad/**/gerber": true,
+    "hardware/kicad/**/exports": true,
     "**/.aws": true,
     "**/.cache": true,
     "**/.codegraph": true,
@@ -32,13 +42,15 @@
   },
   "material-icon-theme.files.associations": {
     "*.ioc": "settings",
+    ".mxproject": "settings",
     "*.kicad_mod": "architecture",
     "*.kicad_pcb": "architecture",
     "*.kicad_pro": "settings",
     "*.kicad_sch": "drawio",
     "*.kicad_sym": "drawio",
     "*.ld": "assembly",
-    ".mxproject": "settings"
+    "sym-lib-table": "settings",
+    "fp-lib-table": "settings"
   },
   "material-icon-theme.folders.associations": {
     "BSP": "interface",

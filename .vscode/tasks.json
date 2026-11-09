@@ -1,0 +1,58 @@
+{
+  "version": "2.0.0",
+  "options": {
+    "cwd": "${workspaceFolder}/firmware/drone"
+  },
+  "tasks": [
+    {
+      "label": "firmware: configure Debug",
+      "type": "process",
+      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "windows": {
+        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+      },
+      "args": ["cmake", "--preset", "Debug"],
+      "problemMatcher": []
+    },
+    {
+      "label": "firmware: build Debug",
+      "type": "process",
+      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "windows": {
+        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+      },
+      "args": ["cmake", "--build", "--preset", "Debug"],
+      "dependsOn": ["firmware: configure Debug"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "firmware: configure Release",
+      "type": "process",
+      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "windows": {
+        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+      },
+      "args": ["cmake", "--preset", "Release"],
+      "problemMatcher": []
+    },
+    {
+      "label": "firmware: build Release",
+      "type": "process",
+      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "windows": {
+        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+      },
+      "args": ["cmake", "--build", "--preset", "Release"],
+      "dependsOn": ["firmware: configure Release"],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "problemMatcher": []
+    }
+  ]
+}

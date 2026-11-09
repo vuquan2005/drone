@@ -1,45 +1,48 @@
 % !TEX root = ../../main.tex
-\section{Cấu tạo và nguyên lý hoạt động của quadrotor}
+\section{Cấu tạo và nguyên lý cân bằng của quadrotor}
 \label{sec:background-principle}
 
 \subsection{Các thành phần chính và cấu hình rôto}
 \label{subsec:background-configuration}
 
-Quadrotor là thiết bị bay sử dụng bốn cụm động cơ--cánh quạt bố trí quanh thân. Các thành phần chính gồm khung máy bay, hệ động lực, nguồn điện, bộ điều khiển tốc độ động cơ (ESC), cảm biến quán tính và bộ xử lý điều khiển. Khung liên kết các cụm động cơ và xác định vị trí đặt lực đẩy; hệ động lực biến đổi năng lượng điện thành lực đẩy; cảm biến và bộ xử lý tạo thành hệ thống phản hồi để duy trì tư thế mong muốn~\cite{chovancova2014mathematical}. \fref{fig:background-layout} minh họa cấu hình quadrotor chữ X, chiều quay của các rôto và hướng các trục của hệ tọa độ gắn với thân.
+Quadrotor sử dụng bốn cụm động cơ--cánh quạt để tạo lực đẩy và điều chỉnh tư thế. Khung máy bay liên kết các cụm động cơ, mang nguồn điện, cảm biến và bộ xử lý điều khiển. Mỗi động cơ nhận công suất qua bộ điều khiển tốc độ động cơ (ESC). Cảm biến cung cấp thông tin về chuyển động của thân; bộ xử lý dùng thông tin này để tính lệnh gửi tới các ESC. Như vậy, khả năng cân bằng phụ thuộc đồng thời vào kết cấu cơ khí, hệ động lực, phép đo và luật điều khiển~\cite{chovancova2014mathematical}.
+
+Để thiết lập mô hình tính toán, xét cấu hình chữ X với bốn rôto bố trí đối xứng quanh trọng tâm. Hệ tọa độ gắn với thân được ký hiệu là $B$: trục $x_B$ hướng về mũi, $y_B$ hướng sang phải và $z_B$ hướng xuống dưới. Góc lăn (roll), góc chúc ngóc (pitch) và góc hướng (yaw) lần lượt mô tả ba thành phần tư thế; ở tư thế gần nằm ngang, chúng tương ứng với chuyển động quay quanh các trục $x_B$, $y_B$ và $z_B$.
+
+Nhìn từ trên xuống, rôto 1 ở phía trước bên trái, rôto 2 ở phía trước bên phải, rôto 3 ở phía sau bên phải và rôto 4 ở phía sau bên trái. Rôto 1 và 3 quay cùng chiều kim đồng hồ (CW); rôto 2 và 4 quay ngược chiều kim đồng hồ (CCW). Đây là quy ước của mô hình, dùng để xác định dấu lực và mômen. Hình học bố trí rôto, chiều quay và các trục thân được minh họa trong \fref{fig:background-layout}.
+% Cần bổ sung: đối chiếu cấu hình khung, số thứ tự và chiều quay động cơ với mô hình lắp ráp thực tế.
 
 \begin{figure}[H]
     \centering
     \resizebox{\linewidth}{!}{\input{figures/ch02/quadrotor_layout.tex}}
-    \caption{Cấu hình quadrotor chữ X, chiều quay rôto và hệ trục tọa độ gắn với thân khi nhìn từ trên xuống.}
+    \caption{Quy ước cấu hình quadrotor chữ X, chiều quay rôto và hệ trục tọa độ thân khi nhìn từ trên xuống.}
     \label{fig:background-layout}
 \end{figure}
 
-\begin{samepage}
-Đối với mô hình tính toán cấu hình chữ X, báo cáo quy ước trục $x_B$ hướng về phía mũi, $y_B$ hướng sang phải và $z_B$ hướng xuống dưới. Rôto 1 nằm phía trước bên trái, rôto 2 phía trước bên phải, rôto 3 phía sau bên phải và rôto 4 phía sau bên trái. Nhìn từ trên xuống, rôto 1 và 3 quay cùng chiều kim đồng hồ (CW), rôto 2 và 4 quay ngược chiều kim đồng hồ (CCW). Quy ước này được sử dụng thống nhất để xác định dấu lực và mômen trong các phương trình động lực học và phân bổ lệnh động cơ.
-\par
-\end{samepage}
+\subsection{Nguyên lý tạo lực đẩy và mômen cân bằng}
 
-\subsection{Nguyên lý tạo chuyển động}
+Lực đẩy của mỗi rôto có phương gần trùng với trục $z_B$ và chiều hướng lên trên thân, tức ngược chiều dương $z_B$. Thay đổi đồng thời lực đẩy của bốn rôto làm thay đổi tổng lực đẩy. Khi thân nghiêng, hướng tổng lực đẩy cũng nghiêng theo, tạo thêm thành phần lực theo phương ngang. Vì vậy, điều chỉnh tư thế đồng thời làm thay đổi các thành phần gia tốc tịnh tiến~\cite{bouabdallah2004design}.
 
-Lực đẩy của mỗi rôto tác dụng theo chiều ngược với trục $z_B$. Khi thay đổi đồng thời lực đẩy của bốn rôto, tổng lực đẩy thay đổi và ảnh hưởng đến gia tốc tịnh tiến của máy bay. Trong tư thế nằm ngang, tổng lực đẩy bằng trọng lực là điều kiện cân bằng lực theo phương thẳng đứng. Khi thân máy bay nghiêng, hướng tổng lực đẩy cũng nghiêng theo và xuất hiện thành phần lực theo phương ngang. Vì vậy, chuyển động tịnh tiến và tư thế có quan hệ chặt chẽ~\cite{bouabdallah2004design}.
+Chênh lệch lực đẩy giữa hai phía trái và phải tạo mômen roll; chênh lệch giữa phía trước và phía sau tạo mômen pitch. Với hệ trục đã quy ước, tăng lực đẩy phía trái so với phía phải tạo mômen roll dương, còn tăng lực đẩy phía trước so với phía sau tạo mômen pitch dương. Trong cấu hình chữ X, mỗi rôto đều có cánh tay đòn đối với cả hai trục nên việc hiệu chỉnh tư thế sử dụng sự phối hợp của bốn động cơ.
 
-Để tạo mômen roll, hệ thống thay đổi chênh lệch lực đẩy giữa hai phía trái và phải. Chênh lệch lực đẩy giữa phía trước và phía sau tạo mômen pitch. Trong cấu hình chữ X, mỗi rôto đồng thời có cánh tay đòn đối với cả trục $x_B$ và $y_B$, nên điều khiển roll và pitch sử dụng sự phối hợp của cả bốn động cơ.
+Mômen yaw hình thành từ chênh lệch mômen phản lực giữa hai nhóm rôto quay ngược chiều. Ở chế độ quay gần xác lập, mômen truyền từ động cơ lên thân có chiều ngược với chiều dẫn động rôto. Do đó, rôto 1 và 3 tạo mômen yaw âm theo $z_B$; rôto 2 và 4 tạo mômen yaw dương. Khi các mômen phản lực của hai nhóm cân bằng nhau, tổng mômen yaw bằng không.
 
-Chuyển động yaw hình thành từ chênh lệch mômen phản lực giữa hai nhóm rôto quay ngược chiều. Với các cụm động cơ--cánh quạt có đặc tính tương đương, mômen phản lực được cân bằng khi hai nhóm tạo mômen có cùng độ lớn. Thay đổi tương quan tốc độ giữa hai nhóm làm xuất hiện mômen quay quanh $z_B$. Theo quy ước của mô hình tính toán, mômen tác dụng lên thân do rôto 1 và 3 có chiều âm $z_B$, còn rôto 2 và 4 có chiều dương $z_B$.
+Cân bằng tư thế là bài toán duy trì hoặc đưa các góc quay về giá trị đặt bằng cách điều chỉnh mômen tác dụng lên thân. Điều kiện này khác với cân bằng lực khi bay treo. Với máy bay tự do ở tư thế nằm ngang, bỏ qua lực ngoài khác, tổng lực đẩy bằng trọng lực mới cho gia tốc tịnh tiến bằng không. Vì vậy, giữ roll và pitch gần không chưa đủ để duy trì độ cao hoặc vị trí. Đối với bộ điều khiển cân bằng, tổng lực đẩy và các mômen là những đại lượng đầu vào có vai trò khác nhau.
 
 \subsection{Quan hệ giữa tốc độ rôto, lực đẩy và mômen}
 
-Trong mô hình khí động học giản lược, lực đẩy và độ lớn mômen cản khí động của rôto được biểu diễn theo bình phương tốc độ quay~\cite{chovancova2014mathematical}:
+Trong mô hình khí động học tĩnh giản lược, lực đẩy và độ lớn mômen cản khí động của mỗi rôto tỉ lệ với bình phương tốc độ quay~\cite{chovancova2014mathematical}:
 \begin{equation}
     f_i=c_T\Omega_i^2,\qquad Q_i=c_Q\Omega_i^2,
     \qquad i=1,2,3,4.
     \label{eq:background-rotor-force}
 \end{equation}
-Trong đó, $\Omega_i$ là tốc độ góc rôto, tính bằng rad/s; $f_i$ là độ lớn lực đẩy, tính bằng N; $Q_i$ là độ lớn mômen cản, tính bằng N$\cdot$m. Các hệ số $c_T>0$ và $c_Q>0$ phụ thuộc vào cụm động cơ--cánh quạt và điều kiện làm việc. Hai hệ số này được xem là không đổi trong miền vận hành dùng để thiết kế bộ điều khiển; giá trị phục vụ tính toán được xác định từ thông số hoặc phép đo của hệ động lực.
+Ở đây, $\Omega_i$ là tốc độ góc rôto, tính bằng rad/s; $f_i$ là độ lớn lực đẩy, tính bằng N; $Q_i$ là độ lớn mômen cản, tính bằng N$\cdot$m. Các hệ số $c_T>0$ và $c_Q>0$ phụ thuộc vào cụm động cơ--cánh quạt và điều kiện làm việc. Mô hình sử dụng chung hai hệ số cho bốn rôto khi xem các cụm động lực có đặc tính tương đương. Trong miền vận hành đang xét, các hệ số được coi là không đổi.
+% Cần bổ sung: thông số hoặc dữ liệu đo để xác định c_T, c_Q cho cụm động cơ--cánh quạt sử dụng.
 
 Tổng lực đẩy có độ lớn:
 \begin{equation}
     T=\sum_{i=1}^{4}f_i=c_T\sum_{i=1}^{4}\Omega_i^2.
     \label{eq:background-total-thrust}
 \end{equation}
-Quan hệ giữa các lực đẩy và mômen quanh ba trục được thiết lập từ hình học bố trí rôto tại mục~\ref{sec:background-allocation}. Các quan hệ này mô tả tác động cơ học của hệ động lực. Việc chuyển đổi yêu cầu lực đẩy thành tín hiệu gửi đến ESC còn phụ thuộc vào đặc tính cơ cấu chấp hành và được gắn với phương án phần cứng ở \charef{chap:system-design}.
+Biểu thức này cho biết ảnh hưởng của tốc độ rôto đến lực đẩy. Đối với chuyển động quay, mômen còn phụ thuộc vào vị trí đặt lực và chiều quay từng rôto. Do đó, để xác định tư thế biến đổi như thế nào khi các lực đẩy thay đổi, cần mô tả chuyển động của thân bằng các quan hệ động học và động lực học vật rắn.

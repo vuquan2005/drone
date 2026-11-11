@@ -22,29 +22,63 @@ vẫn ở branch `test/imu-rc-pwm`.
 
 ## Dùng từ firmware
 
+`Core/main` khởi tạo ngoại vi rồi gọi App. App sở hữu dữ liệu và quyết định
+gửi gì, lúc nào. Khi App gọi write, `bsp_rtt` kiểm tra yêu cầu và đếm bản ghi
+bị từ chối vì thiếu chỗ; thư viện SEGGER quản lý buffer vòng trong RAM.
+OpenOCD trên máy tính đọc RAM qua ST-LINK/SWD rồi chuyển dữ liệu ra TCP.
+Terminal/script nhận byte từ TCP để hiển thị hoặc giải mã. Trong firmware
+hiện tại App mới init RTT, chưa tạo bản ghi định kỳ.
+
 ```c
 #include "bsp_rtt.h"
 
 /* bsp_rtt_init() đã được gọi trong app_init(). Ví dụ ở foreground: */
 const char message[] = "Sensor initialized\n";
-bool queued = bsp_rtt_write(BSP_RTT_LOG, message, sizeof(message) - 1U);
+bsp_rtt_result_t result =
+    bsp_rtt_write(BSP_RTT_LOG, message, sizeof(message) - 1U);
 const char record[] = "1000,1,2,3\n"; /* Ví dụ minh họa, chưa phải schema. */
-queued = bsp_rtt_write(BSP_RTT_DATA, record, sizeof(record) - 1U);
+result = bsp_rtt_write(BSP_RTT_DATA, record, sizeof(record) - 1U);
 ```
 
 API nhận byte và độ dài, dùng được cho văn bản hoặc nhị phân; không tự thêm
 NUL/newline, timestamp hay framing. App quyết định khi nào xuất, đơn vị,
-định dạng, sequence và cách đếm bản ghi bị bỏ. Khi thêm dữ liệu raw cần phân
+định dạng và sequence. Khi thêm dữ liệu raw cần phân
 biệt giá trị register cảm biến với dữ liệu đã đổi đơn vị/lọc/hiệu chuẩn.
 
 Mỗi lần ghi là một bản ghi: đủ chỗ thì copy toàn bộ, thiếu chỗ thì trả về
-`false`, không chờ host và không ghi một phần. Hai buffer độc lập. Chỉ một
+`BSP_RTT_FULL`, không chờ host và không ghi một phần. Hai buffer độc lập. Chỉ một
 writer foreground; không gọi từ ISR. Format/copy và truy cập SWD vẫn có chi
 phí; RTT không thay thế phép đo timing trên board.
 
 Preset **Debug** đặt `DRONE_ENABLE_RTT=ON`; **Release** đặt `OFF` và không
-link thư viện/buffer RTT. Khi tắt, init là no-op và write luôn trả `false`.
+link thư viện/buffer RTT. Khi tắt, init là no-op và write trả `BSP_RTT_DISABLED`.
 Tùy chọn này chỉ điều khiển transport, không điều khiển vòng điều khiển bay.
+
+## Phân biệt mất dữ liệu và lỗi gọi API
+
+`bsp_rtt_write()` trả mã kết quả, không còn trả bool. Luôn so sánh với
+`BSP_RTT_OK` để kiểm tra thành công; giá trị này bằng 0.
+
+| Kết quả                    | Ý nghĩa                                       | Tăng counter buffer đầy |
+| -------------------------- | --------------------------------------------- | ----------------------- |
+| `BSP_RTT_OK`               | Đã ghi toàn bộ, hoặc bản ghi rỗng hợp lệ      | Không                   |
+| `BSP_RTT_FULL`             | Bản ghi hợp lệ nhưng kênh thiếu chỗ trống     | Có, chỉ kênh đó         |
+| `BSP_RTT_TOO_LARGE`        | Bản ghi không thể vừa ngay cả khi buffer rỗng | Không                   |
+| `BSP_RTT_INVALID_ARGUMENT` | Kênh sai hoặc payload NULL với size khác 0    | Không                   |
+| `BSP_RTT_NOT_INITIALIZED`  | Chưa gọi init                                 | Không                   |
+| `BSP_RTT_DISABLED`         | Transport bị loại khi build                   | Không                   |
+
+Đọc bằng `bsp_rtt_get_dropped_full(BSP_RTT_LOG)` hoặc
+`bsp_rtt_get_dropped_full(BSP_RTT_DATA)`. Bộ đếm tính số bản ghi, không phải
+byte, reset khi init lại và tràn modulo 2^32. Trong Live Watch có thể đọc
+`'bsp_rtt.c'::dropped_full[0]` và `[1]`; không cần gọi hàm trên target.
+
+Counter chỉ đo bản ghi bị RTT từ chối vì thiếu chỗ. Nó không đo mẫu cảm biến
+bị bỏ lỡ, dữ liệu trước lúc tạo bản ghi hoặc lỗi ở phía máy tính. Khi triển
+khai luồng đo, App cần gắn sequence/timestamp ngay tại nơi thu mẫu. Nếu giảm
+mẫu trước khi gửi, phân biệt số thứ tự mẫu với số thứ tự bản ghi định gửi;
+số thứ tự bản ghi vẫn tăng khi RTT từ chối. Timestamp phải ghi rõ là clock
+cảm biến hay thời điểm đọc MCU; BSP không tự sửa payload để thêm các trường này.
 
 ## Dùng từ máy tính
 
@@ -88,5 +122,5 @@ ctest --test-dir /tmp/drone-rtt-tests --output-on-failure
 ```
 
 Test dùng thư viện RTT thật để kiểm tra byte nhị phân, tham số sai, buffer
-đầy, ghi nguyên bản ghi, hai kênh độc lập và ring wrap. Không xác nhận timing
+đầy, phân loại kết quả/counter, ghi nguyên bản ghi, hai kênh độc lập và ring wrap. Không xác nhận timing
 hoặc truyền SWD với phần cứng.

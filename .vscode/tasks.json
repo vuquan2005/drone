@@ -7,19 +7,22 @@
     {
       "label": "firmware: configure Debug",
       "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "command": "cube",
       "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+        "command": "cube.exe"
       },
       "args": ["cmake", "--preset", "Debug"],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "linux": {
+        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
+      }
     },
     {
       "label": "firmware: build Debug",
       "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "command": "cube",
       "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+        "command": "cube.exe"
       },
       "args": ["cmake", "--build", "--preset", "Debug"],
       "dependsOn": ["firmware: configure Debug"],
@@ -27,24 +30,30 @@
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "linux": {
+        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
+      }
     },
     {
       "label": "firmware: configure Release",
       "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "command": "cube",
       "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+        "command": "cube.exe"
       },
       "args": ["cmake", "--preset", "Release"],
-      "problemMatcher": []
+      "problemMatcher": [],
+      "linux": {
+        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
+      }
     },
     {
       "label": "firmware: build Release",
       "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
+      "command": "cube",
       "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+        "command": "cube.exe"
       },
       "args": ["cmake", "--build", "--preset", "Release"],
       "dependsOn": ["firmware: configure Release"],
@@ -52,7 +61,10 @@
         "kind": "build",
         "isDefault": false
       },
-      "problemMatcher": []
+      "problemMatcher": [],
+      "linux": {
+        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
+      }
     }
   ]
 }

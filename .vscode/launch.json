@@ -24,7 +24,52 @@
         "enabled": false
       },
       "logFile": "${workspaceFolder}/firmware/drone/build/Debug/gdb-client.log",
-      "serverLogFile": "${workspaceFolder}/firmware/drone/build/Debug/stlink-gdbserver.log"
+      "serverLogFile": "${workspaceFolder}/firmware/drone/build/Debug/stlink-gdbserver.log",
+      "liveWatch": {
+        "enabled": true,
+        "samplesPerSecond": "4"
+      }
+    },
+    {
+      "name": "STM32: Debug + RTT (OpenOCD)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/firmware/drone/build/Debug/drone.elf",
+      "preLaunchTask": "firmware: build Debug",
+      "servertype": "openocd",
+      "configFiles": [
+        "interface/stlink.cfg",
+        "target/stm32f1x.cfg"
+      ],
+      "openOCDLaunchCommands": [
+        "bindto 127.0.0.1",
+        "adapter speed 1000",
+        "reset_config none",
+        "cortex_m reset_config sysresetreq"
+      ],
+      "postLaunchCommands": [
+        "monitor rtt server start 9091 1"
+      ],
+      "runToEntryPoint": "app_process",
+      "liveWatch": {
+        "enabled": true,
+        "samplesPerSecond": 4
+      },
+      "rttConfig": {
+        "enabled": true,
+        "address": "auto",
+        "polling_interval": 20,
+        "rtt_start_retry": 1000,
+        "decoders": [
+          {
+            "port": 0,
+            "type": "console",
+            "label": "Log",
+            "inputmode": "disabled"
+          }
+        ]
+      }
     }
   ]
 }

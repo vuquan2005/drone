@@ -27,6 +27,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 project(${CMAKE_PROJECT_NAME})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
+set(DRONE_RTT_DEFAULT OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(DRONE_RTT_DEFAULT ON)
+endif()
+option(DRONE_ENABLE_RTT "Build the two-channel RTT transport" ${DRONE_RTT_DEFAULT})
+
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
@@ -60,6 +66,13 @@ target_include_directories(
     ${CMAKE_PROJECT_NAME}
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BMI270 ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc
             ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc)
+
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RTT=$<BOOL:${DRONE_ENABLE_RTT}>)
+if(DRONE_ENABLE_RTT)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE BSP/Src/bsp_rtt.c Drivers/RTT/SEGGER_RTT.c)
+    target_include_directories(${CMAKE_PROJECT_NAME}
+                               PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/RTT)
+endif()
 
 # Add user project symbols (macros) when needed:
 # target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE ...)

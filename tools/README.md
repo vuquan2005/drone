@@ -25,6 +25,23 @@ Lần đầu cần mạng để tải môi trường và công cụ. Riêng `lat
 
 `make format` và `make lint` xử lý các tệp Git đang theo dõi; tệp mới cần được `git add` trước. Khi commit, formatter chạy trên tệp đã stage; nếu formatter sửa tệp, xem lại thay đổi, stage và commit lại. Chạy `make lint` riêng khi cần kiểm tra.
 
+## Khung đọc RTT
+
+`rtt_read.py` chỉ nối vào OpenOCD đang chạy và chuyển nguyên byte ra stdout,
+không cần thư viện ngoài, không mở ST-LINK hoặc tự tạo dữ liệu:
+
+```sh
+python3 tools/rtt_read.py --port 9091
+```
+
+Port 9091 là channel dữ liệu trong cấu hình Debug + RTT. Khi chạy OpenOCD
+độc lập, port 9090 là log và 9091 là dữ liệu. Có thể chuyển stdout sang tệp
+hoặc công cụ khác; stdout có thể chứa dữ liệu nhị phân tùy ứng dụng.
+
+Đây là điểm bắt đầu cho bộ giải mã/plot sau này. Chưa có schema IMU, giao
+diện đồ họa, CSV logger hay dependency matplotlib/Qt. Xem [khung debug](../firmware/drone/DEBUG.md)
+để biết cách khởi động OpenOCD và gửi dữ liệu từ firmware.
+
 ## Đồng bộ PDF
 
 ```sh

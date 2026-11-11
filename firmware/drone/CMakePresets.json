@@ -13,14 +13,16 @@
       "name": "Debug",
       "inherits": "default",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_BUILD_TYPE": "Debug",
+        "DRONE_ENABLE_RTT": "ON"
       }
     },
     {
       "name": "Release",
       "inherits": "default",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "DRONE_ENABLE_RTT": "OFF"
       }
     }
   ],

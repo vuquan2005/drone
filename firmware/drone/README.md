@@ -4,6 +4,7 @@
 Đã nhận 16 kênh RC qua CRSF và xuất PWM ESC qua TIM4; chưa có estimator,
 vòng điều khiển, mixer hay arm/failsafe.
 Xem [cấu hình chân, build và debug](../README.md) để bắt đầu.
+Khung RTT hai kênh và Live Watch được mô tả tại [DEBUG.md](DEBUG.md).
 
 ## Mã nguồn
 

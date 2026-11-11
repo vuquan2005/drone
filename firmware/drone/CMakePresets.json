@@ -14,7 +14,9 @@
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "DRONE_ENABLE_RTT": "ON"
+        "DRONE_ENABLE_RTT": "ON",
+        "DRONE_LOG_LEVEL": "INFO",
+        "DRONE_ENABLE_IMU_TRACE": "ON"
       }
     },
     {
@@ -22,7 +24,9 @@
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "DRONE_ENABLE_RTT": "OFF"
+        "DRONE_ENABLE_RTT": "OFF",
+        "DRONE_LOG_LEVEL": "OFF",
+        "DRONE_ENABLE_IMU_TRACE": "OFF"
       }
     }
   ],

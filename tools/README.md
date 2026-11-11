@@ -38,9 +38,11 @@ Port 9091 là channel dữ liệu trong cấu hình Debug + RTT. Khi chạy Open
 độc lập, port 9090 là log và 9091 là dữ liệu. Có thể chuyển stdout sang tệp
 hoặc công cụ khác; stdout có thể chứa dữ liệu nhị phân tùy ứng dụng.
 
-Đây là điểm bắt đầu cho bộ giải mã/plot sau này. Chưa có schema IMU, giao
-diện đồ họa, CSV logger hay dependency matplotlib/Qt. Xem [khung debug](../firmware/drone/DEBUG.md)
-để biết cách khởi động OpenOCD và gửi dữ liệu từ firmware.
+Debug mặc định xuất các dòng CSV `IMU1` ở channel 1 với sequence,
+`t_read_us`, clock cảm biến và accel/gyro. Script giữ nguyên dữ liệu, chưa có
+GUI, decoder, CSV logger hoặc dependency ngoài thư viện chuẩn. Xem
+[định dạng và nguồn timestamp](../firmware/drone/DEBUG.md#channel-1-mẫu-imu-có-timestamp)
+trước khi thêm parser/plot; mỗi lần recv có thể chứa một phần hoặc nhiều dòng.
 
 ## Đồng bộ PDF
 

@@ -16,9 +16,9 @@
 Kích thước buffer được đặt tập trung tại `BSP/Inc/SEGGER_RTT_Conf.h`:
 `BUFFER_SIZE_UP` cho log, `BSP_RTT_DATA_BUFFER_SIZE` cho data.
 
-Ứng dụng hiện chỉ gọi `bsp_rtt_init()` khi khởi tạo. Chưa có log định kỳ,
-snapshot chung, stream IMU, giao diện plot hoặc ghi SD. Các bản thử đầy đủ
-vẫn ở branch `test/imu-rc-pwm`.
+Preset Debug bật log khởi tạo/lỗi ở channel 0 và bản ghi cho từng mẫu IMU
+đọc thành công ở channel 1. Không có giao diện plot hoặc ghi SD. Logic thử
+motor riêng vẫn ở branch `test/imu-rc-pwm`.
 
 ## Dùng từ firmware
 
@@ -27,7 +27,7 @@ gửi gì, lúc nào. Khi App gọi write, `bsp_rtt` kiểm tra yêu cầu và �
 bị từ chối vì thiếu chỗ; thư viện SEGGER quản lý buffer vòng trong RAM.
 OpenOCD trên máy tính đọc RAM qua ST-LINK/SWD rồi chuyển dữ liệu ra TCP.
 Terminal/script nhận byte từ TCP để hiển thị hoặc giải mã. Trong firmware
-hiện tại App mới init RTT, chưa tạo bản ghi định kỳ.
+hiện tại App xuất mẫu mới; mẫu cũ không được gửi lại khi NO_DATA/lỗi.
 
 ```c
 #include "bsp_rtt.h"
@@ -53,6 +53,85 @@ phí; RTT không thay thế phép đo timing trên board.
 Preset **Debug** đặt `DRONE_ENABLE_RTT=ON`; **Release** đặt `OFF` và không
 link thư viện/buffer RTT. Khi tắt, init là no-op và write trả `BSP_RTT_DISABLED`.
 Tùy chọn này chỉ điều khiển transport, không điều khiển vòng điều khiển bay.
+
+## Channel 0: timestamp, level và tag
+
+`app_log` nằm ở App, phía trên BSP. Khởi tạo bằng `app_log_init(HAL_GetTick)`
+sau RTT, rồi gọi các macro ở foreground:
+
+```c
+APP_LOG_INFO("imu", "initialized id=0x%02x", chip_id);
+APP_LOG_ERROR("imu.spi", "read failed status=%d", status);
+```
+
+Định dạng một sự kiện trên một dòng:
+
+```text
+[1250][I][imu] initialized id=0x24
+[2300][E][imu.spi] read failed status=5
+```
+
+Timestamp là uptime MCU theo ms tại lúc tạo log, uint32 có tràn, không phải
+thời điểm thu mẫu trước đó. Level gồm ERROR/WARN/INFO/DEBUG. Tag/scope là tên
+module hoặc nhóm chức năng, dài 1–16 ký tự ASCII chữ/số hoặc `._-/`.
+Không có registry hoặc scope động.
+
+Mỗi dòng tối đa 255 byte gồm newline; không cấp phát động. Message quá dài
+được cắt với `...[truncated]`, CR/LF bên trong thành khoảng trắng. Gửi cả
+dòng bằng một lần write; buffer đầy thì BSP đếm và bỏ bản ghi, không tự log
+thêm lỗi gửi. Một writer foreground, không dùng từ ISR.
+
+Firmware dùng newlib-nano và chưa bật printf số thực; các lời gọi tích hợp
+dùng số nguyên hoặc milli-unit thay vì `%f`.
+
+`DRONE_LOG_LEVEL` chọn OFF/ERROR/WARN/INFO/DEBUG khi configure. Debug mặc định
+INFO, Release OFF. Dùng macro `APP_LOG_*` để mức bị tắt không đánh giá đối
+số hoặc format. `app_log_write()` là hàm nền trả kết quả RTT, không có cam
+kết loại đánh giá đối số nếu gọi trực tiếp. Preset/task build có thể áp lại
+giá trị mặc định; dùng CMakeUserPresets khi cần cấu hình riêng.
+
+App chỉ log khởi tạo và chuyển trạng thái lỗi/phục hồi IMU. NO_DATA là trạng
+thái bình thường; lỗi lặp ở cùng trạng thái không được in mỗi vòng poll.
+
+## Channel 1: mẫu IMU có timestamp
+
+`app_imu_poll()` chụp `t_read_us` ngay sau lần đọc BSP thành công, trước khi
+đổi đơn vị, và lưu cùng mẫu. NO_DATA/lỗi giữ nguyên dữ liệu và timestamp cũ.
+`app_imu_trace` chỉ mã hóa các trường đã lưu; không lấy thời gian lúc gửi.
+
+Mỗi mẫu mới được gửi một lần, không chủ động giảm mẫu. Tốc độ danh định của
+cảm biến là 400 Hz; số mẫu đọc được thực tế phụ thuộc polling/timing. Bản ghi
+ASCII CSV có phiên bản, kết thúc newline:
+
+```text
+IMU1,sample_sequence,t_read_us,sensor_time_ticks,ax_mmps2,ay_mmps2,az_mmps2,gx_mradps,gy_mradps,gz_mradps
+```
+
+- `sample_sequence`: số lần đọc thành công từ khi init IMU, mẫu đầu là 1;
+  vẫn tăng khi RTT bỏ bản ghi, tràn modulo 2^32. Không đếm mẫu phần cứng đã
+  ghi đè trước khi MCU đọc.
+- `t_read_us`: uptime MCU tại lúc đọc, đơn vị µs, tràn modulo 2^32 (khoảng
+  71,6 phút). Không đồng nghĩa thời điểm cảm biến lấy mẫu chính xác.
+- `sensor_time_ticks`: clock cảm biến 24 bit nguyên gốc đọc kèm dữ liệu,
+  chưa mở rộng khi tràn, không mặc định coi là timestamp acquisition.
+- Accel dùng mm/s², gyro dùng mrad/s, cắt phần thập phân về phía 0; chia
+  1000 để về m/s² và rad/s. Trục XYZ theo package, chưa hiệu chuẩn/xoay trục.
+
+MCU timestamp kết hợp HAL tick với SysTick countdown; yêu cầu SysTick HCLK
+1 ms, clock ổn định, SystemCoreClock nguyên MHz và IRQ được phục vụ kịp thời.
+Chỉ đọc ở foreground khi ngắt đang bật; không gọi từ ISR hoặc critical
+section. Debug halt, sleep hoặc suspend tick ảnh hưởng nguồn thời gian.
+Không dùng phép chia trực tiếp DWT CYCCNT để tránh reset thời gian khi cycle
+counter 32 bit tràn sau khoảng 60 giây ở 72 MHz.
+
+`DRONE_ENABLE_IMU_TRACE` mặc định ON ở Debug, OFF ở Release; tự vô hiệu khi
+RTT tắt. Macro `APP_IMU_TRACE` bỏ cả đánh giá đối số khi trace tắt. Release
+không chứa formatter/stream RTT; timestamp mẫu vẫn tồn tại cho ứng dụng dùng.
+
+Máy tính phải ghép byte tới newline trước khi parse; TCP có thể chia/gộp
+bản ghi. Stream 400 Hz có thể làm đầy buffer nếu host/probe không theo kịp:
+xem `dropped_full[1]` và khoảng trống sequence; timestamp vẫn giữ thời điểm
+đọc mẫu, không được sửa thành thời điểm host nhận. Script hiện chỉ chuyển byte.
 
 ## Phân biệt mất dữ liệu và lỗi gọi API
 
@@ -87,8 +166,9 @@ cảm biến hay thời điểm đọc MCU; BSP không tự sửa payload để 
 3. Nhấn Continue khi dừng tại `app_process`. Log channel 0 hiện ở terminal **Log**.
 4. Đọc channel 1 bằng `python3 tools/rtt_read.py --port 9091`.
 
-Chưa có nơi gọi write thì hai kênh sẽ không có dữ liệu; đó là trạng thái bình
-thường của bộ khung. Script chỉ chuyển byte, không tự tạo mẫu để vẽ.
+Debug mặc định sẽ có log khởi tạo và dòng IMU1 khi cảm biến đọc được mẫu mới.
+Nếu IMU init lỗi, kiểm tra channel 0; không có mẫu cũ được phát lại để lấp chỗ.
+Script chỉ chuyển byte, không tự tạo mẫu để vẽ.
 Không mở hai debug server dùng cùng ST-LINK.
 
 Nếu chỉ đọc RTT không dùng GDB, đóng phiên debug sau khi nạp rồi chạy:
@@ -124,3 +204,18 @@ ctest --test-dir /tmp/drone-rtt-tests --output-on-failure
 Test dùng thư viện RTT thật để kiểm tra byte nhị phân, tham số sai, buffer
 đầy, phân loại kết quả/counter, ghi nguyên bản ghi, hai kênh độc lập và ring wrap. Không xác nhận timing
 hoặc truyền SWD với phần cứng.
+
+Kiểm tra log/trace, clock và timestamp mẫu trên host:
+
+```sh
+cmake -S firmware/drone/tests/logging -B /tmp/drone-logging-tests -G Ninja
+cmake --build /tmp/drone-logging-tests
+ctest --test-dir /tmp/drone-logging-tests --output-on-failure
+cmake -S firmware/drone/tests/time -B /tmp/drone-time-tests -G Ninja
+cmake --build /tmp/drone-time-tests
+ctest --test-dir /tmp/drone-time-tests --output-on-failure
+```
+
+Các test kiểm tra format/truncation, mức lọc và đối số bị loại, backpressure,
+sequence/timestamp, IRQ tick đang chờ, tick wrap, NO_DATA/lỗi và tích hợp App.
+Nguồn µs và chi phí stream cần đo lại trên board trước khi dùng để kết luận timing.

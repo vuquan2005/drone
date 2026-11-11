@@ -1,0 +1,131 @@
+#include "app_imu_trace.h"
+#include "app_log.h"
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+
+static uint32_t tick_ms = 1234U;
+static unsigned clock_calls;
+static uint32_t clock_ms(void) {
+    clock_calls++;
+    return tick_ms;
+}
+
+#if DRONE_RTT
+#include "SEGGER_RTT.h"
+static unsigned drain(unsigned channel, char *output, unsigned capacity) {
+    SEGGER_RTT_BUFFER_UP *ring = &_SEGGER_RTT.aUp[channel];
+    unsigned count = 0;
+    while (ring->RdOff != ring->WrOff && count + 1U < capacity) {
+        output[count++] = ring->pBuffer[ring->RdOff];
+        ring->RdOff = (ring->RdOff + 1U) % ring->SizeOfBuffer;
+    }
+    output[count] = '\0';
+    return count;
+}
+
+static void enabled_tests(void) {
+    bsp_rtt_init();
+    assert(app_log_write(APP_LOG_LEVEL_INFO, "imu", "boot") ==
+           BSP_RTT_NOT_INITIALIZED);
+    app_log_init(clock_ms);
+    char output[4097];
+    APP_LOG_INFO("imu.spi", "initialized id=0x%02x", 0x24U);
+    drain(BSP_RTT_LOG, output, sizeof(output));
+    assert(strcmp(output, "[1234][I][imu.spi] initialized id=0x24\n") == 0);
+    APP_LOG_WARN("receiver", "line1\nline2\r");
+    drain(BSP_RTT_LOG, output, sizeof(output));
+    assert(strcmp(output, "[1234][W][receiver] line1 line2 \n") == 0);
+    APP_LOG_ERROR("imu", "failed=%d", -5);
+    drain(BSP_RTT_LOG, output, sizeof(output));
+    assert(strcmp(output, "[1234][E][imu] failed=-5\n") == 0);
+    assert(app_log_write(99U, "imu", "bad") == BSP_RTT_INVALID_ARGUMENT);
+    assert(app_log_write(0U, "imu", "bad") == BSP_RTT_INVALID_ARGUMENT);
+    assert(app_log_write(3U, "", "bad") == BSP_RTT_INVALID_ARGUMENT);
+    assert(app_log_write(3U, "bad tag", "bad") == BSP_RTT_INVALID_ARGUMENT);
+    assert(app_log_write(3U, "01234567890123456", "bad") ==
+           BSP_RTT_INVALID_ARGUMENT);
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_LOG) == 0U);
+    int side_effect = 0;
+    unsigned before = clock_calls;
+    APP_LOG_DEBUG("imu", "detail=%d", ++side_effect);
+#if DRONE_LOG_LEVEL >= APP_LOG_LEVEL_DEBUG
+    assert(side_effect == 1 && clock_calls == before + 1U);
+    drain(BSP_RTT_LOG, output, sizeof(output));
+    assert(strstr(output, "[D][imu] detail=1\n") != NULL);
+#else
+    assert(side_effect == 0 && clock_calls == before);
+    assert(drain(BSP_RTT_LOG, output, sizeof(output)) == 0U);
+    assert(app_log_write(4U, "imu", "filtered") == BSP_RTT_OK);
+    assert(clock_calls == before);
+#endif
+    char long_message[600];
+    memset(long_message, 'x', sizeof(long_message) - 1U);
+    long_message[sizeof(long_message) - 1U] = '\0';
+    APP_LOG_INFO("imu", "%s", long_message);
+    unsigned length = drain(BSP_RTT_LOG, output, sizeof(output));
+    assert(length == 255U);
+    const char suffix[] = "...[truncated]\n";
+    assert(strcmp(output + length - (sizeof(suffix) - 1U), suffix) == 0);
+    tick_ms = UINT32_MAX;
+    APP_LOG_INFO("imu", "before wrap");
+    drain(BSP_RTT_LOG, output, sizeof(output));
+    assert(strncmp(output, "[4294967295]", 12U) == 0);
+    tick_ms = 0U;
+    APP_LOG_INFO("imu", "after wrap");
+    drain(BSP_RTT_LOG, output, sizeof(output));
+    assert(strncmp(output, "[0]", 3U) == 0);
+    bsp_rtt_result_t result;
+    unsigned queued = 0;
+    while ((result = app_log_write(3U, "imu", "fill")) == BSP_RTT_OK) {
+        assert(++queued < 200U);
+    }
+    assert(result == BSP_RTT_FULL &&
+           bsp_rtt_get_dropped_full(BSP_RTT_LOG) == 1U);
+
+    app_imu_sample_t sample = {.t_read_us = 123456U,
+                               .sensor_time_ticks = 0x123456U,
+                               .accel_mps2 = {1.25f, -2.5f, 9.80665f},
+                               .gyro_radps = {1.0f, -2.0f, 3.0f}};
+    app_imu_sample_t original = sample;
+    before = clock_calls;
+    assert(app_imu_trace_write(NULL, 17U) == BSP_RTT_INVALID_ARGUMENT);
+    assert(app_imu_trace_write(&sample, 17U) == BSP_RTT_OK);
+    drain(BSP_RTT_DATA, output, sizeof(output));
+    assert(strcmp(output,
+                  "IMU1,17,123456,1193046,1250,-2500,9806,1000,-2000,3000\n") ==
+           0);
+    assert(clock_calls == before &&
+           memcmp(&sample, &original, sizeof(sample)) == 0);
+    char fill[4095];
+    memset(fill, 'x', sizeof(fill));
+    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
+    assert(app_imu_trace_write(&sample, 18U) == BSP_RTT_FULL);
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
+    assert(memcmp(&sample, &original, sizeof(sample)) == 0);
+    drain(BSP_RTT_DATA, output, sizeof(output));
+    assert(app_imu_trace_write(&sample, 19U) == BSP_RTT_OK);
+    drain(BSP_RTT_DATA, output, sizeof(output));
+    const char trace_prefix[] = "IMU1,19,123456,";
+    assert(strncmp(output, trace_prefix, sizeof(trace_prefix) - 1U) == 0);
+    app_log_init(NULL);
+    assert(app_log_write(1U, "imu", "no clock") == BSP_RTT_NOT_INITIALIZED);
+}
+#endif
+
+int main(void) {
+#if DRONE_RTT
+    enabled_tests();
+#else
+    int effects = 0;
+    app_log_init(clock_ms);
+    APP_LOG_ERROR("imu", "%d", ++effects);
+    APP_LOG_WARN("imu", "%d", ++effects);
+    APP_LOG_INFO("imu", "%d", ++effects);
+    APP_LOG_DEBUG("imu", "%d", ++effects);
+    APP_IMU_TRACE(NULL, ++effects);
+    assert(effects == 0 && clock_calls == 0U);
+#endif
+    puts("logging tests passed");
+    return 0;
+}

@@ -37,14 +37,15 @@ IMU và định thời chưa được kiểm chứng trên board.
 
 Xem biến `imu` trong `App/Src/app.c` bằng debugger:
 
-| Trường                                         | Ý nghĩa                                          |
-| ---------------------------------------------- | ------------------------------------------------ |
-| `status`                                       | `BSP_IMU_OK`, `BSP_IMU_NO_DATA` hoặc mã lỗi      |
-| `sample_valid`                                 | Lần poll vừa rồi có mẫu mới hợp lệ               |
-| `sample.accel_mps2[3]`, `sample.gyro_radps[3]` | X/Y/Z theo package cảm biến; m/s² và rad/s       |
-| `sample.sensor_time_ticks`                     | Timestamp cảm biến 24-bit, chưa mở rộng khi tràn |
-| `sample_count`, `read_error_count`             | Số mẫu hợp lệ và lỗi đọc                         |
-| `sensor.driver_error`                          | Mã lỗi Bosch gần nhất                            |
+| Trường                                         | Ý nghĩa                                                                         |
+| ---------------------------------------------- | ------------------------------------------------------------------------------- |
+| `status`                                       | `BSP_IMU_OK`, `BSP_IMU_NO_DATA` hoặc mã lỗi                                     |
+| `sample_valid`                                 | Lần poll vừa rồi có mẫu mới hợp lệ                                              |
+| `sample.accel_mps2[3]`, `sample.gyro_radps[3]` | X/Y/Z theo package cảm biến; m/s² và rad/s                                      |
+| `sample.sensor_time_ticks`                     | Timestamp cảm biến 24-bit, chưa mở rộng khi tràn                                |
+| `sample.t_read_us`                             | Uptime MCU sau lần đọc thành công, µs, tràn uint32; không phải acquisition time |
+| `sample_count`, `read_error_count`             | Số mẫu hợp lệ và lỗi đọc                                                        |
+| `sensor.driver_error`                          | Mã lỗi Bosch gần nhất                                                           |
 
 Chỉ cập nhật mẫu khi cả accel và gyro sẵn sàng. Khi chưa có mẫu mới hoặc lỗi,
 dữ liệu cũ được giữ nhưng `sample_valid = false`; lần poll sau tiếp tục đọc.

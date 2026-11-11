@@ -32,6 +32,20 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(DRONE_RTT_DEFAULT ON)
 endif()
 option(DRONE_ENABLE_RTT "Build the two-channel RTT transport" ${DRONE_RTT_DEFAULT})
+set(DRONE_LOG_DEFAULT OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(DRONE_LOG_DEFAULT INFO)
+endif()
+set(DRONE_LOG_LEVEL
+    ${DRONE_LOG_DEFAULT}
+    CACHE STRING "Log level: OFF, ERROR, WARN, INFO, DEBUG")
+set_property(CACHE DRONE_LOG_LEVEL PROPERTY STRINGS OFF ERROR WARN INFO DEBUG)
+set(DRONE_LOG_LEVELS OFF ERROR WARN INFO DEBUG)
+list(FIND DRONE_LOG_LEVELS "${DRONE_LOG_LEVEL}" DRONE_LOG_LEVEL_VALUE)
+if(DRONE_LOG_LEVEL_VALUE LESS 0)
+    message(FATAL_ERROR "Invalid DRONE_LOG_LEVEL: ${DRONE_LOG_LEVEL}")
+endif()
+option(DRONE_ENABLE_IMU_TRACE "Stream every successful IMU read over RTT" ${DRONE_RTT_DEFAULT})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
@@ -68,10 +82,20 @@ target_include_directories(
             ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc)
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RTT=$<BOOL:${DRONE_ENABLE_RTT}>)
+target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_LOG_LEVEL=${DRONE_LOG_LEVEL_VALUE})
 if(DRONE_ENABLE_RTT)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE BSP/Src/bsp_rtt.c Drivers/RTT/SEGGER_RTT.c)
     target_include_directories(${CMAKE_PROJECT_NAME}
                                PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/RTT)
+    if(DRONE_LOG_LEVEL_VALUE GREATER 0)
+        target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_log.c)
+    endif()
+    if(DRONE_ENABLE_IMU_TRACE)
+        target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_imu_trace.c)
+    endif()
+endif()
+if(DRONE_ENABLE_RTT AND DRONE_ENABLE_IMU_TRACE)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_IMU_TRACE=1)
 endif()
 
 # Add user project symbols (macros) when needed:

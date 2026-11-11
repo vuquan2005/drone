@@ -42,7 +42,7 @@ tại `tools/`.
 
 Với mã nguồn đã có index `.codegraph/`, ưu tiên CodeGraph thay vì tìm kiếm hoặc đọc mã trực tiếp:
 
-Index gốc dành cho mã nguồn chính. Để tra cứu mã tham khảo, dùng index riêng tại `docs/external/repos/`, nếu có; ví dụ `codegraph explore -p docs/external/repos "<symbol>"`. Với MCP, truyền `projectPath` trỏ đến thư mục tương ứng.
+Index gốc dành cho mã nguồn chính. Để tra cứu mã tham khảo (ardupilot, PX4, betaflight,...), dùng index riêng tại `docs/external/repos/`, nếu có; ví dụ `codegraph explore -p docs/external/repos "<symbol>"`. Với MCP, truyền `projectPath` trỏ đến thư mục tương ứng.
 
 ## Git
 

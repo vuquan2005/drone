@@ -118,8 +118,6 @@ fp-info-cache
 # Large or intermediate experiment data
 /experiments/processed/*
 /experiments/raw/*
-!/experiments/processed/.gitkeep
-!/experiments/raw/.gitkeep
 
 # KiCad manufacturing and rendered outputs (keep editable design sources)
 /hardware/kicad/**/gerber/

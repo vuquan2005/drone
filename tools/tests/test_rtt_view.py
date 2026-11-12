@@ -1,5 +1,7 @@
 """Optional offscreen GUI/TCP integration test; never connects to a probe."""
 
+import csv
+import tempfile
 import importlib.util
 from test_rtt_records import packet
 import math
@@ -33,6 +35,12 @@ class ViewerTests(unittest.TestCase):
             )
         )
         viewer.show()
+        output = tempfile.TemporaryDirectory()
+        self.addCleanup(output.cleanup)
+        viewer.output_dir.setText(output.name)
+        viewer.raw_checkbox.setChecked(True)
+        viewer.toggle_recording()
+        self.assertTrue(viewer.recording)
 
         def until(predicate):
             deadline = time.monotonic() + 4
@@ -89,12 +97,38 @@ class ViewerTests(unittest.TestCase):
             until(lambda: viewer.series.received == 4003)
             self.assertEqual(viewer.series.missing, 1)
             self.assertLessEqual(len(viewer.series.points), 4001)
+            peers[0].write(b"[3][I][imu] filtered but saved\n")
+            until(lambda: len(viewer.logs) == 3)
+            self.assertNotIn("filtered but saved", viewer.log_view.toPlainText())
+            viewer.toggle_recording()
+            until(lambda: viewer.writer.done.is_set())
+            self.assertIsNone(viewer.writer.error)
+            self.assertEqual(sum(viewer.writer.dropped.values()), 0)
+            directory = viewer.writer.directory
+            with next(directory.glob("imu_*.csv")).open(newline="") as file:
+                rows = list(csv.reader(file))
+            self.assertEqual(len(rows), 4004)
+            self.assertNotEqual(rows[1][0], rows[3][0])
+            self.assertIn("filtered but saved", next(directory.glob("events_*.log")).read_text())
+            self.assertGreater(
+                len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 48
+            )
             viewer.level.setCurrentText("All")
             viewer.refresh()
             image_path = os.environ.get("RTT_TEST_SCREENSHOT")
             if image_path:
                 viewer.grab().save(image_path)
+            viewer.toggle_recording()
+            viewer.on_log(b"[4][W][test] flush on close")
+            viewer.close()
+            until(lambda: viewer.writer.done.is_set() and not viewer.isVisible())
+            self.assertIn(
+                "flush on close", next(viewer.writer.directory.glob("events_*.log")).read_text()
+            )
         finally:
+            if viewer.writer is not None:
+                viewer.writer.stop()
+                viewer.writer.done.wait(3)
             viewer.timer.stop()
             for stream in (viewer.log_stream, viewer.data_stream):
                 stream.retry.stop()

@@ -4,6 +4,7 @@ Chạy các lệnh sau từ thư mục gốc repository:
 
 | Lệnh                   | Tác dụng                                                          |
 | ---------------------- | ----------------------------------------------------------------- |
+| `make telemetry`       | Mở viewer RTT và điều khiển ghi phiên dữ liệu                     |
 | `make help`            | Xem danh sách lệnh                                                |
 | `make report`          | Build PDF báo cáo; xem [hướng dẫn](../report/AGENTS.md#biên-dịch) |
 | `make format`          | Định dạng các tệp được Git theo dõi                               |
@@ -58,6 +59,7 @@ Các công cụ nằm trong `tools/rtt/`. `view.py` nhận byte từ TCP và g�
 | `rtt/capture_raw.py`        | Nối một TCP port, chuyển nguyên byte ra stdout; dùng xem nhanh hoặc redirect vào file                                       | Thư viện chuẩn                    |
 | `rtt/records.py`            | Module ghép dòng TCP và parse IMU binary v1; đổi milli-unit sang SI, xử lý timestamp/sequence tràn, gap và lịch sử giới hạn | Thư viện chuẩn                    |
 | `rtt/view.py`               | Cửa sổ nhận LOG và DATA đồng thời, lọc log, vẽ accel/gyro và báo trạng thái                                                 | Nhóm `rtt`, dùng `rtt/records.py` |
+| `rtt/session_writer.py`     | Worker ghi CSV, text log và raw tùy chọn; queue giới hạn                                                                    | Thư viện chuẩn                    |
 | `tests/test_rtt_records.py` | Kiểm thử framing, dữ liệu lỗi, gap, wrap/reset và giới hạn lịch sử                                                          | Thư viện chuẩn                    |
 | `tests/test_rtt_view.py`    | Kiểm thử GUI với hai TCP server localhost giả lập, reconnect và burst 4000 mẫu                                              | Nhóm `rtt`                        |
 
@@ -120,7 +122,7 @@ uv run --group rtt tools/rtt/view.py --host 127.0.0.1 --log-port 9090 --data-por
   frame; type/version chưa hỗ trợ được đếm unknown. Payload tối đa 256 byte.
   GUI mới yêu cầu firmware binary mới, không giải mã CSV `IMU1` cũ.
 
-Plot giữ lịch sử giới hạn; chưa lưu CSV hoặc text log trong UI. Bộ đọc thô
+Plot giữ lịch sử giới hạn; recording lưu riêng toàn bộ bản ghi được nhận và enqueue thành công trong phiên. Bộ đọc thô
 `rtt/capture_raw.py` vẫn dùng độc lập như trước. Kiểm thử parser không cần Qt/board:
 
 ```sh
@@ -132,6 +134,86 @@ mở socket localhost), gồm reconnect và burst 4000 mẫu, không cần board
 
 ```sh
 QT_QPA_PLATFORM=offscreen uv run --group rtt python -m unittest discover -s tools/tests -p test_rtt_view.py -v
+```
+
+## Ghi phiên CSV, text log và raw
+
+Mở viewer sau khi OpenOCD đang chạy:
+
+```sh
+make telemetry
+```
+
+Chọn thư mục gốc rồi **Start recording**, **Stop recording** để kết thúc.
+Mặc định lưu dưới `experiments/raw/telemetry/` (đã được Git ignore). Mỗi lần
+Start tạo thư mục mới; cả thư mục và tên file dùng cùng timestamp UTC có
+microsecond, không ghi đè phiên đã tồn tại:
+
+```text
+telemetry_20261113T081530123456Z/
+├── imu_20261113T081530123456Z.csv
+├── events_20261113T081530123456Z.log
+└── data_20261113T081530123456Z.hex   # nếu chọn Save raw hex
+```
+
+Mở và tự bắt đầu ghi CSV/log, kèm raw tùy chọn, hoặc đổi thư mục/cổng:
+
+```sh
+make telemetry TELEMETRY_ARGS="--record --raw"
+make telemetry TELEMETRY_ARGS="--record --output-dir /tmp/drone-sessions --log-port 9090 --data-port 9091"
+```
+
+`make telemetry` chỉ mở công cụ host, không nạp/reset MCU hoặc tự chạy
+OpenOCD. Dùng `UV=/path/to/uv` nếu cần chỉ định executable khác.
+
+`session_writer.py` độc lập Qt, socket và decoder. Viewer chuyển bản ghi cho
+writer khi nhận, trước filter log và không phụ thuộc nhịp vẽ/lịch sử 10 giây:
+
+- CSV chứa số nguyên gốc trên wire, có header ghi đơn vị; không lưu giá trị
+  float SI của plot để tránh mất khả năng tái lập dữ liệu.
+- `events_*.log` chứa mọi dòng log nhận được trong khi ghi, kể cả dòng bị
+  filter trên UI; giữ timestamp MCU, E/W/I/D và tag, kết thúc bằng LF.
+- `data_*.hex` biểu diễn toàn bộ byte DATA trước giải mã dưới dạng text hex,
+  tối đa 16 byte/dòng, kể cả frame hỏng/chưa đủ. Đây là plain hex, không phải
+  Intel HEX; newline chỉ để dễ đọc, không phải ranh giới frame. Dùng
+  `bytes.fromhex(text)` để khôi phục byte gốc. Capture có thể bắt đầu giữa
+  frame. Không có dữ liệu trước lúc Start. Text hex chiếm khoảng 3 lần binary.
+  Công cụ `capture_raw.py` riêng vẫn xuất byte binary nguyên gốc ra stdout.
+
+Header CSV:
+
+```text
+segment,sequence,t_read_us,sensor_time_ticks,ax_mmps2,ay_mmps2,az_mmps2,gx_mradps,gy_mradps,gz_mradps
+```
+
+`segment` bắt đầu từ 1 ở kết nối DATA đầu tiên của viewer, tăng khi nối lại
+DATA hoặc nghi reset. Nếu không reconnect/reset thì mọi dòng đều mang 1;
+đây không phải type message hoặc số thứ tự mẫu. Start/Stop recording không
+tự tăng segment. Không điền mẫu giả vào gap; CSV chỉ chứa mẫu hợp lệ, không
+quy sequence thiếu thành counter RTT đầy. Log và DATA là hai luồng riêng,
+không bảo đảm thứ tự sự kiện liên kênh. Giới hạn nhận diện reset vẫn như decoder.
+
+Hiện chỉ IMU có decoder và CSV writer. Frame type/version khác được đếm
+unknown, không ghi vào CSV IMU; raw hex vẫn giữ byte của chúng nếu được bật.
+Khi thêm type mới cần bổ sung schema/decoder và writer tương ứng; dự kiến
+mỗi type có CSV riêng, ví dụ `attitude_<timestamp>.csv`, cùng thư mục phiên.
+
+Worker có queue tối đa 4096 mục, ghi file có buffer và flush ít nhất mỗi
+khoảng một giây khi worker tiến triển. Queue đầy bỏ mục mới và hiển thị riêng
+writer drops CSV rows / LOG lines / raw chunks; khác với missing sequence.
+Lỗi mở/ghi file hoặc hết dung lượng hiện ở trạng thái Recording ERROR và
+ngừng ghi; UI tiếp tục nhận/vẽ. File có thể chưa đầy đủ khi lỗi ghi xảy ra.
+
+Stop chờ worker tiêu thụ queue rồi flush/đóng file, không chặn event loop.
+Đóng cửa sổ cũng chờ worker hoàn tất. Nếu ổ đĩa bị treo, cửa sổ có thể còn
+chờ nhưng vẫn xử lý sự kiện. Không fsync từng mẫu; kill process/mất điện có
+thể làm mất phần chưa ghi bền. File chỉ phản ánh dữ liệu nhận trong khoảng
+recording và không được phục hồi lại dữ liệu RTT đã bỏ.
+
+Kiểm thử writer không cần Qt hoặc board:
+
+```sh
+uv run python -m unittest discover -s tools/tests -p test_rtt_session_writer.py -v
 ```
 
 ## Đồng bộ PDF

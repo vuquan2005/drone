@@ -76,5 +76,6 @@ của type đã có mà giữ nguyên version. Sequence riêng theo từng loạ
 rộng. CH1 có thể xen kẽ các type khác tần số; host phân loại theo type.
 
 `capture_raw.py` lưu nguyên frame vào `.bin`; file này không phải CSV. `view.py`
-giải mã để vẽ SI; chưa có recording CSV/log trong UI. Không có boot ID, nên
+giải mã để vẽ SI và có Start/Stop recording CSV, log, raw tùy chọn; xem
+[ghi phiên telemetry](../tools/README.md#ghi-phiên-csv-text-log-và-raw). Không có boot ID, nên
 phân biệt reset với tràn/gián đoạn dài vẫn có giới hạn như trước.

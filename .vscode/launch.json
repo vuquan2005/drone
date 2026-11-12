@@ -49,6 +49,7 @@
         "cortex_m reset_config sysresetreq"
       ],
       "postLaunchCommands": [
+        "monitor rtt server start 9090 0",
         "monitor rtt server start 9091 1"
       ],
       "runToEntryPoint": "app_process",

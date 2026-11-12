@@ -9,14 +9,14 @@ nhau; decoder hiện không hỗ trợ CSV cũ. Không cần thư viện seriali
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                      |
-| ------ | ------- | -------------- | -------------------------------------------- |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                 |
-| 4      | 1       | version        | `1`                                          |
-| 5      | 1       | type           | `1`: IMU                                     |
-| 6      | 2       | payload_length | uint16, không tính header/CRC; IMU = 36      |
-| 8      | N       | payload        | Theo version và type                         |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic |
+| Offset | Số byte | Trường         | Quy ước                                             |
+| ------ | ------- | -------------- | --------------------------------------------------- |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                        |
+| 4      | 1       | version        | `1`                                                 |
+| 5      | 1       | type           | `1`: IMU; `2`: thống kê RTT                         |
+| 6      | 2       | payload_length | uint16, không tính header/CRC; IMU = 36, stats = 40 |
+| 8      | N       | payload        | Theo version và type                                |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic        |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -60,6 +60,42 @@ không retry; enqueue nguyên frame một lần. Không đủ chỗ: bỏ frame 
 tăng counter đầy CH1. Tốc độ danh định 400 Hz tương ứng 19200 byte/s cho IMU,
 chưa tính overhead giao tiếp. Không cam kết probe theo kịp khi chưa đo board.
 
+## RTT statistics v1, type 2
+
+Payload 40 byte, frame 52 byte. Tất cả trường uint32 little-endian, offset từ
+đầu payload; các counter tràn modulo 2^32 và reset khi `app_init()`:
+
+| Offset | Trường            | Ý nghĩa                                                                     |
+| ------ | ----------------- | --------------------------------------------------------------------------- |
+| 0      | sequence          | Số lần thử gửi thống kê, đầu tiên = 1; tăng dù frame bị bỏ                  |
+| 4      | uptime_ms         | Uptime MCU lúc chụp thống kê, ms, không phải timestamp IMU                  |
+| 8      | imu_samples       | Tổng số lần đọc IMU thành công, cũng là sequence IMU mới nhất               |
+| 12     | imu_read_errors   | Tổng lỗi đọc driver IMU; không đếm NO_DATA hoặc lỗi init                    |
+| 16     | rtt_log_full      | Bản ghi CH0 bị BSP bỏ vì đầy                                                |
+| 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU và stats                                |
+| 24     | imu_tx_full       | Chỉ frame IMU bị bỏ vì đầy                                                  |
+| 28     | stats_tx_full     | Chỉ frame thống kê bị bỏ vì đầy                                             |
+| 32     | imu_tx_rejected   | IMU bị từ chối vì nguyên nhân khác FULL (kể cả dữ liệu encode không hợp lệ) |
+| 36     | stats_tx_rejected | Stats bị từ chối vì nguyên nhân khác FULL                                   |
+
+App thử gửi khoảng mỗi 1000 ms trong foreground, kể cả khi IMU init/read
+lỗi hoặc NO_DATA. Không retry tức thì, không gửi bù nhiều frame sau một lần
+poll trễ. Dùng hiệu uint32 để lịch vẫn chạy qua HAL tick wrap. Bị block trong
+poll thì thống kê cũng bị trễ; đây không phải timer task độc lập.
+
+Counter được chụp trước chính lần gửi stats đó: nếu frame này thất bại, lần
+stats sau sẽ phản ánh lỗi. Counter tích lũy nên mất một frame stats không
+làm mất tổng lịch sử. `rtt_data_full` không đồng nghĩa số mẫu IMU bị bỏ;
+để đối chiếu gap IMU, dùng chênh lệch `imu_tx_full`, không cộng lại với
+`rtt_data_full`. Counter không đo mẫu phần cứng chưa kịp đọc hoặc dữ liệu
+mất trên host. Khi chưa có snapshot làm baseline, chưa quy được chính xác
+counter tích lũy vào một khoảng CSV; các frame stats cũng có thể bị mất.
+
+Viewer hiển thị snapshot mới nhất và tuổi snapshot theo clock host. Khi
+recording, type 2 ghi vào `rtt_stats_<timestamp>.csv`, type 1 vẫn ở
+`imu_<timestamp>.csv`. Cả hai có cột segment để tránh so counter qua reset.
+Firmware mới tăng thêm 52 byte/s danh định; IMU frame/layout không đổi.
+
 ## Mã nguồn và kiểm thử
 
 - Encoder: `firmware/drone/App/Src/app_telemetry.c`; API `app_telemetry_write_imu()`, compile option `DRONE_ENABLE_TELEMETRY`.
@@ -67,7 +103,9 @@ chưa tính overhead giao tiếp. Không cam kết probe theo kịp khi chưa đ
 - Fixture chung: `protocol/fixtures/imu_v1.hex`, là hex của frame đã encode,
   không phải file raw dùng chạy thực tế. C so sánh output byte-for-byte;
   Python kiểm tra framing, CRC và giá trị trường với cùng fixture.
-- Fixture dùng sequence 17, t_read_us 123456, sensor ticks `0x123456`,
+- Fixture thống kê: `protocol/fixtures/rtt_stats_v1.hex`, sequence 1,
+  uptime 1234 ms, 17 mẫu IMU, 3 lỗi đọc; các counter truyền bằng 0.
+- Fixture IMU dùng sequence 17, t_read_us 123456, sensor ticks `0x123456`,
   accel `[1250,-2500,9806]`, gyro `[1000,-2000,3000]`.
 
 Thêm loại dữ liệu mới bằng type mới cùng payload được tài liệu hóa; chỉ tăng

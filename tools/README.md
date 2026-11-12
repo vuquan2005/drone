@@ -117,6 +117,8 @@ uv run --group rtt tools/rtt/view.py --host 127.0.0.1 --log-port 9090 --data-por
   hoặc thời gian hơn nửa miền được coi là nghi reset và bắt đầu lại plot.
   Reset rất sớm hoặc ngắt dữ liệu quá lâu không thể nhận diện chắc chắn nếu
   firmware chưa có boot ID. Không có dữ liệu thì giữ plot cuối.
+- Type 2 cập nhật thống kê MCU (khoảng 1 Hz), có tuổi snapshot để thấy khi
+  dữ liệu thống kê bị trễ; counter này khác các lỗi/drops phía host.
 - CH0 ghép dòng newline, dòng quá 1024 byte bị bỏ. CH1 tìm magic, kiểm tra
   length và CRC32; báo frame errors riêng. Frame hỏng bị bỏ, tự tìm lại đầu
   frame; type/version chưa hỗ trợ được đếm unknown. Payload tối đa 256 byte.
@@ -146,14 +148,17 @@ make telemetry
 
 Chọn thư mục gốc rồi **Start recording**, **Stop recording** để kết thúc.
 Mặc định lưu dưới `experiments/raw/telemetry/` (đã được Git ignore). Mỗi lần
-Start tạo thư mục mới; cả thư mục và tên file dùng cùng timestamp UTC có
-microsecond, không ghi đè phiên đã tồn tại:
+Start tạo thư mục mới; cả thư mục và tên file dùng giờ địa phương dạng gọn
+`YYYYMMDD_HHMMSS`. Nếu trùng giây, thêm `_01`, `_02`,… vào cả thư mục và tên
+file; không ghi đè phiên cũ. Múi giờ lấy từ hệ điều hành máy chạy viewer;
+không đổi timestamp MCU trong CSV hoặc đổi tên các phiên cũ. Ví dụ:
 
 ```text
-telemetry_20261113T081530123456Z/
-├── imu_20261113T081530123456Z.csv
-├── events_20261113T081530123456Z.log
-└── data_20261113T081530123456Z.hex   # nếu chọn Save raw hex
+telemetry_20261113_151530/
+├── imu_20261113_151530.csv
+├── rtt_stats_20261113_151530.csv
+├── events_20261113_151530.log
+└── data_20261113_151530.hex   # nếu chọn Save raw hex
 ```
 
 Mở và tự bắt đầu ghi CSV/log, kèm raw tùy chọn, hoặc đổi thư mục/cổng:
@@ -171,6 +176,9 @@ writer khi nhận, trước filter log và không phụ thuộc nhịp vẽ/lị
 
 - CSV chứa số nguyên gốc trên wire, có header ghi đơn vị; không lưu giá trị
   float SI của plot để tránh mất khả năng tái lập dữ liệu.
+- `rtt_stats_*.csv` chứa snapshot counter đầy CH0/CH1, số frame IMU/stats
+  bị bỏ/từ chối và tổng mẫu/lỗi đọc IMU; có sequence stats và uptime ms.
+  Xem [schema type 2](../protocol/telemetry.md#rtt-statistics-v1-type-2).
 - `events_*.log` chứa mọi dòng log nhận được trong khi ghi, kể cả dòng bị
   filter trên UI; giữ timestamp MCU, E/W/I/D và tag, kết thúc bằng LF.
 - `data_*.hex` biểu diễn toàn bộ byte DATA trước giải mã dưới dạng text hex,
@@ -193,14 +201,15 @@ tự tăng segment. Không điền mẫu giả vào gap; CSV chỉ chứa mẫu 
 quy sequence thiếu thành counter RTT đầy. Log và DATA là hai luồng riêng,
 không bảo đảm thứ tự sự kiện liên kênh. Giới hạn nhận diện reset vẫn như decoder.
 
-Hiện chỉ IMU có decoder và CSV writer. Frame type/version khác được đếm
-unknown, không ghi vào CSV IMU; raw hex vẫn giữ byte của chúng nếu được bật.
+Hiện type 1 (IMU) và type 2 (RTT statistics) có decoder và CSV riêng. Frame
+type/version khác được đếm unknown, không ghi vào hai CSV trên; raw hex vẫn
+giữ byte của chúng nếu được bật.
 Khi thêm type mới cần bổ sung schema/decoder và writer tương ứng; dự kiến
 mỗi type có CSV riêng, ví dụ `attitude_<timestamp>.csv`, cùng thư mục phiên.
 
 Worker có queue tối đa 4096 mục, ghi file có buffer và flush ít nhất mỗi
 khoảng một giây khi worker tiến triển. Queue đầy bỏ mục mới và hiển thị riêng
-writer drops CSV rows / LOG lines / raw chunks; khác với missing sequence.
+writer drops IMU rows / stats rows / LOG lines / raw chunks; khác với missing sequence.
 Lỗi mở/ghi file hoặc hết dung lượng hiện ở trạng thái Recording ERROR và
 ngừng ghi; UI tiếp tục nhận/vẽ. File có thể chưa đầy đủ khi lỗi ghi xảy ra.
 
@@ -215,6 +224,14 @@ Kiểm thử writer không cần Qt hoặc board:
 ```sh
 uv run python -m unittest discover -s tools/tests -p test_rtt_session_writer.py -v
 ```
+
+## Đọc timing từ CSV IMU
+
+Trong cùng segment, dùng hiệu timestamp giữa các sequence liên tiếp để xem
+jitter đọc MCU. Gap sequence phải được tách khỏi thống kê jitter; so counter
+`imu_tx_full` trong `rtt_stats_*.csv` để kiểm tra frame bị RTT bỏ vì đầy.
+Timestamp MCU không đo trực tiếp jitter acquisition hoặc thời gian giao dịch
+SPI. Counter tích lũy cần baseline phù hợp; không so qua reset hoặc segment khác.
 
 ## Đồng bộ PDF
 

@@ -103,6 +103,9 @@ Mỗi mẫu mới được gửi một lần, không chủ động giảm mẫu.
 cảm biến là 400 Hz; số mẫu thực tế phụ thuộc polling/timing. CH1 dùng frame
 binary 48 byte: header 8 byte (`DRT!`, version, type, length), payload IMU
 36 byte và CRC32 4 byte. Không format CSV hoặc gửi nguyên struct C.
+CH1 còn xuất thống kê RTT type 2 khoảng mỗi giây, 52 byte/frame, gồm counter
+đầy theo kênh, IMU/stats bị bỏ riêng và lỗi đọc IMU. Counter tích lũy được
+chụp trước khi thử gửi; không retry khi đầy.
 Xem [schema và fixture chung](../../protocol/telemetry.md).
 
 - `sequence`: số lần đọc thành công từ khi init IMU, mẫu đầu là 1;

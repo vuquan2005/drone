@@ -36,6 +36,20 @@ class Lines:
 MAGIC = b"DRT!"
 HEADER = struct.Struct("<4sBBH")
 IMU = struct.Struct("<III6i")
+RTT_STATS = struct.Struct("<10I")
+RTT_STATS_FIELDS = (
+    "sequence",
+    "uptime_ms",
+    "imu_samples",
+    "imu_read_errors",
+    "rtt_log_full",
+    "rtt_data_full",
+    "imu_tx_full",
+    "stats_tx_full",
+    "imu_tx_rejected",
+    "stats_tx_rejected",
+)
+KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size}
 MAX_PAYLOAD = 256
 
 
@@ -58,7 +72,9 @@ class Frames:
             if len(self.pending) < HEADER.size:
                 return
             _, version, kind, length = HEADER.unpack_from(self.pending)
-            if length > MAX_PAYLOAD or (version == 1 and kind == 1 and length != IMU.size):
+            if length > MAX_PAYLOAD or (
+                version == 1 and kind in KNOWN_SIZES and length != KNOWN_SIZES[kind]
+            ):
                 self.errors += 1
                 del self.pending[0]
                 continue

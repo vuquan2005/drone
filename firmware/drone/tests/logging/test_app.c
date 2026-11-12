@@ -4,6 +4,7 @@
 #include "app_receiver.h"
 #include "bsp_board.h"
 #include "bsp_pwm.h"
+#include "bsp_rtt.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -32,6 +33,9 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu,
 }
 bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     imu->status = status;
+    if (status == BSP_IMU_DRIVER_ERROR) {
+        imu->read_error_count++;
+    }
     imu->sample_valid = status == BSP_IMU_OK;
     if (imu->sample_valid) {
         imu->sample_count++;
@@ -90,6 +94,40 @@ int main(void) {
     status = BSP_IMU_NO_DATA;
     app_process();
     assert(drain(1U, output) == 0U && pwm_starts == 1U);
+    tick = 1999U;
+    app_process();
+    assert(drain(1U, output) == 0U);
+    tick = 2000U;
+    app_process();
+    assert(drain(1U, output) == 52U);
+    assert((uint8_t)output[5] == 2U);
+    assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 2000U);
+    assert(get_u32(output + 16) == 2U && get_u32(output + 20) == 20U);
+    char fill[4095];
+    memset(fill, 'x', sizeof(fill));
+    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
+    tick = 3000U;
+    app_process();
+    for (unsigned i = 0; i < 100U; ++i) {
+        app_process();
+    }
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
+    /* Drain all bytes (the small output buffer can only hold 511 at a time). */
+    while (drain(1U, output) != 0U) {
+    }
+    tick = 4000U;
+    app_process();
+    assert(drain(1U, output) == 52U);
+    assert(get_u32(output + 8) == 3U && get_u32(output + 28) == 1U);
+    assert(get_u32(output + 36) == 1U);
+    tick = 9000U;
+    app_process();
+    assert(drain(1U, output) == 52U); /* No catch-up burst after long delay. */
+    tick = UINT32_MAX - 500U;
+    app_init();
+    tick = 499U;
+    app_process();
+    assert(drain(1U, output) == 52U); /* Scheduling survives HAL tick wrap. */
     puts("App log/trace integration tests passed");
     return 0;
 }

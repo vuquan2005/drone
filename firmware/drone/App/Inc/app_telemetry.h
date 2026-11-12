@@ -12,6 +12,12 @@
 #endif
 
 #if DRONE_RTT && DRONE_TELEMETRY
+/** @brief Reset telemetry attempt sequence and result counters; foreground
+ * only. Call after bsp_rtt_init. Does not initialize or clear the RTT
+ * transport.
+ */
+void app_telemetry_init(void);
+
 /** @brief Enqueue one 48-byte binary IMU frame v1 using timestamps already
  * stored in sample.
  * @param sample Non-NULL bounded SI sample produced by app_imu_poll.
@@ -28,9 +34,25 @@
  */
 bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
                                          uint32_t sequence);
+/** @brief Enqueue one cumulative RTT/IMU statistics snapshot (type 2).
+ * @param uptime_ms MCU time captured by caller, wrapping uint32 milliseconds.
+ * @param imu_samples Successful IMU read count since App init.
+ * @param imu_read_errors IMU driver-read error count since App init.
+ * @return BSP result. One attempt, no retry; failure counts appear in a later
+ * snapshot. DATA dropped_full includes both IMU and statistics frames.
+ * @note Foreground-only, call about once a second independently of IMU success.
+ * Snapshot precedes its own write. Sequence increments for every stats attempt.
+ */
+bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
+                                           uint32_t imu_samples,
+                                           uint32_t imu_read_errors);
+#define APP_TELEMETRY_STATS(ms, samples, errors)                               \
+    ((void)app_telemetry_write_stats(ms, samples, errors))
 #define APP_TELEMETRY_IMU(sample, sequence)                                    \
     ((void)app_telemetry_write_imu(sample, sequence))
 #else
+static inline void app_telemetry_init(void) {}
+#define APP_TELEMETRY_STATS(...) ((void)0)
 #define APP_TELEMETRY_IMU(...) ((void)0)
 #endif
 

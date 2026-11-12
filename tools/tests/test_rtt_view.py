@@ -1,6 +1,8 @@
 """Optional offscreen GUI/TCP integration test; never connects to a probe."""
 
 import csv
+import struct
+import zlib
 import tempfile
 import importlib.util
 from test_rtt_records import packet
@@ -93,8 +95,15 @@ class ViewerTests(unittest.TestCase):
                 )
                 for i in range(4000)
             )
-            peers[-1].write(burst)
-            until(lambda: viewer.series.received == 4003)
+            stats_payload = struct.pack("<10I", 1, 11000, 4003, 7, 2, 226, 225, 1, 0, 0)
+            stats_frame = struct.pack("<4sBBH", b"DRT!", 1, 2, len(stats_payload)) + stats_payload
+            stats_frame += struct.pack("<I", zlib.crc32(stats_frame))
+            peers[-1].write(burst + stats_frame)
+            until(lambda: viewer.series.received == 4003 and viewer.stats_received == 1)
+            viewer.refresh()
+            self.assertEqual(viewer.series.unknown, 0)
+            self.assertIn("IMU=225", viewer.mcu_stats.text())
+            self.assertIn("errors 7", viewer.mcu_stats.text())
             self.assertEqual(viewer.series.missing, 1)
             self.assertLessEqual(len(viewer.series.points), 4001)
             peers[0].write(b"[3][I][imu] filtered but saved\n")
@@ -108,6 +117,12 @@ class ViewerTests(unittest.TestCase):
             with next(directory.glob("imu_*.csv")).open(newline="") as file:
                 rows = list(csv.reader(file))
             self.assertEqual(len(rows), 4004)
+            with next(directory.glob("rtt_stats_*.csv")).open(newline="") as file:
+                stats_rows = list(csv.reader(file))
+            self.assertEqual(len(stats_rows), 2)
+            self.assertEqual(
+                stats_rows[1][1:], ["1", "11000", "4003", "7", "2", "226", "225", "1", "0", "0"]
+            )
             self.assertNotEqual(rows[1][0], rows[3][0])
             self.assertIn("filtered but saved", next(directory.glob("events_*.log")).read_text())
             self.assertGreater(
@@ -118,6 +133,13 @@ class ViewerTests(unittest.TestCase):
             image_path = os.environ.get("RTT_TEST_SCREENSHOT")
             if image_path:
                 viewer.grab().save(image_path)
+            old_segment = viewer.segment
+            viewer.on_data((1, 2, struct.pack("<10I", 1, 100, *([0] * 8))))
+            self.assertEqual(viewer.segment, old_segment + 1)
+            viewer.on_data((1, 2, struct.pack("<10I", 2**32 - 1, 2**32 - 100, *([0] * 8))))
+            old_segment = viewer.segment
+            viewer.on_data((1, 2, struct.pack("<10I", 0, 100, *([0] * 8))))
+            self.assertEqual(viewer.segment, old_segment)  # Natural uint32 wrap.
             viewer.toggle_recording()
             viewer.on_log(b"[4][W][test] flush on close")
             viewer.close()

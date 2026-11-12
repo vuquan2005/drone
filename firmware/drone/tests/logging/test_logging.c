@@ -25,8 +25,25 @@ static unsigned drain(unsigned channel, char *output, unsigned capacity) {
     return count;
 }
 
+static void check_fixture(const char *output, unsigned size, const char *path) {
+    FILE *fixture = fopen(path, "r");
+    assert(fixture != NULL);
+    for (unsigned i = 0; i < size; ++i) {
+        unsigned byte;
+        assert(fscanf(fixture, "%2x", &byte) == 1);
+        assert((uint8_t)output[i] == byte);
+    }
+    unsigned extra;
+    assert(fscanf(fixture, "%x", &extra) == EOF);
+    fclose(fixture);
+}
+static uint32_t get_u32(const char *p) {
+    return (uint32_t)(uint8_t)p[0] | ((uint32_t)(uint8_t)p[1] << 8U) |
+           ((uint32_t)(uint8_t)p[2] << 16U) | ((uint32_t)(uint8_t)p[3] << 24U);
+}
 static void enabled_tests(void) {
     bsp_rtt_init();
+    app_telemetry_init();
     assert(app_log_write(APP_LOG_LEVEL_INFO, "imu", "boot") ==
            BSP_RTT_NOT_INITIALIZED);
     app_log_init(clock_ms);
@@ -93,16 +110,7 @@ static void enabled_tests(void) {
     assert(app_telemetry_write_imu(NULL, 17U) == BSP_RTT_INVALID_ARGUMENT);
     assert(app_telemetry_write_imu(&sample, 17U) == BSP_RTT_OK);
     assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 48U);
-    FILE *fixture = fopen(TELEMETRY_FIXTURE_PATH, "r");
-    assert(fixture != NULL);
-    for (unsigned i = 0; i < 48U; ++i) {
-        unsigned byte;
-        assert(fscanf(fixture, "%2x", &byte) == 1);
-        assert((uint8_t)output[i] == byte);
-    }
-    unsigned extra;
-    assert(fscanf(fixture, "%x", &extra) == EOF);
-    fclose(fixture);
+    check_fixture(output, 48U, TELEMETRY_FIXTURE_PATH);
     assert(clock_calls == before &&
            memcmp(&sample, &original, sizeof(sample)) == 0);
     char fill[4095];
@@ -128,6 +136,25 @@ static void enabled_tests(void) {
     sample.sensor_time_ticks = 0x1000000U;
     assert(app_telemetry_write_imu(&sample, 20U) == BSP_RTT_INVALID_ARGUMENT);
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
+    bsp_rtt_init();
+    app_telemetry_init();
+    assert(app_telemetry_write_stats(1234U, 17U, 3U) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 52U);
+    check_fixture(output, 52U, RTT_STATS_FIXTURE_PATH);
+    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
+    sample = original;
+    assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_FULL);
+    assert(app_telemetry_write_stats(2234U, 18U, 3U) == BSP_RTT_FULL);
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 2U);
+    drain(BSP_RTT_DATA, output, sizeof(output));
+    assert(app_telemetry_write_imu(NULL, 19U) == BSP_RTT_INVALID_ARGUMENT);
+    assert(app_telemetry_write_stats(3234U, 19U, 3U) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 52U);
+    assert(get_u32(output + 8U) == 3U);  /* Stats attempt 2 was dropped. */
+    assert(get_u32(output + 28U) == 2U); /* All DATA frames dropped-full. */
+    assert(get_u32(output + 32U) == 1U); /* IMU full only. */
+    assert(get_u32(output + 36U) == 1U); /* Stats full only. */
+    assert(get_u32(output + 40U) == 1U); /* Invalid IMU, not a full drop. */
     app_log_init(NULL);
     assert(app_log_write(1U, "imu", "no clock") == BSP_RTT_NOT_INITIALIZED);
 }
@@ -139,6 +166,8 @@ int main(void) {
 #else
     int effects = 0;
     app_log_init(clock_ms);
+    app_telemetry_init();
+    APP_TELEMETRY_STATS(++effects, ++effects, ++effects);
     APP_LOG_ERROR("imu", "%d", ++effects);
     APP_LOG_WARN("imu", "%d", ++effects);
     APP_LOG_INFO("imu", "%d", ++effects);

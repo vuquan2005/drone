@@ -1,11 +1,13 @@
 """Write bounded telemetry sessions independently of Qt and socket handling."""
 
 import csv
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 from queue import Empty, Full, Queue
 from threading import Event, Thread
 import time
+
+from records import RTT_STATS_FIELDS
 
 COLUMNS = (
     "segment",
@@ -21,6 +23,9 @@ COLUMNS = (
 )
 
 
+STATS_COLUMNS = ("segment", *RTT_STATS_FIELDS)
+
+
 class SessionWriter:
     """One producer, one disk worker. Stop drains accepted items, then flushes/closes.
 
@@ -32,20 +37,33 @@ class SessionWriter:
     def __init__(self, root, raw=False, capacity=4096):
         if capacity < 1:
             raise ValueError("Queue capacity must be positive")
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-        self.directory = Path(root) / f"telemetry_{stamp}"
-        self.directory.mkdir(parents=True, exist_ok=False)
+        base_stamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S")
+        root = Path(root)
+        root.mkdir(parents=True, exist_ok=True)
+        suffix = 0
+        while True:
+            stamp = base_stamp if suffix == 0 else f"{base_stamp}_{suffix:02d}"
+            self.directory = root / f"telemetry_{stamp}"
+            try:
+                self.directory.mkdir()
+                break
+            except FileExistsError:
+                suffix += 1
         self.files = {}
         try:
             self.files["csv"] = (self.directory / f"imu_{stamp}.csv").open(
                 "x", newline="", encoding="utf-8"
             )
+            self.files["stats"] = (self.directory / f"rtt_stats_{stamp}.csv").open(
+                "x", newline="", encoding="utf-8"
+            )
             self.files["log"] = (self.directory / f"events_{stamp}.log").open("xb")
             if raw:
                 self.files["raw"] = (self.directory / f"data_{stamp}.hex").open("xb")
-            self.csv = csv.writer(self.files["csv"])
-            self.csv.writerow(COLUMNS)
-            self.files["csv"].flush()
+            self.csv_writers = {kind: csv.writer(self.files[kind]) for kind in ("csv", "stats")}
+            for kind, columns in (("csv", COLUMNS), ("stats", STATS_COLUMNS)):
+                self.csv_writers[kind].writerow(columns)
+                self.files[kind].flush()
         except OSError:
             for file in self.files.values():
                 file.close()
@@ -56,7 +74,7 @@ class SessionWriter:
         self.error = None
         self.accepted = 0
         self.processed = 0
-        self.dropped = dict.fromkeys(("csv", "log", "raw"), 0)
+        self.dropped = dict.fromkeys(("csv", "stats", "log", "raw"), 0)
         self.thread = Thread(target=self._run, name="telemetry-writer", daemon=True)
         self.thread.start()
 
@@ -76,8 +94,8 @@ class SessionWriter:
         self.stopping.set()
 
     def _write(self, kind, value):
-        if kind == "csv":
-            self.csv.writerow(value)
+        if kind in self.csv_writers:
+            self.csv_writers[kind].writerow(value)
         elif kind == "raw":
             # Plain hex text, not Intel HEX; whitespace is not a frame boundary.
             if value:

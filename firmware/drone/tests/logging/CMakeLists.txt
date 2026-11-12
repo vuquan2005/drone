@@ -13,7 +13,8 @@ foreach(level IN ITEMS 0 3 4)
     target_compile_definitions(
         ${TARGET}
         PRIVATE DRONE_LOG_LEVEL=${level}
-                TELEMETRY_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_v1.hex")
+                TELEMETRY_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_v1.hex"
+                RTT_STATS_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rtt_stats_v1.hex")
     if(level GREATER 0)
         target_sources(
             ${TARGET}

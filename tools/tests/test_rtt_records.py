@@ -8,7 +8,7 @@ import unittest
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from records import Frames, ImuSeries, Lines
+from records import Frames, ImuSeries, Lines, RTT_STATS, RTT_STATS_FIELDS
 
 
 def record(seq=1, stamp=1000, sensor=42, axes=(1000, -2000, 9800, 100, -200, 300)):
@@ -39,6 +39,26 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(list(Frames().feed(raw)), [expected])
         self.assertEqual(packet(17, 123456, 0x123456, (1250, -2500, 9806, 1000, -2000, 3000)), raw)
         self.assertEqual(zlib.crc32(b"123456789"), 0xCBF43926)
+
+    def test_shared_stats_fixture_and_mixed_stream(self):
+        raw = bytes.fromhex(
+            (Path(__file__).resolve().parents[2] / "protocol/fixtures/rtt_stats_v1.hex").read_text()
+        )
+        values = (1, 1234, 17, 3, 0, 0, 0, 0, 0, 0)
+        self.assertEqual(len(raw), 52)
+        decoded = list(Frames().feed(packet() + raw + packet(2)))
+        self.assertEqual([frame[1] for frame in decoded], [1, 2, 1])
+        self.assertEqual(RTT_STATS.unpack(decoded[1][2]), values)
+        self.assertEqual(len(RTT_STATS_FIELDS), len(values))
+        for offset in range(len(raw) + 1):
+            framing = Frames()
+            self.assertEqual(
+                list(framing.feed(raw[:offset])) + list(framing.feed(raw[offset:])),
+                [(1, 2, RTT_STATS.pack(*values))],
+            )
+        bad = bytearray(raw)
+        bad[6] = 39
+        self.assertEqual(list(Frames().feed(bad + raw)), [(1, 2, RTT_STATS.pack(*values))])
 
     def test_binary_fragmentation_and_midstream_join(self):
         raw = packet()
@@ -71,7 +91,7 @@ class RecordTests(unittest.TestCase):
         list(framing.feed(b"x" * 100000))
         self.assertLessEqual(len(framing.pending), 3)
         # Unsupported types/versions are framed correctly and counted separately.
-        for version, kind in ((1, 2), (2, 1)):
+        for version, kind in ((1, 3), (2, 1)):
             unknown = struct.pack("<4sBBH", b"DRT!", version, kind, 0)
             unknown += struct.pack("<I", zlib.crc32(unknown))
             series = ImuSeries()

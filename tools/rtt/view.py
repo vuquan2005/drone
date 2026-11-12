@@ -12,7 +12,7 @@ import numpy as np
 from PySide6 import QtCore, QtGui, QtNetwork, QtWidgets
 import pyqtgraph as pg
 
-from records import Frames, IMU, ImuSeries, Lines
+from records import Frames, IMU, ImuSeries, Lines, RTT_STATS
 from session_writer import SessionWriter
 
 
@@ -72,6 +72,10 @@ class Viewer(QtWidgets.QMainWindow):
         self.recording = False
         self.close_when_done = False
         self.segment = 0
+        self.latest_stats = None
+        self.stats_last = None
+        self.stats_received = 0
+        self.stats_received_at = None
         self.logs = deque(maxlen=2000)
         self.arrivals = deque(maxlen=20000)
         self.states = {"LOG": "connecting", "DATA": "connecting"}
@@ -83,6 +87,9 @@ class Viewer(QtWidgets.QMainWindow):
             f"{args.host} · LOG :{args.log_port} · DATA :{args.data_port} · 10 s history"
         )
         layout.addWidget(endpoints)
+        self.mcu_stats = QtWidgets.QLabel("MCU statistics: waiting for type 2 frames")
+        self.mcu_stats.setWordWrap(True)
+        layout.addWidget(self.mcu_stats)
         controls = QtWidgets.QHBoxLayout()
         self.output_dir = QtWidgets.QLineEdit(str(getattr(args, "output_dir", DEFAULT_OUTPUT)))
         self.browse = QtWidgets.QPushButton("Save folder…")
@@ -158,16 +165,39 @@ class Viewer(QtWidgets.QMainWindow):
             QtCore.QTimer.singleShot(0, self.toggle_recording)
 
     def new_session(self):
+        self.latest_stats = self.stats_last = self.stats_received_at = None
         self.segment += 1
         self.series.new_connection()
         self.arrivals.clear()
         self.dirty = True
 
     def on_data(self, line):
+        if line[0] == 1 and line[1] == 2:
+            if len(line[2]) != RTT_STATS.size:
+                self.series.invalid += 1
+                return
+            values = RTT_STATS.unpack(line[2])
+            if self.stats_last is not None:
+                ds = (values[0] - self.stats_last[0]) % 2**32
+                dt = (values[1] - self.stats_last[1]) % 2**32
+                if ds >= 2**31 or dt >= 2**31:
+                    self.series.resets += 1
+                    self.new_session()
+                elif ds == 0:
+                    self.series.invalid += 1
+                    return
+            self.stats_last = values[:2]
+            self.latest_stats = values
+            self.stats_received_at = time.monotonic()
+            self.stats_received += 1
+            if self.recording:
+                self.writer.submit("stats", (self.segment, *values))
+            return
         resets = self.series.resets
         if self.series.feed(line):
             if self.series.resets != resets:
                 self.segment += 1
+                self.latest_stats = self.stats_last = self.stats_received_at = None
             if self.recording:
                 self.writer.submit("csv", (self.segment, *IMU.unpack(line[2])))
             self.arrivals.append(time.monotonic())
@@ -254,7 +284,7 @@ class Viewer(QtWidgets.QMainWindow):
         drops = w.dropped
         self.record_status.setText(
             f"{state}: {w.directory} · queue {w.queue.qsize()} · "
-            f"writer drops CSV={drops['csv']} LOG={drops['log']} raw chunks={drops['raw']}"
+            f"writer drops CSV={drops['csv']} stats={drops['stats']} LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:
             QtCore.QTimer.singleShot(0, self.close)
@@ -274,6 +304,27 @@ class Viewer(QtWidgets.QMainWindow):
 
     def refresh(self):
         self.update_record_status()
+        if self.latest_stats is None:
+            self.mcu_stats.setText("MCU statistics: waiting for type 2 frames")
+        else:
+            (
+                seq,
+                ms,
+                samples,
+                errors,
+                log_full,
+                data_full,
+                imu_full,
+                stats_full,
+                imu_reject,
+                stats_reject,
+            ) = self.latest_stats
+            age = time.monotonic() - self.stats_received_at
+            self.mcu_stats.setText(
+                f"MCU stats #{seq} · age {age:.1f}s · uptime {ms}ms · IMU reads {samples}, errors {errors} · "
+                f"RTT full LOG={log_full} DATA={data_full} (IMU={imu_full}, stats={stats_full}) · "
+                f"rejected IMU={imu_reject} stats={stats_reject}"
+            )
         now = time.monotonic()
         while self.arrivals and self.arrivals[0] < now - 1:
             self.arrivals.popleft()

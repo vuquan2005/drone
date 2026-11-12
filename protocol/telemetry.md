@@ -1,8 +1,7 @@
 # Telemetry binary v1
 
-CH0 giữ log text `[ms][E/W/I/D][tag] message\n`. CH1 dùng frame binary dưới
-đây, thay hoàn toàn CSV `IMU1`. Cần nạp firmware và cập nhật công cụ host cùng
-nhau; decoder hiện không hỗ trợ CSV cũ. Không cần thư viện serialization ngoài.
+CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
+đặc tả dưới đây. Cách chạy viewer và ghi phiên xem [công cụ host](../tools/README.md).
 
 ## Frame
 
@@ -55,10 +54,9 @@ Giữ nguyên clock cảm biến, không mở rộng tràn hoặc đồng bộ h
 
 Sequence và timestamp MCU tràn modulo 2^32; clock cảm biến tràn modulo
 2^24. Sequence tăng kể cả khi frame bị RTT từ chối, nhưng không đếm mẫu cảm
-biến bị ghi đè trước khi MCU đọc. Giữ chính sách một writer foreground,
-không retry; enqueue nguyên frame một lần. Không đủ chỗ: bỏ frame mới và
-tăng counter đầy CH1. Tốc độ danh định 400 Hz tương ứng 19200 byte/s cho IMU,
-chưa tính overhead giao tiếp. Không cam kết probe theo kịp khi chưa đo board.
+biến bị ghi đè trước khi MCU đọc. Một writer foreground, không retry;
+thiếu chỗ thì bỏ nguyên frame mới và tăng counter đầy CH1. Tốc độ danh định
+400 Hz tương ứng 19200 byte/s cho IMU; cần đo khả năng truyền trên board.
 
 ## RTT statistics v1, type 2
 
@@ -78,10 +76,9 @@ Payload 40 byte, frame 52 byte. Tất cả trường uint32 little-endian, offse
 | 32     | imu_tx_rejected   | IMU bị từ chối vì nguyên nhân khác FULL (kể cả dữ liệu encode không hợp lệ) |
 | 36     | stats_tx_rejected | Stats bị từ chối vì nguyên nhân khác FULL                                   |
 
-App thử gửi khoảng mỗi 1000 ms trong foreground, kể cả khi IMU init/read
-lỗi hoặc NO_DATA. Không retry tức thì, không gửi bù nhiều frame sau một lần
-poll trễ. Dùng hiệu uint32 để lịch vẫn chạy qua HAL tick wrap. Bị block trong
-poll thì thống kê cũng bị trễ; đây không phải timer task độc lập.
+App thử gửi mỗi khoảng 1000 ms trong foreground, kể cả khi IMU lỗi hoặc
+NO_DATA; không retry/gửi bù. Lịch dùng hiệu uint32 qua tick wrap; poll bị
+chặn cũng làm thống kê trễ.
 
 Counter được chụp trước chính lần gửi stats đó: nếu frame này thất bại, lần
 stats sau sẽ phản ánh lỗi. Counter tích lũy nên mất một frame stats không
@@ -91,29 +88,17 @@ làm mất tổng lịch sử. `rtt_data_full` không đồng nghĩa số mẫu 
 mất trên host. Khi chưa có snapshot làm baseline, chưa quy được chính xác
 counter tích lũy vào một khoảng CSV; các frame stats cũng có thể bị mất.
 
-Viewer hiển thị snapshot mới nhất và tuổi snapshot theo clock host. Khi
-recording, type 2 ghi vào `rtt_stats_<timestamp>.csv`, type 1 vẫn ở
-`imu_<timestamp>.csv`. Cả hai có cột segment để tránh so counter qua reset.
-Firmware mới tăng thêm 52 byte/s danh định; IMU frame/layout không đổi.
-
 ## Mã nguồn và kiểm thử
 
 - Encoder: `firmware/drone/App/Src/app_telemetry.c`; API `app_telemetry_write_imu()`, compile option `DRONE_ENABLE_TELEMETRY`.
 - Framing và decoder: `tools/rtt/records.py`; không phụ thuộc UI.
-- Fixture chung: `protocol/fixtures/imu_v1.hex`, là hex của frame đã encode,
-  không phải file raw dùng chạy thực tế. C so sánh output byte-for-byte;
-  Python kiểm tra framing, CRC và giá trị trường với cùng fixture.
-- Fixture thống kê: `protocol/fixtures/rtt_stats_v1.hex`, sequence 1,
-  uptime 1234 ms, 17 mẫu IMU, 3 lỗi đọc; các counter truyền bằng 0.
-- Fixture IMU dùng sequence 17, t_read_us 123456, sensor ticks `0x123456`,
-  accel `[1250,-2500,9806]`, gyro `[1000,-2000,3000]`.
+- Fixture chung: [IMU](fixtures/imu_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex).
+  Test C so output byte-for-byte; Python kiểm tra framing, CRC và giá trị
+  trường theo cùng fixture.
 
 Thêm loại dữ liệu mới bằng type mới cùng payload được tài liệu hóa; chỉ tăng
 version khi thay đổi quy tắc không tương thích. Không đổi nghĩa/kiểu/đơn vị
 của type đã có mà giữ nguyên version. Sequence riêng theo từng loại khi mở
 rộng. CH1 có thể xen kẽ các type khác tần số; host phân loại theo type.
 
-`capture_raw.py` lưu nguyên frame vào `.bin`; file này không phải CSV. `view.py`
-giải mã để vẽ SI và có Start/Stop recording CSV, log, raw tùy chọn; xem
-[ghi phiên telemetry](../tools/README.md#ghi-phiên-csv-text-log-và-raw). Không có boot ID, nên
-phân biệt reset với tràn/gián đoạn dài vẫn có giới hạn như trước.
+Chưa có boot ID; host không thể luôn phân biệt reset với tràn/gián đoạn dài.

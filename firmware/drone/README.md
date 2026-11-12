@@ -23,12 +23,6 @@ CubeMX khởi tạo HAL, clock và ngoại vi trước `app_init()`; vòng lặp
 `app_process()`. [Kiến trúc](ARCHITECTURE.md) giải thích ranh giới module và
 chuỗi điều khiển dự kiến.
 
-Mã thuật toán sẽ nằm trong `Control/Inc/` và `Control/Src/`; App sở hữu trạng
-thái, cung cấp dữ liệu/`dt` và gọi thuật toán. Chỉ tạo module khi triển khai.
-Kế hoạch kiểm chứng gồm kiểm thử nhỏ trên máy tính, đo trên board và bộ gá;
-không triển khai mô phỏng vòng kín/SITL. Các test dùng HAL mô phỏng bên dưới
-vẫn được giữ để kiểm tra driver/giao thức, không thay thế phép đo phần cứng.
-
 ## Kiểm tra IMU
 
 Cấu hình ban đầu: accel/gyro 400 Hz, ±16 g và ±2000 °/s; advanced power save
@@ -63,28 +57,15 @@ kênh khởi động lỗi, BSP tắt cả bốn đầu ra và từ chối lện
 `bsp_pwm_init()` để thử lại. Hiện `app_process()` giữ nguyên xung tối thiểu,
 chưa nối throttle RC với PWM.
 
-API tại `BSP/Inc/bsp_pwm.h`, chỉ gọi trong foreground sau khởi tạo ngoại vi:
-
-```c
-/* Ví dụ gọi sau khi bsp_pwm_init() thành công. */
-bool ok = bsp_pwm_set_pulse_us(1U, 1200U); /* Kênh 1 / PB6. */
-const uint16_t pulse_us[4] = {1000U, 1000U, 1000U, 1000U};
-ok = bsp_pwm_set_all_us(pulse_us);
-bsp_pwm_stop();
-```
-
-Lệnh ghi chỉ chấp nhận 1000–2000 µs; sai kênh, sai dải hoặc NULL trả về
-`false` và giữ nguyên các thanh ghi compare. Preload áp dụng xung mới tại
-update của timer; lệnh ghi cả bốn kênh ngăn update trong lúc ghi để tránh
-trộn hai bộ giá trị trong một frame. Update trùng lúc ghi có thể bị bỏ qua,
-khi đó giá trị mới áp dụng ở frame kế tiếp. `bsp_pwm_stop()` ngừng phát xung;
-gọi init lại luôn bắt đầu từ 1000 µs. Tắt tín hiệu khác với gửi ga tối thiểu;
-phản ứng khi mất tín hiệu phụ thuộc ESC. Module chưa có arm hoặc failsafe.
+API tại [BSP/Inc/bsp_pwm.h](BSP/Inc/bsp_pwm.h), chỉ gọi trong foreground
+sau khởi tạo ngoại vi. Chấp nhận xung 1000–2000 µs; lệnh sai trả `false`
+và giữ giá trị cũ. Xung mới áp dụng tại update timer.
+`bsp_pwm_stop()` ngừng phát xung; init lại bắt đầu từ 1000 µs.
+Tắt tín hiệu khác với gửi ga tối thiểu; phản ứng khi mất tín hiệu phụ thuộc ESC.
 
 Kiểm tra dải xung/tần số theo ESC, nối chung GND và tháo cánh trước khi thử.
 Cần đo PB6–PB9 trên board để xác nhận chu kỳ, độ rộng và hành vi start/stop.
-Kiểm thử host dùng macro thanh ghi HAL thật, thanh ghi TIM giả trong RAM và
-mock hàm HAL start/stop; không xác nhận timing phần cứng:
+Kiểm thử PWM với thanh ghi và HAL mô phỏng:
 
 ```sh
 cmake -S firmware/drone/tests/pwm -B /tmp/drone-pwm-tests -G Ninja
@@ -115,11 +96,10 @@ cmake --build /tmp/drone-imu-tests
 ctest --test-dir /tmp/drone-imu-tests --output-on-failure
 ```
 
-Test dùng driver Bosch thật và HAL mô phỏng để kiểm tra gắn board, khởi tạo,
-SPI/CS/byte giả, ODR/range, đổi đơn vị, trạng thái mẫu và lỗi giao tiếp.
-Kết quả này không xác nhận nối dây hoặc định thời trên board.
+Test dùng driver Bosch thật và HAL mô phỏng để kiểm tra khởi tạo, đọc mẫu
+và xử lý lỗi; không xác nhận nối dây hoặc định thời trên board.
 
-### Receiver ExpressLRS
+## Receiver ExpressLRS
 
 USART1 nhận CRSF ở 420000 baud, 8N1: nối TX của receiver vào PA10 (RX)
 STM32 và nối chung GND; cấp nguồn receiver theo thông số của thiết bị. Chọn
@@ -132,25 +112,22 @@ nhất. Thứ tự kênh và ý nghĩa arm/throttle phụ thuộc cấu hình ta
 Đây chưa phải logic arm hoặc failsafe điều khiển động cơ; hệ thống điều khiển
 phải tự xử lý mất tín hiệu và kiểm tra các điều kiện an toàn trước khi chạy.
 
-USART1 RX dùng DMA1 Channel 5 circular, buffer DMA 64 byte. Ngắt IDLE và
-DMA half/full chuyển phần dữ liệu mới vào bộ đệm BSP (255 byte hữu ích),
-không khởi động lại DMA sau mỗi sự kiện. Hai IRQ cùng priority 5 để tránh
-tranh chấp trạng thái ghi. Khi đường truyền liên tục ở 420 kbaud, DMA phát
-ngắt mỗi 32 byte (khoảng 0,76 ms); cần phục vụ ngắt trong khoảng này để tránh
-DMA ghi đè dữ liệu chưa sao chép. Mất cả vòng DMA không tự phát hiện được.
-Timestamp là HAL tick tại sự kiện DMA/IDLE, dùng chung cho byte trong batch;
-độ trễ gồm thời gian gom batch, độ trễ IRQ và lượng tử tick 1 ms.
-`app_receiver_poll()` giải mã trong foreground; gọi thường xuyên, mục
-tiêu không quá 2 ms giữa các lần poll. Bộ đệm đầy hoặc lỗi UART sẽ bỏ dữ liệu
-đang chờ và vô hiệu trạng thái kết nối cho đến khi nhận khung RC mới. SPI IMU
-có thể chặn lâu khi lỗi; bộ đệm hiện tại không bảo đảm giữ được RC trong
-khoảng chặn đó. Cần đo lịch chạy và độ trễ trên board.
+USART1 RX dùng DMA1 Channel 5 circular và ngắt IDLE/half/full. Khi nhận
+liên tục ở 420 kbaud, cần phục vụ IRQ trong khoảng 0,76 ms để tránh DMA
+ghi đè; mất cả vòng DMA không tự phát hiện được. Timestamp nhận dùng HAL
+tick của batch, có độ trễ gom byte/IRQ và lượng tử 1 ms.
 
-Parser chỉ hỗ trợ khung RC `0x16` đủ 16 kênh, kiểm tra độ dài và CRC, giới
-hạn tổng thời gian ghép khung là 3 ms theo HAL tick của batch nhận (không phải timestamp chính xác từng byte). Khung khác được
-kiểm tra và bỏ qua; không hỗ trợ subset `0x17`, link statistics hoặc telemetry.
-Giá trị kênh cũ được giữ khi `connected = false`; trạng thái này phản ánh tuổi
-khung RC, không xác nhận chất lượng liên kết RF.
+`app_receiver_poll()` giải mã trong foreground, mục tiêu không quá 2 ms
+giữa các lần poll. Tràn bộ đệm hoặc lỗi UART làm bỏ dữ liệu chờ và ngắt
+trạng thái kết nối đến frame RC mới. SPI IMU có thể chặn lâu khi lỗi;
+bộ đệm hiện tại không bảo đảm giữ được RC trong khoảng đó. Cần đo lịch chạy
+và độ trễ trên board.
+
+Parser hỗ trợ frame RC `0x16` đủ 16 kênh, kiểm tra độ dài/CRC và timeout
+3 ms theo timestamp batch. Khung khác được kiểm tra rồi bỏ qua; chưa hỗ trợ
+subset `0x17`, link statistics hoặc telemetry. Kênh cũ được giữ khi mất
+kết nối; `connected` phản ánh tuổi frame RC, không xác nhận chất lượng RF.
+Hợp đồng API xem [App/Inc/app_receiver.h](App/Inc/app_receiver.h).
 
 Kiểm thử CRSF và tích hợp UART với HAL mô phỏng:
 
@@ -160,14 +137,5 @@ cmake --build /tmp/drone-crsf-tests
 ctest --test-dir /tmp/drone-crsf-tests --output-on-failure
 ```
 
-Các ca kiểm tra gồm CRC sai, độ dài sai, khung thiếu, đồng bộ lại trong dữ
-liệu lỗi, timeout toàn khung, tràn timestamp, tràn bộ đệm, lỗi UART và phục
-hồi sau khi yêu cầu nhận thất bại, wrap DMA và callback HT đến sau IDLE. Test chạy mã parser, BSP và App thật;
-HAL được mô phỏng nên chưa xác nhận timing hoặc phần cứng.
-
-Thiết kế được đối chiếu với bản sao cục bộ của
-[Betaflight CRSF](../../docs/external/repos/betaflight/src/main/rx/crsf.c)
-và [ArduPilot CRSF](../../docs/external/repos/ardupilot/libraries/AP_RCProtocol/AP_RCProtocol_CRSF.cpp):
-giới hạn độ dài và thời gian toàn khung, kiểm tra CRC, phục hồi đồng bộ, chỉ
-cập nhật thời điểm RC khi nhận đúng khung kênh. Mã triển khai riêng cho project;
-không nhập nguyên module từ hai firmware này.
+Test kiểm tra parser, DMA/buffer, timeout và phục hồi lỗi với HAL mô phỏng;
+chưa xác nhận timing hoặc phần cứng.

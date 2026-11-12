@@ -10,11 +10,11 @@ from types import SimpleNamespace
 import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
 HAS_GUI = all(importlib.util.find_spec(name) for name in ("PySide6", "pyqtgraph"))
 if HAS_GUI:
     from PySide6 import QtNetwork, QtWidgets
-    from rtt_view import Viewer
+    from view import Viewer
 
 
 @unittest.skipUnless(HAS_GUI, "Run inside the RTT viewer dependency environment")

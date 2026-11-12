@@ -31,42 +31,73 @@ Lần đầu cần mạng để tải môi trường và công cụ. Riêng `lat
 
 `make format` và `make lint` xử lý các tệp Git đang theo dõi; tệp mới cần được `git add` trước. Khi commit, formatter chạy trên tệp đã stage; nếu formatter sửa tệp, xem lại thay đổi, stage và commit lại. Chạy `make lint` riêng khi cần kiểm tra.
 
-## Khung đọc RTT
+## Phụ thuộc tools và pyproject.toml
 
-`rtt_read.py` chỉ nối vào OpenOCD đang chạy và chuyển nguyên byte ra stdout,
-không cần thư viện ngoài, không mở ST-LINK hoặc tự tạo dữ liệu:
+| Phạm vi                            | Dependency Python                                                   | Công cụ bên ngoài Python                                                                                                 |
+| ---------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `rtt/read.py`, `rtt/records.py`    | Thư viện chuẩn                                                      | OpenOCD đang phục vụ RTT khi đọc board                                                                                   |
+| `rtt/view.py`, test GUI            | `numpy`, `PySide6` từ `PySide6-Essentials`, `pyqtgraph`; nhóm `rtt` | OpenOCD khi đọc board; test dùng TCP giả lập                                                                             |
+| `sync_reference_pdfs.py`, test PDF | Thư viện chuẩn                                                      | Poppler: `pdftotext`, `pdfimages`                                                                                        |
+| `format_latex.py`                  | Thư viện chuẩn                                                      | `latexindent` từ TeX distribution                                                                                        |
+| Format/lint qua hook               | `pre-commit`; nhóm `dev` mặc định                                   | Hook tự quản lý Prettier, Black, clang-format, cmake-format và markdownlint; LaTeX cần `latexindent`, `chktex` trên PATH |
+
+Đã đối chiếu import của toàn bộ file Python trong `tools/`, gồm tests:
+không thiếu dependency Python trong `pyproject.toml`. NumPy được khai báo
+trực tiếp vì GUI import trực tiếp. Các dependency bắc cầu nằm trong
+`uv.lock`; không chép chúng vào danh sách trực tiếp hoặc sửa lockfile bằng tay.
+Không cần thêm Poppler/TeX vào pip: đây là executable do hệ điều hành quản lý.
+
+## Các file RTT
+
+Ba file nằm trong `tools/rtt/`. `view.py` nhận byte từ TCP và gọi `records.py`
+để xử lý DATA. Phụ thuộc mã một chiều: `view.py` import `records.py`;
+`records.py` không import hoặc gọi UI. `read.py` là công cụ độc lập.
+
+| File                        | Chức năng                                                                                                            | Dependency Python                 |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `rtt/read.py`               | Nối một TCP port, chuyển nguyên byte ra stdout; dùng xem nhanh hoặc redirect vào file                                | Thư viện chuẩn                    |
+| `rtt/records.py`            | Module ghép dòng TCP và parse `IMU1`; đổi milli-unit sang SI, xử lý timestamp/sequence tràn, gap và lịch sử giới hạn | Thư viện chuẩn                    |
+| `rtt/view.py`               | Cửa sổ nhận LOG và DATA đồng thời, lọc log, vẽ accel/gyro và báo trạng thái                                          | Nhóm `rtt`, dùng `rtt/records.py` |
+| `tests/test_rtt_records.py` | Kiểm thử framing, dữ liệu lỗi, gap, wrap/reset và giới hạn lịch sử                                                   | Thư viện chuẩn                    |
+| `tests/test_rtt_view.py`    | Kiểm thử GUI với hai TCP server localhost giả lập, reconnect và burst 4000 mẫu                                       | Nhóm `rtt`                        |
+
+Luồng dữ liệu: firmware → ring buffer RTT → OpenOCD → TCP → `rtt/read.py`
+hoặc `rtt/view.py` → `rtt/records.py` (DATA). Các script không trực tiếp mở
+ST-LINK, nạp firmware hoặc tự chạy OpenOCD. `rtt/records.py` là module dùng
+chung, không phải lệnh cần chạy riêng.
+
+Đọc thô không cần nhóm GUI:
 
 ```sh
-uv run tools/rtt_read.py --port 9091
+uv run tools/rtt/read.py --port 9091
+uv run tools/rtt/read.py --port 9090 > /tmp/drone-rtt.log
 ```
 
-Port 9091 là channel dữ liệu trong cấu hình Debug + RTT. Khi chạy OpenOCD
-độc lập, port 9090 là log và 9091 là dữ liệu. Có thể chuyển stdout sang tệp
-hoặc công cụ khác; stdout có thể chứa dữ liệu nhị phân tùy ứng dụng.
+Cả cấu hình **Drone: OpenOCD + RTT** lẫn OpenOCD độc lập đều mở LOG channel 0
+ở port 9090 và DATA channel 1 ở port 9091. Extension còn mở terminal LOG
+riêng ở port động; script dùng hai port cố định, không dùng port terminal đó.
 
-Debug mặc định xuất các dòng CSV `IMU1` ở channel 1 với sequence,
-`t_read_us`, clock cảm biến và accel/gyro. Script giữ nguyên dữ liệu, chưa có
-GUI, decoder, CSV logger hoặc dependency ngoài thư viện chuẩn. Xem
-[định dạng và nguồn timestamp](../firmware/drone/DEBUG.md#channel-1-mẫu-imu-có-timestamp)
-trước khi thêm parser/plot; mỗi lần recv có thể chứa một phần hoặc nhiều dòng.
+Firmware Debug xuất CSV `IMU1` ở channel 1. Bộ đọc thô giữ nguyên byte, kể cả
+nhị phân; module parser và GUI chỉ hiểu định dạng hiện tại. Xem
+[định dạng và nguồn timestamp](../firmware/drone/DEBUG.md#channel-1-mẫu-imu-có-timestamp).
 
 ## Xem log và đồ thị RTT
 
-`rtt_view.py` là cửa sổ đọc hai kênh từ OpenOCD đang chạy; không mở probe,
+`rtt/view.py` là cửa sổ đọc hai kênh từ OpenOCD đang chạy; không mở probe,
 không flash/reset board. `uv` cài PySide6-Essentials, pyqtgraph và NumPy từ nhóm `rtt`
 trong `pyproject.toml`, dùng cùng môi trường `.venv/`:
 
 ```sh
-uv run --group rtt tools/rtt_view.py
+uv run --group rtt tools/rtt/view.py
 ```
 
-Chạy **STM32: Debug + RTT (OpenOCD)** rồi Continue. Cấu hình mở port 9090
+Chạy **Drone: OpenOCD + RTT** rồi Continue. Cấu hình mở port 9090
 cho LOG (channel 0), 9091 cho DATA (channel 1); OpenOCD độc lập cũng dùng
 hai port này. Nếu đang chạy phiên debug cũ, cần khởi động lại phiên để có
 port log mới. Có thể đổi địa chỉ/cổng:
 
 ```sh
-uv run --group rtt tools/rtt_view.py --host 127.0.0.1 --log-port 9090 --data-port 9091
+uv run --group rtt tools/rtt/view.py --host 127.0.0.1 --log-port 9090 --data-port 9091
 ```
 
 - Log tô màu E/W/I/D, lọc đúng mức hoặc tìm một phần tag; tối đa 2000 dòng.
@@ -88,7 +119,7 @@ uv run --group rtt tools/rtt_view.py --host 127.0.0.1 --log-port 9090 --data-por
   `IMU1` được đếm unknown để sau này thêm decoder, chưa vẽ các loại khác.
 
 UI chỉ giữ lịch sử giới hạn, chưa ghi file hoặc thêm dashboard. Bộ đọc thô
-`rtt_read.py` vẫn dùng độc lập như trước. Kiểm thử parser không cần Qt/board:
+`rtt/read.py` vẫn dùng độc lập như trước. Kiểm thử parser không cần Qt/board:
 
 ```sh
 uv run python -m unittest discover -s tools/tests -p test_rtt_records.py -v
@@ -105,17 +136,17 @@ QT_QPA_PLATFORM=offscreen uv run --group rtt python -m unittest discover -s tool
 
 ```sh
 # Xem trước hoặc đồng bộ bài báo
-python3 tools/sync_reference_pdfs.py --dry-run
+uv run tools/sync_reference_pdfs.py --dry-run
 make sync-papers
 
 # Xem trước hoặc đồng bộ datasheet
-python3 tools/sync_reference_pdfs.py --collection datasheets --dry-run
+uv run tools/sync_reference_pdfs.py --collection datasheets --dry-run
 make sync-datasheets
 
 # Trích xuất một PDF vào thư mục riêng để đối chiếu
-python3 tools/sync_reference_pdfs.py docs/references/papers/huy2024-262.pdf --output-dir /tmp/papers_md
+uv run tools/sync_reference_pdfs.py docs/references/papers/huy2024-262.pdf --output-dir /tmp/papers_md
 ```
 
 Đầu ra mặc định nằm trong `docs/references/papers/papers_md/` hoặc `docs/references/datasheets/datasheets_md/`. Script giữ nguyên thư mục đã có nội dung nhưng không có manifest và bảo vệ các tệp đầu ra đã sửa thủ công. Manifest chỉ lưu trạng thái cục bộ, không được đưa vào Git; sau khi clone, dùng `--output-dir` khác nếu muốn tạo bản trích xuất để đối chiếu.
 
-Văn bản và ảnh được trích xuất tự động, không thay thế việc kiểm tra PDF gốc. PDF không có lớp văn bản cần OCR; sơ đồ vector, công thức và bảng có thể không được trích xuất đầy đủ. Xem thêm tùy chọn bằng `python3 tools/sync_reference_pdfs.py --help`.
+Văn bản và ảnh được trích xuất tự động, không thay thế việc kiểm tra PDF gốc. PDF không có lớp văn bản cần OCR; sơ đồ vector, công thức và bảng có thể không được trích xuất đầy đủ. Xem thêm tùy chọn bằng `uv run tools/sync_reference_pdfs.py --help`.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""View existing RTT streams: uv run --group rtt tools/rtt_view.py."""
+"""View existing RTT streams: uv run --group rtt tools/rtt/view.py."""
 
 import argparse
 from collections import deque
@@ -11,7 +11,7 @@ import numpy as np
 from PySide6 import QtCore, QtGui, QtNetwork, QtWidgets
 import pyqtgraph as pg
 
-from rtt_records import ImuSeries, Lines
+from records import ImuSeries, Lines
 
 
 class Stream(QtCore.QObject):

@@ -2,10 +2,9 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "STM32: Debug (ST-LINK)",
+      "name": "Drone: ST-LINK GDB",
       "type": "stlinkgdbtarget",
       "request": "launch",
-      "origin": "snippet",
       "cwd": "${workspaceFolder}/firmware/drone",
       "preLaunchTask": "firmware: build Debug",
       "runEntry": "main",
@@ -31,7 +30,7 @@
       }
     },
     {
-      "name": "STM32: Debug + RTT (OpenOCD)",
+      "name": "Drone: OpenOCD + RTT",
       "type": "cortex-debug",
       "request": "launch",
       "cwd": "${workspaceFolder}",
@@ -66,7 +65,7 @@
           {
             "port": 0,
             "type": "console",
-            "label": "Log",
+            "label": "RTT LOG (CH0)",
             "inputmode": "disabled"
           }
         ]

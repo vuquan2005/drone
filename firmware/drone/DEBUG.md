@@ -6,7 +6,7 @@
 - **OpenOCD + RTT:** đọc buffer RAM khi CPU chạy, không cần breakpoint để in.
 - **Live Watch:** đọc biến định kỳ, đã bật 4 lần/giây trong launch ST và Cortex-Debug.
 - **`bsp_rtt`:** transport hai kênh không chặn, không phụ thuộc IMU/RC/PWM.
-- **`tools/rtt_read.py`:** bộ đọc TCP tối thiểu, điểm bắt đầu cho công cụ máy tính.
+- **`tools/rtt/read.py`:** bộ đọc TCP tối thiểu, điểm bắt đầu cho công cụ máy tính.
 
 | Channel            | Mục đích                                   | Buffer    |
 | ------------------ | ------------------------------------------ | --------- |
@@ -161,10 +161,21 @@ cảm biến hay thời điểm đọc MCU; BSP không tự sửa payload để 
 
 ## Dùng từ máy tính
 
+| Cấu hình VS Code         | GDB server                     | Điểm dừng ban đầu           | RTT TCP                             |
+| ------------------------ | ------------------------------ | --------------------------- | ----------------------------------- |
+| **Drone: ST-LINK GDB**   | ST-LINK GDB server của ST      | `main`                      | Không được cấu hình trong phiên này |
+| **Drone: OpenOCD + RTT** | OpenOCD, probe ST-LINK qua SWD | `app_process`, sau init RTT | LOG 9090, DATA 9091                 |
+
+Hai cấu hình dùng cùng ELF Debug và task `firmware: build Debug` (gọi
+`make fw-build PRESET=Debug`). Live Watch của extension ST yêu cầu tốc độ
+kiểu chuỗi `"4"`; Cortex-Debug yêu cầu số `4`. Đây là hai schema khác nhau.
+Trong Debug Console, extension ST dùng tiền tố `>` cho lệnh GDB, còn
+Cortex-Debug nhận lệnh GDB trực tiếp.
+
 1. Mở gốc repository, cài Cortex-Debug và OpenOCD >= 0.12 hỗ trợ ST-LINK/RTT.
-2. Chọn **STM32: Debug + RTT (OpenOCD)**, nhấn F5 để build/nạp Debug.
-3. Nhấn Continue khi dừng tại `app_process`. Log channel 0 hiện ở terminal **Log**.
-4. Đọc channel 1 bằng `python3 tools/rtt_read.py --port 9091`.
+2. Chọn **Drone: OpenOCD + RTT**, nhấn F5 để build/nạp Debug.
+3. Nhấn Continue khi dừng tại `app_process`. Log channel 0 hiện ở terminal **RTT LOG (CH0)**.
+4. Đọc channel 1 bằng `uv run tools/rtt/read.py --port 9091`.
 
 Debug mặc định sẽ có log khởi tạo và dòng IMU1 khi cảm biến đọc được mẫu mới.
 Nếu IMU init lỗi, kiểm tra channel 0; không có mẫu cũ được phát lại để lấp chỗ.
@@ -178,7 +189,7 @@ openocd -f firmware/drone/debug/rtt.cfg
 ```
 
 OpenOCD độc lập mở log tại 9090 và data tại 9091. Chạy reader ở terminal khác,
-chọn port tương ứng. Xem [công cụ máy tính](../../tools/README.md#khung-đọc-rtt).
+chọn port tương ứng. Xem [công cụ máy tính](../../tools/README.md#các-file-rtt).
 
 ## Live Watch và reset
 

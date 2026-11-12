@@ -5,8 +5,8 @@ from pathlib import Path
 import sys
 import unittest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from rtt_records import ImuSeries, Lines
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
+from records import ImuSeries, Lines
 
 
 def record(seq=1, stamp=1000):

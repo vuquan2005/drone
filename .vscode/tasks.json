@@ -1,70 +1,19 @@
 {
   "version": "2.0.0",
-  "options": {
-    "cwd": "${workspaceFolder}/firmware/drone"
-  },
   "tasks": [
-    {
-      "label": "firmware: configure Debug",
-      "type": "process",
-      "command": "cube",
-      "windows": {
-        "command": "cube.exe"
-      },
-      "args": ["cmake", "--preset", "Debug"],
-      "problemMatcher": [],
-      "linux": {
-        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
-      }
-    },
     {
       "label": "firmware: build Debug",
       "type": "process",
-      "command": "cube",
-      "windows": {
-        "command": "cube.exe"
+      "command": "make",
+      "args": ["fw-build", "PRESET=Debug"],
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
-      "args": ["cmake", "--build", "--preset", "Debug"],
-      "dependsOn": ["firmware: configure Debug"],
       "group": {
         "kind": "build",
         "isDefault": true
       },
-      "problemMatcher": [],
-      "linux": {
-        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
-      }
-    },
-    {
-      "label": "firmware: configure Release",
-      "type": "process",
-      "command": "cube",
-      "windows": {
-        "command": "cube.exe"
-      },
-      "args": ["cmake", "--preset", "Release"],
-      "problemMatcher": [],
-      "linux": {
-        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
-      }
-    },
-    {
-      "label": "firmware: build Release",
-      "type": "process",
-      "command": "cube",
-      "windows": {
-        "command": "cube.exe"
-      },
-      "args": ["cmake", "--build", "--preset", "Release"],
-      "dependsOn": ["firmware: configure Release"],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
-      "problemMatcher": [],
-      "linux": {
-        "command": "${extensionInstallFolder:STMicroelectronics.stm32cube-ide-core}/resources/binaries/linux/x86_64/cube"
-      }
+      "problemMatcher": []
     }
   ]
 }

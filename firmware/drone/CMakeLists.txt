@@ -45,7 +45,8 @@ list(FIND DRONE_LOG_LEVELS "${DRONE_LOG_LEVEL}" DRONE_LOG_LEVEL_VALUE)
 if(DRONE_LOG_LEVEL_VALUE LESS 0)
     message(FATAL_ERROR "Invalid DRONE_LOG_LEVEL: ${DRONE_LOG_LEVEL}")
 endif()
-option(DRONE_ENABLE_IMU_TRACE "Stream every successful IMU read over RTT" ${DRONE_RTT_DEFAULT})
+option(DRONE_ENABLE_TELEMETRY
+       "Build binary telemetry over RTT (currently every successful IMU read)" ${DRONE_RTT_DEFAULT})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
@@ -90,12 +91,12 @@ if(DRONE_ENABLE_RTT)
     if(DRONE_LOG_LEVEL_VALUE GREATER 0)
         target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_log.c)
     endif()
-    if(DRONE_ENABLE_IMU_TRACE)
-        target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_imu_trace.c)
+    if(DRONE_ENABLE_TELEMETRY)
+        target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_telemetry.c)
     endif()
 endif()
-if(DRONE_ENABLE_RTT AND DRONE_ENABLE_IMU_TRACE)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_IMU_TRACE=1)
+if(DRONE_ENABLE_RTT AND DRONE_ENABLE_TELEMETRY)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_TELEMETRY=1)
 endif()
 
 # Add user project symbols (macros) when needed:

@@ -1,6 +1,7 @@
 """Optional offscreen GUI/TCP integration test; never connects to a probe."""
 
 import importlib.util
+from test_rtt_records import packet
 import math
 import os
 from pathlib import Path
@@ -45,13 +46,13 @@ class ViewerTests(unittest.TestCase):
             until(lambda: all(server.hasPendingConnections() for server in servers))
             peers = [server.nextPendingConnection() for server in servers]
             peers[0].write(b"[1][I][imu] init\n[2][E][rx] lost\n")
-            peers[1].write(b"IMU1,1,1000,42,1000,0,9800,")
+            peers[1].write(packet()[:23])
             peers[1].flush()
             # Pump the partial record before sending its suffix.
             for _ in range(5):
                 app.processEvents()
             self.assertEqual(viewer.series.received, 0)
-            peers[1].write(b"0,0,0\nIMU1,3,6000,43,2000,0,9800,0,0,0\n")
+            peers[1].write(packet()[23:] + packet(3, 6000))
             until(lambda: viewer.series.received == 2 and len(viewer.logs) == 2)
             viewer.refresh()
             self.assertEqual(viewer.series.missing, 1)
@@ -65,12 +66,23 @@ class ViewerTests(unittest.TestCase):
             peers[1].disconnectFromHost()
             until(lambda: servers[1].hasPendingConnections())
             peers.append(servers[1].nextPendingConnection())
-            peers[-1].write(b"IMU1,100,100000,42,3000,0,9800,0,0,0\n")
+            peers[-1].write(packet(100, 100000))
             until(lambda: viewer.series.received == 3)
             self.assertEqual(viewer.series.missing, 1)
             self.assertEqual(viewer.series.points[-1][0], 0)
             burst = b"".join(
-                f"IMU1,{101+i},{102500+2500*i},42,{int(1000*math.sin(i/100))},0,9800,0,{int(100*math.cos(i/100))},0\n".encode()
+                packet(
+                    101 + i,
+                    102500 + 2500 * i,
+                    axes=(
+                        int(1000 * math.sin(i / 100)),
+                        0,
+                        9800,
+                        0,
+                        int(100 * math.cos(i / 100)),
+                        0,
+                    ),
+                )
                 for i in range(4000)
             )
             peers[-1].write(burst)

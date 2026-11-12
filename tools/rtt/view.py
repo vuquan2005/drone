@@ -11,18 +11,18 @@ import numpy as np
 from PySide6 import QtCore, QtGui, QtNetwork, QtWidgets
 import pyqtgraph as pg
 
-from records import ImuSeries, Lines
+from records import Frames, ImuSeries, Lines
 
 
 class Stream(QtCore.QObject):
-    line = QtCore.Signal(bytes)
+    record = QtCore.Signal(object)
     state = QtCore.Signal(str)
     connected = QtCore.Signal()
 
-    def __init__(self, host, port, parent):
+    def __init__(self, host, port, parent, binary=False):
         super().__init__(parent)
         self.host, self.port = host, port
-        self.framing = Lines()
+        self.framing = Frames() if binary else Lines()
         self.socket = QtNetwork.QTcpSocket(self)
         self.socket.setReadBufferSize(65536)
         self.socket.connected.connect(self.on_connected)
@@ -41,14 +41,16 @@ class Stream(QtCore.QObject):
 
     def on_connected(self):
         self.framing.pending.clear()
-        self.framing.discarding = False
+        if isinstance(self.framing, Lines):
+            self.framing.discarding = False
         self.state.emit("connected")
         self.connected.emit()
 
     def read(self):
         # A bounded batch lets repaint/other sockets run even under continuous traffic.
-        for line in self.framing.feed(bytes(self.socket.read(16384))):
-            self.line.emit(line)
+        data = bytes(self.socket.read(16384))
+        for line in self.framing.feed(data):
+            self.record.emit(line)
         if self.socket.bytesAvailable():
             QtCore.QTimer.singleShot(0, self.read)
 
@@ -118,9 +120,9 @@ class Viewer(QtWidgets.QMainWindow):
         splitter.addWidget(panel)
         splitter.setSizes([500, 230])
         self.log_stream = Stream(args.host, args.log_port, self)
-        self.data_stream = Stream(args.host, args.data_port, self)
-        self.log_stream.line.connect(self.on_log)
-        self.data_stream.line.connect(self.on_data)
+        self.data_stream = Stream(args.host, args.data_port, self, binary=True)
+        self.log_stream.record.connect(self.on_log)
+        self.data_stream.record.connect(self.on_data)
         self.data_stream.connected.connect(self.new_session)
         self.log_stream.state.connect(lambda value: self.states.update(LOG=value))
         self.data_stream.state.connect(lambda value: self.states.update(DATA=value))
@@ -180,7 +182,7 @@ class Viewer(QtWidgets.QMainWindow):
             f"LOG: {self.states['LOG']} | DATA: {self.states['DATA']} | "
             f"RX {len(self.arrivals)}/s · records {s.received} · missing seq {s.missing} · "
             f"invalid {s.invalid} · unknown {s.unknown} · resets? {s.resets} · "
-            f"oversize lines {self.log_stream.framing.errors + self.data_stream.framing.errors}"
+            f"log oversize {self.log_stream.framing.errors} · frame errors {self.data_stream.framing.errors}"
         )
         if not self.dirty:
             return

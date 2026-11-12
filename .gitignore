@@ -62,6 +62,7 @@ __pycache__/
 *.bin
 *.elf
 *.hex
+!/protocol/fixtures/*.hex
 *.map
 *.o
 Debug/

@@ -1,6 +1,7 @@
-#include "app_imu_trace.h"
 #include "app_log.h"
+#include "app_telemetry.h"
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -89,25 +90,44 @@ static void enabled_tests(void) {
                                .gyro_radps = {1.0f, -2.0f, 3.0f}};
     app_imu_sample_t original = sample;
     before = clock_calls;
-    assert(app_imu_trace_write(NULL, 17U) == BSP_RTT_INVALID_ARGUMENT);
-    assert(app_imu_trace_write(&sample, 17U) == BSP_RTT_OK);
-    drain(BSP_RTT_DATA, output, sizeof(output));
-    assert(strcmp(output,
-                  "IMU1,17,123456,1193046,1250,-2500,9806,1000,-2000,3000\n") ==
-           0);
+    assert(app_telemetry_write_imu(NULL, 17U) == BSP_RTT_INVALID_ARGUMENT);
+    assert(app_telemetry_write_imu(&sample, 17U) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 48U);
+    FILE *fixture = fopen(TELEMETRY_FIXTURE_PATH, "r");
+    assert(fixture != NULL);
+    for (unsigned i = 0; i < 48U; ++i) {
+        unsigned byte;
+        assert(fscanf(fixture, "%2x", &byte) == 1);
+        assert((uint8_t)output[i] == byte);
+    }
+    unsigned extra;
+    assert(fscanf(fixture, "%x", &extra) == EOF);
+    fclose(fixture);
     assert(clock_calls == before &&
            memcmp(&sample, &original, sizeof(sample)) == 0);
     char fill[4095];
     memset(fill, 'x', sizeof(fill));
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
-    assert(app_imu_trace_write(&sample, 18U) == BSP_RTT_FULL);
+    assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_FULL);
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
     assert(memcmp(&sample, &original, sizeof(sample)) == 0);
     drain(BSP_RTT_DATA, output, sizeof(output));
-    assert(app_imu_trace_write(&sample, 19U) == BSP_RTT_OK);
+    assert(app_telemetry_write_imu(&sample, 19U) == BSP_RTT_OK);
     drain(BSP_RTT_DATA, output, sizeof(output));
-    const char trace_prefix[] = "IMU1,19,123456,";
-    assert(strncmp(output, trace_prefix, sizeof(trace_prefix) - 1U) == 0);
+    assert(memcmp(output, "DRT!\x01\x01\x24\x00", 8U) == 0);
+    assert((uint8_t)output[8] == 19U);
+    const float invalid_values[] = {NAN, INFINITY, -INFINITY, 3e10f, -3e10f};
+    for (unsigned i = 0; i < sizeof(invalid_values) / sizeof(invalid_values[0]);
+         ++i) {
+        sample.accel_mps2[0] = invalid_values[i];
+        assert(app_telemetry_write_imu(&sample, 20U) ==
+               BSP_RTT_INVALID_ARGUMENT);
+        assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U);
+    }
+    sample = original;
+    sample.sensor_time_ticks = 0x1000000U;
+    assert(app_telemetry_write_imu(&sample, 20U) == BSP_RTT_INVALID_ARGUMENT);
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
     app_log_init(NULL);
     assert(app_log_write(1U, "imu", "no clock") == BSP_RTT_NOT_INITIALIZED);
 }
@@ -123,7 +143,7 @@ int main(void) {
     APP_LOG_WARN("imu", "%d", ++effects);
     APP_LOG_INFO("imu", "%d", ++effects);
     APP_LOG_DEBUG("imu", "%d", ++effects);
-    APP_IMU_TRACE(NULL, ++effects);
+    APP_TELEMETRY_IMU(NULL, ++effects);
     assert(effects == 0 && clock_calls == 0U);
 #endif
     puts("logging tests passed");

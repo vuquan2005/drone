@@ -53,6 +53,10 @@ static unsigned drain(unsigned channel, char *output) {
     output[count] = '\0';
     return count;
 }
+static uint32_t get_u32(const char *p) {
+    return (uint32_t)(uint8_t)p[0] | ((uint32_t)(uint8_t)p[1] << 8U) |
+           ((uint32_t)(uint8_t)p[2] << 16U) | ((uint32_t)(uint8_t)p[3] << 24U);
+}
 int main(void) {
     app_init();
     char output[512];
@@ -74,13 +78,15 @@ int main(void) {
     app_process();
     drain(0U, output);
     assert(strstr(output, "[1001][I][imu] read recovered\n") != NULL);
-    drain(1U, output);
-    assert(strcmp(output, "IMU1,1,1001123,256,0,0,9806,0,0,0\n") == 0);
+    assert(drain(1U, output) == 48U);
+    assert(memcmp(output, "DRT!\x01\x01\x24\x00", 8U) == 0);
+    assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
+    assert(get_u32(output + 16) == 256U && get_u32(output + 28) == 9806U);
     tick++;
     app_process();
     assert(drain(0U, output) == 0U);
-    drain(1U, output);
-    assert(strcmp(output, "IMU1,2,1002123,256,0,0,9806,0,0,0\n") == 0);
+    assert(drain(1U, output) == 48U);
+    assert(get_u32(output + 8) == 2U && get_u32(output + 12) == 1002123U);
     status = BSP_IMU_NO_DATA;
     app_process();
     assert(drain(1U, output) == 0U && pwm_starts == 1U);

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Forward one existing OpenOCD RTT TCP stream to stdout, without decoding."""
+"""Capture one OpenOCD RTT TCP stream unchanged to stdout; redirect to .bin or .log."""
 
 import argparse
 import socket

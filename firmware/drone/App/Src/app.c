@@ -1,8 +1,8 @@
 #include "app.h"
 #include "app_imu.h"
-#include "app_imu_trace.h"
 #include "app_log.h"
 #include "app_receiver.h"
+#include "app_telemetry.h"
 #include "bsp_board.h"
 #include "bsp_pwm.h"
 #include "bsp_rtt.h"
@@ -59,6 +59,6 @@ void app_process(void) {
     log_imu_transition(status);
 #endif
     if (status == BSP_IMU_OK) {
-        APP_IMU_TRACE(&imu.sample, imu.sample_count);
+        APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
     }
 }

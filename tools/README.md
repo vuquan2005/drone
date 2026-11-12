@@ -33,13 +33,13 @@ Lần đầu cần mạng để tải môi trường và công cụ. Riêng `lat
 
 ## Phụ thuộc tools và pyproject.toml
 
-| Phạm vi                            | Dependency Python                                                   | Công cụ bên ngoài Python                                                                                                 |
-| ---------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `rtt/read.py`, `rtt/records.py`    | Thư viện chuẩn                                                      | OpenOCD đang phục vụ RTT khi đọc board                                                                                   |
-| `rtt/view.py`, test GUI            | `numpy`, `PySide6` từ `PySide6-Essentials`, `pyqtgraph`; nhóm `rtt` | OpenOCD khi đọc board; test dùng TCP giả lập                                                                             |
-| `sync_reference_pdfs.py`, test PDF | Thư viện chuẩn                                                      | Poppler: `pdftotext`, `pdfimages`                                                                                        |
-| `format_latex.py`                  | Thư viện chuẩn                                                      | `latexindent` từ TeX distribution                                                                                        |
-| Format/lint qua hook               | `pre-commit`; nhóm `dev` mặc định                                   | Hook tự quản lý Prettier, Black, clang-format, cmake-format và markdownlint; LaTeX cần `latexindent`, `chktex` trên PATH |
+| Phạm vi                                | Dependency Python                                                   | Công cụ bên ngoài Python                                                                                                 |
+| -------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `rtt/capture_raw.py`, `rtt/records.py` | Thư viện chuẩn                                                      | OpenOCD đang phục vụ RTT khi đọc board                                                                                   |
+| `rtt/view.py`, test GUI                | `numpy`, `PySide6` từ `PySide6-Essentials`, `pyqtgraph`; nhóm `rtt` | OpenOCD khi đọc board; test dùng TCP giả lập                                                                             |
+| `sync_reference_pdfs.py`, test PDF     | Thư viện chuẩn                                                      | Poppler: `pdftotext`, `pdfimages`                                                                                        |
+| `format_latex.py`                      | Thư viện chuẩn                                                      | `latexindent` từ TeX distribution                                                                                        |
+| Format/lint qua hook                   | `pre-commit`; nhóm `dev` mặc định                                   | Hook tự quản lý Prettier, Black, clang-format, cmake-format và markdownlint; LaTeX cần `latexindent`, `chktex` trên PATH |
 
 Đã đối chiếu import của toàn bộ file Python trong `tools/`, gồm tests:
 không thiếu dependency Python trong `pyproject.toml`. NumPy được khai báo
@@ -49,19 +49,19 @@ Không cần thêm Poppler/TeX vào pip: đây là executable do hệ điều h�
 
 ## Các file RTT
 
-Ba file nằm trong `tools/rtt/`. `view.py` nhận byte từ TCP và gọi `records.py`
+Các công cụ nằm trong `tools/rtt/`. `view.py` nhận byte từ TCP và gọi `records.py`
 để xử lý DATA. Phụ thuộc mã một chiều: `view.py` import `records.py`;
-`records.py` không import hoặc gọi UI. `read.py` là công cụ độc lập.
+`records.py` không import hoặc gọi UI. `capture_raw.py` là công cụ độc lập.
 
-| File                        | Chức năng                                                                                                            | Dependency Python                 |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `rtt/read.py`               | Nối một TCP port, chuyển nguyên byte ra stdout; dùng xem nhanh hoặc redirect vào file                                | Thư viện chuẩn                    |
-| `rtt/records.py`            | Module ghép dòng TCP và parse `IMU1`; đổi milli-unit sang SI, xử lý timestamp/sequence tràn, gap và lịch sử giới hạn | Thư viện chuẩn                    |
-| `rtt/view.py`               | Cửa sổ nhận LOG và DATA đồng thời, lọc log, vẽ accel/gyro và báo trạng thái                                          | Nhóm `rtt`, dùng `rtt/records.py` |
-| `tests/test_rtt_records.py` | Kiểm thử framing, dữ liệu lỗi, gap, wrap/reset và giới hạn lịch sử                                                   | Thư viện chuẩn                    |
-| `tests/test_rtt_view.py`    | Kiểm thử GUI với hai TCP server localhost giả lập, reconnect và burst 4000 mẫu                                       | Nhóm `rtt`                        |
+| File                        | Chức năng                                                                                                                   | Dependency Python                 |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `rtt/capture_raw.py`        | Nối một TCP port, chuyển nguyên byte ra stdout; dùng xem nhanh hoặc redirect vào file                                       | Thư viện chuẩn                    |
+| `rtt/records.py`            | Module ghép dòng TCP và parse IMU binary v1; đổi milli-unit sang SI, xử lý timestamp/sequence tràn, gap và lịch sử giới hạn | Thư viện chuẩn                    |
+| `rtt/view.py`               | Cửa sổ nhận LOG và DATA đồng thời, lọc log, vẽ accel/gyro và báo trạng thái                                                 | Nhóm `rtt`, dùng `rtt/records.py` |
+| `tests/test_rtt_records.py` | Kiểm thử framing, dữ liệu lỗi, gap, wrap/reset và giới hạn lịch sử                                                          | Thư viện chuẩn                    |
+| `tests/test_rtt_view.py`    | Kiểm thử GUI với hai TCP server localhost giả lập, reconnect và burst 4000 mẫu                                              | Nhóm `rtt`                        |
 
-Luồng dữ liệu: firmware → ring buffer RTT → OpenOCD → TCP → `rtt/read.py`
+Luồng dữ liệu: firmware → ring buffer RTT → OpenOCD → TCP → `rtt/capture_raw.py`
 hoặc `rtt/view.py` → `rtt/records.py` (DATA). Các script không trực tiếp mở
 ST-LINK, nạp firmware hoặc tự chạy OpenOCD. `rtt/records.py` là module dùng
 chung, không phải lệnh cần chạy riêng.
@@ -69,16 +69,16 @@ chung, không phải lệnh cần chạy riêng.
 Đọc thô không cần nhóm GUI:
 
 ```sh
-uv run tools/rtt/read.py --port 9091
-uv run tools/rtt/read.py --port 9090 > /tmp/drone-rtt.log
+uv run tools/rtt/capture_raw.py --port 9091 > /tmp/imu.bin
+uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 ```
 
 Cả cấu hình **Drone: OpenOCD + RTT** lẫn OpenOCD độc lập đều mở LOG channel 0
 ở port 9090 và DATA channel 1 ở port 9091. Extension còn mở terminal LOG
 riêng ở port động; script dùng hai port cố định, không dùng port terminal đó.
 
-Firmware Debug xuất CSV `IMU1` ở channel 1. Bộ đọc thô giữ nguyên byte, kể cả
-nhị phân; module parser và GUI chỉ hiểu định dạng hiện tại. Xem
+Firmware Debug xuất frame IMU binary v1 (48 byte) ở channel 1. Bộ đọc thô giữ nguyên byte; module parser và GUI giải mã theo
+[schema binary](../protocol/telemetry.md). Dữ liệu thu hiện không phải CSV. Xem
 [định dạng và nguồn timestamp](../firmware/drone/DEBUG.md#channel-1-mẫu-imu-có-timestamp).
 
 ## Xem log và đồ thị RTT
@@ -115,11 +115,13 @@ uv run --group rtt tools/rtt/view.py --host 127.0.0.1 --log-port 9090 --data-por
   hoặc thời gian hơn nửa miền được coi là nghi reset và bắt đầu lại plot.
   Reset rất sớm hoặc ngắt dữ liệu quá lâu không thể nhận diện chắc chắn nếu
   firmware chưa có boot ID. Không có dữ liệu thì giữ plot cuối.
-- Dòng TCP được ghép tới newline, dòng quá 1024 byte bị bỏ. Định dạng khác
-  `IMU1` được đếm unknown để sau này thêm decoder, chưa vẽ các loại khác.
+- CH0 ghép dòng newline, dòng quá 1024 byte bị bỏ. CH1 tìm magic, kiểm tra
+  length và CRC32; báo frame errors riêng. Frame hỏng bị bỏ, tự tìm lại đầu
+  frame; type/version chưa hỗ trợ được đếm unknown. Payload tối đa 256 byte.
+  GUI mới yêu cầu firmware binary mới, không giải mã CSV `IMU1` cũ.
 
-UI chỉ giữ lịch sử giới hạn, chưa ghi file hoặc thêm dashboard. Bộ đọc thô
-`rtt/read.py` vẫn dùng độc lập như trước. Kiểm thử parser không cần Qt/board:
+Plot giữ lịch sử giới hạn; chưa lưu CSV hoặc text log trong UI. Bộ đọc thô
+`rtt/capture_raw.py` vẫn dùng độc lập như trước. Kiểm thử parser không cần Qt/board:
 
 ```sh
 uv run python -m unittest discover -s tools/tests -p test_rtt_records.py -v

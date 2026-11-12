@@ -1,6 +1,8 @@
-"""Bounded newline framing and IMU1 session tracking; no GUI dependencies."""
+"""Bounded text/binary framing and IMU session tracking; no GUI dependencies."""
 
 from collections import deque
+import struct
+import zlib
 
 
 class Lines:
@@ -31,6 +33,48 @@ class Lines:
                 self.discarding = False
 
 
+MAGIC = b"DRT!"
+HEADER = struct.Struct("<4sBBH")
+IMU = struct.Struct("<III6i")
+MAX_PAYLOAD = 256
+
+
+class Frames:
+    """Yield CRC-validated (version, type, payload); retain at most 267 bytes."""
+
+    def __init__(self):
+        self.pending = bytearray()
+        self.errors = 0
+
+    def feed(self, data):
+        self.pending.extend(data)
+        while True:
+            start = self.pending.find(MAGIC)
+            if start < 0:
+                # Preserve a possible split magic; all other bytes are discarded.
+                self.pending[:] = self.pending[-3:]
+                return
+            del self.pending[:start]
+            if len(self.pending) < HEADER.size:
+                return
+            _, version, kind, length = HEADER.unpack_from(self.pending)
+            if length > MAX_PAYLOAD or (version == 1 and kind == 1 and length != IMU.size):
+                self.errors += 1
+                del self.pending[0]
+                continue
+            size = HEADER.size + length + 4
+            if len(self.pending) < size:
+                return
+            expected = struct.unpack_from("<I", self.pending, size - 4)[0]
+            if zlib.crc32(self.pending[: size - 4]) != expected:
+                self.errors += 1
+                del self.pending[0]
+                continue
+            payload = bytes(self.pending[HEADER.size : size - 4])
+            del self.pending[:size]
+            yield version, kind, payload
+
+
 class ImuSeries:
     """Track one connection's IMU stream; counter gaps are not RTT drop attribution."""
 
@@ -46,21 +90,17 @@ class ImuSeries:
         self.elapsed_us = 0
         self.points.clear()
 
-    def feed(self, line):
-        fields = line.split(b",")
-        if fields[0] != b"IMU1":
+    def feed(self, frame):
+        version, kind, payload = frame
+        if version != 1 or kind != 1:
             self.unknown += 1
             return False
-        try:
-            if len(fields) != 10:
-                raise ValueError
-            values = [int(field) for field in fields[1:]]
-            seq, stamp, sensor = values[:3]
-            if not (0 <= seq < 2**32 and 0 <= stamp < 2**32 and 0 <= sensor < 2**24):
-                raise ValueError
-            if any(not -(2**31) <= value < 2**31 for value in values[3:]):
-                raise ValueError
-        except ValueError:
+        if len(payload) != IMU.size:
+            self.invalid += 1
+            return False
+        values = IMU.unpack(payload)
+        seq, stamp, sensor = values[:3]
+        if sensor >= 2**24:
             self.invalid += 1
             return False
         gap = False

@@ -6,7 +6,7 @@
 - **OpenOCD + RTT:** đọc buffer RAM khi CPU chạy, không cần breakpoint để in.
 - **Live Watch:** đọc biến định kỳ, đã bật 4 lần/giây trong launch ST và Cortex-Debug.
 - **`bsp_rtt`:** transport hai kênh không chặn, không phụ thuộc IMU/RC/PWM.
-- **`tools/rtt/read.py`:** bộ đọc TCP tối thiểu, điểm bắt đầu cho công cụ máy tính.
+- **`tools/rtt/capture_raw.py`:** bộ đọc TCP tối thiểu, điểm bắt đầu cho công cụ máy tính.
 
 | Channel            | Mục đích                                   | Buffer    |
 | ------------------ | ------------------------------------------ | --------- |
@@ -97,17 +97,15 @@ thái bình thường; lỗi lặp ở cùng trạng thái không được in m�
 
 `app_imu_poll()` chụp `t_read_us` ngay sau lần đọc BSP thành công, trước khi
 đổi đơn vị, và lưu cùng mẫu. NO_DATA/lỗi giữ nguyên dữ liệu và timestamp cũ.
-`app_imu_trace` chỉ mã hóa các trường đã lưu; không lấy thời gian lúc gửi.
+`app_telemetry` chỉ mã hóa các trường đã lưu; không lấy thời gian lúc gửi.
 
 Mỗi mẫu mới được gửi một lần, không chủ động giảm mẫu. Tốc độ danh định của
-cảm biến là 400 Hz; số mẫu đọc được thực tế phụ thuộc polling/timing. Bản ghi
-ASCII CSV có phiên bản, kết thúc newline:
+cảm biến là 400 Hz; số mẫu thực tế phụ thuộc polling/timing. CH1 dùng frame
+binary 48 byte: header 8 byte (`DRT!`, version, type, length), payload IMU
+36 byte và CRC32 4 byte. Không format CSV hoặc gửi nguyên struct C.
+Xem [schema và fixture chung](../../protocol/telemetry.md).
 
-```text
-IMU1,sample_sequence,t_read_us,sensor_time_ticks,ax_mmps2,ay_mmps2,az_mmps2,gx_mradps,gy_mradps,gz_mradps
-```
-
-- `sample_sequence`: số lần đọc thành công từ khi init IMU, mẫu đầu là 1;
+- `sequence`: số lần đọc thành công từ khi init IMU, mẫu đầu là 1;
   vẫn tăng khi RTT bỏ bản ghi, tràn modulo 2^32. Không đếm mẫu phần cứng đã
   ghi đè trước khi MCU đọc.
 - `t_read_us`: uptime MCU tại lúc đọc, đơn vị µs, tràn modulo 2^32 (khoảng
@@ -124,14 +122,14 @@ section. Debug halt, sleep hoặc suspend tick ảnh hưởng nguồn thời gia
 Không dùng phép chia trực tiếp DWT CYCCNT để tránh reset thời gian khi cycle
 counter 32 bit tràn sau khoảng 60 giây ở 72 MHz.
 
-`DRONE_ENABLE_IMU_TRACE` mặc định ON ở Debug, OFF ở Release; tự vô hiệu khi
-RTT tắt. Macro `APP_IMU_TRACE` bỏ cả đánh giá đối số khi trace tắt. Release
+`DRONE_ENABLE_TELEMETRY` mặc định ON ở Debug, OFF ở Release; tự vô hiệu khi
+RTT tắt. Macro `APP_TELEMETRY_IMU` bỏ cả đánh giá đối số khi trace tắt. Release
 không chứa formatter/stream RTT; timestamp mẫu vẫn tồn tại cho ứng dụng dùng.
 
-Máy tính phải ghép byte tới newline trước khi parse; TCP có thể chia/gộp
-bản ghi. Stream 400 Hz có thể làm đầy buffer nếu host/probe không theo kịp:
+Máy tính phải ghép frame theo magic/length và kiểm tra CRC; TCP có thể
+chia/gộp frame. IMU 400 Hz tạo 19,2 KB/s; vẫn có thể đầy nếu host/probe không theo kịp:
 xem `dropped_full[1]` và khoảng trống sequence; timestamp vẫn giữ thời điểm
-đọc mẫu, không được sửa thành thời điểm host nhận. Script hiện chỉ chuyển byte.
+đọc mẫu, không được sửa thành thời điểm host nhận. `capture_raw.py` chỉ chuyển byte; `view.py` giải mã để vẽ.
 
 ## Phân biệt mất dữ liệu và lỗi gọi API
 
@@ -175,9 +173,9 @@ Cortex-Debug nhận lệnh GDB trực tiếp.
 1. Mở gốc repository, cài Cortex-Debug và OpenOCD >= 0.12 hỗ trợ ST-LINK/RTT.
 2. Chọn **Drone: OpenOCD + RTT**, nhấn F5 để build/nạp Debug.
 3. Nhấn Continue khi dừng tại `app_process`. Log channel 0 hiện ở terminal **RTT LOG (CH0)**.
-4. Đọc channel 1 bằng `uv run tools/rtt/read.py --port 9091`.
+4. Đọc channel 1 bằng `uv run tools/rtt/capture_raw.py --port 9091`.
 
-Debug mặc định sẽ có log khởi tạo và dòng IMU1 khi cảm biến đọc được mẫu mới.
+Debug mặc định sẽ có log khởi tạo và frame IMU binary khi cảm biến đọc được mẫu mới.
 Nếu IMU init lỗi, kiểm tra channel 0; không có mẫu cũ được phát lại để lấp chỗ.
 Script chỉ chuyển byte, không tự tạo mẫu để vẽ.
 Không mở hai debug server dùng cùng ST-LINK.

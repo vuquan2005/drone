@@ -14,6 +14,9 @@ typedef struct {
     float gyro_radps[3];        /**< Angular velocity in rad/s. */
     uint32_t sensor_time_ticks; /**< Raw wrapping 24-bit sensor clock, not MCU
                                    time. */
+    uint32_t t_read_us; /**< MCU uptime captured after a successful BSP read,
+                          before conversion; wraps modulo 2^32. Not acquisition
+                          time. Preserved with the sample on NO_DATA/error. */
 } app_imu_sample_t;
 
 /**

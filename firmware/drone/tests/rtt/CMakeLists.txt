@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.22)
+project(rtt_tests C)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+enable_testing()
+set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+add_executable(rtt_tests test_rtt.c ${FIRMWARE_ROOT}/BSP/Src/bsp_rtt.c
+                         ${FIRMWARE_ROOT}/Drivers/RTT/SEGGER_RTT.c)
+target_include_directories(rtt_tests PRIVATE ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/Drivers/RTT)
+target_compile_definitions(rtt_tests PRIVATE DRONE_RTT=1)
+target_compile_options(rtt_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME rtt_tests COMMAND rtt_tests)

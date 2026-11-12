@@ -1,4 +1,5 @@
 #include "app_imu.h"
+#include "bsp_time.h"
 #include <string.h>
 
 bsp_imu_result_t app_imu_init(app_imu_t *imu,
@@ -37,6 +38,7 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     if (imu->status != BSP_IMU_OK) {
         return imu->status;
     }
+    const uint32_t t_read_us = bsp_time_now_us();
 
     const float accel_scale = BSP_IMU_ACCEL_RANGE_G * 9.80665f / 32768.0f;
     const float gyro_scale =
@@ -46,6 +48,7 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         imu->sample.gyro_radps[axis] = raw.gyro[axis] * gyro_scale;
     }
     imu->sample.sensor_time_ticks = raw.sensor_time_ticks;
+    imu->sample.t_read_us = t_read_us;
     imu->sample_count++;
     imu->sample_valid = true;
     return BSP_IMU_OK;

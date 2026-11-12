@@ -19,6 +19,13 @@ static unsigned transactions;
 static unsigned uploaded_bytes;
 static uint8_t uploaded_config[8192];
 static uint64_t delayed_us;
+static uint32_t read_time_us;
+static unsigned clock_reads;
+
+uint32_t bsp_time_now_us(void) {
+    clock_reads++;
+    return read_time_us;
+}
 
 void bsp_time_init(void) {
     time_initialized = true;
@@ -49,6 +56,8 @@ static void reset_fixture(void) {
     transactions = uploaded_bytes = 0U;
     delayed_us = 0U;
     time_initialized = false;
+    read_time_us = 0U;
+    clock_reads = 0U;
 }
 
 void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state) {
@@ -184,6 +193,8 @@ static void test_real_driver_init_and_samples(void) {
     registers[BMI2_STATUS_ADDR] = BMI2_DRDY_ACC;
     assert(app_imu_poll(&imu) == BSP_IMU_NO_DATA);
     assert(registers[BMI2_STATUS_ADDR] == BMI2_DRDY_ACC);
+    assert(clock_reads == 0U);
+    read_time_us = UINT32_MAX - 5U;
     registers[BMI2_STATUS_ADDR] = BMI2_DRDY_ACC | BMI2_DRDY_GYR;
     set_axis(BMI2_ACC_X_LSB_ADDR, 2048); /* +1 g with +/-16 g scale. */
     set_axis(BMI2_ACC_X_LSB_ADDR + 2U, -2048);
@@ -204,14 +215,17 @@ static void test_real_driver_init_and_samples(void) {
     // TODO: Use an expected value with tolerance; doubling Z still passes.
     assert(imu.sample.gyro_radps[2] > 34.9f);
     assert(imu.sample.sensor_time_ticks == 0x123456U);
+    assert(imu.sample.t_read_us == UINT32_MAX - 5U && clock_reads == 1U);
     assert(registers[BMI2_STATUS_ADDR] == 0U);
 
     app_imu_sample_t previous = imu.sample;
     registers[BMI2_STATUS_ADDR] = 0;
+    read_time_us = 4U; /* MCU timestamp wraps independently of sensor time. */
     assert(app_imu_poll(&imu) == BSP_IMU_NO_DATA);
     assert(!imu.sample_valid && imu.sample_count == 1U);
     assert(memcmp(&previous, &imu.sample, sizeof(previous)) == 0);
     assert(imu.read_error_count == 0U);
+    assert(clock_reads == 1U);
     // TODO: Inject a failure in the data burst after a successful status read;
     // this global flag only exercises failure of the first status read.
     fail_read = true;
@@ -219,10 +233,12 @@ static void test_real_driver_init_and_samples(void) {
     assert(!selected && !imu.sample_valid && imu.read_error_count == 1U);
     assert(imu.sensor.driver_error == BMI2_E_COM_FAIL);
     assert(memcmp(&previous, &imu.sample, sizeof(previous)) == 0);
+    assert(clock_reads == 1U);
     fail_read = false;
     registers[BMI2_STATUS_ADDR] = BMI2_DRDY_ACC | BMI2_DRDY_GYR;
     assert(app_imu_poll(&imu) == BSP_IMU_OK);
     assert(imu.sample_valid && imu.sample_count == 2U);
+    assert(imu.sample.t_read_us == 4U && clock_reads == 2U);
 
     assert(app_imu_init(&imu, &imu.sensor.config) == BSP_IMU_OK);
     assert(imu.sample_count == 0U && !imu.sample_valid);

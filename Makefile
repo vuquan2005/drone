@@ -2,6 +2,8 @@
 PYTHON ?= python3
 PRE_COMMIT ?= pre-commit
 LATEXMK ?= latexmk
+UV ?= uv
+TELEMETRY_ARGS ?=
 CUBE ?= cube
 PRESET ?= Debug
 SWD ?= port=SWD freq=1000 reset=SWrst
@@ -11,13 +13,14 @@ ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 FORMAT_HOOKS := prettier black clang-format cmake-format format-latex
 LINT_HOOKS := markdownlint-cli2 cmake-lint lint-latex
 
-.PHONY: help fw-build fw-flash fw-erase report cubemx clean format lint sync-papers sync-datasheets
+.PHONY: telemetry help fw-build fw-flash fw-erase report cubemx clean format lint sync-papers sync-datasheets
 
 help:
 	@printf '%s\n' \
 	  'make fw-build [PRESET=Release] Configure and build firmware (default: Debug)' \
 	  'make fw-flash [PRESET=Release] Build, program, verify and reset via ST-LINK' \
 	  'make fw-erase                 Erase ALL Flash, including stored settings' \
+	  'make telemetry [TELEMETRY_ARGS=...] Open RTT plots, log and recording controls' \
 	  'make report                         Build report/build/main.pdf with latexmk' \
 	  'make cubemx                         Regenerate firmware from drone.ioc (CLI)' \
 	  'make clean                          Remove firmware and report build directories' \
@@ -68,3 +71,6 @@ sync-papers:
 
 sync-datasheets:
 	@$(PYTHON) tools/sync_reference_pdfs.py --collection datasheets
+
+telemetry:
+	cd "$(ROOT_DIR)" && "$(UV)" run --locked --group rtt tools/rtt/view.py $(TELEMETRY_ARGS)

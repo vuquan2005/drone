@@ -66,6 +66,10 @@ Không cần ghi đường dẫn cài extension hoặc sửa `PATH` trong task; 
 theo bundle của project tại thư mục làm việc `firmware/drone`.
 Semihosting đang tắt; debug thông thường không cần bật tính năng này.
 
+Khung **STM32: Debug + RTT (OpenOCD)** hỗ trợ hai kênh: log văn bản và dữ
+liệu cho công cụ máy tính. Preset Debug bật transport, Release tắt. Ứng dụng
+hiện chỉ khởi tạo buffer, chưa tự xuất log/stream. Xem [RTT và Live Watch](drone/DEBUG.md).
+
 Gốc repo có task configure/build cho cả **Debug** và **Release**; build task tự
 chạy configure tương ứng trước. `Ctrl+Shift+B` mặc định build Debug;
 **Terminal → Run Task → firmware: build Release** build Release mà không nạp board.

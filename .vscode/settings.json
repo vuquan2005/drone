@@ -8,7 +8,8 @@
     ".editorconfig": ".clang-format, .clang-format-ignore, .cmake-format.json, .markdownlint-cli2.jsonc, .prettierrc.json, .prettierignore",
     ".gitignore": ".gitattributes, .gitmodules",
     "CMakeLists.txt": "CMakePresets.json, CMakeUserPresets.json, .clangd",
-    "Makefile": ".pre-commit-config.yaml, codegraph.json, pyproject.toml, skills-lock.json",
+    "Makefile": ".pre-commit-config.yaml, codegraph.json, skills-lock.json",
+    "pyproject.toml": "uv.lock, .python-version",
     "README.md": "CHANGELOG*, CONTRIBUTING*, LICENSE*, PRIVACY*",
     "bundles.store.json": "bundles-lock.store.json",
     "main.tex": "metadata.tex, latexmkrc, .chktexrc"
@@ -107,6 +108,7 @@
   ],
   "stm32cube-ide-clangd.path": "cube",
 
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
   "[python]": {
     "editor.defaultFormatter": "ms-python.black-formatter"
   },

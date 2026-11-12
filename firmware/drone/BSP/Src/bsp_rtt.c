@@ -16,10 +16,8 @@ void bsp_rtt_init(void) {
                                             SEGGER_RTT_MODE_NO_BLOCK_SKIP) == 0;
 }
 
-bsp_rtt_result_t bsp_rtt_write(bsp_rtt_channel_t channel, const void *data,
-                               size_t size) {
-    if ((channel != BSP_RTT_LOG && channel != BSP_RTT_DATA) ||
-        (data == NULL && size != 0U)) {
+static bsp_rtt_result_t validate_size(bsp_rtt_channel_t channel, size_t size) {
+    if (channel != BSP_RTT_LOG && channel != BSP_RTT_DATA) {
         return BSP_RTT_INVALID_ARGUMENT;
     }
     if (!initialized) {
@@ -30,8 +28,29 @@ bsp_rtt_result_t bsp_rtt_write(bsp_rtt_channel_t channel, const void *data,
     if (size >= capacity) {
         return BSP_RTT_TOO_LARGE;
     }
-    if (size == 0U) {
-        return BSP_RTT_OK;
+    return BSP_RTT_OK;
+}
+
+bsp_rtt_result_t bsp_rtt_prepare_write(bsp_rtt_channel_t channel, size_t size) {
+    bsp_rtt_result_t result = validate_size(channel, size);
+    if (result != BSP_RTT_OK) {
+        return result;
+    }
+    if (size > SEGGER_RTT_GetAvailWriteSpace((unsigned)channel)) {
+        dropped_full[channel]++;
+        return BSP_RTT_FULL;
+    }
+    return BSP_RTT_OK;
+}
+
+bsp_rtt_result_t bsp_rtt_write(bsp_rtt_channel_t channel, const void *data,
+                               size_t size) {
+    if (data == NULL && size != 0U) {
+        return BSP_RTT_INVALID_ARGUMENT;
+    }
+    bsp_rtt_result_t result = validate_size(channel, size);
+    if (result != BSP_RTT_OK || size == 0U) {
+        return result;
     }
     /* One foreground writer: avoid masking RX interrupts during the copy. */
     if (SEGGER_RTT_WriteNoLock((unsigned)channel, data, (unsigned)size) !=

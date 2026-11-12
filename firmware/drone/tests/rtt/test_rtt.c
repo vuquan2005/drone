@@ -21,6 +21,9 @@ int main(void) {
            BSP_RTT_NOT_INITIALIZED);
     assert(bsp_rtt_get_dropped_full(BSP_RTT_LOG) == 0U);
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 0U);
+    assert(bsp_rtt_prepare_write(BSP_RTT_DATA, 48U) == BSP_RTT_NOT_INITIALIZED);
+    assert(bsp_rtt_prepare_write((bsp_rtt_channel_t)2, 48U) ==
+           BSP_RTT_INVALID_ARGUMENT);
     bsp_rtt_init();
     assert(strcmp(_SEGGER_RTT.acID, "SEGGER RTT") == 0);
     assert(_SEGGER_RTT.MaxNumUpBuffers == 2);
@@ -87,6 +90,37 @@ int main(void) {
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 0U);
     assert(_SEGGER_RTT.aUp[0].RdOff == _SEGGER_RTT.aUp[0].WrOff);
     assert(_SEGGER_RTT.aUp[1].RdOff == _SEGGER_RTT.aUp[1].WrOff);
+    for (unsigned channel = 0; channel < 2U; ++channel) {
+        bsp_rtt_init();
+        bsp_rtt_channel_t ch = (bsp_rtt_channel_t)channel;
+        unsigned capacity = _SEGGER_RTT.aUp[channel].SizeOfBuffer;
+        memset(output, 0x5A, sizeof(output));
+        assert(bsp_rtt_prepare_write(ch, capacity) == BSP_RTT_TOO_LARGE);
+        assert(bsp_rtt_get_dropped_full(ch) == 0U);
+        /* Leave exactly one IMU frame's space, but not enough for stats. */
+        assert(bsp_rtt_write(ch, output, capacity - 1U - 48U) == BSP_RTT_OK);
+        unsigned before = _SEGGER_RTT.aUp[channel].WrOff;
+        assert(bsp_rtt_prepare_write(ch, 52U) == BSP_RTT_FULL);
+        assert(bsp_rtt_get_dropped_full(ch) == 1U);
+        assert(_SEGGER_RTT.aUp[channel].WrOff == before);
+        assert(bsp_rtt_prepare_write(ch, 48U) == BSP_RTT_OK);
+        assert(_SEGGER_RTT.aUp[channel].WrOff == before); /* No reservation. */
+        assert(bsp_rtt_write(ch, output, 48U) == BSP_RTT_OK);
+        assert(bsp_rtt_get_dropped_full(ch) ==
+               1U); /* Success not double-counted. */
+        assert(bsp_rtt_prepare_write(ch, 0U) == BSP_RTT_OK);
+        assert(bsp_rtt_prepare_write(ch, capacity) == BSP_RTT_TOO_LARGE);
+        assert(bsp_rtt_get_dropped_full(ch) == 1U);
+        assert(bsp_rtt_prepare_write(ch, 1U) == BSP_RTT_FULL);
+        assert(bsp_rtt_get_dropped_full(ch) == 2U);
+        assert(bsp_rtt_prepare_write((bsp_rtt_channel_t)(channel ^ 1U), 52U) ==
+               BSP_RTT_OK);
+        assert(drain(channel, output, sizeof(output)) == capacity - 1U);
+        assert(bsp_rtt_prepare_write(ch, 52U) == BSP_RTT_OK);
+        assert(bsp_rtt_write(ch, output, 52U) == BSP_RTT_OK);
+        assert(drain(channel, output, sizeof(output)) ==
+               52U); /* Wrap after drain. */
+    }
     puts("RTT transport tests passed");
     return 0;
 }

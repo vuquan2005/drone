@@ -15,8 +15,8 @@ typedef enum {
 } bsp_rtt_channel_t;
 
 typedef enum {
-    BSP_RTT_OK = 0,   /**< Entire record queued, or a valid empty record. */
-    BSP_RTT_DISABLED, /**< RTT transport was compiled out. */
+    BSP_RTT_OK = 0, /**< Operation succeeded; prepare does not enqueue bytes. */
+    BSP_RTT_DISABLED,         /**< RTT transport was compiled out. */
     BSP_RTT_NOT_INITIALIZED,  /**< Call bsp_rtt_init before writing. */
     BSP_RTT_INVALID_ARGUMENT, /**< Invalid channel or NULL nonempty payload. */
     BSP_RTT_TOO_LARGE, /**< Record cannot fit even in an empty channel. */
@@ -32,6 +32,22 @@ typedef enum {
  * required. Disabled builds make this call a no-op.
  */
 void bsp_rtt_init(void);
+
+/** @brief Preflight one intended write before encoding a record.
+ * @param channel BSP_RTT_LOG or BSP_RTT_DATA.
+ * @param size Encoded size, strictly less than the channel capacity; 0 is
+ * valid.
+ * @return OK if space is currently sufficient; FULL increments the channel's
+ * dropped-full counter exactly once. Other failures follow bsp_rtt_write's
+ * channel/init/size rules and never count as a full drop.
+ * @note Caller must validate payload before this call. Call once per intended
+ * record, not as a free-space polling query. If non-OK, abandon this attempt
+ * without calling write. On OK, encode then call bsp_rtt_write, which still
+ * checks space. No reservation, locks, waiting or queued bytes are added.
+ * Single foreground writer only; do not interleave other writes/init between
+ * prepare and write. Host reads may free space; payload remains caller-owned.
+ */
+bsp_rtt_result_t bsp_rtt_prepare_write(bsp_rtt_channel_t channel, size_t size);
 
 /** @brief Copy one complete record to a channel without waiting for the host.
  * @param channel BSP_RTT_LOG or BSP_RTT_DATA; buffers are independent.
@@ -59,6 +75,12 @@ bsp_rtt_result_t bsp_rtt_write(bsp_rtt_channel_t channel, const void *data,
 uint32_t bsp_rtt_get_dropped_full(bsp_rtt_channel_t channel);
 #else
 static inline void bsp_rtt_init(void) {}
+static inline bsp_rtt_result_t bsp_rtt_prepare_write(bsp_rtt_channel_t channel,
+                                                     size_t size) {
+    (void)channel;
+    (void)size;
+    return BSP_RTT_DISABLED;
+}
 static inline bsp_rtt_result_t bsp_rtt_write(bsp_rtt_channel_t channel,
                                              const void *data, size_t size) {
     (void)channel;

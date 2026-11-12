@@ -27,7 +27,9 @@ void app_telemetry_init(void);
  * timestamps on failure.
  * @note Foreground-only. Schema: protocol/telemetry.md (little-endian, CRC32).
  * Fields: sequence, t_read_us, sensor_time_ticks, accel XYZ in mm/s2 and
- * gyro XYZ in mrad/s. Entire frame is queued in one BSP call.
+ * gyro XYZ in mrad/s. After validating/scaling input, a BSP preflight checks
+ * space before encoding/CRC; FULL skips the frame and counts one drop. The
+ * final write still checks capacity. Entire frame is queued in one BSP call.
  * Milli-unit conversion truncates toward zero; axes are sensor-package XYZ.
  * Caller sends once per successful sample; no decimation, retry or timestamp
  * generation here. All counters/times retain their original wrapping widths.
@@ -40,6 +42,7 @@ bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
  * @param imu_read_errors IMU driver-read error count since App init.
  * @return BSP result. One attempt, no retry; failure counts appear in a later
  * snapshot. DATA dropped_full includes both IMU and statistics frames.
+ * Preflight rejects insufficient space before building fields or CRC.
  * @note Foreground-only, call about once a second independently of IMU success.
  * Snapshot precedes its own write. Sequence increments for every stats attempt.
  */

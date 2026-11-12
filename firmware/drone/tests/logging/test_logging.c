@@ -116,6 +116,10 @@ static void enabled_tests(void) {
     char fill[4095];
     memset(fill, 'x', sizeof(fill));
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
+    sample.accel_mps2[0] = NAN;
+    assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_INVALID_ARGUMENT);
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 0U);
+    sample = original;
     assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_FULL);
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
     assert(memcmp(&sample, &original, sizeof(sample)) == 0);
@@ -167,6 +171,7 @@ int main(void) {
     int effects = 0;
     app_log_init(clock_ms);
     app_telemetry_init();
+    assert(bsp_rtt_prepare_write(BSP_RTT_DATA, 48U) == BSP_RTT_DISABLED);
     APP_TELEMETRY_STATS(++effects, ++effects, ++effects);
     APP_LOG_ERROR("imu", "%d", ++effects);
     APP_LOG_WARN("imu", "%d", ++effects);

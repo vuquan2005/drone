@@ -5,6 +5,7 @@ Lưu PDF gốc tại đây; bản Markdown và ảnh nhúng được sinh trong 
 | Linh kiện | PDF gốc | Markdown trích xuất |
 | --- | --- | --- |
 | STM32F103RC | [DS_stm32f103rc.pdf](./DS_stm32f103rc.pdf) | [DS_stm32f103rc.md](./datasheets_md/DS_stm32f103rc/DS_stm32f103rc.md) |
+| BMI270 | [bst-bmi270-ds000.pdf](./bst-bmi270-ds000.pdf) | [bst-bmi270-ds000.md](./datasheets_md/bst-bmi270-ds000/bst-bmi270-ds000.md) |
 
 Chạy từ thư mục gốc repository sau khi thêm hoặc cập nhật PDF:
 

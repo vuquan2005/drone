@@ -111,9 +111,11 @@ fp-info-cache
 # Local reference repositories
 /docs/external/repos/
 
-# Local reference metadata, PDF sync state and extracted JPEG images
+# Local reference metadata, PDF sync state and extracted images
 /docs/references/**/*.jpeg
 /docs/references/**/*.json
+/docs/references/datasheets/datasheets_md/**/img-*.png
+/docs/references/papers/papers_md/**/img-*.png
 
 # Large or intermediate experiment data
 /experiments/processed/*

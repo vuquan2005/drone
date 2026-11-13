@@ -1,0 +1,43 @@
+\begin{tikzpicture}[
+    x=1cm,y=1cm,>=latex,line width=0.75pt,
+    font=\fontsize{10}{12}\selectfont,
+    block/.style={draw,fill=gray!6,align=center,inner sep=3pt,
+        minimum height=1.15cm},
+    every node/.style={align=center}
+]
+    \node[draw,circle,minimum size=0.4cm,inner sep=0pt] (angleSum) at (0.65,0) {};
+    \node[block,text width=1.5cm] (angleP) at (2.0,0) {P góc};
+    \node[draw,circle,minimum size=0.4cm,inner sep=0pt] (rateSum) at (3.6,0) {};
+    \node[block,text width=1.6cm] (ratePID) at (5.0,0) {PID\\vận tốc góc};
+    \node[block,text width=2.0cm] (allocation) at (7.65,0) {Phân bổ lệnh\\và ESC};
+    \node[block,text width=2.4cm] (plant) at (10.5,0) {Động cơ và\\thân quadrotor};
+    \node[block,text width=3.2cm,minimum height=1.25cm] (estimator) at (10,-2.6)
+        {IMU và ước lượng tư thế};
+
+    \draw[->] (-0.3,0) -- (angleSum.west);
+    \node at (0.05,0.65) {$\phi_d,\theta_d$};
+    \node at (0.35,0.24) {$+$};
+    \node at (0.37,-0.35) {$-$};
+    \draw[->] (angleSum.east) -- (angleP.west);
+    \draw[->] (angleP.east) -- (rateSum.west);
+    \node at (3.1,0.9) {$p_d,q_d$};
+    \node at (3.3,0.24) {$+$};
+    \node at (3.32,-0.35) {$-$};
+    \draw[->] (rateSum.east) -- (ratePID.west);
+    \draw[->] (ratePID.east) -- (allocation.west);
+    \node at (6.22,0.9) {$\tau_x^*,\tau_y^*$};
+    \draw[->] (allocation.east) -- (plant.west);
+    \draw[->] (7.65,1.45) -- (allocation.north);
+    \node[anchor=south] at (7.65,1.45) {$T,\;\tau_z^*$};
+    \draw[->] (plant.east) -- (13.0,0);
+    \node[text width=1.7cm] at (12.6,0.95) {Góc và\\vận tốc góc};
+
+    \draw[->] (12.2,0) |- (estimator.east);
+    \fill (12.2,0) circle (1.3pt);
+    \draw[->] ($(estimator.west)+(0,0.3)$) -- (3.6,-2.3) -- (rateSum.south);
+    \node at (5.3,-2.0) {$\hat p,\hat q$};
+    \draw[->] ($(estimator.west)+(0,-0.3)$) -- (0.65,-2.9) -- (angleSum.south);
+    \node at (4.7,-3.2) {$\hat\phi,\hat\theta$};
+    \draw[->,dashed] (allocation.south) -- (7.65,-1.35) -| (ratePID.south);
+    \node at (6.3,-1.65) {Trạng thái giới hạn};
+\end{tikzpicture}

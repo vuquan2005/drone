@@ -1,0 +1,32 @@
+\begin{tikzpicture}[
+    x=1cm,y=1cm,
+    >=latex,
+    line width=0.8pt,
+    font=\fontsize{11}{13}\selectfont,
+    block/.style={draw,fill=gray!6,minimum height=1.15cm,
+        text width=2.6cm,inner sep=4pt,align=center},
+    every node/.style={align=center}
+]
+    \node[draw,circle,minimum size=0.48cm,inner sep=0pt] (sum) at (1.3,0) {};
+    \node[block] (controller) at (3.65,0) {Bộ điều khiển\\ổn định tư thế};
+    \node[block] (allocation) at (7.1,0) {Phân bổ lệnh\\cho động cơ};
+    \node[block] (plant) at (10.55,0) {Động cơ và\\thân quadrotor};
+    \node[block,text width=3.5cm] (estimation) at (8.0,-2.05)
+        {Cảm biến và\\ước lượng tư thế};
+
+    \draw[->] (-0.2,0) -- (sum.west);
+    \node at (0.25,0.62) {Góc đặt\\$\phi_d,\theta_d$};
+    \node at (0.91,0.28) {$+$};
+    \node at (1.0,-0.38) {$-$};
+    \draw[->] (sum.east) -- (controller.west);
+    \node at (1.9,0.3) {$e$};
+    \draw[->] (controller.east) -- (allocation.west);
+    \draw[->] (allocation.east) -- (plant.west);
+    \draw[->] (plant.east) -- (13.1,0);
+    \node at (13.0,0.62) {Tư thế\\$\phi,\theta$};
+
+    \draw[->] (12.4,0) |- (estimation.east);
+    \fill (12.4,0) circle (1.5pt);
+    \draw[->] (estimation.west) -| (sum.south);
+    \node at (3.7,-1.68) {Góc ước lượng $\hat\phi,\hat\theta$};
+\end{tikzpicture}

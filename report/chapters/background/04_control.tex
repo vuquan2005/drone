@@ -1,0 +1,85 @@
+% !TEX root = ../../main.tex
+\section{Cơ sở điều khiển cân bằng}
+\label{sec:background-control}
+
+\subsection{Cấu trúc điều khiển xếp tầng}
+
+Điều khiển cân bằng sử dụng sai lệch giữa tư thế mong muốn và tư thế ước lượng để tạo mômen hiệu chỉnh. Khi yêu cầu giữ thân nằm ngang, góc đặt roll và pitch đều bằng không. Góc đặt khác không có thể dùng để khảo sát đáp ứng bám trong miền làm việc của mô hình. Mômen điều khiển làm thay đổi vận tốc góc, còn vận tốc góc quyết định sự biến thiên của tư thế. Vì vậy, một cấu trúc được khảo sát là hai vòng điều khiển xếp tầng: vòng ngoài điều khiển góc và vòng trong điều khiển vận tốc góc. Cách tổ chức này dựa trên quan hệ $\dot\phi\approx p$, $\dot\theta\approx q$ và mô hình động lực học góc nhỏ; điều khiển phản hồi dựa trên mô hình giản lược cũng đã được khảo sát cho quadrotor~\cite{bouabdallah2004pidlqr}.
+
+Vòng ngoài biến sai lệch góc thành vận tốc góc đặt. Vòng trong so sánh vận tốc góc đặt với vận tốc góc phản hồi để tạo mômen yêu cầu. Góc ước lượng $\hat\phi$, $\hat\theta$ lấy từ bộ ước lượng tư thế; các đại lượng $\hat p$, $\hat q$ là vận tốc góc từ con quay hồi chuyển sau hiệu chỉnh và lọc phù hợp. Cấu trúc với bộ điều khiển tỉ lệ (P) ở vòng ngoài và PID ở vòng trong được minh họa trên \fref{fig:background-cascade-control}.
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\linewidth}{!}{\input{figures/ch02/cascade_control.tex}}
+    \caption{Sơ đồ nguyên lý cấu trúc điều khiển xếp tầng được khảo sát cho roll và pitch.}
+    \label{fig:background-cascade-control}
+\end{figure}
+
+\begin{samepage}
+Gọi $\phi_d$, $\theta_d$ là các góc đặt và $p_d$, $q_d$ là vận tốc góc đặt. Luật điều khiển P ở vòng ngoài có dạng
+\begin{equation}
+    \begin{aligned}
+        p_d&=\operatorname{sat}_{[-p_{\max},p_{\max}]}
+            \!\left[K_\phi(\phi_d-\hat\phi)\right],\\
+        q_d&=\operatorname{sat}_{[-q_{\max},q_{\max}]}
+            \!\left[K_\theta(\theta_d-\hat\theta)\right].
+    \end{aligned}
+    \label{eq:background-angle-p}
+\end{equation}
+\end{samepage}
+Hàm $\operatorname{sat}_{[a,b]}(v)=\min\{b,\max\{a,v\}\}$ giới hạn $v$ trong đoạn $[a,b]$. Các hệ số $K_\phi$, $K_\theta$ có đơn vị $\mathrm{s^{-1}}$ khi góc tính bằng radian. Hai giới hạn $p_{\max}$, $q_{\max}$ chặn vận tốc đặt để tránh yêu cầu chuyển động quá nhanh so với khả năng hệ động lực. Khi sai lệch góc giảm, vận tốc góc đặt cũng giảm theo, giúp thân tiến dần về tư thế mong muốn.
+
+Vòng vận tốc góc cần có đáp ứng nhanh hơn vòng góc để bám được yêu cầu từ vòng ngoài. Nếu vòng trong đáp ứng chậm, sai lệch vận tốc góc kéo dài và làm thay đổi đáp ứng của vòng góc. Tốc độ của hai vòng còn chịu ảnh hưởng của chu kỳ lấy mẫu, mức lọc và đặc tính đáp ứng động cơ; tăng hệ số điều khiển riêng lẻ không bảo đảm cải thiện chất lượng toàn hệ.
+
+Tổng lực đẩy $T$ là đầu vào nền của khâu phân bổ, độc lập với hai tín hiệu hiệu chỉnh roll và pitch trong cấu trúc đang xét. Mômen yaw $\tau_z^*$ có thể đặt bằng không khi chỉ khảo sát hai kênh này. Việc giữ thân nằm ngang không đồng thời bảo đảm giữ độ cao, vì chuyển động tịnh tiến còn phụ thuộc tổng lực tác dụng lên quadrotor.
+
+\subsection{Bộ điều khiển PID vận tốc góc}
+
+Xét kênh $j\in\{x,y\}$, đặt $\nu_x=p$, $\nu_y=q$ và $e_j=\nu_{j,d}-\hat\nu_j$, trong đó chỉ số $d$ chỉ giá trị đặt và dấu mũ chỉ tín hiệu phản hồi. Một dạng PID có thành phần vi phân tác động lên tín hiệu đo được viết
+\begin{equation}
+    \tau_j^*(t)=K_{P,j}e_j(t)+I_j(t)-K_{D,j}\dot{\hat\nu}_{j,f}(t),
+    \qquad I_j(t)=K_{I,j}\int_0^t e_j(\xi)\,\mathrm d\xi.
+    \label{eq:background-rate-pid}
+\end{equation}
+Trong đó, $\tau_j^*$ là mômen yêu cầu, $I_j$ là thành phần tích phân và chỉ số $f$ chỉ tín hiệu đã lọc. Thành phần P tạo tác động theo sai lệch vận tốc góc tức thời. Thành phần I tích lũy sai lệch, qua đó có thể bù tác động kéo dài như mômen nhiễu gần không đổi. Thành phần D tác động ngược với tốc độ biến thiên của vận tốc góc phản hồi, góp phần định hình đáp ứng quá độ. Mức đóng góp của từng thành phần phụ thuộc hệ số điều khiển và động lực học của hệ kín.
+
+Lấy vi phân theo tín hiệu đo giúp tránh xung vi phân trực tiếp khi giá trị đặt thay đổi dạng bước. Tuy nhiên, phép vi phân làm tăng ảnh hưởng của nhiễu tần số cao nên thành phần D được kết hợp với bộ lọc thông thấp~\cite{astrom2021feedback}. Cách xử lý này giảm dao động lệnh do nhiễu nhưng cũng đưa thêm độ trễ vào vòng vận tốc góc.
+
+Với mômen tính bằng $\mathrm{N\,m}$ và vận tốc góc tính bằng $\mathrm{rad/s}$, đơn vị của $K_{P,j}$, $K_{I,j}$, $K_{D,j}$ lần lượt là $\mathrm{N\,m\,s/rad}$, $\mathrm{N\,m/rad}$ và $\mathrm{N\,m\,s^2/rad}$. Khi dùng dạng luật này, đầu ra PID là mômen vật lý. Nếu chương trình dùng đầu ra chuẩn hóa, quan hệ quy đổi phải giữ nhất quán giữa mômen yêu cầu và tác động đưa tới động cơ.
+
+\subsection{Rời rạc hóa và hạn chế bão hòa tích phân}
+
+Để tính toán theo chu kỳ trên vi điều khiển, các quan hệ liên tục được chuyển sang dạng rời rạc với chu kỳ $T_s$. Đạo hàm của vận tốc góc phản hồi có thể xấp xỉ bằng sai phân lùi rồi lọc thông thấp bậc nhất:
+\begin{equation}
+    d_j[k]=\beta d_j[k-1]+(1-\beta)
+        \frac{\hat\nu_j[k]-\hat\nu_j[k-1]}{T_s},
+    \qquad \beta=\frac{T_f}{T_f+T_s},
+    \label{eq:background-filtered-derivative}
+\end{equation}
+trong đó $T_f>0$ là hằng số thời gian lọc. Giá trị $T_f$ lớn làm giảm biến thiên nhanh của tín hiệu đạo hàm, đồng thời làm chậm đáp ứng của thành phần D. Chu kỳ $T_s$ trong công thức phải tương ứng với khoảng thời gian cập nhật dữ liệu; sai lệch thời gian lấy mẫu ảnh hưởng trực tiếp đến kết quả tính vi phân và tích phân.
+
+\clubpenalty=10000
+Giới hạn lực đẩy của từng rôto có thể làm hệ động lực không tạo được mômen mà PID yêu cầu. Nếu sai lệch vận tốc góc vẫn được tích lũy trong trạng thái này, thành phần I tiếp tục tăng dù tác động điều khiển không tăng tương ứng. Hiện tượng bão hòa tích phân đó có thể làm đáp ứng chậm hồi phục hoặc quá điều chỉnh sau khi lệnh trở lại miền khả thi. Để phản ánh giới hạn chung của bốn rôto, ký hiệu $\tau_{j,a}[k]$ là mômen khả dụng ước lượng từ các lệnh lực đẩy sau phân bổ và giới hạn.
+
+Mômen yêu cầu tại mẫu $k$ được tính từ trạng thái tích phân hiện có. Sau khi có thông tin mômen khả dụng, hệ số $g_j[k]$ quyết định có tiếp tục tích phân cho mẫu kế tiếp hay không:
+\begin{equation}
+    \begin{aligned}
+        \tau_j^*[k]&=K_{P,j}e_j[k]+I_j[k]-K_{D,j}d_j[k],\\
+        I_j[k+1]&=\operatorname{sat}_{[I_{j,\min},I_{j,\max}]}
+            \!\left(I_j[k]+g_j[k]K_{I,j}T_s e_j[k]\right).
+    \end{aligned}
+    \label{eq:background-discrete-pid}
+\end{equation}
+Với hệ số tích phân dương, một quy tắc tích phân có điều kiện là
+\begin{equation}
+    g_j[k]=
+    \begin{cases}
+        0,&e_j[k]\big(\tau_j^*[k]-\tau_{j,a}[k]\big)>0,\\
+        1,&\text{các trường hợp còn lại}.
+    \end{cases}
+    \label{eq:background-conditional-integration}
+\end{equation}
+Điều kiện $g_j=0$ dừng tích phân khi sai lệch đang thúc đẩy mômen yêu cầu tăng thêm về phía không thể thực hiện. Khi sai lệch có chiều làm giảm phần mômen vượt giới hạn, tích phân được cập nhật trở lại. Hai cận $I_{j,\min}$ và $I_{j,\max}$ đồng thời giới hạn biên độ trạng thái I. Đây là một cách phối hợp giới hạn cơ cấu chấp hành với bộ điều khiển để hạn chế bão hòa tích phân~\cite{astrom2021feedback}.
+% Cần bổ sung: chu kỳ điều khiển, hệ số P/PID, hằng số thời gian lọc và các giới hạn từ yêu cầu và khả năng hệ động lực.
+
+Đại lượng $\tau_{j,a}$ được suy ra từ lệnh khả thi theo mô hình lực đẩy; nó không phải mômen đo trực tiếp và còn chịu sai khác do đáp ứng động cơ, nguồn điện và sai số mô hình. Đầu ra PID mới biểu diễn yêu cầu mômen quanh các trục thân. Để tạo ra mômen đó, bốn rôto phải phối hợp thay đổi lực đẩy theo vị trí và chiều quay của chúng, đồng thời duy trì tổng lực đẩy phù hợp với điều kiện khảo sát.

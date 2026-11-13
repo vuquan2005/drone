@@ -2,5 +2,15 @@
 \chapter{CƠ SỞ LÝ THUYẾT}
 \label{chap:background}
 
-\section{[Section title]}
-\placeholder{Background content}
+Để điều khiển cân bằng quadrotor, cần xác định thân máy bay đang nghiêng như thế nào và mômen nào có thể làm giảm sai lệch đó. Mô hình động lực học mô tả quan hệ giữa mômen và chuyển động quay; cảm biến quán tính cung cấp dữ liệu để ước lượng góc và vận tốc góc. Từ các đại lượng phản hồi này, bộ điều khiển tính tác động yêu cầu, còn khâu phân bổ chuyển yêu cầu thành lệnh cho bốn động cơ. Các nội dung lý thuyết được xây dựng theo chuỗi quan hệ trên, với trọng tâm là roll và pitch gần tư thế nằm ngang. Bộ lọc bổ sung và điều khiển xếp tầng được xét như những phương án nghiên cứu, với các tham số giữ dưới dạng ký hiệu khi chưa có dữ liệu xác định.
+
+\begingroup
+\widowpenalty=10000
+\input{chapters/background/01_principle}
+\input{chapters/background/02_dynamics}
+\input{chapters/background/03_estimation}
+\input{chapters/background/04_control}
+\input{chapters/background/05_allocation}
+\input{chapters/background/06_metrics}
+\par
+\endgroup

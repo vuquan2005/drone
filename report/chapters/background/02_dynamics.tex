@@ -1,0 +1,118 @@
+% !TEX root = ../../main.tex
+\section{Mô hình động lực học của quadrotor}
+\label{sec:background-dynamics}
+
+Các rôto tạo lực đẩy và mômen, còn đáp ứng chuyển động phụ thuộc vào khối lượng và phân bố khối lượng của thân máy bay. Phương pháp Newton--Euler mô tả mối quan hệ này bằng phương trình tịnh tiến của trọng tâm và phương trình quay quanh trọng tâm. Hai chuyển động có liên hệ với nhau do hướng tổng lực đẩy phụ thuộc vào tư thế~\cite{bouabdallah2004design,chovancova2014mathematical}.
+
+\subsection{Hệ tọa độ và giả thiết mô hình hóa}
+
+Hệ tọa độ quán tính cục bộ $E$ được chọn theo quy ước Bắc--Đông--Xuống (NED), gồm các trục $x_N$, $y_E$, $z_D$. Hệ tọa độ thân $B$ có gốc tại trọng tâm, sử dụng quy ước Trước--Phải--Xuống (FRD) đã xác lập cho cấu hình rôto. Chiều quay dương tuân theo quy tắc bàn tay phải. Các góc Euler $\phi$, $\theta$, $\psi$ lần lượt là roll, pitch, yaw theo thứ tự quay $Z$--$Y$--$X$.
+
+Ma trận quay $R$ chuyển tọa độ của một vectơ từ hệ $B$ sang hệ $E$; phép chuyển ngược lại sử dụng $R^{\mathsf T}$. Đặt $c_\alpha=\cos\alpha$ và $s_\alpha=\sin\alpha$, ta có
+\begin{equation}
+    \begin{aligned}
+        R&=R_z(\psi)R_y(\theta)R_x(\phi)\\
+         &=\begin{bmatrix}
+             c_\psi c_\theta & c_\psi s_\theta s_\phi-s_\psi c_\phi & c_\psi s_\theta c_\phi+s_\psi s_\phi\\
+             s_\psi c_\theta & s_\psi s_\theta s_\phi+c_\psi c_\phi & s_\psi s_\theta c_\phi-c_\psi s_\phi\\
+             -s_\theta      & c_\theta s_\phi                       & c_\theta c_\phi
+         \end{bmatrix}.
+    \end{aligned}
+    \label{eq:background-rotation-matrix}
+\end{equation}
+
+Thân máy bay được xem là vật rắn có khối lượng $m$ không đổi. Giả thiết các trục thân trùng với các trục quán tính chính cho phép dùng ma trận mômen quán tính đường chéo. Vectơ vận tốc góc thân được ký hiệu là $\symbf{\omega}$:
+\begin{equation}
+    J=\operatorname{diag}(J_x,J_y,J_z),\qquad
+    \symbf{\omega}=\begin{bmatrix}p&q&r\end{bmatrix}^{\mathsf T}.
+    \label{eq:background-inertia-angular-velocity}
+\end{equation}
+Các đại lượng $J_x$, $J_y$, $J_z$ là mômen quán tính, tính bằng kg$\cdot$m$^2$; $p$, $q$, $r$ là các thành phần vận tốc góc quanh ba trục thân, tính bằng rad/s. Mômen quán tính phản ánh phân bố khối lượng nên hai kênh roll và pitch có thể có tham số khác nhau, ngay cả khi khung có hình dạng đối xứng. Cách đặt pin, bo mạch và các chi tiết trên thân đều ảnh hưởng đến các tham số này.
+% Cần bổ sung: khối lượng, vị trí trọng tâm và các mômen quán tính từ mô hình CAD hoặc phép đo của hệ thống thực tế.
+
+\clubpenalty=10000
+Mô hình đang xét mô tả thân máy bay không bị liên kết cơ học với bên ngoài. Khi khảo sát bằng bệ thử, lực và mômen liên kết còn phụ thuộc vào vị trí trục quay, cách gá lắp và ma sát của bệ. Những thành phần này phải được xét khi đối chiếu mô hình với đáp ứng đo trên bệ.
+
+\subsection{Phương trình chuyển động tịnh tiến}
+
+Tổng lực đẩy có độ lớn $T=\sum_{i=1}^{4}f_i$ và hướng theo $-z_B$. Gọi $\symbf{v}_E$ là vận tốc trọng tâm trong hệ $E$, $\symbf{e}_3=[0\;0\;1]^{\mathsf T}$ và $g$ là độ lớn gia tốc trọng trường. Phương trình tịnh tiến được viết:
+\begin{equation}
+    m\dot{\symbf{v}}_E
+    =mg\symbf{e}_3-TR\symbf{e}_3+\symbf{d}_F,
+    \label{eq:background-translational-dynamics}
+\end{equation}
+trong đó $\symbf{d}_F$ biểu diễn các lực ngoài chưa mô tả riêng, được tính trong hệ $E$. Trọng lực có chiều dương $z_D$, còn hướng lực đẩy được xác định bởi $-R\symbf{e}_3$. Vì thế, cùng một độ lớn $T$ nhưng tư thế khác nhau sẽ tạo các thành phần gia tốc khác nhau.
+
+Khi $\phi=\theta=0$, hướng lực đẩy thẳng đứng và điều kiện $T=mg$ cho cân bằng lực nếu $\symbf{d}_F=\symbf{0}$. Khi thân nghiêng, thành phần lực đẩy thẳng đứng giảm và xuất hiện thành phần nằm ngang. Quan hệ này giải thích vai trò của điều khiển tư thế trong việc định hướng lực đẩy, đồng thời cho thấy bài toán cân bằng quay phải được mô tả bằng phương trình mômen riêng.
+
+\subsection{Phương trình chuyển động quay}
+
+Gọi $\symbf{\tau}_c=[\tau_x\;\tau_y\;\tau_z]^{\mathsf T}$ là mômen điều khiển do hệ rôto tạo ra và $\symbf{\tau}_d=[d_x\;d_y\;d_z]^{\mathsf T}$ là mômen nhiễu tổng hợp, cùng biểu diễn trong hệ $B$. Phương trình Euler quanh trọng tâm có dạng:
+\begin{equation}
+    J\dot{\symbf{\omega}}
+    +\symbf{\omega}\times(J\symbf{\omega})
+    =\symbf{\tau}_c+\symbf{\tau}_d.
+    \label{eq:background-rotational-dynamics}
+\end{equation}
+Thành phần $J\dot{\symbf{\omega}}$ mô tả ảnh hưởng của quán tính đến gia tốc góc. Tích có hướng $\symbf{\omega}\times(J\symbf{\omega})$ xuất hiện do vectơ vận tốc góc được biểu diễn trong hệ trục đang quay cùng thân. Mômen $\symbf{\tau}_c$ gồm mômen do lực đẩy đặt lệch trọng tâm và mômen phản lực của rôto. Các ảnh hưởng chưa tách riêng như cản quay, mất cân bằng và hiệu ứng con quay của rôto được gộp vào $\symbf{\tau}_d$~\cite{bouabdallah2004design,chovancova2014mathematical}.
+
+Với ma trận $J$ đường chéo, khai triển~\eqref{eq:background-rotational-dynamics} thu được:
+\begin{equation}
+    \begin{aligned}
+        J_x\dot p&=(J_y-J_z)qr+\tau_x+d_x,\\
+        J_y\dot q&=(J_z-J_x)rp+\tau_y+d_y,\\
+        J_z\dot r&=(J_x-J_y)pq+\tau_z+d_z.
+    \end{aligned}
+    \label{eq:background-angular-dynamics-components}
+\end{equation}
+Các tích $qr$, $rp$, $pq$ thể hiện liên kết động lực học giữa ba kênh quay. Chẳng hạn, gia tốc góc roll phụ thuộc cả mômen quanh $x_B$ và chuyển động quanh hai trục còn lại. Trọng lực đi qua trọng tâm nên không trực tiếp tạo mômen trong phương trình quay quanh trọng tâm.
+
+\subsection{Quan hệ giữa vận tốc góc và góc Euler}
+
+Phương trình mômen xác định sự biến thiên của $p$, $q$, $r$, trong khi mục tiêu cân bằng được biểu diễn bằng góc tư thế. Hai nhóm đại lượng liên hệ với nhau qua phương trình động học. Với thứ tự quay $Z$--$Y$--$X$, ta có~\cite{chovancova2014mathematical}:
+\begin{equation}
+    \begin{bmatrix}\dot\phi\\\dot\theta\\\dot\psi\end{bmatrix}
+    =\begin{bmatrix}
+        1&\sin\phi\tan\theta&\cos\phi\tan\theta\\
+        0&\cos\phi&-\sin\phi\\
+        0&\dfrac{\sin\phi}{\cos\theta}&\dfrac{\cos\phi}{\cos\theta}
+    \end{bmatrix}
+    \begin{bmatrix}p\\q\\r\end{bmatrix}.
+    \label{eq:background-euler-rate-mapping}
+\end{equation}
+Như vậy, vận tốc góc theo trục thân nhìn chung không bằng đạo hàm của từng góc Euler. Sự khác biệt phụ thuộc vào tư thế hiện tại và phải được xét khi thân có góc nghiêng lớn. Biểu diễn này có điểm kỳ dị tại $\cos\theta=0$; miền khảo sát gần tư thế nằm ngang nằm xa các cấu hình kỳ dị đó.
+
+\subsection{Mô hình giản lược và hàm truyền roll, pitch}
+
+Đối với máy bay tự do không chịu lực và mômen nhiễu, trạng thái bay treo nằm ngang có $\symbf{v}_E=\symbf{0}$, $\phi=\theta=0$, $p=q=r=0$, tổng lực đẩy $T=mg$ và tổng mômen bằng không. Góc yaw có thể nhận một giá trị không đổi. Để khảo sát cân bằng roll và pitch quanh trạng thái này, xét các biến thiên góc nghiêng và vận tốc góc đủ nhỏ. Với góc tính bằng radian, các xấp xỉ bậc nhất là:
+\begin{equation}
+    \sin\phi\approx\phi,\quad \sin\theta\approx\theta,\quad
+    \cos\phi\approx\cos\theta\approx1,\qquad
+    \dot\phi\approx p,\quad\dot\theta\approx q.
+    \label{eq:background-small-angle-kinematics}
+\end{equation}
+Các tích giữa những vận tốc góc trong~\eqref{eq:background-angular-dynamics-components} và các thành phần bậc cao của quan hệ động học được bỏ qua khi tuyến tính hóa quanh trạng thái trên. Giả thiết này đồng thời giới hạn góc nghiêng và vận tốc quay; riêng góc nghiêng nhỏ không bảo đảm liên kết giữa các trục có thể bỏ qua nếu máy bay quay nhanh.
+
+Mô hình hai kênh roll và pitch khi đó có dạng:
+\begin{equation}
+    \begin{aligned}
+        J_x\ddot\phi&=\tau_x+d_x,\\
+        J_y\ddot\theta&=\tau_y+d_y.
+    \end{aligned}
+    \label{eq:background-small-angle-dynamics}
+\end{equation}
+Hai phương trình có cùng cấu trúc nhưng có thể khác mômen quán tính. Với cùng mômen tác dụng, kênh có mômen quán tính lớn hơn có gia tốc góc nhỏ hơn. Do đó, các hệ số điều khiển roll và pitch cần được xét theo tham số của từng kênh.
+
+Xét hệ danh định với $d_x=d_y=0$ và điều kiện đầu bằng không. Biến đổi Laplace cho hàm truyền từ mômen điều khiển đến góc:
+\begin{equation}
+    G_\phi(s)=\frac{\Phi(s)}{\mathcal{T}_x(s)}=\frac{1}{J_x s^2},\qquad
+    G_\theta(s)=\frac{\Theta(s)}{\mathcal{T}_y(s)}=\frac{1}{J_y s^2},
+    \label{eq:background-angle-transfer-functions}
+\end{equation}
+trong đó $\Phi(s)$, $\Theta(s)$, $\mathcal{T}_x(s)$, $\mathcal{T}_y(s)$ lần lượt là biến đổi Laplace của góc và mômen tương ứng; $s$ là biến phức. Nếu $P(s)$ và $Q(s)$ là biến đổi Laplace của $p$ và $q$, hàm truyền đến vận tốc góc là:
+\begin{equation}
+    G_p(s)=\frac{P(s)}{\mathcal{T}_x(s)}=\frac{1}{J_x s},\qquad
+    G_q(s)=\frac{Q(s)}{\mathcal{T}_y(s)}=\frac{1}{J_y s}.
+    \label{eq:background-rate-transfer-functions}
+\end{equation}
+Các hàm truyền mô tả chuyển động của thân từ mômen tác dụng, chưa bao gồm động lực học động cơ và cánh quạt. Quan hệ tích phân từ vận tốc góc đến góc cho thấy việc giữ tư thế đòi hỏi vừa hiệu chỉnh sai lệch góc, vừa hạn chế vận tốc quay. Vì vậy, góc roll, pitch và vận tốc góc thân là các đại lượng phản hồi cần xác định từ dữ liệu cảm biến quán tính.

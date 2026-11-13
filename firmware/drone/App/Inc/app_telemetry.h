@@ -5,6 +5,7 @@
 #define APP_TELEMETRY_H
 
 #include "app_imu.h"
+#include "app_receiver.h"
 #include "bsp_rtt.h"
 
 #ifndef DRONE_TELEMETRY
@@ -49,12 +50,25 @@ bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
 bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
                                            uint32_t imu_samples,
                                            uint32_t imu_read_errors);
+/** @brief Send a type 3 RC snapshot from serialized foreground context.
+ * @param sample Non-NULL snapshot; channels must fit unsigned 11-bit CRSF.
+ * @param uptime_ms HAL tick captured after obtaining sample, modulo 2^32 ms.
+ * @return BSP result; invalid input returns INVALID_ARGUMENT before preflight.
+ * Sequence counts attempts since telemetry init, including failures. One write,
+ * no retry; disconnected snapshots retain old channels. Not motor failsafe.
+ */
+bsp_rtt_result_t
+app_telemetry_write_receiver(const app_receiver_sample_t *sample,
+                             uint32_t uptime_ms);
+#define APP_TELEMETRY_RECEIVER(sample, ms)                                     \
+    ((void)app_telemetry_write_receiver(sample, ms))
 #define APP_TELEMETRY_STATS(ms, samples, errors)                               \
     ((void)app_telemetry_write_stats(ms, samples, errors))
 #define APP_TELEMETRY_IMU(sample, sequence)                                    \
     ((void)app_telemetry_write_imu(sample, sequence))
 #else
 static inline void app_telemetry_init(void) {}
+#define APP_TELEMETRY_RECEIVER(...) ((void)0)
 #define APP_TELEMETRY_STATS(...) ((void)0)
 #define APP_TELEMETRY_IMU(...) ((void)0)
 #endif

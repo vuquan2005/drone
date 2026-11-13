@@ -10,13 +10,15 @@ ST-LINK/SWD + GDB dùng để nạp, đặt breakpoint và xem biến; OpenOCD +
 | **Drone: ST-LINK GDB**   | `main`                      | Không cấu hình RTT  |
 | **Drone: OpenOCD + RTT** | `app_process`, sau init RTT | LOG 9090, DATA 9091 |
 
-Hai cấu hình dùng ELF Debug và task `firmware: build Debug`
-(`make fw-build PRESET=Debug`). Chạy từ gốc repository:
+Hai cấu hình dùng ELF Debug và build bằng `make fw-build PRESET=Debug`.
+Cấu hình OpenOCD + RTT còn tự mở viewer bằng task nền `telemetry: view`. Chạy từ gốc repository:
 
 1. Cài Cortex-Debug và OpenOCD >= 0.12 hỗ trợ ST-LINK/RTT.
 2. Chọn **Drone: OpenOCD + RTT**, nhấn F5 để build/nạp.
 3. Nhấn Continue khi dừng tại `app_process`; log hiện ở **RTT LOG (CH0)**.
-4. Chạy `make telemetry` ở terminal khác để xem đồ thị và ghi phiên.
+4. Viewer tự mở để xem IMU, RC và ghi phiên; không cần chạy `make telemetry`.
+   Sau khi dừng debug, viewer vẫn mở để xem/lưu dữ liệu và chờ nối lại.
+   Đóng cửa sổ viewer để kết thúc task.
 
 Nếu chỉ đọc RTT, đóng phiên debug sau khi nạp rồi chạy:
 
@@ -26,7 +28,7 @@ openocd -f firmware/drone/debug/rtt.cfg
 
 Cấu hình độc lập cũng mở LOG 9090 và DATA 9091. Không mở hai debug server
 cùng dùng ST-LINK. Cách đọc byte thô, cài GUI và ghi dữ liệu nằm trong
-[công cụ máy tính](../../tools/README.md#các-file-rtt).
+[công cụ máy tính](../../tools/rtt/README.md).
 
 ## Cấu hình build
 
@@ -89,7 +91,8 @@ cùng trạng thái không tạo log mỗi vòng poll.
 ### Channel 1: mẫu IMU có timestamp
 
 Mỗi mẫu đọc thành công được thử gửi một lần; NO_DATA/lỗi không gửi lại mẫu
-cũ. CH1 gồm IMU type 1 và thống kê RTT type 2 khoảng mỗi giây. Layout,
+cũ. CH1 gồm IMU type 1, thống kê RTT type 2 khoảng mỗi giây và snapshot
+RC type 3 mỗi 50 ms (16 kênh raw và trạng thái kết nối). Layout,
 đơn vị, sequence và counter nằm trong [đặc tả telemetry](../../protocol/telemetry.md).
 
 `app_imu_poll()` chụp `t_read_us` sau đọc BSP thành công, trước đổi đơn vị;

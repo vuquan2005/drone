@@ -45,8 +45,8 @@ list(FIND DRONE_LOG_LEVELS "${DRONE_LOG_LEVEL}" DRONE_LOG_LEVEL_VALUE)
 if(DRONE_LOG_LEVEL_VALUE LESS 0)
     message(FATAL_ERROR "Invalid DRONE_LOG_LEVEL: ${DRONE_LOG_LEVEL}")
 endif()
-option(DRONE_ENABLE_TELEMETRY
-       "Build binary telemetry over RTT (currently every successful IMU read)" ${DRONE_RTT_DEFAULT})
+option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry over RTT"
+       ${DRONE_RTT_DEFAULT})
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)

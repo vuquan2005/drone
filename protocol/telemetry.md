@@ -1,21 +1,21 @@
 # Telemetry binary v1
 
 CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
-đặc tả dưới đây. Cách chạy viewer và ghi phiên xem [công cụ host](../tools/README.md).
+đặc tả dưới đây. Cách chạy viewer và ghi phiên xem [công cụ host](../tools/rtt/README.md).
 
 ## Frame
 
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                             |
-| ------ | ------- | -------------- | --------------------------------------------------- |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                        |
-| 4      | 1       | version        | `1`                                                 |
-| 5      | 1       | type           | `1`: IMU; `2`: thống kê RTT                         |
-| 6      | 2       | payload_length | uint16, không tính header/CRC; IMU = 36, stats = 40 |
-| 8      | N       | payload        | Theo version và type                                |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic        |
+| Offset | Số byte | Trường         | Quy ước                                                      |
+| ------ | ------- | -------------- | ------------------------------------------------------------ |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                 |
+| 4      | 1       | version        | `1`                                                          |
+| 5      | 1       | type           | `1`: IMU; `2`: thống kê RTT; `3`: RC                         |
+| 6      | 2       | payload_length | uint16, không tính header/CRC; IMU = 36, stats = 40, RC = 48 |
+| 8      | N       | payload        | Theo version và type                                         |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                 |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -70,7 +70,7 @@ Payload 40 byte, frame 52 byte. Tất cả trường uint32 little-endian, offse
 | 8      | imu_samples       | Tổng số lần đọc IMU thành công, cũng là sequence IMU mới nhất               |
 | 12     | imu_read_errors   | Tổng lỗi đọc driver IMU; không đếm NO_DATA hoặc lỗi init                    |
 | 16     | rtt_log_full      | Bản ghi CH0 bị BSP bỏ vì đầy                                                |
-| 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU và stats                                |
+| 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU, stats và RC                            |
 | 24     | imu_tx_full       | Chỉ frame IMU bị bỏ vì đầy                                                  |
 | 28     | stats_tx_full     | Chỉ frame thống kê bị bỏ vì đầy                                             |
 | 32     | imu_tx_rejected   | IMU bị từ chối vì nguyên nhân khác FULL (kể cả dữ liệu encode không hợp lệ) |
@@ -88,11 +88,39 @@ làm mất tổng lịch sử. `rtt_data_full` không đồng nghĩa số mẫu 
 mất trên host. Khi chưa có snapshot làm baseline, chưa quy được chính xác
 counter tích lũy vào một khoảng CSV; các frame stats cũng có thể bị mất.
 
+## Receiver v1, type 3
+
+Payload 48 byte, frame 60 byte. Offset tính từ đầu payload:
+
+| Offset | Kiểu       | Tên           | Ý nghĩa                                                    |
+| ------ | ---------- | ------------- | ---------------------------------------------------------- |
+| 0      | uint32     | sequence      | Số lần thử gửi RC từ init, đầu = 1, tăng cả khi bị từ chối |
+| 4      | uint32     | uptime_ms     | HAL tick sau khi lấy snapshot RC, ms                       |
+| 8      | uint32     | last_frame_ms | HAL tick lúc nhận frame RC hợp lệ gần nhất, ms             |
+| 12     | uint32     | connected     | 0 hoặc 1; trạng thái freshness từ receiver                 |
+| 16     | uint16[16] | channels      | CH1–CH16, raw CRSF 11 bit (0–2047)                         |
+
+App thử gửi snapshot mỗi 50 ms (20 Hz, khoảng 1200 byte/s), độc lập IMU;
+không retry hoặc gửi bù. Đây là snapshot để quan sát, không ghi mọi frame RC.
+Sequence và timestamp tràn modulo 2^32. `connected` yêu cầu frame hợp lệ
+mới hơn 100 ms, và không có gián đoạn transport chưa phục hồi; không phải
+radio LQ hoặc trạng thái motor failsafe. Khi mất kết nối giữ nguyên kênh
+cũ; lúc khởi động kênh bằng 0 và connected = 0. `last_frame_ms = 0` cũng có
+thể là timestamp hợp lệ; tuổi frame chỉ có ý nghĩa sau khi đã nhận RC.
+
+Không gán sẵn roll/pitch/throttle/yaw: mapping phụ thuộc cấu hình tay điều
+khiển. Không đổi raw sang µs vì đây không phải phép đo độ rộng xung PWM.
+Viewer làm mờ kênh khi disconnected; nếu không có snapshot mới trong 0,5 s
+hoặc TCP DATA ngắt, báo telemetry stale và giữ giá trị cuối để tham khảo.
+Counter type 2 giữ schema cũ; RC làm tăng tổng `rtt_data_full` khi đầy,
+không tăng `imu_tx_full` hoặc `stats_tx_full`. Gap sequence RC trong CSV
+cho biết snapshot bị thiếu, không đo số frame UART/radio mất.
+
 ## Mã nguồn và kiểm thử
 
 - Encoder: `firmware/drone/App/Src/app_telemetry.c`; API `app_telemetry_write_imu()`, compile option `DRONE_ENABLE_TELEMETRY`.
 - Framing và decoder: `tools/rtt/records.py`; không phụ thuộc UI.
-- Fixture chung: [IMU](fixtures/imu_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex).
+- Fixture chung: [IMU](fixtures/imu_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
   Test C so output byte-for-byte; Python kiểm tra framing, CRC và giá trị
   trường theo cùng fixture.
 

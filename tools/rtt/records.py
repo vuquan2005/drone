@@ -49,7 +49,15 @@ RTT_STATS_FIELDS = (
     "imu_tx_rejected",
     "stats_tx_rejected",
 )
-KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size}
+RC = struct.Struct("<4I16H")
+RC_FIELDS = (
+    "sequence",
+    "uptime_ms",
+    "last_frame_ms",
+    "connected",
+    *(f"ch{i}_raw" for i in range(1, 17)),
+)
+KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size, 3: RC.size}
 MAX_PAYLOAD = 256
 
 

@@ -3,9 +3,11 @@
 enum { IMU_FRAME_BYTES = 48U, STATS_FRAME_BYTES = 52U };
 
 static uint32_t stats_sequence;
+static uint32_t receiver_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
 
 void app_telemetry_init(void) {
+    receiver_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
 }
 
@@ -111,4 +113,33 @@ bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
     }
     put_u32(frame + 48U, crc32(frame, 48U));
     return track_stats(bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame)));
+}
+
+bsp_rtt_result_t
+app_telemetry_write_receiver(const app_receiver_sample_t *sample,
+                             uint32_t uptime_ms) {
+    const uint32_t sequence = ++receiver_sequence;
+    if (sample == NULL) {
+        return BSP_RTT_INVALID_ARGUMENT;
+    }
+    for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; ++i) {
+        if (sample->channels[i] > 2047U) {
+            return BSP_RTT_INVALID_ARGUMENT;
+        }
+    }
+    bsp_rtt_result_t ready = bsp_rtt_prepare_write(BSP_RTT_DATA, 60U);
+    if (ready != BSP_RTT_OK) {
+        return ready;
+    }
+    uint8_t frame[60] = {'D', 'R', 'T', '!', 1U, 3U, 48U, 0U};
+    put_u32(frame + 8U, sequence);
+    put_u32(frame + 12U, uptime_ms);
+    put_u32(frame + 16U, sample->last_frame_ms);
+    put_u32(frame + 20U, sample->connected ? 1U : 0U);
+    for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; ++i) {
+        frame[24U + 2U * i] = (uint8_t)sample->channels[i];
+        frame[25U + 2U * i] = (uint8_t)(sample->channels[i] >> 8U);
+    }
+    put_u32(frame + 56U, crc32(frame, 56U));
+    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }

@@ -61,25 +61,25 @@ class ViewerTests(unittest.TestCase):
             # Pump the partial record before sending its suffix.
             for _ in range(5):
                 app.processEvents()
-            self.assertEqual(viewer.series.received, 0)
+            self.assertEqual(viewer.telemetry.series.received, 0)
             peers[1].write(packet()[23:] + packet(3, 6000))
-            until(lambda: viewer.series.received == 2 and len(viewer.logs) == 2)
+            until(lambda: viewer.telemetry.series.received == 2 and len(viewer.log_panel.logs) == 2)
             viewer.refresh()
-            self.assertEqual(viewer.series.missing, 1)
-            self.assertEqual(len(viewer.curves[0][0].getData()[0]), 3)
-            viewer.level.setCurrentText("E")
-            self.assertIn("lost", viewer.log_view.toPlainText())
-            self.assertNotIn("init", viewer.log_view.toPlainText())
-            viewer.tag.setText("imu")
-            self.assertEqual(viewer.log_view.toPlainText(), "")
-            viewer.tag.clear()
+            self.assertEqual(viewer.telemetry.series.missing, 1)
+            self.assertEqual(len(viewer.imu_panel.curves[0][0].getData()[0]), 3)
+            viewer.log_panel.level.setCurrentText("E")
+            self.assertIn("lost", viewer.log_panel.log_view.toPlainText())
+            self.assertNotIn("init", viewer.log_panel.log_view.toPlainText())
+            viewer.log_panel.tag.setText("imu")
+            self.assertEqual(viewer.log_panel.log_view.toPlainText(), "")
+            viewer.log_panel.tag.clear()
             peers[1].disconnectFromHost()
             until(lambda: servers[1].hasPendingConnections())
             peers.append(servers[1].nextPendingConnection())
             peers[-1].write(packet(100, 100000))
-            until(lambda: viewer.series.received == 3)
-            self.assertEqual(viewer.series.missing, 1)
-            self.assertEqual(viewer.series.points[-1][0], 0)
+            until(lambda: viewer.telemetry.series.received == 3)
+            self.assertEqual(viewer.telemetry.series.missing, 1)
+            self.assertEqual(viewer.telemetry.series.points[-1][0], 0)
             burst = b"".join(
                 packet(
                     101 + i,
@@ -99,16 +99,46 @@ class ViewerTests(unittest.TestCase):
             stats_frame = struct.pack("<4sBBH", b"DRT!", 1, 2, len(stats_payload)) + stats_payload
             stats_frame += struct.pack("<I", zlib.crc32(stats_frame))
             peers[-1].write(burst + stats_frame)
-            until(lambda: viewer.series.received == 4003 and viewer.stats_received == 1)
+            until(
+                lambda: viewer.telemetry.series.received == 4003
+                and viewer.telemetry.stats_received == 1
+            )
             viewer.refresh()
-            self.assertEqual(viewer.series.unknown, 0)
+            self.assertEqual(viewer.telemetry.series.unknown, 0)
             self.assertIn("IMU=225", viewer.mcu_stats.text())
             self.assertIn("errors 7", viewer.mcu_stats.text())
-            self.assertEqual(viewer.series.missing, 1)
-            self.assertLessEqual(len(viewer.series.points), 4001)
+            self.assertEqual(viewer.telemetry.series.missing, 1)
+            self.assertLessEqual(len(viewer.telemetry.series.points), 4001)
+            rc_frame = bytes.fromhex(
+                (Path(__file__).resolve().parents[2] / "protocol/fixtures/rc_v1.hex").read_text()
+            )
+            peers[-1].write(rc_frame[:19])
+            peers[-1].flush()
+            for _ in range(5):
+                app.processEvents()
+            self.assertIsNone(viewer.telemetry.latest_rc)
+            peers[-1].write(rc_frame[19:])
+            until(lambda: viewer.telemetry.latest_rc is not None)
+            viewer.refresh()
+            self.assertIn("RC: connected", viewer.receiver_panel.rc_status.text())
+            self.assertEqual(viewer.receiver_panel.rc_bars[2].value(), 1811)
+            self.assertEqual(viewer.telemetry.series.unknown, 0)
+            viewer.on_data(
+                (1, 3, struct.pack("<4I16H", 2, 1334, 1224, 0, *viewer.telemetry.latest_rc[4:]))
+            )
+            viewer.refresh()
+            self.assertIn("RC: disconnected", viewer.receiver_panel.rc_status.text())
+            self.assertFalse(viewer.receiver_panel.rc_bars[0].isEnabled())
+            self.assertEqual(viewer.receiver_panel.rc_bars[0].value(), 172)
+            viewer.telemetry.rc_received_at -= 1
+            viewer.refresh()
+            self.assertIn("telemetry stale", viewer.receiver_panel.rc_status.text())
+            invalid_before = viewer.telemetry.series.invalid
+            viewer.on_data((1, 3, struct.pack("<4I16H", 3, 1384, 1224, 2, *([0] * 16))))
+            self.assertEqual(viewer.telemetry.series.invalid, invalid_before + 1)
             peers[0].write(b"[3][I][imu] filtered but saved\n")
-            until(lambda: len(viewer.logs) == 3)
-            self.assertNotIn("filtered but saved", viewer.log_view.toPlainText())
+            until(lambda: len(viewer.log_panel.logs) == 3)
+            self.assertNotIn("filtered but saved", viewer.log_panel.log_view.toPlainText())
             viewer.toggle_recording()
             until(lambda: viewer.writer.done.is_set())
             self.assertIsNone(viewer.writer.error)
@@ -123,23 +153,30 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(
                 stats_rows[1][1:], ["1", "11000", "4003", "7", "2", "226", "225", "1", "0", "0"]
             )
+            with next(directory.glob("rc_*.csv")).open(newline="") as file:
+                rc_rows = list(csv.reader(file))
+            self.assertEqual(len(rc_rows), 3)
+            self.assertEqual(rc_rows[1][1:5], ["1", "1234", "1224", "1"])
+            self.assertEqual(rc_rows[2][4], "0")
             self.assertNotEqual(rows[1][0], rows[3][0])
             self.assertIn("filtered but saved", next(directory.glob("events_*.log")).read_text())
             self.assertGreater(
                 len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 48
             )
-            viewer.level.setCurrentText("All")
+            viewer.log_panel.level.setCurrentText("All")
             viewer.refresh()
             image_path = os.environ.get("RTT_TEST_SCREENSHOT")
             if image_path:
+                viewer.findChild(QtWidgets.QTabWidget).setCurrentIndex(1)
+                app.processEvents()
                 viewer.grab().save(image_path)
-            old_segment = viewer.segment
+            old_segment = viewer.telemetry.segment
             viewer.on_data((1, 2, struct.pack("<10I", 1, 100, *([0] * 8))))
-            self.assertEqual(viewer.segment, old_segment + 1)
+            self.assertEqual(viewer.telemetry.segment, old_segment + 1)
             viewer.on_data((1, 2, struct.pack("<10I", 2**32 - 1, 2**32 - 100, *([0] * 8))))
-            old_segment = viewer.segment
+            old_segment = viewer.telemetry.segment
             viewer.on_data((1, 2, struct.pack("<10I", 0, 100, *([0] * 8))))
-            self.assertEqual(viewer.segment, old_segment)  # Natural uint32 wrap.
+            self.assertEqual(viewer.telemetry.segment, old_segment)  # Natural uint32 wrap.
             viewer.toggle_recording()
             viewer.on_log(b"[4][W][test] flush on close")
             viewer.close()

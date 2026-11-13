@@ -37,6 +37,7 @@ class SessionWriterTests(unittest.TestCase):
                 {
                     f"imu_{stamp}.csv",
                     f"rtt_stats_{stamp}.csv",
+                    f"rc_{stamp}.csv",
                     f"events_{stamp}.log",
                     f"data_{stamp}.hex",
                 },
@@ -110,7 +111,9 @@ class SessionWriterTests(unittest.TestCase):
                 self.assertTrue(entered.wait(2))
                 self.assertTrue(writer.submit("log", b"second\n"))
                 self.assertFalse(writer.submit("csv", (1,) * 10))
-                self.assertEqual(writer.dropped, {"csv": 1, "stats": 0, "log": 0, "raw": 0})
+                self.assertEqual(
+                    writer.dropped, {"csv": 1, "stats": 0, "rc": 0, "log": 0, "raw": 0}
+                )
             finally:
                 release.set()
                 self.finish(writer)

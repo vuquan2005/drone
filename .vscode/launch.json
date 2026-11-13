@@ -35,7 +35,7 @@
       "request": "launch",
       "cwd": "${workspaceFolder}",
       "executable": "${workspaceFolder}/firmware/drone/build/Debug/drone.elf",
-      "preLaunchTask": "firmware: build Debug",
+      "preLaunchTask": "firmware: build Debug + telemetry",
       "servertype": "openocd",
       "configFiles": [
         "interface/stlink.cfg",

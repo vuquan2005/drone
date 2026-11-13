@@ -14,6 +14,43 @@
         "isDefault": true
       },
       "problemMatcher": []
+    },
+    {
+      "label": "telemetry: view",
+      "type": "process",
+      "command": "make",
+      "args": ["telemetry"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "telemetry",
+        "pattern": {
+          "regexp": "^(.*):(\\d+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^RTT viewer starting$",
+          "endsPattern": "^RTT viewer ready$"
+        }
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "firmware: build Debug + telemetry",
+      "dependsOrder": "sequence",
+      "dependsOn": ["firmware: build Debug", "telemetry: view"],
+      "problemMatcher": []
     }
   ]
 }

@@ -8,7 +8,7 @@ import unittest
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from records import Frames, ImuSeries, Lines, RTT_STATS, RTT_STATS_FIELDS
+from records import Frames, ImuSeries, Lines, RTT_STATS, RTT_STATS_FIELDS, RC
 
 
 def record(seq=1, stamp=1000, sensor=42, axes=(1000, -2000, 9800, 100, -200, 300)):
@@ -60,6 +60,21 @@ class RecordTests(unittest.TestCase):
         bad[6] = 39
         self.assertEqual(list(Frames().feed(bad + raw)), [(1, 2, RTT_STATS.pack(*values))])
 
+    def test_shared_rc_fixture_and_mixed_stream(self):
+        raw = bytes.fromhex(
+            (Path(__file__).resolve().parents[2] / "protocol/fixtures/rc_v1.hex").read_text()
+        )
+        values = (1, 1234, 1224, 1, 172, 992, 1811, 2047, *([0] * 12))
+        self.assertEqual(len(raw), 60)
+        for offset in range(len(raw) + 1):
+            framing = Frames()
+            frames = list(framing.feed(raw[:offset])) + list(framing.feed(raw[offset:]))
+            self.assertEqual(frames, [(1, 3, RC.pack(*values))])
+        self.assertEqual([f[1] for f in Frames().feed(packet() + raw + packet(2))], [1, 3, 1])
+        bad = bytearray(raw)
+        bad[6] = 47
+        self.assertEqual(list(Frames().feed(bad + raw)), [(1, 3, RC.pack(*values))])
+
     def test_binary_fragmentation_and_midstream_join(self):
         raw = packet()
         for split in range(len(raw) + 1):
@@ -91,7 +106,7 @@ class RecordTests(unittest.TestCase):
         list(framing.feed(b"x" * 100000))
         self.assertLessEqual(len(framing.pending), 3)
         # Unsupported types/versions are framed correctly and counted separately.
-        for version, kind in ((1, 3), (2, 1)):
+        for version, kind in ((1, 99), (2, 1)):
             unknown = struct.pack("<4sBBH", b"DRT!", version, kind, 0)
             unknown += struct.pack("<I", zlib.crc32(unknown))
             series = ImuSeries()

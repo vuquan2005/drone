@@ -7,7 +7,7 @@ from queue import Empty, Full, Queue
 from threading import Event, Thread
 import time
 
-from records import RTT_STATS_FIELDS
+from records import RTT_STATS_FIELDS, RC_FIELDS
 
 COLUMNS = (
     "segment",
@@ -24,6 +24,7 @@ COLUMNS = (
 
 
 STATS_COLUMNS = ("segment", *RTT_STATS_FIELDS)
+RC_COLUMNS = ("segment", *RC_FIELDS)
 
 
 class SessionWriter:
@@ -57,11 +58,16 @@ class SessionWriter:
             self.files["stats"] = (self.directory / f"rtt_stats_{stamp}.csv").open(
                 "x", newline="", encoding="utf-8"
             )
+            self.files["rc"] = (self.directory / f"rc_{stamp}.csv").open(
+                "x", newline="", encoding="utf-8"
+            )
             self.files["log"] = (self.directory / f"events_{stamp}.log").open("xb")
             if raw:
                 self.files["raw"] = (self.directory / f"data_{stamp}.hex").open("xb")
-            self.csv_writers = {kind: csv.writer(self.files[kind]) for kind in ("csv", "stats")}
-            for kind, columns in (("csv", COLUMNS), ("stats", STATS_COLUMNS)):
+            self.csv_writers = {
+                kind: csv.writer(self.files[kind]) for kind in ("csv", "stats", "rc")
+            }
+            for kind, columns in (("csv", COLUMNS), ("stats", STATS_COLUMNS), ("rc", RC_COLUMNS)):
                 self.csv_writers[kind].writerow(columns)
                 self.files[kind].flush()
         except OSError:
@@ -74,7 +80,7 @@ class SessionWriter:
         self.error = None
         self.accepted = 0
         self.processed = 0
-        self.dropped = dict.fromkeys(("csv", "stats", "log", "raw"), 0)
+        self.dropped = dict.fromkeys(("csv", "stats", "rc", "log", "raw"), 0)
         self.thread = Thread(target=self._run, name="telemetry-writer", daemon=True)
         self.thread.start()
 

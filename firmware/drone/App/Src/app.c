@@ -12,6 +12,7 @@ static app_imu_t imu;
 static bool pwm_ready;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
+static uint32_t last_receiver_ms;
 #endif
 
 #if DRONE_RTT && DRONE_LOG_LEVEL > APP_LOG_LEVEL_OFF
@@ -56,6 +57,7 @@ void app_init(void) {
     app_receiver_init();
 #if DRONE_RTT && DRONE_TELEMETRY
     last_stats_ms = HAL_GetTick();
+    last_receiver_ms = last_stats_ms;
 #endif
 }
 
@@ -70,6 +72,13 @@ void app_process(void) {
     }
 #if DRONE_RTT && DRONE_TELEMETRY
     const uint32_t now = HAL_GetTick();
+    if ((uint32_t)(now - last_receiver_ms) >= 50U) {
+        last_receiver_ms = now;
+        app_receiver_sample_t sample;
+        if (app_receiver_get_sample(&sample)) {
+            APP_TELEMETRY_RECEIVER(&sample, HAL_GetTick());
+        }
+    }
     if ((uint32_t)(now - last_stats_ms) >= 1000U) {
         last_stats_ms = now;
         APP_TELEMETRY_STATS(now, imu.sample_count, imu.read_error_count);

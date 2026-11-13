@@ -47,6 +47,18 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
 }
 void app_receiver_init(void) {}
 void app_receiver_poll(void) {}
+static bool receiver_test_enabled;
+bool app_receiver_get_sample(app_receiver_sample_t *sample) {
+    if (!receiver_test_enabled) {
+        return false;
+    }
+    memset(sample, 0, sizeof(*sample));
+    sample->channels[0] = 172U;
+    sample->channels[15] = 1811U;
+    sample->last_frame_ms = tick - 10U;
+    sample->connected = true;
+    return true;
+}
 static unsigned drain(unsigned channel, char *output) {
     SEGGER_RTT_BUFFER_UP *ring = &_SEGGER_RTT.aUp[channel];
     unsigned count = 0;
@@ -128,6 +140,20 @@ int main(void) {
     tick = 499U;
     app_process();
     assert(drain(1U, output) == 52U); /* Scheduling survives HAL tick wrap. */
+    receiver_test_enabled = true;
+    tick = 548U;
+    app_process();
+    assert(drain(1U, output) == 0U);
+    tick = 549U;
+    app_process();
+    assert(drain(1U, output) == 60U);
+    assert((uint8_t)output[5] == 3U);
+    assert(get_u32(output + 8U) == 1U);
+    assert(get_u32(output + 12U) == 549U);
+    assert(get_u32(output + 16U) == 539U);
+    assert(get_u32(output + 20U) == 1U);
+    app_process();
+    assert(drain(1U, output) == 0U);
     puts("App log/trace integration tests passed");
     return 0;
 }

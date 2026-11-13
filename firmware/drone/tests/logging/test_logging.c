@@ -159,6 +159,29 @@ static void enabled_tests(void) {
     assert(get_u32(output + 32U) == 1U); /* IMU full only. */
     assert(get_u32(output + 36U) == 1U); /* Stats full only. */
     assert(get_u32(output + 40U) == 1U); /* Invalid IMU, not a full drop. */
+    bsp_rtt_init();
+    app_telemetry_init();
+    app_receiver_sample_t rc = {.channels = {172U, 992U, 1811U, 2047U},
+                                .last_frame_ms = 1224U,
+                                .connected = true};
+    assert(app_telemetry_write_receiver(&rc, 1234U) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 60U);
+    check_fixture(output, 60U, RC_FIXTURE_PATH);
+    assert(app_telemetry_write_receiver(NULL, 1234U) ==
+           BSP_RTT_INVALID_ARGUMENT);
+    rc.channels[15] = 2048U;
+    assert(app_telemetry_write_receiver(&rc, 1234U) ==
+           BSP_RTT_INVALID_ARGUMENT);
+    rc.channels[15] = 0U;
+    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
+    assert(app_telemetry_write_receiver(&rc, 1234U) == BSP_RTT_FULL);
+    drain(BSP_RTT_DATA, output, sizeof(output));
+    rc.connected = false;
+    assert(app_telemetry_write_receiver(&rc, 1334U) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 60U);
+    assert(get_u32(output + 8U) == 5U);
+    assert(get_u32(output + 20U) == 0U);
+    assert((uint8_t)output[24U] == 172U); /* Keep old channels on disconnect. */
     app_log_init(NULL);
     assert(app_log_write(1U, "imu", "no clock") == BSP_RTT_NOT_INITIALIZED);
 }
@@ -178,6 +201,7 @@ int main(void) {
     APP_LOG_INFO("imu", "%d", ++effects);
     APP_LOG_DEBUG("imu", "%d", ++effects);
     APP_TELEMETRY_IMU(NULL, ++effects);
+    APP_TELEMETRY_RECEIVER(NULL, ++effects);
     assert(effects == 0 && clock_calls == 0U);
 #endif
     puts("logging tests passed");

@@ -64,7 +64,8 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library
 # Add user sources to executable when needed:
 target_sources(
     ${CMAKE_PROJECT_NAME}
-    PRIVATE Drivers/BMI270/bmi2.c
+    PRIVATE Control/Src/mixer.c
+            Drivers/BMI270/bmi2.c
             Drivers/BMI270/bmi270.c
             BSP/Src/bsp_bmi270.c
             BSP/Src/bsp_board.c
@@ -81,7 +82,7 @@ target_sources(
 target_include_directories(
     ${CMAKE_PROJECT_NAME}
     PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BMI270 ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc
-            ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc)
+            ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc ${CMAKE_CURRENT_SOURCE_DIR}/Control/Inc)
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RTT=$<BOOL:${DRONE_ENABLE_RTT}>)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_LOG_LEVEL=${DRONE_LOG_LEVEL_VALUE})

@@ -28,8 +28,12 @@ endforeach()
 
 add_executable(
     app_logging_tests
-    test_app.c ${FIRMWARE_ROOT}/App/Src/app.c ${FIRMWARE_ROOT}/App/Src/app_log.c
-    ${FIRMWARE_ROOT}/App/Src/app_telemetry.c ${FIRMWARE_ROOT}/BSP/Src/bsp_rtt.c
+    test_app.c
+    ${FIRMWARE_ROOT}/App/Src/app.c
+    ${FIRMWARE_ROOT}/App/Src/app_motor.c
+    ${FIRMWARE_ROOT}/App/Src/app_log.c
+    ${FIRMWARE_ROOT}/App/Src/app_telemetry.c
+    ${FIRMWARE_ROOT}/BSP/Src/bsp_rtt.c
     ${FIRMWARE_ROOT}/Drivers/RTT/SEGGER_RTT.c)
 target_include_directories(
     app_logging_tests PRIVATE mocks ../imu/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/BSP/Inc

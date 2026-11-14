@@ -1,6 +1,8 @@
+#include "app_motor.h"
 #include "bsp_pwm.h"
 #include "stm32f1xx_hal.h"
 #include <assert.h>
+#include <math.h>
 #include <stddef.h>
 
 /* Use the real HAL register macros with RAM standing in for TIM4 registers.
@@ -99,5 +101,35 @@ int main(void) {
         assert(enabled == 15);
     }
     bsp_pwm_stop();
+    const float commands[] = {0.0f, 0.25f, 0.75f, 1.0f};
+    assert(!app_motor_set_all(commands));
+    assert(app_motor_init());
+    assert_pulses(minimum);
+    assert(app_motor_set_all(commands));
+    assert_pulses(widths);
+    assert(!app_motor_set_all(NULL));
+    const float invalid_values[] = {-0.001f, 1.001f, NAN, INFINITY, -INFINITY};
+    for (unsigned i = 0; i < APP_MOTOR_COUNT; ++i) {
+        for (unsigned j = 0;
+             j < sizeof(invalid_values) / sizeof(invalid_values[0]); ++j) {
+            float invalid[] = {0.5f, 0.5f, 0.5f, 0.5f};
+            invalid[i] = invalid_values[j];
+            assert(!app_motor_set_all(invalid));
+            assert_pulses(widths);
+        }
+    }
+    const float fractional[] = {0.5004f, 0.5006f, 0.0f, 1.0f};
+    const uint16_t rounded[] = {1500, 1501, 1000, 2000};
+    assert(app_motor_set_all(fractional));
+    assert_pulses(rounded);
+    assert(app_motor_init());
+    assert_pulses(minimum);
+    app_motor_stop();
+    assert(enabled == 0);
+    assert(!app_motor_set_all(commands));
+    fail_channel = TIM_CHANNEL_3;
+    assert(!app_motor_init());
+    assert(enabled == 0);
+    assert(!app_motor_set_all(commands));
     return 0;
 }

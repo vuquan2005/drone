@@ -4,8 +4,9 @@ set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 enable_testing()
 set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
-add_executable(pwm_tests test_pwm.c ${FIRMWARE_ROOT}/BSP/Src/bsp_pwm.c)
-target_include_directories(pwm_tests PRIVATE ${FIRMWARE_ROOT}/BSP/Inc)
+add_executable(pwm_tests test_pwm.c ${FIRMWARE_ROOT}/BSP/Src/bsp_pwm.c
+                         ${FIRMWARE_ROOT}/App/Src/app_motor.c)
+target_include_directories(pwm_tests PRIVATE ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/App/Inc)
 target_include_directories(
     pwm_tests SYSTEM
     PRIVATE ${FIRMWARE_ROOT}/Core/Inc ${FIRMWARE_ROOT}/Drivers/STM32F1xx_HAL_Driver/Inc

@@ -34,8 +34,13 @@ khởi động debugger trong suốt thời gian viewer chạy.
 | `session_writer.py`     | Worker ghi CSV, log và raw tùy chọn                                                  |
 
 LOG channel 0 dùng port 9090; DATA channel 1 dùng port 9091 trong cả launch
-VS Code và OpenOCD độc lập. Terminal LOG của extension dùng port động riêng.
-CH1 dùng [telemetry binary v1](../../protocol/telemetry.md).
+VS Code và OpenOCD độc lập. GUI hiển thị cả log và plot; không mở thêm terminal
+RTT của extension. CH1 dùng [telemetry binary v1](../../protocol/telemetry.md).
+
+Launch giữ RTT setup của Cortex-Debug với danh sách decoder rỗng. Vì không còn
+terminal decoder để kích hoạt retry của extension, OpenOCD thử `rtt start` khi
+CPU halt, gồm điểm dừng `app_process` sau khởi tạo RTT. Giữ `runToEntryPoint`
+này để khởi động luồng dữ liệu trước khi Continue.
 
 Đọc thô không cần nhóm GUI:
 

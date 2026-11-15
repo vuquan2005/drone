@@ -1,8 +1,8 @@
 # Firmware drone
 
 Project STM32F103VET6 này hiện có khung ứng dụng và đọc BMI270;
-nhận RC qua CRSF và xuất PWM ESC qua TIM4; mixer, điều khiển motor từ RC
-và arm/failsafe chưa triển khai.
+nhận RC qua CRSF và xuất PWM ESC qua TIM4. Mixer Quad X độc lập HAL đã có
+trong `Control/`; điều khiển motor từ RC và arm/failsafe chưa triển khai.
 
 ## Kiến trúc cơ bản
 
@@ -17,7 +17,7 @@ Luồng gọi hiện tại: `Core/main` → `App` → `BSP` → driver → callb
 | `BSP/`                         | Ánh xạ board, SPI/CS, delay và tích hợp driver với HAL                   |
 | `Drivers/`                     | Sensor API, STM32 HAL và CMSIS                                           |
 | `tests/`                       | Kiểm thử trên máy tính, HAL mô phỏng tách khỏi firmware                  |
-| `Control/` (dự kiến)           | Lọc, quaternion, estimator, PID, allocator và mô hình motor; độc lập HAL |
+| `Control/`                     | Lọc, quaternion, estimator, PID, allocator và mô hình motor; độc lập HAL |
 
 Giữ `app.c` làm nơi điều phối; thuật toán tính toán nhận mẫu, trạng thái và
 `dt` qua API, không phụ thuộc HAL/Bosch. BSP không gọi ngược App hoặc chứa

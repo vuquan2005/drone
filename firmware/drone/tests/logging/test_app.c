@@ -19,6 +19,12 @@ bool bsp_pwm_init(void) {
     pwm_starts++;
     return true;
 }
+bool bsp_pwm_set_all_us(const uint16_t pulse_us[BSP_PWM_CHANNEL_COUNT]) {
+    (void)pulse_us;
+    assert(false && "App must not command motors from its polling loop yet");
+    return false;
+}
+void bsp_pwm_stop(void) {}
 const bsp_bmi270_config_t *bsp_board_imu_config(void) {
     static const bsp_bmi270_config_t config = {.timeout_ms = 100U};
     return &config;

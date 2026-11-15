@@ -15,7 +15,7 @@
   chạy ERC khi có KiCad CLI. Thay đổi PCB cần kiểm tra DRC theo phạm vi sửa.
   Báo riêng kết quả phần mềm và phần chưa đo kiểm trên phần cứng.
 
-- Với Drone_Direct_Wire, chỉ duy trì thư viện tại thư mục `symbols/` của dự án;
+- Với Quadrotor_Wiring, chỉ duy trì thư viện tại thư mục `symbols/` của dự án;
   không tạo bộ thư viện trùng ở thư mục khác. Script dựng sơ đồ
   phải đọc thư viện và giữ nguyên `sym-lib-table`.
 

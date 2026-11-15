@@ -3157,7 +3157,6 @@
 		(at 317.5 65.89 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3168,7 +3167,6 @@
 		(at 64.77 184.5 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3179,7 +3177,6 @@
 		(at 386.334 31.242 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 1.8 1.8)
 			)
 		)
@@ -3190,7 +3187,6 @@
 		(at 386.08 158.496 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 1.8 1.8)
 			)
 		)
@@ -3201,7 +3197,6 @@
 		(at 385.826 116.84 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 1.8 1.8)
 			)
 		)
@@ -3212,7 +3207,6 @@
 		(at 317.5 107.8 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3223,7 +3217,6 @@
 		(at 17.272 16.764 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 4.572 4.572)
 			)
 			(justify left top)
@@ -3235,7 +3228,6 @@
 		(at 317.5 149.71 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3257,7 +3249,6 @@
 		(at 317.5 23.98 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3268,7 +3259,6 @@
 		(at 289 228.5 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3279,7 +3269,6 @@
 		(at 250.952 16.256 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 4.572 4.572)
 			)
 			(justify left top)
@@ -3291,7 +3280,6 @@
 		(at 201.93 184.5 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3302,7 +3290,6 @@
 		(at 346.71 208.02 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2 2)
 			)
 		)
@@ -3313,7 +3300,6 @@
 		(at 125.73 34 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 2.2 2.2)
 			)
 		)
@@ -3324,7 +3310,6 @@
 		(at 385.826 74.676 0)
 		(effects
 			(font
-				(face "Times New Roman")
 				(size 1.8 1.8)
 			)
 		)
@@ -4992,7 +4977,7 @@
 			(uuid "7d2a8ab3-a1f9-5870-bebc-f779127cac44")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "#FLG01")
 					(unit 1)
@@ -5017,7 +5002,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -5097,7 +5081,7 @@
 			(uuid "10b52079-3162-5506-aba3-3c7921260fac")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U1")
 					(unit 1)
@@ -5122,7 +5106,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -5181,7 +5164,7 @@
 			(uuid "5eec3790-13af-558b-a558-de73fa21b97e")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "M2")
 					(unit 1)
@@ -5206,7 +5189,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -5265,7 +5247,7 @@
 			(uuid "8e1355b0-172e-5842-90ff-137bd9210da4")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "M3")
 					(unit 1)
@@ -5290,7 +5272,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -5352,7 +5333,7 @@
 			(uuid "a5978321-f8fd-5117-9971-94038088b4f4")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U2")
 					(unit 1)
@@ -5377,7 +5358,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -5451,7 +5431,7 @@
 			(uuid "c74278ad-1f20-5601-9e1c-ebcad32fca24")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U3")
 					(unit 1)
@@ -5529,7 +5509,7 @@
 			(uuid "2da277c5-e67b-5977-bcc0-770de1cb4b34")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "#FLG02")
 					(unit 1)
@@ -5554,7 +5534,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -5610,7 +5589,7 @@
 			(uuid "b1d3fc79-301b-5bd9-8450-ae09ba223b0f")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "BT1")
 					(unit 1)
@@ -5635,7 +5614,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -5979,7 +5957,7 @@
 			(uuid "97c96bbc-e3ce-54cb-95ee-c0a45fffeaa2")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "A1")
 					(unit 1)
@@ -6004,7 +5982,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -6078,7 +6055,7 @@
 			(uuid "e4db1129-7716-5d6a-881e-0bd0111415a1")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U5")
 					(unit 1)
@@ -6103,7 +6080,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -6177,7 +6153,7 @@
 			(uuid "d0af0a35-2b13-54c1-acce-6bdca2857d4a")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U6")
 					(unit 1)
@@ -6202,7 +6178,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -6261,7 +6236,7 @@
 			(uuid "589dc169-3ddf-58e4-9dcf-bd616d9adae5")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "M1")
 					(unit 1)
@@ -6286,7 +6261,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -6345,7 +6319,7 @@
 			(uuid "0c0fc254-7b7f-5079-83f2-bd5bd61c0278")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "M4")
 					(unit 1)
@@ -6370,7 +6344,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -6432,7 +6405,7 @@
 			(uuid "2d7556c6-c1d2-5f48-9ad8-53da712c3756")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U7")
 					(unit 1)
@@ -6457,7 +6430,6 @@
 			(do_not_autoplace no)
 			(effects
 				(font
-					(face "Times New Roman")
 					(size 1.5 1.5)
 				)
 			)
@@ -6531,7 +6503,7 @@
 			(uuid "319929f0-220b-5d49-a432-dfa0e3312439")
 		)
 		(instances
-			(project "Drone_Direct_Wire"
+			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U4")
 					(unit 1)

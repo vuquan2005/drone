@@ -37,6 +37,7 @@
       "executable": "${workspaceFolder}/firmware/drone/build/Debug/drone.elf",
       "preLaunchTask": "firmware: build Debug + telemetry",
       "servertype": "openocd",
+      "showDevDebugOutput": "raw",
       "configFiles": [
         "interface/stlink.cfg",
         "target/stm32f1x.cfg"
@@ -48,8 +49,16 @@
         "cortex_m reset_config sysresetreq"
       ],
       "postLaunchCommands": [
+        "set {unsigned int}0xe000ed08 = 0x08000000",
+        "set $sp = *(unsigned int *)0x08000000",
+        "set $pc = (*(unsigned int *)0x08000004) & 0xfffffffe",
         "monitor rtt server start 9090 0",
         "monitor rtt server start 9091 1"
+      ],
+      "postRestartCommands": [
+        "set {unsigned int}0xe000ed08 = 0x08000000",
+        "set $sp = *(unsigned int *)0x08000000",
+        "set $pc = (*(unsigned int *)0x08000004) & 0xfffffffe"
       ],
       "runToEntryPoint": "app_process",
       "liveWatch": {

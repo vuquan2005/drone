@@ -52,6 +52,7 @@
         "set {unsigned int}0xe000ed08 = 0x08000000",
         "set $sp = *(unsigned int *)0x08000000",
         "set $pc = (*(unsigned int *)0x08000004) & 0xfffffffe",
+        "monitor stm32f1x.cpu configure -event halted { catch {rtt start} }",
         "monitor rtt server start 9090 0",
         "monitor rtt server start 9091 1"
       ],
@@ -69,15 +70,7 @@
         "enabled": true,
         "address": "auto",
         "polling_interval": 20,
-        "rtt_start_retry": 1000,
-        "decoders": [
-          {
-            "port": 0,
-            "type": "console",
-            "label": "RTT LOG (CH0)",
-            "inputmode": "disabled"
-          }
-        ]
+        "decoders": []
       }
     }
   ]

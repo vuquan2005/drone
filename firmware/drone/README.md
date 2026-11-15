@@ -57,6 +57,12 @@ kênh khởi động lỗi, BSP tắt cả bốn đầu ra và từ chối lện
 `bsp_pwm_init()` để thử lại. Hiện `app_process()` giữ nguyên xung tối thiểu,
 chưa nối throttle RC với PWM.
 
+`app_motor_set_all()` nhận lệnh ESC fixed-point `norm_q15_t` (`int32_t`,
+1,0 = 32768), đổi sang microsecond hoàn toàn bằng số nguyên. Mixer nhận
+float ở cửa vào rồi trả lực đẩy và phản hồi fixed-point; xem
+[Control/README.md](Control/README.md). Ánh xạ motor và đường đặc tính lực
+đẩy sang lệnh ESC chưa được tích hợp vào vòng chạy ứng dụng.
+
 API tại [BSP/Inc/bsp_pwm.h](BSP/Inc/bsp_pwm.h), chỉ gọi trong foreground
 sau khởi tạo ngoại vi. Chấp nhận xung 1000–2000 µs; lệnh sai trả `false`
 và giữ giá trị cũ. Xung mới áp dụng tại update timer.

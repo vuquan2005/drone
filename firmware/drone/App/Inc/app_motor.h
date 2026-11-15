@@ -1,6 +1,7 @@
 #ifndef APP_MOTOR_H
 #define APP_MOTOR_H
 
+#include "normalized.h"
 #include <stdbool.h>
 
 #define APP_MOTOR_COUNT 4U
@@ -16,17 +17,18 @@ bool app_motor_init(void);
 
 /**
  * @brief Queue four normalized ESC commands for the same PWM frame.
- * @param command_norm Non-NULL array of four finite values in [0,1], ordered
- * by PWM channel 1..4 (PB6..PB9), not by airframe motor position.
+ * @param command_norm Non-NULL array of four Q15 values in [0,NORM_Q15_ONE],
+ * ordered by PWM channel 1..4 (PB6..PB9), not by airframe motor position.
  * Values are dimensionless ESC commands, not thrust or RPM fractions:
- * 0 maps to 1000 us, 1 to 2000 us, with rounding to the nearest microsecond.
+ * 0 maps to 1000 us, NORM_Q15_ONE to 2000 us. Conversion uses only integers,
+ * rounding to the nearest microsecond (half upward).
  * The array is consumed during the call and is not retained.
  * @return false if outputs are stopped, the pointer is NULL, or any command
  * is invalid; no output is changed on failure. Values are not clamped.
  * @note Nonblocking foreground only; requires successful app_motor_init().
  * This writes raw motor commands without checking an armed state.
  */
-bool app_motor_set_all(const float command_norm[APP_MOTOR_COUNT]);
+bool app_motor_set_all(const norm_q15_t command_norm[APP_MOTOR_COUNT]);
 
 /**
  * @brief Disable all motor PWM outputs until initialization succeeds again.

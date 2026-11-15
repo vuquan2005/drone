@@ -9,21 +9,22 @@ bool app_motor_init(void) {
     return bsp_pwm_init();
 }
 
-bool app_motor_set_all(const float command_norm[APP_MOTOR_COUNT]) {
+bool app_motor_set_all(const norm_q15_t command_norm[APP_MOTOR_COUNT]) {
     if (command_norm == NULL) {
         return false;
     }
     uint16_t pulse_us[APP_MOTOR_COUNT];
     for (unsigned i = 0; i < APP_MOTOR_COUNT; ++i) {
-        const float command = command_norm[i];
-        /* This form also rejects NaN before converting to an integer. */
-        if (!(command >= 0.0f && command <= 1.0f)) {
+        const norm_q15_t command = command_norm[i];
+        if (command < 0 || command > NORM_Q15_ONE) {
             return false;
         }
-        const float width =
+        const int32_t width =
             BSP_PWM_MIN_PULSE_US +
-            command * (BSP_PWM_MAX_PULSE_US - BSP_PWM_MIN_PULSE_US);
-        pulse_us[i] = (uint16_t)(width + 0.5f);
+            (command * (BSP_PWM_MAX_PULSE_US - BSP_PWM_MIN_PULSE_US) +
+             NORM_Q15_ONE / 2) /
+                NORM_Q15_ONE;
+        pulse_us[i] = (uint16_t)width;
     }
     return bsp_pwm_set_all_us(pulse_us);
 }

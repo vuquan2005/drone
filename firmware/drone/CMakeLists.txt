@@ -57,6 +57,10 @@ add_executable(${CMAKE_PROJECT_NAME})
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+# Match STM32F103xx_FLASH.ld: interrupts must use the application's Flash
+# vectors even when a debugger starts it with boot ROM mapped at address zero.
+target_compile_definitions(STM32_Drivers PRIVATE USER_VECT_TAB_ADDRESS)
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library search paths
 )

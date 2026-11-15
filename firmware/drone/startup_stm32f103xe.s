@@ -62,6 +62,9 @@ defined in linker script */
   .type Reset_Handler, %function
 Reset_Handler:
 
+/* A debugger may set only PC after loading, leaving the boot ROM's SP. */
+  ldr sp, =_estack
+
 /* Call the clock system initialization function.*/
     bl  SystemInit
 

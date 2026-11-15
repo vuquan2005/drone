@@ -1,4 +1,6 @@
+#include "app_motor.h"
 #include "bsp_pwm.h"
+#include "mixer.h"
 #include "stm32f1xx_hal.h"
 #include <assert.h>
 #include <stddef.h>
@@ -99,5 +101,60 @@ int main(void) {
         assert(enabled == 15);
     }
     bsp_pwm_stop();
+    const norm_q15_t commands[] = {0, 8192, 24576, NORM_Q15_ONE};
+    assert(!app_motor_set_all(commands));
+    assert(app_motor_init());
+    assert_pulses(minimum);
+    assert(app_motor_set_all(commands));
+    assert_pulses(widths);
+    assert(!app_motor_set_all(NULL));
+    const norm_q15_t invalid_values[] = {-1, NORM_Q15_ONE + 1, INT32_MIN,
+                                         INT32_MAX};
+    for (unsigned i = 0; i < APP_MOTOR_COUNT; ++i) {
+        for (unsigned j = 0;
+             j < sizeof(invalid_values) / sizeof(invalid_values[0]); ++j) {
+            norm_q15_t invalid[] = {16384, 16384, 16384, 16384};
+            invalid[i] = invalid_values[j];
+            assert(!app_motor_set_all(invalid));
+            assert_pulses(widths);
+        }
+    }
+    const norm_q15_t fractional[] = {16397, 16404, 0, NORM_Q15_ONE};
+    const uint16_t rounded[] = {1500, 1501, 1000, 2000};
+    assert(app_motor_set_all(fractional));
+    assert_pulses(rounded);
+    /* Every representable ESC command stays within half a timer tick of the
+     * ideal linear map; endpoint coverage also catches accidental narrowing. */
+    for (norm_q15_t q = 0; q <= NORM_Q15_ONE; ++q) {
+        const norm_q15_t frame[] = {q, q, q, q};
+        assert(app_motor_set_all(frame));
+        for (unsigned i = 0; i < 4; ++i) {
+            const int32_t pulse =
+                (int32_t)__HAL_TIM_GET_COMPARE(&htim4, channels[i]);
+            const int32_t error = (pulse - 1000) * NORM_Q15_ONE - q * 1000;
+            assert(error >= -NORM_Q15_ONE / 2 && error <= NORM_Q15_ONE / 2);
+        }
+    }
+    const norm_q15_t ties[] = {2047, 2048, 2049, NORM_Q15_ONE};
+    const uint16_t ties_expected[] = {1062, 1063, 1063, 2000};
+    assert(app_motor_set_all(ties));
+    assert_pulses(ties_expected);
+    /* Identity thrust-to-ESC mapping and index-to-channel mapping are test
+     * assumptions only; production mapping/calibration remains App's job. */
+    const mixer_command_t request = {0.5f, 0.5f, 0, 0};
+    mixer_result_t mixed;
+    assert(mixer_quad_x(&request, &mixed));
+    assert(app_motor_set_all(mixed.motor));
+    const uint16_t mixed_widths[] = {1250, 1250, 1750, 1750};
+    assert_pulses(mixed_widths);
+    assert(app_motor_init());
+    assert_pulses(minimum);
+    app_motor_stop();
+    assert(enabled == 0);
+    assert(!app_motor_set_all(commands));
+    fail_channel = TIM_CHANNEL_3;
+    assert(!app_motor_init());
+    assert(enabled == 0);
+    assert(!app_motor_set_all(commands));
     return 0;
 }

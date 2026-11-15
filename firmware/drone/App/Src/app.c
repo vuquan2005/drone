@@ -1,15 +1,14 @@
 #include "app.h"
 #include "app_imu.h"
 #include "app_log.h"
+#include "app_motor.h"
 #include "app_receiver.h"
 #include "app_telemetry.h"
 #include "bsp_board.h"
-#include "bsp_pwm.h"
 #include "bsp_rtt.h"
 #include "main.h"
 
 static app_imu_t imu;
-static bool pwm_ready;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
 static uint32_t last_receiver_ms;
@@ -37,7 +36,7 @@ void app_init(void) {
     bsp_rtt_init();
     app_telemetry_init();
     app_log_init(HAL_GetTick);
-    pwm_ready = bsp_pwm_init();
+    const bool pwm_ready = app_motor_init();
     if (pwm_ready) {
         APP_LOG_INFO("pwm", "initialized");
     } else {

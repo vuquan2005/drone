@@ -22,4 +22,4 @@ Xem [kiến trúc firmware](firmware/drone/ARCHITECTURE.md).
 
 Xem [quy trình làm việc nhóm](CONTRIBUTING.md) để nhận nhiệm vụ, mở Pull Request và review.
 
-Mở [project KiCad](hardware/kicad/Drone_Direct_Wire.kicad_pro) để chỉnh sửa sơ đồ nối dây quadrotor. Thư viện symbol nằm tại `hardware/kicad/symbols/`; xem [quy ước phần cứng](hardware/AGENTS.md) khi chỉnh sửa.
+Mở [project KiCad](hardware/kicad/Quadrotor_Wiring.kicad_pro) để chỉnh sửa sơ đồ nối dây quadrotor. Thư viện symbol nằm tại `hardware/kicad/symbols/`; xem [quy ước phần cứng](hardware/AGENTS.md) khi chỉnh sửa.

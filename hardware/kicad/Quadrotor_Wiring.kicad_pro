@@ -257,7 +257,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "Drone_Direct_Wire.kicad_pro",
+    "filename": "Quadrotor_Wiring.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -425,8 +425,8 @@
     "subpart_id_separator": 0,
     "top_level_sheets": [
       {
-        "filename": "Drone_Direct_Wire.kicad_sch",
-        "name": "Drone_Direct_Wire",
+        "filename": "Quadrotor_Wiring.kicad_sch",
+        "name": "Quadrotor_Wiring",
         "uuid": "7d74e32f-d235-515c-b45d-40f9d7ead055"
       }
     ],
@@ -436,7 +436,7 @@
   "sheets": [
     [
       "7d74e32f-d235-515c-b45d-40f9d7ead055",
-      "Drone_Direct_Wire"
+      "Quadrotor_Wiring"
     ]
   ],
   "text_variables": {},

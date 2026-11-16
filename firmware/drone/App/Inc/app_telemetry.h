@@ -19,19 +19,21 @@
  */
 void app_telemetry_init(void);
 
-/** @brief Enqueue one 48-byte binary IMU frame v1 using timestamps already
- * stored in sample.
- * @param sample Non-NULL bounded SI sample produced by app_imu_poll.
+/** @brief Enqueue one 44-byte binary raw IMU frame v1 type 4 using timestamps
+ * already stored in sample.
+ * @param sample Non-NULL sample produced by app_imu_poll; reads raw fields
+ * only.
  * @param sequence Successful-read counter, including records RTT rejects.
- * @return RTT result; NULL, invalid sensor time or non-finite/out-of-range
- * milli-units return INVALID_ARGUMENT. Preserves sample, sequence and
+ * @return RTT result; NULL or invalid sensor time returns INVALID_ARGUMENT.
+ * Preserves sample, sequence and
  * timestamps on failure.
  * @note Foreground-only. Schema: protocol/telemetry.md (little-endian, CRC32).
- * Fields: sequence, t_read_us, sensor_time_ticks, accel XYZ in mm/s2 and
- * gyro XYZ in mrad/s. After validating/scaling input, a BSP preflight checks
+ * Fields: sequence, t_read_us, sensor_time_ticks, original int16 sensor XYZ
+ * counts, ranges, ODRs and body mapping. A BSP preflight checks
  * space before encoding/CRC; FULL skips the frame and counts one drop. The
  * final write still checks capacity. Entire frame is queued in one BSP call.
- * Milli-unit conversion truncates toward zero; axes are sensor-package XYZ.
+ * No SI conversion, rounding or body mapping is applied to counts on the wire.
+ * Metadata describes the fixed BSP configuration and mapping [X, -Y, -Z].
  * Caller sends once per successful sample; no decimation, retry or timestamp
  * generation here. All counters/times retain their original wrapping widths.
  */

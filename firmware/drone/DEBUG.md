@@ -91,7 +91,7 @@ cùng trạng thái không tạo log mỗi vòng poll.
 ### Channel 1: mẫu IMU có timestamp
 
 Mỗi mẫu đọc thành công được thử gửi một lần; NO_DATA/lỗi không gửi lại mẫu
-cũ. CH1 gồm IMU type 1, thống kê RTT type 2 khoảng mỗi giây và snapshot
+cũ. CH1 gồm IMU raw type 4, thống kê RTT type 2 khoảng mỗi giây và snapshot
 RC type 3 mỗi 50 ms (16 kênh raw và trạng thái kết nối). Layout,
 đơn vị, sequence và counter nằm trong [đặc tả telemetry](../../protocol/telemetry.md).
 

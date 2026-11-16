@@ -48,6 +48,7 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         imu->sample.t_read_us = tick * 1000U + 123U;
         imu->sample.sensor_time_ticks = 256U;
         imu->sample.accel_mps2[2] = 9.80665f;
+        imu->sample.accel_raw[2] = -2048;
     }
     return status;
 }
@@ -100,14 +101,15 @@ int main(void) {
     app_process();
     drain(0U, output);
     assert(strstr(output, "[1001][I][imu] read recovered\n") != NULL);
-    assert(drain(1U, output) == 48U);
-    assert(memcmp(output, "DRT!\x01\x01\x24\x00", 8U) == 0);
+    assert(drain(1U, output) == 44U);
+    assert(memcmp(output, "DRT!\x01\x04\x20\x00", 8U) == 0);
     assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
-    assert(get_u32(output + 16) == 256U && get_u32(output + 28) == 9806U);
+    assert(get_u32(output + 16) == 256U);
+    assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0xF8U);
     tick++;
     app_process();
     assert(drain(0U, output) == 0U);
-    assert(drain(1U, output) == 48U);
+    assert(drain(1U, output) == 44U);
     assert(get_u32(output + 8) == 2U && get_u32(output + 12) == 1002123U);
     status = BSP_IMU_NO_DATA;
     app_process();

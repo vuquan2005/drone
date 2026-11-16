@@ -2,7 +2,7 @@
 
 from collections import deque
 
-from records import IMU, ImuSeries, RC, RTT_STATS
+from records import IMU, IMU_RAW, ImuSeries, RC, RTT_STATS
 
 
 class TelemetryState:
@@ -78,4 +78,6 @@ class TelemetryState:
                 self.segment += 1
                 self.latest_stats = self.stats_last = self.stats_received_at = None
             self.arrivals.append(received_at)
+            if line[1] == 4:
+                return "imu_raw", IMU_RAW.unpack(line[2])
             return "csv", IMU.unpack(line[2])

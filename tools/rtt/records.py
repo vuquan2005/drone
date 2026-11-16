@@ -3,6 +3,7 @@
 from collections import deque
 import struct
 import zlib
+import math
 
 
 class Lines:
@@ -36,6 +37,23 @@ class Lines:
 MAGIC = b"DRT!"
 HEADER = struct.Struct("<4sBBH")
 IMU = struct.Struct("<III6i")
+IMU_RAW = struct.Struct("<III6hBBHHH")
+IMU_RAW_FIELDS = (
+    "sequence",
+    "t_read_us",
+    "sensor_time_ticks",
+    "ax_raw",
+    "ay_raw",
+    "az_raw",
+    "gx_raw",
+    "gy_raw",
+    "gz_raw",
+    "accel_range_g",
+    "axis_map",
+    "gyro_range_dps",
+    "accel_odr_hz",
+    "gyro_odr_hz",
+)
 RTT_STATS = struct.Struct("<10I")
 RTT_STATS_FIELDS = (
     "sequence",
@@ -57,7 +75,7 @@ RC_FIELDS = (
     "connected",
     *(f"ch{i}_raw" for i in range(1, 17)),
 )
-KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size, 3: RC.size}
+KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size}
 MAX_PAYLOAD = 256
 
 
@@ -116,17 +134,39 @@ class ImuSeries:
 
     def feed(self, frame):
         version, kind, payload = frame
-        if version != 1 or kind != 1:
+        if version != 1 or kind not in (1, 4):
             self.unknown += 1
             return False
-        if len(payload) != IMU.size:
+        layout = IMU_RAW if kind == 4 else IMU
+        if len(payload) != layout.size:
             self.invalid += 1
             return False
-        values = IMU.unpack(payload)
+        values = layout.unpack(payload)
         seq, stamp, sensor = values[:3]
         if sensor >= 2**24:
             self.invalid += 1
             return False
+        if kind == 4:
+            accel_range, axis_map, gyro_range, accel_odr, gyro_odr = values[9:]
+            if (
+                accel_range not in (2, 4, 8, 16)
+                or axis_map != 1
+                or gyro_range not in (125, 250, 500, 1000, 2000)
+                or accel_odr == 0
+                or gyro_odr == 0
+            ):
+                self.invalid += 1
+                return False
+            scales = (accel_range * 9.80665 / 32768,) * 3 + (
+                gyro_range * math.pi / 180 / 32768,
+            ) * 3
+            axes = tuple(
+                value * scale * sign
+                for value, scale, sign in zip(values[3:9], scales, (1, -1, -1, 1, -1, -1))
+            )
+        else:
+            # Legacy type 1 has no axis metadata; preserve its historical values.
+            axes = tuple(value / 1000 for value in values[3:])
         gap = False
         if self.last is not None:
             delta_seq = (seq - self.last[0]) % 2**32
@@ -145,7 +185,7 @@ class ImuSeries:
         t = self.elapsed_us / 1e6
         if gap:
             self.points.append((t, *([float("nan")] * 6)))
-        self.points.append((t, *(value / 1000 for value in values[3:])))
+        self.points.append((t, *axes))
         while self.points and self.points[0][0] < t - self.seconds:
             self.points.popleft()
         self.last = (seq, stamp)

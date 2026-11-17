@@ -211,6 +211,18 @@ class ReceiverPanel(QtWidgets.QWidget):
             grid.addWidget(bar, i % 8, (i // 8) * 2 + 1)
             self.channel_labels.append(label)
             self.rc_bars.append(bar)
+        self.rc_snapshots = []
+        self.replay_controls = QtWidgets.QWidget()
+        replay_layout = QtWidgets.QHBoxLayout(self.replay_controls)
+        replay_layout.setContentsMargins(0, 0, 0, 0)
+        self.replay_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.replay_slider.setAccessibleName("Saved receiver snapshot")
+        self.replay_slider.valueChanged.connect(self.show_saved_snapshot)
+        self.replay_position = QtWidgets.QLabel()
+        replay_layout.addWidget(self.replay_slider, 1)
+        replay_layout.addWidget(self.replay_position)
+        self.replay_controls.hide()
+        layout.addWidget(self.replay_controls)
         self.details = QtWidgets.QLabel("Raw CRSF (0–2047)")
         self.details.setWordWrap(True)
         self.details.setSizePolicy(
@@ -219,6 +231,26 @@ class ReceiverPanel(QtWidgets.QWidget):
         layout.addWidget(self.details)
         self.wide = None
         self.update_responsive()
+
+    def set_saved_snapshots(self, snapshots):
+        self.rc_snapshots = snapshots
+        self.replay_slider.blockSignals(True)
+        self.replay_slider.setRange(0, max(0, len(snapshots) - 1))
+        self.replay_slider.setValue(max(0, len(snapshots) - 1))
+        self.replay_slider.setEnabled(len(snapshots) > 1)
+        self.replay_slider.blockSignals(False)
+        self.replay_controls.setVisible(bool(snapshots))
+        if snapshots:
+            self.show_saved_snapshot(self.replay_slider.value())
+        else:
+            self.replay_position.clear()
+
+    def show_saved_snapshot(self, index):
+        if not self.rc_snapshots:
+            return
+        seconds, sample = self.rc_snapshots[index]
+        self.update_sample(sample, 0, True, saved=True)
+        self.replay_position.setText(f"{seconds:.2f}s · {index + 1}/{len(self.rc_snapshots)}")
 
     def update_responsive(self):
         wide = self.width() >= 850 and self.height() >= 280
@@ -255,7 +287,7 @@ class ReceiverPanel(QtWidgets.QWidget):
         _, _, _, connected, *channels = sample
         live = age < 0.5 and data_connected
         state = ("connected" if connected else "disconnected") if live else "telemetry stale"
-        self.rc_status.setText(f"Saved RC: {state} · final snapshot" if saved else f"RC: {state}")
+        self.rc_status.setText(f"Saved RC: {state}" if saved else f"RC: {state}")
         freshness = "saved" if saved else f"age {age:.1f}s"
         self.details.setText(f"Raw CRSF (0–2047) · {freshness}")
         for bar, value in zip(self.rc_bars, channels):

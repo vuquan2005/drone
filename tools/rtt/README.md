@@ -191,8 +191,12 @@ ngắt TCP khi mở thành công và chuyển sang chế độ xem tĩnh. Chọn
 xóa dữ liệu đang xem và nối lại TCP. Không mở phiên khi đang ghi hoặc flush;
 không ghi phiên trong chế độ xem dữ liệu cũ. File nguồn không bị thay đổi.
 
-RC và thống kê MCU hiển thị snapshot cuối segment, không phải trạng thái
-thiết bị hiện tại. Log hiển thị tối đa 2000 dòng cuối toàn phiên và vẫn lọc
+Thống kê MCU hiển thị snapshot cuối segment. Receiver có thanh trượt chọn
+từng snapshot RC, cập nhật cả thanh kênh và joystick; mặc định chọn snapshot
+cuối. Nhãn thời gian tính từ snapshot RC đầu segment theo `uptime_ms` MCU,
+không nội suy qua các snapshot bị mất. Thanh trượt chỉ điều khiển Receiver,
+không đồng bộ IMU/Rate/log. Segment không có RC thì ẩn thanh trượt; một snapshot
+thì vô hiệu hóa kéo. Các giá trị đã lưu không phải trạng thái thiết bị hiện tại. Log hiển thị tối đa 2000 dòng cuối toàn phiên và vẫn lọc
 được; log không đồng bộ theo segment. Mỗi luồng đồ thị có gốc thời gian riêng:
 IMU dùng `t_read_us`, Rate dùng `t_sample_us` MCU thay cho thời gian nhận host
 ở chế độ live. Timestamp được xử lý tràn 32 bit; không nối trace qua gap hoặc
@@ -201,7 +205,7 @@ segment. Không suy ra căn chỉnh thời gian giữa các luồng.
 Chỉ cần có một loại CSV hợp lệ; file vắng mặt hoặc chỉ có header được bỏ qua.
 Header/payload không hợp lệ sẽ báo tên file và dòng, giữ chế độ đang xem.
 Bản đầu giới hạn 1.000.000 dòng CSV mỗi phiên; chưa có phát lại theo thời gian,
-con trỏ snapshot hoặc nhập file raw hex. Thư mục chỉ có log chưa được hỗ trợ.
+con trỏ thời gian chung hoặc nhập file raw hex. Thư mục chỉ có log chưa được hỗ trợ.
 
 ## Receiver thích ứng
 

@@ -9,7 +9,7 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
 from session_reader import read_session
-from session_writer import COLUMNS, IMU_RAW_COLUMNS, RATE_FIELDS
+from session_writer import COLUMNS, IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS
 
 
 class SessionReaderTests(unittest.TestCase):
@@ -49,6 +49,26 @@ class SessionReaderTests(unittest.TestCase):
             self.assertEqual(len(rate), 3)
             self.assertEqual(rate[-1][0], 12)
             self.assertTrue(math.isnan(rate[-1][1]))
+
+    def test_rc_history_wrap_and_segment_isolation(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "rc_20261118.csv"
+            with path.open("w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(RC_COLUMNS)
+                writer.writerows(
+                    [
+                        (1, 1, 2**32 - 25, 0, 1, *([172] * 16)),
+                        (1, 3, 75, 50, 0, *([1811] * 16)),
+                        (2, 1, 10, 5, 1, *([992] * 16)),
+                    ]
+                )
+            segments, _ = read_session(root)
+            self.assertEqual([t for t, _ in segments[1].rc_snapshots], [0, 0.1])
+            self.assertEqual(segments[1].rc_snapshots[0][1][4], 172)
+            self.assertEqual(segments[1].rc_snapshots[1][1][3], 0)
+            self.assertEqual(len(segments[2].rc_snapshots), 1)
+            self.assertEqual(segments[2].rc_snapshots[0][0], 0)
 
     def test_rejects_bad_rows_and_empty_sessions(self):
         with tempfile.TemporaryDirectory() as root:

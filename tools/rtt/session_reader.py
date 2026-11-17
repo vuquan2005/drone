@@ -54,6 +54,7 @@ def read_session(directory):
                         payload = wire.pack(*values)
                         if segment not in segments:
                             segments[segment] = TelemetryState()
+                            segments[segment].rc_snapshots = []
                         state = segments[segment]
                         state.series.seconds = float("inf")
                         if state.series.points.maxlen is not None:
@@ -71,6 +72,8 @@ def read_session(directory):
                         # Rate CSV has MCU timestamps, unlike the live host-time plot.
                         if state.feed((1, kind, payload), elapsed / 1e6) is None:
                             raise ValueError("invalid telemetry payload")
+                        if kind == 3:
+                            state.rc_snapshots.append((elapsed / 1000, state.latest_rc))
                         if kind == 5:
                             point = state.rate_points[-1]
                             history = rate_history.setdefault(segment, deque())

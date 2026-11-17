@@ -178,6 +178,7 @@ class Viewer(QtWidgets.QMainWindow):
         for plot in self.rate_panel.plots[-2:]:
             plot.setLabel("bottom", "MCU time from first rate sample", units="s")
         self.receiver_panel.update_sample(state.latest_rc, 0, True, saved=True)
+        self.receiver_panel.set_saved_snapshots(state.rc_snapshots)
         self.mcu_stats.update_sample(state.latest_stats, 0)
         self.mcu_stats.setText(
             self.mcu_stats.text().replace("age 0.0s · ", "")
@@ -193,12 +194,13 @@ class Viewer(QtWidgets.QMainWindow):
             f"Saved IMU: {state.series.received} samples · missing seq {state.series.missing}"
         )
         self.writer_stats.clear()
-        self.statusBar().showMessage(f"Saved session: {self.load_directory} · final snapshots")
+        self.statusBar().showMessage(f"Saved session: {self.load_directory} · saved data")
 
     def return_live(self):
         if self.load_future is not None:
             return
         self.saved_session = None
+        self.receiver_panel.set_saved_snapshots([])
         self.telemetry = TelemetryState()
         self.log_panel.clear_log()
         self.log_panel.setToolTip("")

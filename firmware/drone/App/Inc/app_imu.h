@@ -7,9 +7,17 @@
 
 #include "bsp_bmi270.h"
 
-/** @brief SI sample in sensor-package XYZ axes, without calibration or
- * rotation. */
+/** @brief Original sensor counts and uncalibrated SI sample in body FLU.
+ * Body axes: X forward, Y left, Z up. Raw fields remain in sensor XYZ.
+ * @note Board mapping from sensor XYZ is [X, -Y, -Z], for both sensors.
+ * Positive angular velocity
+ * follows the right-hand rule. At rest with Z up, accel Z is approximately +g.
+ */
 typedef struct {
+    int16_t
+        accel_raw[3]; /**< Original sensor XYZ counts, before body mapping. */
+    int16_t
+        gyro_raw[3]; /**< Original sensor XYZ counts, before body mapping. */
     float accel_mps2[3];        /**< Acceleration in m/s^2. */
     float gyro_radps[3];        /**< Angular velocity in rad/s. */
     uint32_t sensor_time_ticks; /**< Raw wrapping 24-bit sensor clock, not MCU
@@ -56,7 +64,8 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu,
  * replaces sample, sets sample_valid and increments sample_count. Otherwise,
  * preserves sample; read_error_count increments only on a driver read error.
  * @note Blocking foreground API; no ISR or concurrent access. Does not schedule
- * polling, calibrate, rotate axes, check sample age or retry initialization.
+ * polling, calibrate, check sample age or retry initialization. Maps SI axes
+ * to body FLU while preserving the original sensor counts in raw fields.
  */
 bsp_imu_result_t app_imu_poll(app_imu_t *imu);
 

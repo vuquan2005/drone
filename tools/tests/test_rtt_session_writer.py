@@ -36,6 +36,7 @@ class SessionWriterTests(unittest.TestCase):
                 set(p.name for p in writer.directory.iterdir()),
                 {
                     f"imu_{stamp}.csv",
+                    f"imu_raw_{stamp}.csv",
                     f"rtt_stats_{stamp}.csv",
                     f"rc_{stamp}.csv",
                     f"events_{stamp}.log",
@@ -112,7 +113,8 @@ class SessionWriterTests(unittest.TestCase):
                 self.assertTrue(writer.submit("log", b"second\n"))
                 self.assertFalse(writer.submit("csv", (1,) * 10))
                 self.assertEqual(
-                    writer.dropped, {"csv": 1, "stats": 0, "rc": 0, "log": 0, "raw": 0}
+                    writer.dropped,
+                    {"csv": 1, "imu_raw": 0, "stats": 0, "rc": 0, "log": 0, "raw": 0},
                 )
             finally:
                 release.set()

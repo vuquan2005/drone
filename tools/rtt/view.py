@@ -88,7 +88,7 @@ class Viewer(QtWidgets.QMainWindow):
         kind, values = record
         if self.recording:
             self.writer.submit(kind, (self.telemetry.segment, *values))
-        if kind == "csv" or self.telemetry.segment != segment:
+        if kind in ("csv", "imu_raw") or self.telemetry.segment != segment:
             self.dirty = True
 
     def on_raw(self, data):
@@ -142,7 +142,7 @@ class Viewer(QtWidgets.QMainWindow):
         drops = w.dropped
         self.record_status.setText(
             f"{state}: {w.directory} · queue {w.queue.qsize()} · "
-            f"writer drops CSV={drops['csv']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
+            f"writer drops CSV={drops['csv'] + drops['imu_raw']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:
             QtCore.QTimer.singleShot(0, self.close)

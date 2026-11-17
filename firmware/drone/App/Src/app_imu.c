@@ -44,8 +44,13 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     const float gyro_scale =
         BSP_IMU_GYRO_RANGE_DPS * (3.14159265358979323846f / 180.0f) / 32768.0f;
     for (unsigned axis = 0; axis < 3U; axis++) {
-        imu->sample.accel_mps2[axis] = raw.accel[axis] * accel_scale;
-        imu->sample.gyro_radps[axis] = raw.gyro[axis] * gyro_scale;
+        imu->sample.accel_raw[axis] = raw.accel[axis];
+        imu->sample.gyro_raw[axis] = raw.gyro[axis];
+        /* Board mounting: preserve X, reverse Y/Z to obtain body FLU.
+         * Apply the sign after conversion so INT16_MIN cannot overflow. */
+        const float sign = axis == 0U ? 1.0f : -1.0f;
+        imu->sample.accel_mps2[axis] = raw.accel[axis] * accel_scale * sign;
+        imu->sample.gyro_radps[axis] = raw.gyro[axis] * gyro_scale * sign;
     }
     imu->sample.sensor_time_ticks = raw.sensor_time_ticks;
     imu->sample.t_read_us = t_read_us;

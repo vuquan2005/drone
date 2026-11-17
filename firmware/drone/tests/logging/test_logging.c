@@ -103,20 +103,22 @@ static void enabled_tests(void) {
 
     app_imu_sample_t sample = {.t_read_us = 123456U,
                                .sensor_time_ticks = 0x123456U,
+                               .accel_raw = {INT16_MIN, -1, INT16_MAX},
+                               .gyro_raw = {1, INT16_MIN, INT16_MAX},
                                .accel_mps2 = {1.25f, -2.5f, 9.80665f},
                                .gyro_radps = {1.0f, -2.0f, 3.0f}};
     app_imu_sample_t original = sample;
     before = clock_calls;
     assert(app_telemetry_write_imu(NULL, 17U) == BSP_RTT_INVALID_ARGUMENT);
     assert(app_telemetry_write_imu(&sample, 17U) == BSP_RTT_OK);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 48U);
-    check_fixture(output, 48U, TELEMETRY_FIXTURE_PATH);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
+    check_fixture(output, 44U, TELEMETRY_FIXTURE_PATH);
     assert(clock_calls == before &&
            memcmp(&sample, &original, sizeof(sample)) == 0);
     char fill[4095];
     memset(fill, 'x', sizeof(fill));
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
-    sample.accel_mps2[0] = NAN;
+    sample.sensor_time_ticks = 0x1000000U;
     assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_INVALID_ARGUMENT);
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 0U);
     sample = original;
@@ -126,15 +128,16 @@ static void enabled_tests(void) {
     drain(BSP_RTT_DATA, output, sizeof(output));
     assert(app_telemetry_write_imu(&sample, 19U) == BSP_RTT_OK);
     drain(BSP_RTT_DATA, output, sizeof(output));
-    assert(memcmp(output, "DRT!\x01\x01\x24\x00", 8U) == 0);
+    assert(memcmp(output, "DRT!\x01\x04\x20\x00", 8U) == 0);
     assert((uint8_t)output[8] == 19U);
     const float invalid_values[] = {NAN, INFINITY, -INFINITY, 3e10f, -3e10f};
     for (unsigned i = 0; i < sizeof(invalid_values) / sizeof(invalid_values[0]);
          ++i) {
         sample.accel_mps2[0] = invalid_values[i];
-        assert(app_telemetry_write_imu(&sample, 20U) ==
-               BSP_RTT_INVALID_ARGUMENT);
-        assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U);
+        /* Raw telemetry is independent of the SI processing path. */
+        assert(app_telemetry_write_imu(&sample, 17U) == BSP_RTT_OK);
+        assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
+        check_fixture(output, 44U, TELEMETRY_FIXTURE_PATH);
     }
     sample = original;
     sample.sensor_time_ticks = 0x1000000U;

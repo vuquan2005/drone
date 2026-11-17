@@ -1,6 +1,6 @@
 #include "app_telemetry.h"
 
-enum { IMU_FRAME_BYTES = 48U, STATS_FRAME_BYTES = 52U };
+enum { IMU_FRAME_BYTES = 44U, STATS_FRAME_BYTES = 52U };
 
 static uint32_t stats_sequence;
 static uint32_t receiver_sequence;
@@ -46,15 +46,10 @@ static uint32_t crc32(const uint8_t *data, size_t size) {
     return crc ^ UINT32_MAX;
 }
 
-static bool scale_milli(float value, int32_t *out) {
-    float scaled = value * 1000.0f;
-    /* Reject NaN, infinities and out-of-range values before integer conversion.
-     */
-    if (!(scaled >= -2147483648.0f && scaled < 2147483648.0f)) {
-        return false;
+static void put_u16(uint8_t *out, uint16_t value) {
+    for (unsigned i = 0; i < 2U; ++i) {
+        out[i] = (uint8_t)(value >> (8U * i));
     }
-    *out = (int32_t)scaled;
-    return true;
 }
 
 bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
@@ -62,29 +57,26 @@ bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
     if (sample == NULL || sample->sensor_time_ticks > 0xFFFFFFU) {
         return track_imu(BSP_RTT_INVALID_ARGUMENT);
     }
-    /* Preserve invalid-payload precedence over FULL, even with a stalled host.
-     */
-    int32_t values[6];
-    for (unsigned axis = 0; axis < 3U; ++axis) {
-        if (!scale_milli(sample->accel_mps2[axis], &values[axis]) ||
-            !scale_milli(sample->gyro_radps[axis], &values[axis + 3U])) {
-            return track_imu(BSP_RTT_INVALID_ARGUMENT);
-        }
-    }
     bsp_rtt_result_t ready =
         bsp_rtt_prepare_write(BSP_RTT_DATA, IMU_FRAME_BYTES);
     if (ready != BSP_RTT_OK) {
         return track_imu(ready);
     }
     /* protocol/telemetry.md: explicit fields, never a native struct dump. */
-    uint8_t frame[IMU_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 1U, 36U, 0U};
+    uint8_t frame[IMU_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 4U, 32U, 0U};
     put_u32(frame + 8U, sequence);
     put_u32(frame + 12U, sample->t_read_us);
     put_u32(frame + 16U, sample->sensor_time_ticks);
-    for (unsigned i = 0; i < 6U; ++i) {
-        put_u32(frame + 20U + 4U * i, (uint32_t)values[i]);
+    for (unsigned axis = 0; axis < 3U; ++axis) {
+        put_u16(frame + 20U + 2U * axis, (uint16_t)sample->accel_raw[axis]);
+        put_u16(frame + 26U + 2U * axis, (uint16_t)sample->gyro_raw[axis]);
     }
-    put_u32(frame + 44U, crc32(frame, 44U));
+    frame[32U] = (uint8_t)BSP_IMU_ACCEL_RANGE_G;
+    frame[33U] = 1U; /* Sensor XYZ -> body FLU: [X, -Y, -Z]. */
+    put_u16(frame + 34U, (uint16_t)BSP_IMU_GYRO_RANGE_DPS);
+    put_u16(frame + 36U, BSP_IMU_ODR_HZ);
+    put_u16(frame + 38U, BSP_IMU_ODR_HZ);
+    put_u32(frame + 40U, crc32(frame, 40U));
     return track_imu(bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame)));
 }
 

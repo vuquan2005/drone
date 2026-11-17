@@ -208,12 +208,15 @@ static void test_real_driver_init_and_samples(void) {
     assert(app_imu_poll(&imu) == BSP_IMU_OK);
     assert(imu.sample_valid && imu.sample_count == 1U);
     assert(fabsf(imu.sample.accel_mps2[0] - 9.80665f) < 0.0001f);
-    assert(fabsf(imu.sample.accel_mps2[1] + 9.80665f) < 0.0001f);
-    assert(fabsf(imu.sample.accel_mps2[2] + 156.9064f) < 0.0001f);
+    const int16_t accel_raw[] = {2048, -2048, INT16_MIN};
+    const int16_t gyro_raw[] = {16384, -16384, INT16_MAX};
+    assert(memcmp(imu.sample.accel_raw, accel_raw, sizeof(accel_raw)) == 0);
+    assert(memcmp(imu.sample.gyro_raw, gyro_raw, sizeof(gyro_raw)) == 0);
+    assert(fabsf(imu.sample.accel_mps2[1] - 9.80665f) < 0.0001f);
+    assert(fabsf(imu.sample.accel_mps2[2] - 156.9064f) < 0.0001f);
     assert(fabsf(imu.sample.gyro_radps[0] - 17.4532925f) < 0.0001f);
-    assert(fabsf(imu.sample.gyro_radps[1] + 17.4532925f) < 0.0001f);
-    // TODO: Use an expected value with tolerance; doubling Z still passes.
-    assert(imu.sample.gyro_radps[2] > 34.9f);
+    assert(fabsf(imu.sample.gyro_radps[1] - 17.4532925f) < 0.0001f);
+    assert(fabsf(imu.sample.gyro_radps[2] + 34.90552f) < 0.0001f);
     assert(imu.sample.sensor_time_ticks == 0x123456U);
     assert(imu.sample.t_read_us == UINT32_MAX - 5U && clock_reads == 1U);
     assert(registers[BMI2_STATUS_ADDR] == 0U);

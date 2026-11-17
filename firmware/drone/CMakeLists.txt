@@ -78,6 +78,7 @@ target_sources(
             BSP/Src/bsp_receiver.c
             BSP/Src/bsp_pwm.c
             App/Src/app.c
+            App/Src/app_rate.c
             App/Src/app_command.c
             App/Src/app_imu.c
             App/Src/app_motor.c

@@ -2,15 +2,18 @@
 #include "app_imu.h"
 #include "app_log.h"
 #include "app_motor.h"
+#include "app_rate.h"
 #include "app_receiver.h"
 #include "app_telemetry.h"
 #include "bsp_board.h"
 #include "bsp_rtt.h"
+#include "bsp_time.h"
 #include "main.h"
 #include <stddef.h>
 
 static app_imu_t imu;
 static app_command_t command;
+static app_rate_t rate;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
 static uint32_t last_receiver_ms;
@@ -112,10 +115,32 @@ static bool process_receiver(app_receiver_sample_t *sample) {
     return available;
 }
 
+static bool imu_failed_for_rate(bsp_imu_result_t status) {
+    return status != BSP_IMU_OK && status != BSP_IMU_NO_DATA;
+}
+
+bool app_configure_rate(const app_rate_config_t *config) {
+    return app_rate_configure(&rate, config);
+}
+
+bool app_get_rate_result(mixer_result_t *result) {
+    if (result == NULL)
+        return false;
+    *result = rate.mixer;
+    return rate.valid;
+}
+
 static void process_imu(void) {
     const bsp_imu_result_t status = app_imu_poll(&imu);
     log_imu_transition(status);
+    if (!command.valid || imu_failed_for_rate(status) ||
+        (rate.have_time &&
+         (uint32_t)(bsp_time_now_us() - rate.previous_us) > 20000U)) {
+        app_rate_reset(&rate);
+    }
     if (status == BSP_IMU_OK) {
+        (void)app_rate_step(&rate, &command, imu.sample.gyro_radps,
+                            imu.sample.t_read_us);
         APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
     }
 }
@@ -154,6 +179,7 @@ bool app_get_command(app_command_t *sample) {
 
 void app_init(void) {
     command = (app_command_t){0};
+    rate = (app_rate_t){0};
     bsp_rtt_init();
     app_telemetry_init();
     app_log_init(HAL_GetTick);

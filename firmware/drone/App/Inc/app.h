@@ -6,6 +6,7 @@
 #define APP_H
 
 #include "app_command.h"
+#include "app_rate.h"
 
 /**
  * @brief Initialize application state and attempt to initialize the board IMU.
@@ -30,5 +31,16 @@ void app_process(void);
  * age check occurs here; call after app_process in the same foreground context.
  * Nonblocking; no concurrent or ISR access. Does not grant motor permission. */
 bool app_get_command(app_command_t *sample);
+
+/** Configure the computational rate/mixer preview after app_init. Disabled at
+ * initialization. Invalid config disables it. Same contract as
+ * app_rate_configure; serialized foreground access only. This grants no motor
+ * permission. */
+bool app_configure_rate(const app_rate_config_t *config);
+
+/** Copy latest mixer preview; false for NULL or no valid calculation. Output is
+ * zero after reset/errors; it may contain a previous sample between IMU polls.
+ * Call after app_process in the same foreground context. No motor I/O. */
+bool app_get_rate_result(mixer_result_t *result);
 
 #endif

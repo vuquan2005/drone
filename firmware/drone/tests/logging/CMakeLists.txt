@@ -29,7 +29,10 @@ endforeach()
 add_executable(
     app_logging_tests
     test_app.c
+    ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
+    ${FIRMWARE_ROOT}/Control/Src/mixer.c
     ${FIRMWARE_ROOT}/App/Src/app.c
+    ${FIRMWARE_ROOT}/App/Src/app_rate.c
     ${FIRMWARE_ROOT}/App/Src/app_command.c
     ${FIRMWARE_ROOT}/App/Src/app_motor.c
     ${FIRMWARE_ROOT}/App/Src/app_log.c
@@ -49,3 +52,5 @@ target_compile_definitions(app_logging_tests PRIVATE DRONE_RTT=1 DRONE_LOG_LEVEL
                                                      DRONE_TELEMETRY=1)
 target_compile_options(app_logging_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME app_logging_tests COMMAND app_logging_tests)
+
+target_link_libraries(app_logging_tests PRIVATE m)

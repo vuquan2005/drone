@@ -12,6 +12,9 @@
 static bsp_imu_result_t status = BSP_IMU_NO_DATA;
 static uint32_t tick = 1000U;
 static unsigned pwm_starts;
+uint32_t bsp_time_now_us(void) {
+    return tick * 1000U + 123U;
+}
 uint32_t HAL_GetTick(void) {
     return tick;
 }
@@ -217,6 +220,39 @@ int main(void) {
     assert(strstr(output, "valid=1 arm_requested=1") != NULL);
     app_init();
     assert(app_get_command(&command) && !command.valid);
+    mixer_result_t preview;
+    assert(!app_get_rate_result(&preview));
+    app_rate_config_t rate_config = {0};
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        rate_config.axis[i] = (rate_axis_config_t){0.1f, 0, 0, 0.5f, 1, 0};
+        rate_config.max_rate_radps[i] = 2;
+    }
+    assert(app_configure_rate(&rate_config));
+    status = BSP_IMU_OK;
+    tick++;
+    app_process();
+    assert(!app_get_rate_result(&preview));
+    tick++;
+    app_process();
+    assert(app_get_rate_result(&preview));
+    assert(preview.achieved.roll > 0);
+    status = BSP_IMU_NO_DATA;
+    tick++;
+    app_process();
+    assert(app_get_rate_result(&preview));
+    tick += 21;
+    app_process();
+    assert(!app_get_rate_result(&preview) && preview.motor[0] == 0);
+    status = BSP_IMU_OK;
+    tick++;
+    app_process();
+    tick++;
+    app_process();
+    assert(app_get_rate_result(&preview));
+    receiver_connected = false;
+    status = BSP_IMU_NO_DATA;
+    app_process();
+    assert(!app_get_rate_result(&preview));
     puts("App log/trace integration tests passed");
     return 0;
 }

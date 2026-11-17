@@ -7,12 +7,15 @@ foreach(level IN ITEMS 0 3 4)
     set(TARGET logging_${level}_tests)
     add_executable(${TARGET} test_logging.c)
     target_include_directories(
-        ${TARGET} PRIVATE ../imu/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/BSP/Inc
-                          ${FIRMWARE_ROOT}/Drivers/BMI270 ${FIRMWARE_ROOT}/Drivers/RTT)
+        ${TARGET}
+        PRIVATE ../imu/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/Control/Inc
+                ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/Drivers/BMI270
+                ${FIRMWARE_ROOT}/Drivers/RTT)
     target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     target_compile_definitions(
         ${TARGET}
         PRIVATE DRONE_LOG_LEVEL=${level}
+                RATE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rate_v1.hex"
                 TELEMETRY_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_raw_v1.hex"
                 RC_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rc_v1.hex"
                 RTT_STATS_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rtt_stats_v1.hex")
@@ -29,7 +32,11 @@ endforeach()
 add_executable(
     app_logging_tests
     test_app.c
+    ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
+    ${FIRMWARE_ROOT}/Control/Src/mixer.c
     ${FIRMWARE_ROOT}/App/Src/app.c
+    ${FIRMWARE_ROOT}/App/Src/app_rate.c
+    ${FIRMWARE_ROOT}/App/Src/app_safety.c
     ${FIRMWARE_ROOT}/App/Src/app_command.c
     ${FIRMWARE_ROOT}/App/Src/app_motor.c
     ${FIRMWARE_ROOT}/App/Src/app_log.c
@@ -49,3 +56,5 @@ target_compile_definitions(app_logging_tests PRIVATE DRONE_RTT=1 DRONE_LOG_LEVEL
                                                      DRONE_TELEMETRY=1)
 target_compile_options(app_logging_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME app_logging_tests COMMAND app_logging_tests)
+
+target_link_libraries(app_logging_tests PRIVATE m)

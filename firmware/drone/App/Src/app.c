@@ -2,18 +2,27 @@
 #include "app_imu.h"
 #include "app_log.h"
 #include "app_motor.h"
+#include "app_rate.h"
 #include "app_receiver.h"
+#include "app_safety.h"
 #include "app_telemetry.h"
 #include "bsp_board.h"
 #include "bsp_rtt.h"
+#include "bsp_time.h"
 #include "main.h"
 #include <stddef.h>
 
 static app_imu_t imu;
 static app_command_t command;
+static app_rate_t rate;
+static bool imu_available;
+static bool pwm_ready;
+static bool rate_failed;
+static app_safety_t safety;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
 static uint32_t last_receiver_ms;
+static uint32_t last_rate_ms;
 #endif
 
 #if DRONE_RTT && DRONE_LOG_LEVEL > APP_LOG_LEVEL_OFF
@@ -82,7 +91,7 @@ static inline void log_command_transition(const app_command_t *previous) {
 #endif
 
 static void init_motor(void) {
-    const bool pwm_ready = app_motor_init();
+    pwm_ready = app_motor_init();
     if (pwm_ready) {
         APP_LOG_INFO("pwm", "initialized");
     } else {
@@ -99,6 +108,7 @@ static void init_imu(void) {
 static void init_telemetry_schedule(void) {
     last_stats_ms = HAL_GetTick();
     last_receiver_ms = last_stats_ms;
+    last_rate_ms = last_stats_ms;
 }
 #else
 static inline void init_telemetry_schedule(void) {}
@@ -112,11 +122,100 @@ static bool process_receiver(app_receiver_sample_t *sample) {
     return available;
 }
 
+static bool imu_failed_for_rate(bsp_imu_result_t status) {
+    return status != BSP_IMU_OK && status != BSP_IMU_NO_DATA;
+}
+
+bool app_configure_rate(const app_rate_config_t *config) {
+    /* Reconfiguration revokes motor permission immediately. */
+    safety = (app_safety_t){0};
+    if (pwm_ready) {
+        const norm_q15_t zero[APP_MOTOR_COUNT] = {0};
+        if (!app_motor_set_all(zero)) {
+            pwm_ready = false;
+            app_motor_stop();
+        }
+    }
+    return app_rate_configure(&rate, config);
+}
+
+bool app_get_rate_result(mixer_result_t *result) {
+    if (result == NULL)
+        return false;
+    *result = rate.mixer;
+    return rate.valid;
+}
+
 static void process_imu(void) {
     const bsp_imu_result_t status = app_imu_poll(&imu);
     log_imu_transition(status);
+    if (imu_failed_for_rate(status)) {
+        imu_available = false;
+    }
     if (status == BSP_IMU_OK) {
+        imu_available = true;
         APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
+    }
+}
+
+static bool imu_healthy(void) {
+    return imu_available &&
+           (uint32_t)(bsp_time_now_us() - imu.sample.t_read_us) <= 20000U;
+}
+
+app_arm_state_t app_get_arm_state(void) {
+    return safety.state;
+}
+
+static void process_rate(void) {
+    rate_failed = false;
+    /* Sensor freshness is independent of the controller's consumed timestamp.
+     */
+    if (!command.valid || !imu_healthy()) {
+        app_rate_reset(&rate);
+        return;
+    }
+    if (!rate.configured)
+        return;
+    if (rate.have_time && (uint32_t)(imu.sample.t_read_us - rate.previous_us) <
+                              rate.config.period_us) {
+        return;
+    }
+    /* Use the latest sample once; never replay missed controller iterations. */
+    const bool had_time = rate.have_time;
+    const bool calculated = app_rate_step(
+        &rate, &command, imu.sample.gyro_radps, imu.sample.t_read_us);
+    rate_failed = !calculated && (had_time || !rate.have_time);
+}
+
+static void process_motor(void) {
+    const app_arm_state_t previous = safety.state;
+    app_safety_update(&safety, &command, imu_healthy(),
+                      rate.configured && !rate_failed, pwm_ready);
+    if (previous != safety.state &&
+        (previous == APP_ARMED || safety.state == APP_ARMED)) {
+        app_rate_reset(&rate);
+        APP_LOG_INFO("arm", "state=%u reason=%u", (unsigned)safety.state,
+                     (unsigned)safety.reason);
+    }
+    norm_q15_t output[APP_MOTOR_COUNT] = {0};
+    if (safety.state == APP_ARMED && command.throttle > APP_ARM_THROTTLE_MAX &&
+        rate.valid) {
+        /* Bench approximation: normalized thrust -> ESC command is linear.
+         * PWM channels PB6..PB9 map to the confirmed M1..M4 wiring. */
+        for (unsigned i = 0; i < APP_MOTOR_COUNT; ++i)
+            output[i] = rate.mixer.motor[i];
+    } else if (safety.state == APP_ARMED &&
+               command.throttle <= APP_ARM_THROTTLE_MAX) {
+        /* Mixer can raise collective at zero throttle; bypass it at idle. */
+        app_rate_reset(&rate);
+    }
+    if (pwm_ready && !app_motor_set_all(output)) {
+        pwm_ready = false;
+        app_motor_stop();
+        app_safety_update(&safety, &command, imu_healthy(), false, false);
+        app_rate_reset(&rate);
+        APP_LOG_ERROR("arm", "PWM failure: outputs disabled until app_init");
     }
 }
 
@@ -124,6 +223,11 @@ static void process_imu(void) {
 static void process_periodic_telemetry(const app_receiver_sample_t *sample,
                                        bool receiver_available) {
     const uint32_t now = HAL_GetTick();
+    if ((uint32_t)(now - last_rate_ms) >= 50U) {
+        last_rate_ms = now;
+        if (rate.configured)
+            APP_TELEMETRY_RATE(&rate);
+    }
     if ((uint32_t)(now - last_receiver_ms) >= 50U) {
         last_receiver_ms = now;
         if (receiver_available) {
@@ -154,9 +258,28 @@ bool app_get_command(app_command_t *sample) {
 
 void app_init(void) {
     command = (app_command_t){0};
+    rate = (app_rate_t){0};
+    imu_available = false;
+    pwm_ready = false;
+    safety = (app_safety_t){0};
     bsp_rtt_init();
     app_telemetry_init();
     app_log_init(HAL_GetTick);
+#if DRONE_RATE_CONTROL
+    /* Bench gains only; motor permission is owned by the arm/failsafe state.
+     */
+    const app_rate_config_t rate_config = {
+        .axis = {{.kp = 0.1f, .output_limit = 1.0f},
+                 {.kp = 0.1f, .output_limit = 1.0f},
+                 {.kp = 0.1f, .output_limit = 1.0f}},
+        .max_rate_radps = {2.0f, 2.0f, 2.0f},
+        .period_us = 2000U};
+    const bool rate_ready = app_configure_rate(&rate_config);
+    (void)rate_ready;
+    APP_LOG_INFO("rate",
+                 "configured=%u period_us=2000 P=0.1 I=0 D=0 max_radps=2",
+                 (unsigned)rate_ready);
+#endif
     init_motor();
     init_imu();
     app_receiver_init();
@@ -167,5 +290,7 @@ void app_process(void) {
     app_receiver_sample_t receiver_sample = {0};
     const bool receiver_available = process_receiver(&receiver_sample);
     process_imu();
+    process_rate();
+    process_motor();
     process_periodic_telemetry(&receiver_sample, receiver_available);
 }

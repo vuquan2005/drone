@@ -2,7 +2,8 @@
 
 Project STM32F103VET6 này hiện có khung ứng dụng và đọc BMI270;
 nhận RC qua CRSF và xuất PWM ESC qua TIM4. Mixer Quad X độc lập HAL đã có
-trong `Control/`; điều khiển motor từ RC và arm/failsafe chưa triển khai.
+trong `Control/`; App nối RC → rate PID → mixer → PWM với arm/failsafe.
+Gain và ánh xạ thrust → ESC hiện dành cho thử trên bộ gá, chưa hiệu chuẩn bay.
 
 ## Kiến trúc cơ bản
 

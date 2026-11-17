@@ -5,6 +5,7 @@
 #define APP_TELEMETRY_H
 
 #include "app_imu.h"
+#include "app_rate.h"
 #include "app_receiver.h"
 #include "bsp_rtt.h"
 
@@ -62,6 +63,15 @@ bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
 bsp_rtt_result_t
 app_telemetry_write_receiver(const app_receiver_sample_t *sample,
                              uint32_t uptime_ms);
+/** Enqueue a type 5 computational preview snapshot (92 bytes), at caller's
+ * decimated cadence. State must be initialized and serialized with the rate
+ * pipeline. NULL returns INVALID_ARGUMENT. Includes configured/valid flags;
+ * invalid dynamics are zero after reset. No motor I/O, nonblocking foreground,
+ * one preflight/write attempt without retry; generic DATA drops count failures.
+ * Sequence counts attempts, timestamp is the last consumed IMU read time (us).
+ * Layout and units: protocol/telemetry.md. */
+bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate);
+#define APP_TELEMETRY_RATE(rate) ((void)app_telemetry_write_rate(rate))
 #define APP_TELEMETRY_RECEIVER(sample, ms)                                     \
     ((void)app_telemetry_write_receiver(sample, ms))
 #define APP_TELEMETRY_STATS(ms, samples, errors)                               \
@@ -70,6 +80,7 @@ app_telemetry_write_receiver(const app_receiver_sample_t *sample,
     ((void)app_telemetry_write_imu(sample, sequence))
 #else
 static inline void app_telemetry_init(void) {}
+#define APP_TELEMETRY_RATE(...) ((void)0)
 #define APP_TELEMETRY_RECEIVER(...) ((void)0)
 #define APP_TELEMETRY_STATS(...) ((void)0)
 #define APP_TELEMETRY_IMU(...) ((void)0)

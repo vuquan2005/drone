@@ -71,7 +71,6 @@ class RawImuTests(unittest.TestCase):
         self.assertEqual(list(Frames().feed(raw)), [frame])
         stream = ImuSeries()
         self.assertTrue(stream.feed(frame))
-        self.assertEqual(stream.frame_label, "FRD")
         expected = (
             16 * 9.80665,
             -16 * 9.80665 / 32768,

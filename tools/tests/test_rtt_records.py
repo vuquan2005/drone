@@ -8,11 +8,11 @@ import unittest
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from records import Frames, ImuSeries, Lines, RTT_STATS, RTT_STATS_FIELDS, RC
+from records import Frames, ImuSeries, Lines, RTT_STATS, RTT_STATS_FIELDS, RC, IMU_RAW
 
 
 def record(seq=1, stamp=1000, sensor=42, axes=(1000, -2000, 9800, 100, -200, 300)):
-    return 1, 1, struct.pack("<III6i", seq, stamp, sensor, *axes)
+    return 1, 4, IMU_RAW.pack(seq, stamp, sensor, *axes, 16, 1, 2000, 400, 400)
 
 
 def packet(seq=1, stamp=1000, sensor=42, axes=(1000, -2000, 9800, 100, -200, 300)):
@@ -32,12 +32,12 @@ class RecordTests(unittest.TestCase):
 
     def test_shared_golden_frame(self):
         raw = bytes.fromhex(
-            (Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_v1.hex").read_text()
+            (Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_raw_v1.hex").read_text()
         )
-        expected = record(17, 123456, 0x123456, (1250, -2500, 9806, 1000, -2000, 3000))
-        self.assertEqual(len(raw), 48)
+        expected = record(17, 123456, 0x123456, (-32768, -1, 32767, 1, -32768, 32767))
+        self.assertEqual(len(raw), 44)
         self.assertEqual(list(Frames().feed(raw)), [expected])
-        self.assertEqual(packet(17, 123456, 0x123456, (1250, -2500, 9806, 1000, -2000, 3000)), raw)
+        self.assertEqual(packet(17, 123456, 0x123456, (-32768, -1, 32767, 1, -32768, 32767)), raw)
         self.assertEqual(zlib.crc32(b"123456789"), 0xCBF43926)
 
     def test_shared_stats_fixture_and_mixed_stream(self):
@@ -47,7 +47,7 @@ class RecordTests(unittest.TestCase):
         values = (1, 1234, 17, 3, 0, 0, 0, 0, 0, 0)
         self.assertEqual(len(raw), 52)
         decoded = list(Frames().feed(packet() + raw + packet(2)))
-        self.assertEqual([frame[1] for frame in decoded], [1, 2, 1])
+        self.assertEqual([frame[1] for frame in decoded], [4, 2, 4])
         self.assertEqual(RTT_STATS.unpack(decoded[1][2]), values)
         self.assertEqual(len(RTT_STATS_FIELDS), len(values))
         for offset in range(len(raw) + 1):
@@ -70,7 +70,7 @@ class RecordTests(unittest.TestCase):
             framing = Frames()
             frames = list(framing.feed(raw[:offset])) + list(framing.feed(raw[offset:]))
             self.assertEqual(frames, [(1, 3, RC.pack(*values))])
-        self.assertEqual([f[1] for f in Frames().feed(packet() + raw + packet(2))], [1, 3, 1])
+        self.assertEqual([f[1] for f in Frames().feed(packet() + raw + packet(2))], [4, 3, 4])
         bad = bytearray(raw)
         bad[6] = 47
         self.assertEqual(list(Frames().feed(bad + raw)), [(1, 3, RC.pack(*values))])
@@ -97,7 +97,7 @@ class RecordTests(unittest.TestCase):
         bad_length = bytearray(raw)
         bad_length[6:8] = b"\xff\xff"
         wrong_imu_size = bytearray(raw)
-        wrong_imu_size[6] = 35
+        wrong_imu_size[6] = 31
         for bad in (bad_crc, bad_length, wrong_imu_size, raw[:20]):
             framing = Frames()
             result = list(framing.feed(b"noise" + bad + raw))
@@ -106,17 +106,30 @@ class RecordTests(unittest.TestCase):
         list(framing.feed(b"x" * 100000))
         self.assertLessEqual(len(framing.pending), 3)
         # Unsupported types/versions are framed correctly and counted separately.
-        for version, kind in ((1, 99), (2, 1)):
+        for version, kind in ((1, 99), (2, 4), (1, 1)):
             unknown = struct.pack("<4sBBH", b"DRT!", version, kind, 0)
             unknown += struct.pack("<I", zlib.crc32(unknown))
             series = ImuSeries()
             series.feed(list(Frames().feed(unknown))[0])
             self.assertEqual(series.unknown, 1)
 
+    def test_retired_type_1_is_skipped_without_changing_imu_state(self):
+        payload = bytes(36)
+        retired = struct.pack("<4sBBH", b"DRT!", 1, 1, len(payload)) + payload
+        retired += struct.pack("<I", zlib.crc32(retired))
+        stream = ImuSeries()
+        for frame in Frames().feed(packet() + retired + packet(2, 3500)):
+            stream.feed(frame)
+        self.assertEqual(stream.unknown, 1)
+        self.assertEqual(stream.received, 2)
+        self.assertEqual(stream.missing, 0)
+        self.assertEqual(stream.invalid, 0)
+
     def test_units_gaps_and_bounded_history(self):
         stream = ImuSeries(seconds=10, capacity=10)
         self.assertTrue(stream.feed(record()))
-        self.assertEqual(stream.points[-1], (0, 1, -2, 9.8, 0.1, -0.2, 0.3))
+        self.assertEqual(stream.points[-1][0], 0)
+        self.assertAlmostEqual(stream.points[-1][1], 1000 * 16 * 9.80665 / 32768)
         stream.feed(record(4, 2000))
         self.assertEqual(stream.missing, 2)
         self.assertTrue(math.isnan(stream.points[-2][1]))
@@ -144,9 +157,9 @@ class RecordTests(unittest.TestCase):
 
     def test_invalid_payload_and_signed_boundaries(self):
         stream = ImuSeries()
-        self.assertFalse(stream.feed((1, 1, b"short")))
+        self.assertFalse(stream.feed((1, 4, b"short")))
         self.assertFalse(stream.feed(record(sensor=2**24)))
-        self.assertTrue(stream.feed(record(axes=(-(2**31), 2**31 - 1, 0, 0, 0, 0))))
+        self.assertTrue(stream.feed(record(axes=(-(2**15), 2**15 - 1, 0, 0, 0, 0))))
         self.assertEqual(stream.invalid, 2)
 
 

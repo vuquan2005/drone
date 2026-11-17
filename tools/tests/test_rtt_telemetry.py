@@ -5,12 +5,12 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from records import IMU, RC, RTT_STATS
+from records import IMU_RAW, RC, RTT_STATS
 from telemetry import TelemetryState
 
 
 def imu(seq=1, stamp=1000):
-    return 1, 1, IMU.pack(seq, stamp, 42, *([0] * 6))
+    return 1, 4, IMU_RAW.pack(seq, stamp, 42, *([0] * 6), 16, 2, 2000, 400, 400)
 
 
 def rc(seq=1, stamp=1000, connected=1, channel=992):
@@ -25,7 +25,7 @@ class TelemetryTests(unittest.TestCase):
     def test_mixed_stream_routes_records_and_reconnect_clears_state(self):
         state = TelemetryState()
         state.new_connection()
-        for frame, kind in ((imu(), "csv"), (stats(), "stats"), (rc(), "rc")):
+        for frame, kind in ((imu(), "imu_raw"), (stats(), "stats"), (rc(), "rc")):
             self.assertEqual(state.feed(frame, 12.5)[0], kind)
         self.assertEqual(state.segment, 1)
         self.assertEqual(state.rc_received_at, 12.5)

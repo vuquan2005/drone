@@ -267,7 +267,7 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(sum(viewer.writer.dropped.values()), 0)
             directory = viewer.writer.directory
             stamp = directory.name.removeprefix("telemetry_")
-            with (directory / f"imu_{stamp}.csv").open(newline="") as file:
+            with (directory / f"imu_raw_{stamp}.csv").open(newline="") as file:
                 rows = list(csv.reader(file))
             self.assertEqual(len(rows), 4004)
             with next(directory.glob("rtt_stats_*.csv")).open(newline="") as file:
@@ -284,7 +284,7 @@ class ViewerTests(unittest.TestCase):
             self.assertNotEqual(rows[1][0], rows[3][0])
             self.assertIn("filtered but saved", next(directory.glob("events_*.log")).read_text())
             self.assertGreater(
-                len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 48
+                len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 44
             )
             # Open the recorded session without live updates replacing its plots.
             viewer.load_session(directory)

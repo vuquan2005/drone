@@ -103,7 +103,6 @@ phiên mới theo giờ địa phương `YYYYMMDD_HHMMSS`; trùng giây thêm `_
 
 ```text
 telemetry_20261113_151530/
-├── imu_20261113_151530.csv
 ├── imu_raw_20261113_151530.csv
 ├── rc_20261113_151530.csv
 ├── rtt_stats_20261113_151530.csv
@@ -114,9 +113,9 @@ telemetry_20261113_151530/
 - `imu_raw_*.csv` giữ nguyên số đếm XYZ cảm biến từ type 4, kèm range, ODR và
   mã ánh xạ trục trong từng dòng. Plot tự đổi sang m/s², rad/s và hệ thân FRD
   theo mã ánh xạ; CSV raw không đổi dấu và không làm tròn.
-- `imu_*.csv` (không gồm `imu_raw_`) dành cho type 1 cũ; giữ milli-unit như
-  trước. Phiên chỉ có type 4 sẽ để file type 1 chỉ có header và ngược lại.
-  Viewer đọc được cả hai loại; type 1 thiếu metadata trục nên giữ dấu gốc.
+- Type 1 (IMU SI cũ) đã bỏ hỗ trợ: không ghi `imu_*.csv` mới và không đọc
+  loại CSV này khi mở phiên. Frame type 1 được bỏ qua và đếm unknown.
+  Log gốc vẫn giữ nguyên; dùng phiên bản công cụ trước thay đổi nếu cần xem lại.
 - RC CSV giữ `segment,sequence,uptime_ms,last_frame_ms,connected,ch1_raw,…,ch16_raw`;
   là snapshot mỗi 50 ms, gồm cả trạng thái disconnected, không ghi mọi frame RC.
 - Stats CSV giữ snapshot MCU theo [schema type 2](../../protocol/telemetry.md#rtt-statistics-v1-type-2).
@@ -135,17 +134,9 @@ segment,sequence,t_read_us,sensor_time_ticks,ax_raw,ay_raw,az_raw,gx_raw,gy_raw,
 `axis_map=1` giữ nghĩa gá cũ sensor → FLU `[X, -Y, -Z]`; viewer đổi tiếp
 sang FRD, tương đương `[+X, +Y, +Z]` từ sensor. Log cũ không bị sửa.
 FRD: X tiến, Y phải, Z xuống; accel Z khi đứng yên đúng chiều xấp xỉ −g.
-Type 1 không có metadata trục được giữ nguyên và hiển thị nhãn
-`legacy axes unknown`.
 Range là biên dương full scale; công thức chuyển đổi và các trường nằm trong
 [đặc tả type 4](../../protocol/telemetry.md#imu-raw-v1-type-4). Độ phân giải
 được giữ nguyên từ cảm biến; không dùng cấu hình ngầm định trên máy nhận.
-
-Header IMU CSV cũ (type 1):
-
-```text
-segment,sequence,t_read_us,sensor_time_ticks,ax_mmps2,ay_mmps2,az_mmps2,gx_mradps,gy_mradps,gz_mradps
-```
 
 `segment` bắt đầu từ 1 ở kết nối DATA đầu tiên của viewer, tăng khi nối lại
 hoặc nghi reset; Start/Stop recording không tăng segment. CSV chỉ chứa mẫu

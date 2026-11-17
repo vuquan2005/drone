@@ -5,12 +5,11 @@ import csv
 from pathlib import Path
 import struct
 
-from records import IMU, IMU_RAW, RATE, RC, RTT_STATS
-from session_writer import COLUMNS, IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS, STATS_COLUMNS
+from records import IMU_RAW, RATE, RC, RTT_STATS
+from session_writer import IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS, STATS_COLUMNS
 from telemetry import TelemetryState
 
 SCHEMAS = (
-    ("imu", COLUMNS, IMU, 1),
     ("imu_raw", IMU_RAW_COLUMNS, IMU_RAW, 4),
     ("rate", ("segment", *RATE_FIELDS), RATE, 5),
     ("rc", RC_COLUMNS, RC, 3),
@@ -29,7 +28,7 @@ def read_session(directory):
     rate_history = {}
     rows_read = 0
     for prefix, columns, wire, kind in SCHEMAS:
-        # Match only the writer's timestamp suffix (avoid imu_raw as legacy IMU).
+        # Match only the writer's timestamp suffix.
         paths = sorted(directory.glob(f"{prefix}_[0-9]*.csv"))
         for path in paths:
             previous = {}

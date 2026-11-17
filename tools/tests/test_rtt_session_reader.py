@@ -9,21 +9,21 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
 from session_reader import read_session
-from session_writer import COLUMNS, IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS
+from session_writer import IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS
 
 
 class SessionReaderTests(unittest.TestCase):
     def test_full_history_wrap_gap_segments_and_raw_units(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root)
-            with (path / "imu_20261118.csv").open("w", newline="") as file:
+            with (path / "imu_raw_20261118_000000.csv").open("w", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(COLUMNS)
+                writer.writerow(IMU_RAW_COLUMNS)
                 writer.writerows(
                     [
-                        (1, 1, 2**32 - 1000, 0, *([1000] * 6)),
-                        (1, 3, 11000000, 0, *([2000] * 6)),
-                        (2, 1, 100, 0, *([3000] * 6)),
+                        (1, 1, 2**32 - 1000, 0, *([1000] * 6), 16, 2, 2000, 400, 400),
+                        (1, 3, 11000000, 0, *([2000] * 6), 16, 2, 2000, 400, 400),
+                        (2, 1, 100, 0, *([3000] * 6), 16, 2, 2000, 400, 400),
                     ]
                 )
             with (path / "imu_raw_20261118.csv").open("w", newline="") as file:
@@ -70,14 +70,31 @@ class SessionReaderTests(unittest.TestCase):
             self.assertEqual(len(segments[2].rc_snapshots), 1)
             self.assertEqual(segments[2].rc_snapshots[0][0], 0)
 
+    def test_retired_csv_is_ignored_and_preserved(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root)
+            legacy = path / "imu_20261118.csv"
+            original = b"retired SI header\nretired sample\n"
+            legacy.write_bytes(original)
+            with self.assertRaisesRegex(ValueError, "No telemetry"):
+                read_session(root)
+            with (path / "imu_raw_20261118.csv").open("w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(IMU_RAW_COLUMNS)
+                writer.writerow((1, 1, 100, 0, 0, 0, 2048, 0, 0, 0, 16, 2, 2000, 400, 400))
+            segments, _ = read_session(root)
+            self.assertEqual(segments[1].series.received, 1)
+            self.assertAlmostEqual(segments[1].series.points[0][3], -9.80665)
+            self.assertEqual(legacy.read_bytes(), original)
+
     def test_rejects_bad_rows_and_empty_sessions(self):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaisesRegex(ValueError, "No telemetry"):
                 read_session(root)
-            path = Path(root) / "imu_20261118.csv"
+            path = Path(root) / "imu_raw_20261118.csv"
             with path.open("w", newline="") as file:
                 writer = csv.writer(file)
-                writer.writerow(COLUMNS)
+                writer.writerow(IMU_RAW_COLUMNS)
                 writer.writerow((1, 1))
-            with self.assertRaisesRegex(ValueError, "imu_20261118.csv:2"):
+            with self.assertRaisesRegex(ValueError, "imu_raw_20261118.csv:2"):
                 read_session(root)

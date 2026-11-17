@@ -9,20 +9,6 @@ import time
 
 from records import RTT_STATS_FIELDS, RC_FIELDS, IMU_RAW_FIELDS, RATE_FIELDS
 
-COLUMNS = (
-    "segment",
-    "sequence",
-    "t_read_us",
-    "sensor_time_ticks",
-    "ax_mmps2",
-    "ay_mmps2",
-    "az_mmps2",
-    "gx_mradps",
-    "gy_mradps",
-    "gz_mradps",
-)
-
-
 STATS_COLUMNS = ("segment", *RTT_STATS_FIELDS)
 RC_COLUMNS = ("segment", *RC_FIELDS)
 IMU_RAW_COLUMNS = ("segment", *IMU_RAW_FIELDS)
@@ -53,9 +39,6 @@ class SessionWriter:
                 suffix += 1
         self.files = {}
         try:
-            self.files["csv"] = (self.directory / f"imu_{stamp}.csv").open(
-                "x", newline="", encoding="utf-8"
-            )
             self.files["imu_raw"] = (self.directory / f"imu_raw_{stamp}.csv").open(
                 "x", newline="", encoding="utf-8"
             )
@@ -72,11 +55,9 @@ class SessionWriter:
             if raw:
                 self.files["raw"] = (self.directory / f"data_{stamp}.hex").open("xb")
             self.csv_writers = {
-                kind: csv.writer(self.files[kind])
-                for kind in ("csv", "imu_raw", "stats", "rc", "rate")
+                kind: csv.writer(self.files[kind]) for kind in ("imu_raw", "stats", "rc", "rate")
             }
             for kind, columns in (
-                ("csv", COLUMNS),
                 ("imu_raw", IMU_RAW_COLUMNS),
                 ("stats", STATS_COLUMNS),
                 ("rc", RC_COLUMNS),
@@ -94,7 +75,7 @@ class SessionWriter:
         self.error = None
         self.accepted = 0
         self.processed = 0
-        self.dropped = dict.fromkeys(("csv", "imu_raw", "stats", "rc", "rate", "log", "raw"), 0)
+        self.dropped = dict.fromkeys(("imu_raw", "stats", "rc", "rate", "log", "raw"), 0)
         self.thread = Thread(target=self._run, name="telemetry-writer", daemon=True)
         self.thread.start()
 

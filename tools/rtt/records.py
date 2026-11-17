@@ -36,7 +36,6 @@ class Lines:
 
 MAGIC = b"DRT!"
 HEADER = struct.Struct("<4sBBH")
-IMU = struct.Struct("<III6i")
 IMU_RAW = struct.Struct("<III6hBBHHH")
 IMU_RAW_FIELDS = (
     "sequence",
@@ -87,7 +86,7 @@ RATE_FIELDS = (
     *(f"motor_{i}_thrust_norm" for i in range(1, 5)),
     *(f"residual_{axis}" for axis in ("roll", "pitch", "yaw")),
 )
-KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size, 5: RATE.size}
+KNOWN_SIZES = {2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size, 5: RATE.size}
 MAX_PAYLOAD = 256
 
 
@@ -138,54 +137,42 @@ class ImuSeries:
         self.received = self.missing = self.invalid = self.unknown = self.resets = 0
         self.last = None
         self.elapsed_us = 0
-        self.frame_label = "FRD"
 
     def new_connection(self):
         self.last = None
         self.elapsed_us = 0
-        self.frame_label = "FRD"
         self.points.clear()
 
     def feed(self, frame):
         version, kind, payload = frame
-        if version != 1 or kind not in (1, 4):
+        if version != 1 or kind != 4:
             self.unknown += 1
             return False
-        layout = IMU_RAW if kind == 4 else IMU
-        if len(payload) != layout.size:
+        if len(payload) != IMU_RAW.size:
             self.invalid += 1
             return False
-        values = layout.unpack(payload)
+        values = IMU_RAW.unpack(payload)
         seq, stamp, sensor = values[:3]
         if sensor >= 2**24:
             self.invalid += 1
             return False
-        if kind == 4:
-            accel_range, axis_map, gyro_range, accel_odr, gyro_odr = values[9:]
-            if (
-                accel_range not in (2, 4, 8, 16)
-                or axis_map not in (1, 2)
-                or gyro_range not in (125, 250, 500, 1000, 2000)
-                or accel_odr == 0
-                or gyro_odr == 0
-            ):
-                self.invalid += 1
-                return False
-            scales = (accel_range * 9.80665 / 32768,) * 3 + (
-                gyro_range * math.pi / 180 / 32768,
-            ) * 3
-            # Map 1 historically encoded sensor -> FLU [X,-Y,-Z].
-            # Convert that mounting to FRD; map 2 describes the new mounting.
-            signs = (1, 1, 1) if axis_map == 1 else (-1, 1, -1)
-            axes = tuple(
-                value * scale * sign for value, scale, sign in zip(values[3:9], scales, signs * 2)
-            )
-        else:
-            # Legacy type 1 has no axis metadata; preserve its historical values.
-            axes = tuple(value / 1000 for value in values[3:])
-        frame_label = "FRD" if kind == 4 else "legacy axes unknown"
-        if frame_label != self.frame_label:
-            self.points.clear()
+        accel_range, axis_map, gyro_range, accel_odr, gyro_odr = values[9:]
+        if (
+            accel_range not in (2, 4, 8, 16)
+            or axis_map not in (1, 2)
+            or gyro_range not in (125, 250, 500, 1000, 2000)
+            or accel_odr == 0
+            or gyro_odr == 0
+        ):
+            self.invalid += 1
+            return False
+        scales = (accel_range * 9.80665 / 32768,) * 3 + (gyro_range * math.pi / 180 / 32768,) * 3
+        # Map 1 historically encoded sensor -> FLU [X,-Y,-Z].
+        # Convert that mounting to FRD; map 2 describes the new mounting.
+        signs = (1, 1, 1) if axis_map == 1 else (-1, 1, -1)
+        axes = tuple(
+            value * scale * sign for value, scale, sign in zip(values[3:9], scales, signs * 2)
+        )
         gap = False
         if self.last is not None:
             delta_seq = (seq - self.last[0]) % 2**32
@@ -201,7 +188,6 @@ class ImuSeries:
                 self.missing += delta_seq - 1
                 gap = delta_seq > 1
                 self.elapsed_us += delta_us
-        self.frame_label = frame_label
         t = self.elapsed_us / 1e6
         if gap:
             self.points.append((t, *([float("nan")] * 6)))

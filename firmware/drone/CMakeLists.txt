@@ -48,6 +48,8 @@ endif()
 option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry over RTT"
        ${DRONE_RTT_DEFAULT})
 
+option(DRONE_DEBUG_FORCE_FLIGHT "Enter FLIGHT without waiting for RC boot selection" OFF)
+
 option(DRONE_ENABLE_RATE_CONTROL "Configure rate controller with initial bench gains" ON)
 
 # Enable CMake support for ASM and C languages
@@ -79,6 +81,8 @@ target_sources(
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
             BSP/Src/bsp_motor_pwm.c
+            App/Src/runtime.c
+            App/Src/esc_calibration.c
             App/Src/app.c
             App/Src/app_rate.c
             App/Src/app_safety.c
@@ -123,3 +127,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME} stm32cubemx # Add user defined libra
 
 target_compile_definitions(${CMAKE_PROJECT_NAME}
                            PRIVATE DRONE_RATE_CONTROL=$<BOOL:${DRONE_ENABLE_RATE_CONTROL}>)
+
+target_compile_definitions(${CMAKE_PROJECT_NAME}
+                           PRIVATE DRONE_DEBUG_FORCE_FLIGHT=$<BOOL:${DRONE_DEBUG_FORCE_FLIGHT}>)

@@ -34,6 +34,8 @@ add_executable(
     test_app.c
     ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
     ${FIRMWARE_ROOT}/Control/Src/mixer.c
+    ${FIRMWARE_ROOT}/App/Src/runtime.c
+    ${FIRMWARE_ROOT}/App/Src/esc_calibration.c
     ${FIRMWARE_ROOT}/App/Src/app.c
     ${FIRMWARE_ROOT}/App/Src/app_rate.c
     ${FIRMWARE_ROOT}/App/Src/app_safety.c

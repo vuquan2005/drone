@@ -3,11 +3,9 @@
 #include "app_log.h"
 #include "app_motor.h"
 #include "app_rate.h"
-#include "app_receiver.h"
 #include "app_safety.h"
 #include "app_telemetry.h"
 #include "bsp_board.h"
-#include "bsp_rtt.h"
 #include "bsp_time.h"
 #include "main.h"
 #include <stddef.h>
@@ -21,7 +19,6 @@ static bool rate_failed;
 static app_safety_t safety;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
-static uint32_t last_receiver_ms;
 static uint32_t last_rate_ms;
 #endif
 
@@ -107,19 +104,16 @@ static void init_imu(void) {
 #if DRONE_RTT && DRONE_TELEMETRY
 static void init_telemetry_schedule(void) {
     last_stats_ms = HAL_GetTick();
-    last_receiver_ms = last_stats_ms;
     last_rate_ms = last_stats_ms;
 }
 #else
 static inline void init_telemetry_schedule(void) {}
 #endif
 
-static bool process_receiver(app_receiver_sample_t *sample) {
+static void process_command(const app_command_t *input) {
     const app_command_t previous = command;
-    const bool available = app_receiver_get_sample(sample);
-    (void)app_command_decode(available ? sample : NULL, &command);
+    command = input != NULL && input->valid ? *input : (app_command_t){0};
     log_command_transition(&previous);
-    return available;
 }
 
 static bool imu_failed_for_rate(bsp_imu_result_t status) {
@@ -220,19 +214,12 @@ static void process_motor(void) {
 }
 
 #if DRONE_RTT && DRONE_TELEMETRY
-static void process_periodic_telemetry(const app_receiver_sample_t *sample,
-                                       bool receiver_available) {
+static void process_periodic_telemetry(void) {
     const uint32_t now = HAL_GetTick();
     if ((uint32_t)(now - last_rate_ms) >= 50U) {
         last_rate_ms = now;
         if (rate.configured)
             APP_TELEMETRY_RATE(&rate);
-    }
-    if ((uint32_t)(now - last_receiver_ms) >= 50U) {
-        last_receiver_ms = now;
-        if (receiver_available) {
-            APP_TELEMETRY_RECEIVER(sample, HAL_GetTick());
-        }
     }
     if ((uint32_t)(now - last_stats_ms) >= 1000U) {
         last_stats_ms = now;
@@ -240,19 +227,15 @@ static void process_periodic_telemetry(const app_receiver_sample_t *sample,
     }
 }
 #else
-static inline void
-process_periodic_telemetry(const app_receiver_sample_t *sample,
-                           bool receiver_available) {
-    (void)sample;
-    (void)receiver_available;
-}
+static inline void process_periodic_telemetry(void) {}
 #endif
 
-bool app_get_command(app_command_t *sample) {
-    if (sample == NULL) {
+bool app_get_status(app_status_t *status) {
+    if (status == NULL)
         return false;
-    }
-    *sample = command;
+    *status = (app_status_t){.imu_ready = imu_healthy(),
+                             .motor_ready = pwm_ready,
+                             .arm_state = safety.state};
     return true;
 }
 
@@ -262,9 +245,6 @@ void app_init(void) {
     imu_available = false;
     pwm_ready = false;
     safety = (app_safety_t){0};
-    bsp_rtt_init();
-    app_telemetry_init();
-    app_log_init(HAL_GetTick);
 #if DRONE_RATE_CONTROL
     /* Bench gains only; motor permission is owned by the arm/failsafe state.
      */
@@ -282,15 +262,13 @@ void app_init(void) {
 #endif
     init_motor();
     init_imu();
-    app_receiver_init();
     init_telemetry_schedule();
 }
 
-void app_process(void) {
-    app_receiver_sample_t receiver_sample = {0};
-    const bool receiver_available = process_receiver(&receiver_sample);
+void app_process(const app_command_t *input) {
+    process_command(input);
     process_imu();
     process_rate();
     process_motor();
-    process_periodic_telemetry(&receiver_sample, receiver_available);
+    process_periodic_telemetry();
 }

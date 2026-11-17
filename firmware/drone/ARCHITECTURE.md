@@ -2,7 +2,7 @@
 
 ## Quyết định và phạm vi
 
-Firmware tổ chức theo các lớp `Core → App → BSP → Drivers`; `App` gọi
+Firmware tổ chức theo các lớp `Core → runtime → chế độ trong App → BSP → Drivers`; `App` gọi
 thư viện nội bộ `Control/` qua API độc lập HAL để thực hiện tính toán.
 Phạm vi là điều khiển tư thế và tốc độ góc cho quadrotor dùng STM32.
 Kiểm chứng bằng kiểm thử nhỏ trên máy tính và đo trên board/bộ gá.
@@ -17,6 +17,7 @@ tiến độ thuộc kế hoạch hoặc issue; kết quả đo thuộc `experim
 | Thành phần                     | Trách nhiệm                                                                           |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
 | `Core/`                        | HAL, clock, khởi tạo ngoại vi và vector ngắt do CubeMX quản lý                        |
+| `App/runtime`                  | Receiver, giải mã command, chọn mode lúc boot và dịch vụ log/telemetry chung          |
 | `App/app.c`                    | Điều phối khởi tạo, lịch thực thi và trạng thái ứng dụng                              |
 | `App/app_imu`                  | Lấy mẫu IMU, đổi sang SI, theo dõi kết quả đọc và tuổi dữ liệu                        |
 | `App/app_receiver`, `App/crsf` | Giải mã CRSF, kiểm tra tuổi khung và cung cấp dữ liệu RC                              |
@@ -27,10 +28,23 @@ tiến độ thuộc kế hoạch hoặc issue; kết quả đo thuộc `experim
 
 ## Điểm gọi ứng dụng và ranh giới module
 
-`main()` giữ thứ tự khởi tạo HAL, clock, peripheral rồi gọi `app_init()` một
-lần; vòng `while (1)` gọi `app_process()`. Các lời gọi App nằm trong vùng
-`USER CODE` để CubeMX giữ lại khi generate. `main()` và `Error_Handler()`
-vẫn thuộc `Core/`; `app.c` không cần cung cấp bản thay thế.
+`main()` giữ thứ tự khởi tạo HAL, clock, peripheral rồi gọi `runtime_init()` một
+lần; vòng `while (1)` gọi `runtime_process()`. Các lời gọi nằm trong vùng
+`USER CODE` để CubeMX giữ lại khi generate. Runtime sở hữu receiver và command,
+chọn mode một lần sau reset. Chỉ FLIGHT khởi tạo App rồi truyền command mới nhất
+vào `app_process(command)` ở các lượt sau. App không nhận snapshot trước khi
+khởi tạo vì việc khởi tạo IMU có thể blocking.
+
+Runtime ưu tiên ESC_CALIB khi SB HIGH; nếu không, SD STREAM lúc boot chọn
+FLASH_EXPORT, còn OFF/RECORD chọn FLIGHT. SC dành cho chế độ bay. Runtime dùng `switch` để điều
+phối mode; ESC_CALIB tự khởi tạo và quản lý PWM qua `esc_calibration`,
+FLASH_EXPORT chưa triển khai giữ PWM tắt và báo `supported=0`. Mode chốt đến reset, chưa có chuyển giao tài nguyên
+động. `app_get_status()` cung cấp sức khỏe IMU/PWM và trạng thái arm riêng với
+mode. Safety trong App quyết định quyền motor. Runtime poll receiver mỗi lượt; snapshot/command chỉ cập nhật khi có frame RC
+mới hoặc thay đổi kết nối. Timeout và lỗi transport vẫn được kiểm tra mỗi lượt.
+Runtime khởi tạo RTT/log/telemetry
+chung và gửi RC thô; App gửi IMU, rate và thống kê.
+`main()` và `Error_Handler()` vẫn thuộc `Core/`.
 
 `app.c` là nơi điều phối, không chứa toàn bộ thuật toán điều khiển. Lớp này
 sử dụng lời gọi hàm, không tạo task, hàng đợi hay cấp phát động. Chi phí

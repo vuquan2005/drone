@@ -144,5 +144,32 @@ int main(void) {
         assert(byte == (uint8_t)i);
     }
     assert(bsp_receiver_read(&byte, &timestamp) == BSP_RECEIVER_EMPTY);
+    /* Cached snapshots: new frames, not timestamp differences, drive updates.
+     */
+    app_receiver_init();
+    sample = (app_receiver_sample_t){0};
+    uint32_t sequence = 0;
+    assert(!app_receiver_update_sample(NULL, &sequence));
+    assert(!app_receiver_update_sample(&sample, NULL));
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    tick = UINT32_MAX - 50U;
+    send_frame();
+    assert(app_receiver_update_sample(&sample, &sequence));
+    assert(sequence == 1 && sample.connected);
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    send_frame(); /* Same millisecond, still a distinct RC frame. */
+    assert(app_receiver_update_sample(&sample, &sequence) && sequence == 2);
+    tick = 48U;
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    tick = 49U;
+    assert(app_receiver_update_sample(&sample, &sequence) && !sample.connected);
+    assert(sequence == 2 && !app_receiver_update_sample(&sample, &sequence));
+    send_frame();
+    assert(app_receiver_update_sample(&sample, &sequence) && sample.connected);
+    HAL_UART_ErrorCallback(&huart1);
+    assert(app_receiver_update_sample(&sample, &sequence) && !sample.connected);
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    send_frame();
+    assert(app_receiver_update_sample(&sample, &sequence) && sample.connected);
     puts("Receiver tests passed");
 }

@@ -18,10 +18,79 @@ Khung RTT hai kênh và Live Watch được mô tả tại [DEBUG.md](DEBUG.md).
 | `tests/imu/`                   | Kiểm thử trên máy tính với HAL mô phỏng                                      |
 | `CMakeLists.txt`               | Source/include cho mã tự viết                                                |
 
-Luồng gọi: `main` → `app` → `app_imu` → `bsp_imu` → Bosch API → callback HAL.
-CubeMX khởi tạo HAL, clock và ngoại vi trước `app_init()`; vòng lặp gọi
-`app_process()`. [Kiến trúc](ARCHITECTURE.md) giải thích ranh giới module và
+Luồng gọi: `main` → `runtime` → `app` → `app_imu` → `bsp_imu` → Bosch API → callback HAL.
+CubeMX khởi tạo HAL, clock và ngoại vi trước `runtime_init()`; vòng lặp gọi
+`runtime_process()`. Runtime sở hữu receiver, chỉ khởi tạo App khi chọn FLIGHT
+và chuyển command đã giải mã vào `app_process(command)`. [Kiến trúc](ARCHITECTURE.md) giải thích ranh giới module và
 chuỗi điều khiển dự kiến.
+
+## Chọn chế độ sau reset
+
+Runtime chờ RC hợp lệ, CH5/SA arm OFF và ga ≤2% trước khi chốt mode.
+Trong lúc chờ, PWM bị tắt; IMU và App chưa khởi tạo.
+
+| CH7/SB     | CH8/SD                         | Chế độ vận hành           |
+| ---------- | ------------------------------ | ------------------------- |
+| HIGH       | Bất kỳ                         | ESC_CALIB: hiệu chuẩn ESC |
+| Không HIGH | HIGH / STREAM                  | FLASH_EXPORT: khung chờ   |
+| Không HIGH | LOW / OFF hoặc MIDDLE / RECORD | FLIGHT: chạy App          |
+
+Theo [cấu hình Jumper T20](../Jumper-T20/README.md), CH6/SC dành cho chế độ
+bay, CH7/SB yêu cầu hiệu chuẩn ESC và CH8/SD yêu cầu tắt/ghi/stream telemetry.
+SC không chọn xuất flash hoặc chặn khởi động FLIGHT. Vị trí SC được chuyển
+vào App mỗi lượt; chưa có ánh xạ vị trí sang các thuật toán bay khác nhau.
+
+Đặt SB/SD trước khi cấp nguồn/reset. Chế độ vận hành chốt theo snapshot hợp lệ
+đầu tiên thỏa điều kiện và giữ đến reset. Trong FLIGHT, đổi SC/SD tiếp tục cập
+nhật command; mất RC do arm/failsafe xử lý. SB HIGH trong FLIGHT chặn motor,
+không tự chuyển sang hiệu chuẩn.
+
+FLASH_EXPORT chưa triển khai chức năng và không khởi chạy PWM. Xem chế độ bằng
+`runtime_get_mode()`; `runtime_mode_supported()` trả true cho FLIGHT/ESC_CALIB và false cho FLASH_EXPORT, không biểu diễn sức khỏe hay quyền arm. Command dùng chung qua
+`runtime_get_command()`.
+Runtime khởi tạo RTT/log/telemetry trước khi chọn mode; khi bật log INFO,
+RTT báo đang chờ và mode đã chọn (`supported=0` cho FLASH_EXPORT).
+Trong FLIGHT, `app_get_status()` trả `imu_ready` (mẫu không quá 20 ms),
+`motor_ready` và `arm_state`. Hai cờ ready không tự cấp quyền arm.
+
+## Hiệu chuẩn ESC
+
+Module `esc_calibration` sở hữu PWM riêng; không khởi tạo App bay, IMU hoặc PID.
+Sau khi chọn ESC_CALIB, init bắt đầu PWM ở min. Lượt runtime kế tiếp dùng command
+RC mới: SB còn HIGH, arm OFF và ga ≤2% thì chuyển cả bốn ESC sang max.
+Nếu SB đã tắt trước lượt này, phiên bị hủy và giữ min.
+
+| Trạng thái | Output / chuyển trạng thái                         |
+| ---------- | -------------------------------------------------- |
+| READY      | Min 1000 µs; chờ command mới để phát max           |
+| MAX        | Max 2000 µs; SB OFF hợp lệ chuyển MIN              |
+| MIN        | Giữ min 3 giây rồi DONE; bật SB lại không phát max |
+| DONE       | Giữ min, chờ reset                                 |
+| ABORT_MIN  | Giữ min, khóa đến reset                            |
+| PWM_ERROR  | Tắt output, khóa đến reset                         |
+
+Trong READY/MAX/MIN, mất RC, bật arm hoặc ga >2% hủy phiên về ABORT_MIN.
+MAX quá 30 giây cũng hủy phiên; timeout ưu tiên hơn SB OFF nếu cùng một lượt.
+Lỗi init/ghi PWM tắt output. Xem `esc_calibration_get_state()` và
+`esc_calibration_get_reason()` hoặc log `esc_calib` để phân biệt nguyên nhân.
+DONE chỉ báo hoàn thành trình tự xung, firmware không đọc phản hồi ESC.
+
+`ESC_CALIBRATION_MAX_HOLD_MS` và `ESC_CALIBRATION_MIN_HOLD_MS` trong
+`App/Inc/esc_calibration.h` là mặc định thử trên bàn, cần chỉnh theo ESC.
+PWM vẫn dùng 400 Hz hiện tại; chưa xác nhận ESC hỗ trợ tần số này khi calib.
+Không có delay blocking hoặc cấp phát động. Timer vẫn phát xung nếu CPU bị
+kẹt; timeout phần mềm không bảo vệ trường hợp vòng lặp ngừng chạy.
+
+Trước khi thử: tháo cánh, xác nhận loại ESC hỗ trợ calib endpoint bằng PWM.
+Nếu ESC học endpoint lúc cấp nguồn, cấp nguồn flight controller và receiver
+riêng trước, SB HIGH/arm OFF/ga thấp; xác nhận đang MAX rồi mới cấp nguồn ESC.
+Nghe tín hiệu theo hướng dẫn ESC, tắt SB để phát min; hoàn tất thì reset.
+Không tự chuyển từ calib sang flight trong cùng phiên khởi động.
+
+Kiểm thử host: `cmake -S firmware/drone/tests/esc_calibration -B /tmp/drone-calib-tests`,
+`cmake --build /tmp/drone-calib-tests` và
+`ctest --test-dir /tmp/drone-calib-tests --output-on-failure`.
+Chưa kiểm chứng xung thực tế, timing RC hoặc kết quả calib trên board/ESC.
 
 ## Kiểm tra IMU
 
@@ -179,10 +248,17 @@ chưa xác nhận timing hoặc phần cứng.
 
 ### Ánh xạ RC thành command
 
-`app_process()` lấy snapshot receiver và gọi `app_command_decode()` mỗi lượt,
-kể cả khi không có mẫu IMU mới hoặc tắt RTT/telemetry. Getter receiver đã poll
-UART bên trong nên App không poll thêm lần riêng. `app_get_command()` sao chép
-command gần nhất; gọi sau `app_process()` và kiểm tra `valid` trước khi dùng.
+`runtime_process()` gọi `app_receiver_update_sample()` mỗi lượt để poll UART
+và kiểm tra timeout/lỗi. Chỉ khi có frame RC mới hoặc trạng thái kết nối thay
+đổi, receiver mới copy snapshot và runtime gọi `app_command_decode()`. Bộ đếm
+frame riêng phân biệt cả các frame có cùng timestamp millisecond. Command
+được giữ giữa hai frame; mất RC xóa command ngay lượt phát hiện, không chờ
+frame mới. Cơ chế này độc lập IMU và RTT/telemetry. Runtime truyền command vào App; App sao chép đầu vào,
+không giữ con trỏ, không poll hoặc giải mã receiver. `runtime_get_command()`
+sao chép command gần nhất; gọi sau `runtime_process()` và kiểm tra `valid`.
+Runtime cũng gửi telemetry RC thô mỗi 50 ms kể cả khi đang chờ chọn mode; App chỉ gửi
+telemetry IMU, rate và thống kê. RTT và bộ đếm telemetry được reset bởi runtime,
+không reset khi App khởi tạo.
 Getter command không tự kiểm tra tuổi dữ liệu. Snapshot lỗi hoặc mất kết nối
 xóa command, không giữ throttle hoặc yêu cầu arm cũ.
 

@@ -1,10 +1,13 @@
 #include "SEGGER_RTT.h"
 #include "app.h"
 #include "app_imu.h"
+#include "app_log.h"
 #include "app_receiver.h"
+#include "app_telemetry.h"
 #include "bsp_board.h"
 #include "bsp_motor_pwm.h"
 #include "bsp_rtt.h"
+#include "runtime.h"
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
@@ -88,6 +91,28 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     sample->connected = receiver_connected;
     return true;
 }
+bool app_receiver_update_sample(app_receiver_sample_t *sample,
+                                uint32_t *sequence) {
+    (*sequence)++;
+    if (!app_receiver_get_sample(sample)) {
+        *sample = (app_receiver_sample_t){0};
+    }
+    return true;
+}
+static app_command_t command;
+static void init_app(void) {
+    bsp_rtt_init();
+    app_telemetry_init();
+    app_log_init(HAL_GetTick);
+    app_init();
+}
+/* Supply normalized input as runtime does; App performs no receiver I/O. */
+static void process_app(void) {
+    app_receiver_sample_t sample;
+    app_command_decode(app_receiver_get_sample(&sample) ? &sample : NULL,
+                       &command);
+    app_process(&command);
+}
 static unsigned drain(unsigned channel, char *output) {
     SEGGER_RTT_BUFFER_UP *ring = &_SEGGER_RTT.aUp[channel];
     unsigned count = 0;
@@ -103,19 +128,20 @@ static uint32_t get_u32(const char *p) {
            ((uint32_t)(uint8_t)p[2] << 16U) | ((uint32_t)(uint8_t)p[3] << 24U);
 }
 int main(void) {
-    app_init();
-    app_command_t command;
-    assert(!app_get_command(NULL));
-    assert(app_get_command(&command) && !command.valid);
+    init_app();
+    app_status_t health;
+    assert(!app_get_status(NULL));
+    assert(app_get_status(&health) && !health.imu_ready && health.motor_ready);
+    assert(health.arm_state == APP_DISARMED);
     char output[512];
     drain(0U, output);
     assert(strstr(output, "[1000][I][pwm] initialized\n") != NULL);
     assert(strstr(output, "[1000][I][imu] initialized id=0x24\n") != NULL);
-    app_process();
+    process_app();
     assert(drain(0U, output) == 0U && drain(1U, output) == 0U);
     status = BSP_IMU_DRIVER_ERROR;
     for (unsigned i = 0; i < 20U; ++i) {
-        app_process();
+        process_app();
     }
     drain(0U, output);
     const char *failure = strstr(output, "read failed");
@@ -123,27 +149,28 @@ int main(void) {
     assert(drain(1U, output) == 0U);
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     drain(0U, output);
     assert(strstr(output, "[1001][I][imu] read recovered\n") != NULL);
+    assert(app_get_status(&health) && health.imu_ready);
     assert(drain(1U, output) == 44U);
     assert(memcmp(output, "DRT!\x01\x04\x20\x00", 8U) == 0);
     assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
     assert(get_u32(output + 16) == 256U);
     assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0xF8U);
     tick++;
-    app_process();
+    process_app();
     assert(drain(0U, output) == 0U);
     assert(drain(1U, output) == 44U);
     assert(get_u32(output + 8) == 2U && get_u32(output + 12) == 1002123U);
     status = BSP_IMU_NO_DATA;
-    app_process();
+    process_app();
     assert(drain(1U, output) == 0U && pwm_starts == 1U);
     tick = 1999U;
-    app_process();
+    process_app();
     assert(drain(1U, output) == 0U);
     tick = 2000U;
-    app_process();
+    process_app();
     assert(drain(1U, output) == 52U);
     assert((uint8_t)output[5] == 2U);
     assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 2000U);
@@ -152,32 +179,32 @@ int main(void) {
     memset(fill, 'x', sizeof(fill));
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
     tick = 3000U;
-    app_process();
+    process_app();
     for (unsigned i = 0; i < 100U; ++i) {
-        app_process();
+        process_app();
     }
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
     /* Drain all bytes (the small output buffer can only hold 511 at a time). */
     while (drain(1U, output) != 0U) {
     }
     tick = 4000U;
-    app_process();
+    process_app();
     assert(drain(1U, output) == 52U);
     assert(get_u32(output + 8) == 3U && get_u32(output + 28) == 1U);
     assert(get_u32(output + 36) == 1U);
     tick = 9000U;
-    app_process();
+    process_app();
     assert(drain(1U, output) == 52U); /* No catch-up burst after long delay. */
     tick = UINT32_MAX - 500U;
-    app_init();
+    init_app();
     tick = 499U;
-    app_process();
+    process_app();
     assert(drain(1U, output) == 52U); /* Scheduling survives HAL tick wrap. */
     drain(0U, output);
     receiver_test_enabled = true;
     tick = 548U;
-    app_process();
-    assert(app_get_command(&command) && command.valid);
+    process_app();
+    assert(command.valid);
     assert(command.roll == -NORM_Q15_ONE);
     assert(drain(0U, output) > 0U);
     assert(strstr(output,
@@ -185,51 +212,46 @@ int main(void) {
                   "esc_calibration_requested=0 telemetry=record\n") != NULL);
     assert(drain(1U, output) == 0U);
     tick = 549U;
-    app_process();
-    assert(drain(1U, output) == 60U);
-    assert((uint8_t)output[5] == 3U);
-    assert(get_u32(output + 8U) == 1U);
-    assert(get_u32(output + 12U) == 549U);
-    assert(get_u32(output + 16U) == 539U);
-    assert(get_u32(output + 20U) == 1U);
-    app_process();
+    process_app();
+    assert(drain(1U, output) == 0U); /* RC telemetry belongs to runtime. */
+    process_app();
     assert(drain(1U, output) == 0U);
     /* Commands update with NO_DATA IMU and before the next telemetry slot. */
     receiver_roll = 1811U;
     tick++;
-    app_process();
-    assert(app_get_command(&command) && command.roll == NORM_Q15_ONE);
+    process_app();
+    assert(command.roll == NORM_Q15_ONE);
     assert(drain(0U, output) == 0U);
     const char *expected[] = {"arm_requested=1", "mode=high",
                               "esc_calibration_requested=1",
                               "telemetry=stream"};
     for (unsigned i = 0; i < 4U; ++i) {
         receiver_switches[i] = 1811U;
-        app_process();
+        process_app();
         assert(drain(0U, output) > 0U);
         assert(strstr(output, expected[i]) != NULL);
         assert(strstr(output, "roll=") == NULL &&
                strstr(output, "pitch=") == NULL);
         assert(strstr(output, "yaw=") == NULL &&
                strstr(output, "throttle=") == NULL);
-        app_process();
+        process_app();
         assert(drain(0U, output) == 0U);
     }
     receiver_connected = false;
-    app_process();
-    assert(app_get_command(&command) && !command.valid);
+    process_app();
+    assert(!command.valid);
     assert(command.roll == 0 && command.throttle == 0 &&
            !command.arm_requested);
     assert(drain(0U, output) > 0U);
     assert(strstr(output, "[I][command] valid=0\n") != NULL);
-    app_process();
+    process_app();
     assert(drain(0U, output) == 0U);
     receiver_connected = true;
-    app_process();
+    process_app();
     assert(drain(0U, output) > 0U);
     assert(strstr(output, "valid=1 arm_requested=1") != NULL);
-    app_init();
-    assert(app_get_command(&command) && !command.valid);
+    init_app();
+    assert(app_get_status(&health) && !health.imu_ready);
     receiver_switches[0] = receiver_switches[2] = 172U;
     mixer_result_t preview;
     assert(!app_get_rate_result(&preview));
@@ -241,28 +263,29 @@ int main(void) {
     assert(app_configure_rate(&rate_config));
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     assert(!app_get_rate_result(&preview));
     tick++;
-    app_process();
+    process_app();
     assert(app_get_rate_result(&preview));
     assert(preview.achieved.roll > 0);
     status = BSP_IMU_NO_DATA;
     tick++;
-    app_process();
+    process_app();
     assert(app_get_rate_result(&preview));
     tick += 21;
-    app_process();
+    process_app();
     assert(!app_get_rate_result(&preview) && preview.motor[0] == 0);
+    assert(app_get_status(&health) && !health.imu_ready && health.motor_ready);
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     tick++;
-    app_process();
+    process_app();
     assert(app_get_rate_result(&preview));
     receiver_connected = false;
     status = BSP_IMU_NO_DATA;
-    app_process();
+    process_app();
     assert(!app_get_rate_result(&preview));
     /* IMU at 1 kHz, rate at 500 Hz: intermediate samples do not run PID. */
     rate_config.period_us = 2000;
@@ -270,34 +293,34 @@ int main(void) {
     receiver_connected = true;
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     tick++;
     gyro_roll_radps = 0.5f;
-    app_process();
+    process_app();
     assert(!app_get_rate_result(&preview));
     tick++;
     gyro_roll_radps = 1.0f;
-    app_process();
+    process_app();
     assert(app_get_rate_result(&preview));
     assert(preview.achieved.roll > 3200 && preview.achieved.roll < 3350);
     const norm_q15_t held_roll = preview.achieved.roll;
     tick++;
     gyro_roll_radps = 0;
-    app_process();
+    process_app();
     assert(app_get_rate_result(&preview) && preview.achieved.roll == held_roll);
     tick++;
     status = BSP_IMU_NO_DATA;
-    app_process();
+    process_app();
     assert(app_get_rate_result(&preview) && preview.achieved.roll == held_roll);
     status = BSP_IMU_OK;
-    app_process();
+    process_app();
     assert(app_get_rate_result(&preview) && preview.achieved.roll > held_roll);
     status = BSP_IMU_DRIVER_ERROR;
-    app_process();
+    process_app();
     assert(!app_get_rate_result(&preview));
     status = BSP_IMU_NO_DATA;
     tick++;
-    app_process();
+    process_app();
     assert(!app_get_rate_result(&preview));
     /* Real App -> motor -> PWM path: no startup-high arm, OFF/ON, RC loss. */
     receiver_connected = true;
@@ -309,27 +332,27 @@ int main(void) {
     assert(app_configure_rate(&rate_config));
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     assert(app_get_arm_state() != APP_ARMED);
     receiver_switches[0] = 172;
     tick++;
-    app_process();
+    process_app();
     receiver_switches[0] = 1811;
     tick++;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_ARMED);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     receiver_throttle = 992;
     tick++;
-    app_process();
+    process_app();
     tick++;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_ARMED);
     assert(motor_pulse[0] > 1000 && motor_pulse[0] <= 2000);
     receiver_switches[0] = 172;
     status = BSP_IMU_NO_DATA;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_DISARMED);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
@@ -337,25 +360,25 @@ int main(void) {
     receiver_switches[0] = 1811;
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_ARMED);
     status = BSP_IMU_NO_DATA;
     tick += 21;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_FAILSAFE);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     receiver_switches[0] = 172;
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     receiver_switches[0] = 1811;
     tick++;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_ARMED);
     receiver_connected = false;
     status = BSP_IMU_NO_DATA;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_FAILSAFE);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
@@ -363,25 +386,49 @@ int main(void) {
     receiver_throttle = 172;
     status = BSP_IMU_OK;
     tick++;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_FAILSAFE);
     receiver_switches[0] = 172;
-    app_process();
+    process_app();
     receiver_switches[0] = 1811;
     tick++;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_ARMED);
     status = BSP_IMU_DRIVER_ERROR;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_FAILSAFE);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     pwm_write_ok = false;
-    app_process();
+    process_app();
     assert(pwm_stops == 1);
     pwm_write_ok = true;
-    app_process();
+    process_app();
     assert(app_get_arm_state() == APP_FAILSAFE && pwm_stops == 1);
+    assert(app_get_status(&health) && !health.motor_ready && !health.imu_ready);
+    /* Runtime owns shared transport, decodes RC and emits raw RC telemetry. */
+    receiver_connected = true;
+    receiver_throttle = receiver_switches[0] = receiver_switches[1] =
+        receiver_switches[2] = receiver_switches[3] = 172;
+    runtime_init();
+    receiver_throttle = 992;
+    tick += 50U;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
+    assert(drain(1U, output) == 60U); /* RC visible before mode selection. */
+    receiver_throttle = 172;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_FLIGHT && runtime_mode_supported());
+    drain(0U, output);
+    tick += 50U;
+    status = BSP_IMU_NO_DATA;
+    runtime_process();
+    assert(runtime_get_command(&command) && command.valid);
+    assert(drain(1U, output) == 60U && (uint8_t)output[5] == 3U);
+    assert(get_u32(output + 12U) == tick);
+    assert(get_u32(output + 16U) == tick - 10U);
+    app_process(NULL);
+    assert(app_get_arm_state() == APP_FAILSAFE);
     puts("App log/trace integration tests passed");
     return 0;
 }

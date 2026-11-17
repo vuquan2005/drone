@@ -24,6 +24,37 @@ if HAS_GUI:
 
 @unittest.skipUnless(HAS_GUI, "Run inside the RTT viewer dependency environment")
 class ViewerTests(unittest.TestCase):
+    def test_receiver_responsive(self):
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        from panels import ReceiverPanel
+
+        panel = ReceiverPanel()
+        panel.resize(1000, 450)
+        panel.show()
+        app.processEvents()
+        self.assertTrue(panel.stick_group.isVisible())
+        self.assertTrue(panel.details.isVisible())
+        self.assertFalse(panel.rc_bars[0].isVisible())
+        sample = (1, 100, 90, 1, *range(16))
+        panel.update_sample(sample, 0.1, True)
+        self.assertEqual(panel.sticks[0].values, (3, 2))
+        self.assertEqual(panel.sticks[1].values, (0, 1))
+        self.assertEqual(panel.details.text(), "Raw CRSF (0–2047) · age 0.1s")
+        panel.update_sample(sample, 0, True, saved=True)
+        self.assertIn("saved", panel.details.text())
+        self.assertEqual(panel.rc_status.toolTip(), "")
+        panel.resize(500, 250)
+        app.processEvents()
+        self.assertFalse(panel.stick_group.isVisible())
+        self.assertFalse(panel.details.isVisible())
+        self.assertTrue(panel.rc_bars[0].isVisible())
+        self.assertEqual(panel.rc_bars[2].value(), 2)
+        panel.update_sample(sample, 1, False)
+        self.assertFalse(panel.sticks[0].active)
+        panel.update_sample(None, 0, False, saved=True)
+        self.assertIsNone(panel.sticks[0].values)
+        panel.close()
+
     def test_dual_tcp_plot_filter_and_reconnect(self):
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         servers = [QtNetwork.QTcpServer(), QtNetwork.QTcpServer()]

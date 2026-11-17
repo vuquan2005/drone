@@ -67,7 +67,7 @@ dùng `UV=/path/to/uv` để chỉ định executable cho Make.
   20000 điểm, vẽ 25 lần/giây. Gap sequence được ngắt nét.
 - Tab **Receiver · RC** hiển thị CH1–CH16 dạng thanh và số raw CRSF
   (0–2047), cập nhật danh định 20 Hz. Di chuyển từng cần/công tắc để kiểm
-  tra mapping. Không gán sẵn chức năng kênh và không đổi raw thành µs.
+  tra mapping. Không đổi raw thành µs.
   `connected` phản ánh frame RC hợp lệ mới hơn 100 ms; khi disconnected
   giữ số cuối và làm mờ thanh. `telemetry stale` nghĩa là không có snapshot
   mới trong 0,5 s hoặc TCP DATA ngắt, chưa kết luận được trạng thái RC.
@@ -182,3 +182,14 @@ Khi recording, dữ liệu lưu ở `rate_*.csv`; `flags & 2` biểu thị kết
 Khung plot hiển thị ngay khi mở tab; trace đợi bản tin hợp lệ.
 Firmware đã có arm/failsafe và xuất ESC khi armed. Quy trình trên board và gain thử:
 [DEBUG.md](../../firmware/drone/DEBUG.md#thử-trên-board).
+
+## Receiver thích ứng
+
+Receiver tự đổi bố cục theo kích thước vùng tab: từ 850 × 280 px, bốn kênh
+đầu hiển thị thành hai ô joystick thay cho thanh. Theo mapping
+[Jumper T20 DA-Drone](../../firmware/Jumper-T20/README.md), ô trái là Yaw CH4
+ngang / Throttle CH3 dọc; ô phải là Roll CH1 ngang / Pitch CH2 dọc.
+Phải/trên tăng raw; tâm ô là 1023,5 theo miền 0–2047, không phải điểm giữa đã
+hiệu chuẩn của bộ thu. Khi vùng tab nhỏ hơn, cả 16 kênh trở về thanh.
+Nhãn raw và tuổi snapshot nằm dưới các thanh, tự ẩn khi vùng tab hẹp hơn 600 px hoặc thấp hơn
+300 px.

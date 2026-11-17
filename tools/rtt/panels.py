@@ -4,7 +4,7 @@ from collections import deque
 import re
 
 import numpy as np
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 
 
@@ -121,43 +121,151 @@ class RatePanel(QtWidgets.QWidget):
             self.plots[0].setXRange(end - 10, end, padding=0)
 
 
+class ChannelStick(QtWidgets.QWidget):
+    """Read-only XY display of two raw channels."""
+
+    def __init__(self, horizontal, vertical, horizontal_name, vertical_name):
+        super().__init__()
+        self.horizontal, self.vertical = horizontal, vertical
+        self.horizontal_name, self.vertical_name = horizontal_name, vertical_name
+        self.values = None
+        self.active = False
+        self.setMinimumSize(150, 160)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
+        )
+
+    def set_channels(self, values, active):
+        self.values, self.active = values, active
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        palette = self.palette()
+        color = palette.color(QtGui.QPalette.ColorRole.Text)
+        if not self.active:
+            color.setAlpha(100)
+        painter.setPen(QtGui.QPen(color, 1))
+        side = max(1, min(self.width() - 28, self.height() - 60))
+        box = QtCore.QRectF((self.width() - side) / 2, 12, side, side)
+        painter.drawRect(box)
+        painter.drawLine(
+            QtCore.QPointF(box.center().x(), box.top()),
+            QtCore.QPointF(box.center().x(), box.bottom()),
+        )
+        painter.drawLine(
+            QtCore.QPointF(box.left(), box.center().y()),
+            QtCore.QPointF(box.right(), box.center().y()),
+        )
+        label = (
+            f"{self.horizontal_name} CH{self.horizontal} ↔ / "
+            f"{self.vertical_name} CH{self.vertical} ↕"
+        )
+        if self.values is not None:
+            x, y = self.values
+            point = QtCore.QPointF(box.left() + x / 2047 * side, box.bottom() - y / 2047 * side)
+            painter.setBrush(color)
+            painter.drawEllipse(point, 6, 6)
+            label += f"\n{x} / {y}"
+        else:
+            label += "\n— / —"
+        painter.drawText(
+            QtCore.QRectF(0, box.bottom() + 6, self.width(), 42),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            label,
+        )
+
+
 class ReceiverPanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        layout = QtWidgets.QGridLayout(self)
+        layout = QtWidgets.QVBoxLayout(self)
         self.rc_status = QtWidgets.QLabel("RC: waiting for data")
-        layout.addWidget(self.rc_status, 0, 0, 1, 4)
-        self.rc_bars = []
+        layout.addWidget(self.rc_status)
+        body = QtWidgets.QHBoxLayout()
+        layout.addLayout(body, 1)
+        self.stick_group = QtWidgets.QWidget()
+        stick_layout = QtWidgets.QHBoxLayout(self.stick_group)
+        stick_layout.setContentsMargins(0, 0, 0, 0)
+        # Jumper T20 DA-Drone channel mapping: firmware/Jumper-T20/README.md.
+        self.sticks = [
+            ChannelStick(4, 3, "Yaw", "Throttle"),
+            ChannelStick(1, 2, "Roll", "Pitch"),
+        ]
+        for stick in self.sticks:
+            stick_layout.addWidget(stick)
+        body.addWidget(self.stick_group, 1)
+        self.bar_group = QtWidgets.QWidget()
+        grid = self.bar_layout = QtWidgets.QGridLayout(self.bar_group)
+        grid.setContentsMargins(0, 0, 0, 0)
+        body.addWidget(self.bar_group, 1)
+        self.rc_bars, self.channel_labels = [], []
         for i in range(16):
             bar = QtWidgets.QProgressBar()
             bar.setRange(0, 2047)
-            bar.setToolTip("Raw CRSF (0–2047)")
             bar.setFormat("—")
-            layout.addWidget(QtWidgets.QLabel(f"CH{i + 1}"), i % 8 + 1, (i // 8) * 2)
-            layout.addWidget(bar, i % 8 + 1, (i // 8) * 2 + 1)
+            label = QtWidgets.QLabel(f"CH{i + 1}")
+            grid.addWidget(label, i % 8, (i // 8) * 2)
+            grid.addWidget(bar, i % 8, (i // 8) * 2 + 1)
+            self.channel_labels.append(label)
             self.rc_bars.append(bar)
+        self.details = QtWidgets.QLabel("Raw CRSF (0–2047)")
+        self.details.setWordWrap(True)
+        self.details.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Preferred
+        )
+        layout.addWidget(self.details)
+        self.wide = None
+        self.update_responsive()
 
-    def update_sample(self, sample, age, data_connected):
+    def update_responsive(self):
+        wide = self.width() >= 850 and self.height() >= 280
+        self.stick_group.setVisible(wide)
+        if wide != self.wide:
+            self.wide = wide
+            start, rows = (4, 6) if wide else (0, 8)
+            for index in range(start, 16):
+                row, col = (index - start) % rows, ((index - start) // rows) * 2
+                self.bar_layout.addWidget(self.channel_labels[index], row, col)
+                self.bar_layout.addWidget(self.rc_bars[index], row, col + 1)
+        for label, bar in zip(self.channel_labels[:4], self.rc_bars[:4]):
+            label.setVisible(not wide)
+            bar.setVisible(not wide)
+        self.details.setVisible(self.width() >= 600 and self.height() >= 300)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_responsive()
+
+    def update_sample(self, sample, age, data_connected, saved=False):
         if sample is None:
-            self.rc_status.setText("RC: waiting for data")
-            self.rc_status.setToolTip("")
+            self.rc_status.setText(
+                "No saved RC in this segment" if saved else "RC: waiting for data"
+            )
+            self.details.setText("Raw CRSF (0–2047)")
             for bar in self.rc_bars:
                 bar.setValue(0)
                 bar.setFormat("—")
-        else:
-            seq, ms, last_ms, connected, *channels = sample
-            live = age < 0.5 and data_connected
-            state = ("connected" if connected else "disconnected") if live else "telemetry stale"
-            self.rc_status.setText(f"RC: {state}")
-            self.rc_status.setToolTip(
-                f"Raw CRSF (0–2047) · snapshot #{seq} · age {age:.1f}s · "
-                f"last RC frame age at MCU snapshot "
-                f"{(ms - last_ms) % 2**32}ms"
+                bar.setEnabled(False)
+            for stick in self.sticks:
+                stick.set_channels(None, False)
+            return
+        _, _, _, connected, *channels = sample
+        live = age < 0.5 and data_connected
+        state = ("connected" if connected else "disconnected") if live else "telemetry stale"
+        self.rc_status.setText(f"Saved RC: {state} · final snapshot" if saved else f"RC: {state}")
+        freshness = "saved" if saved else f"age {age:.1f}s"
+        self.details.setText(f"Raw CRSF (0–2047) · {freshness}")
+        for bar, value in zip(self.rc_bars, channels):
+            bar.setValue(value)
+            bar.setFormat(str(value))
+            bar.setEnabled(live and bool(connected))
+        for stick in self.sticks:
+            stick.set_channels(
+                (channels[stick.horizontal - 1], channels[stick.vertical - 1]),
+                live and bool(connected),
             )
-            for bar, value in zip(self.rc_bars, channels):
-                bar.setValue(value)
-                bar.setFormat(str(value))
-                bar.setEnabled(live and bool(connected))
 
 
 class StatsLabel(QtWidgets.QLabel):

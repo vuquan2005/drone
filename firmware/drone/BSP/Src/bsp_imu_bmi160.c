@@ -100,7 +100,13 @@ bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
             .bw = BMI160_GYRO_BW_NORMAL_MODE,
             .power = BMI160_GYRO_NORMAL_MODE,
         };
-        result = bmi160_set_sens_conf(&imu->device);
+        /* Apply ODR/range only after both sensors have left suspend. The
+         * observed board retained accel's reset ODR when configured first. */
+        result = bmi160_set_power_mode(&imu->device);
+        if (result == BMI160_OK) {
+            bus.delay_us(5000U);
+            result = bmi160_set_sens_conf(&imu->device);
+        }
     }
     imu->driver_error = result;
     imu->initialized = result == BMI160_OK;

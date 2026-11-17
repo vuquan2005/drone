@@ -84,7 +84,7 @@ class ViewerTests(unittest.TestCase):
             self.assertAlmostEqual(viewer.rate_panel.curves[0][0].getData()[1][0], 0.25)
             self.assertIn("dt=2000 us", viewer.rate_panel.text())
             self.assertIn("valid=True", viewer.rate_panel.text())
-            self.assertIn("+0.2500 / -0.5000 / +1.0000", viewer.rate_panel.text())
+            self.assertNotIn("Setpoint", viewer.rate_panel.text())
             viewer.log_panel.level.setCurrentText("E")
             self.assertIn("lost", viewer.log_panel.log_view.toPlainText())
             self.assertNotIn("init", viewer.log_panel.log_view.toPlainText())

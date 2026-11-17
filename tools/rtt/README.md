@@ -72,8 +72,9 @@ dùng `UV=/path/to/uv` để chỉ định executable cho Make.
   giữ số cuối và làm mờ thanh. `telemetry stale` nghĩa là không có snapshot
   mới trong 0,5 s hoặc TCP DATA ngắt, chưa kết luận được trạng thái RC.
   Cần nạp firmware mới có telemetry type 3; Debug bật telemetry mặc định.
-- Status hiển thị kết nối, tốc độ nhận host, gap/lỗi frame và thống kê MCU
-  type 2 kèm tuổi snapshot. Tốc độ nhận host chịu ảnh hưởng TCP, không phải
+- Thanh trạng thái hiển thị kết nối, tốc độ nhận host.
+  Mở **Diagnostics** để xem counter host, thống kê MCU type 2 kèm tuổi
+  snapshot và queue/writer drops khi ghi phiên. Tốc độ nhận host chịu ảnh hưởng TCP, không phải
   phép đo chính xác tần số lấy mẫu.
 - Tự nối lại mỗi 2 giây. Nối lại DATA hoặc nghi reset bắt đầu segment mới,
   xóa plot và không đếm gap qua ranh giới; tổng counter host vẫn giữ.
@@ -86,7 +87,8 @@ type/version chưa hỗ trợ được đếm unknown. Không hỗ trợ CSV `IM
 
 ## Ghi phiên CSV, text log và raw
 
-Chọn thư mục gốc rồi **Start recording** / **Stop recording**, hoặc chạy:
+Mở **Recording options** để chọn thư mục gốc và bật **Save raw hex** khi cần,
+rồi **Start recording** / **Stop recording**, hoặc chạy:
 
 ```sh
 make telemetry TELEMETRY_ARGS="--record --raw"

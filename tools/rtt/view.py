@@ -31,9 +31,20 @@ class Viewer(QtWidgets.QMainWindow):
         endpoints = QtWidgets.QLabel(
             f"{args.host} · LOG :{args.log_port} · DATA :{args.data_port} · 10 s history"
         )
-        layout.addWidget(endpoints)
+        self.diagnostics = QtWidgets.QPushButton("Diagnostics")
+        self.diagnostics.setCheckable(True)
+        self.diagnostics.setChecked(False)
+        self.diagnostic_details = QtWidgets.QWidget()
+        details_layout = QtWidgets.QVBoxLayout(self.diagnostic_details)
+        details_layout.setContentsMargins(0, 0, 0, 0)
+        details_layout.addWidget(endpoints)
         self.mcu_stats = StatsLabel()
-        layout.addWidget(self.mcu_stats)
+        details_layout.addWidget(self.mcu_stats)
+        self.host_stats = QtWidgets.QLabel()
+        self.host_stats.setWordWrap(True)
+        details_layout.addWidget(self.host_stats)
+        self.diagnostic_details.hide()
+        self.diagnostics.toggled.connect(self.diagnostic_details.setVisible)
         controls = QtWidgets.QHBoxLayout()
         self.output_dir = QtWidgets.QLineEdit(str(getattr(args, "output_dir", DEFAULT_OUTPUT)))
         self.browse = QtWidgets.QPushButton("Save folder…")
@@ -42,12 +53,27 @@ class Viewer(QtWidgets.QMainWindow):
         self.raw_checkbox.setChecked(getattr(args, "raw", False))
         self.record_button = QtWidgets.QPushButton("Start recording")
         self.record_button.clicked.connect(self.toggle_recording)
-        controls.addWidget(self.output_dir)
-        controls.addWidget(self.browse)
-        controls.addWidget(self.raw_checkbox)
+        self.record_options_button = QtWidgets.QPushButton("Recording options")
+        self.record_options_button.setCheckable(True)
+        controls.addWidget(self.diagnostics)
+        controls.addWidget(self.record_options_button)
+        controls.addStretch()
         controls.addWidget(self.record_button)
         layout.addLayout(controls)
-        self.record_status = QtWidgets.QLabel("Recording off")
+        layout.addWidget(self.diagnostic_details)
+        self.record_options = QtWidgets.QWidget()
+        options_layout = QtWidgets.QHBoxLayout(self.record_options)
+        options_layout.setContentsMargins(0, 0, 0, 0)
+        for widget in (self.output_dir, self.browse, self.raw_checkbox):
+            options_layout.addWidget(widget)
+        self.record_options.hide()
+        self.record_options_button.toggled.connect(self.record_options.setVisible)
+        layout.addWidget(self.record_options)
+        self.writer_stats = QtWidgets.QLabel()
+        self.writer_stats.setWordWrap(True)
+        details_layout.addWidget(self.writer_stats)
+        self.record_status = QtWidgets.QLabel()
+        self.record_status.hide()
         self.record_status.setWordWrap(True)
         layout.addWidget(self.record_status)
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
@@ -119,6 +145,7 @@ class Viewer(QtWidgets.QMainWindow):
         try:
             self.writer = SessionWriter(self.output_dir.text(), raw=self.raw_checkbox.isChecked())
         except OSError as error:
+            self.record_status.show()
             self.record_status.setText(f"Recording ERROR: {error}")
             return
         self.recording = True
@@ -142,8 +169,12 @@ class Viewer(QtWidgets.QMainWindow):
         if w.error:
             state = f"Recording ERROR: {w.error} (session may be incomplete)"
         drops = w.dropped
-        self.record_status.setText(
-            f"{state}: {w.directory} · queue {w.queue.qsize()} · "
+        self.record_status.show()
+        drop_count = sum(drops.values())
+        warning = f" · writer drops {drop_count}" if drop_count else ""
+        self.record_status.setText(f"{state}: {w.directory}{warning}")
+        self.writer_stats.setText(
+            f"Queue {w.queue.qsize()} · "
             f"writer drops CSV={drops['csv'] + drops['imu_raw']} rate={drops['rate']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:
@@ -178,18 +209,11 @@ class Viewer(QtWidgets.QMainWindow):
         else:
             age = now - state.rate_received_at
             connected = self.states["DATA"] == "connected"
-            rows = [
-                f"Rate snapshot · valid={bool(rate[3] & 2)} · connected={connected} · age={age:.2f} s · dt={rate[2]} us"
-            ]
-            for title, values in (
-                ("Setpoint FRD rad/s", rate[4:7]),
-                ("Gyro FRD rad/s", rate[7:10]),
-                ("PID normalized", rate[10:13]),
-                ("Motors M1–M4 normalized thrust", rate[13:17]),
-                ("Allocation residual", rate[17:20]),
-            ):
-                rows.append(title + ": " + " / ".join(f"{x:+.4f}" for x in values))
-            self.rate_panel.setText("\n\n".join(rows))
+            self.rate_panel.setText(
+                f"Rate · valid={bool(rate[3] & 2)} · "
+                f"{'live' if connected and age < 0.5 else 'telemetry stale'} · "
+                f"age={age:.2f} s · dt={rate[2]} us"
+            )
         self.mcu_stats.update_sample(
             state.latest_stats,
             now - state.stats_received_at if state.stats_received_at is not None else 0,
@@ -197,11 +221,14 @@ class Viewer(QtWidgets.QMainWindow):
         while state.arrivals and state.arrivals[0] < now - 1:
             state.arrivals.popleft()
         s = state.series
-        self.statusBar().showMessage(
-            f"LOG: {self.states['LOG']} | DATA: {self.states['DATA']} | "
-            f"RX {len(state.arrivals)}/s · records {s.received} · missing seq {s.missing} · "
+        self.host_stats.setText(
+            f"Records {s.received} · missing seq {s.missing} · "
             f"invalid {s.invalid} · unknown {s.unknown} · resets? {s.resets} · "
             f"log oversize {self.log_stream.framing.errors} · frame errors {self.data_stream.framing.errors}"
+        )
+        self.statusBar().showMessage(
+            f"LOG: {self.states['LOG']} | DATA: {self.states['DATA']} | "
+            f"RX {len(state.arrivals)}/s"
         )
         if not self.dirty:
             return

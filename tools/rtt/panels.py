@@ -93,7 +93,8 @@ class RatePanel(QtWidgets.QWidget):
         for title, unit, row, col, traces in groups:
             plot = self.graph.addPlot(row=row, col=col, title=title)
             plot.setLabel("left", unit)
-            plot.setLabel("bottom", "Host time from segment start", units="s")
+            if row == 2:
+                plot.setLabel("bottom", "Host time from segment start", units="s")
             plot.showGrid(x=True, y=True, alpha=0.2)
             plot.addLegend()
             plot.setXRange(0, 10, padding=0)
@@ -124,12 +125,13 @@ class ReceiverPanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         layout = QtWidgets.QGridLayout(self)
-        self.rc_status = QtWidgets.QLabel("RC: waiting for type 3 frames")
+        self.rc_status = QtWidgets.QLabel("RC: waiting for data")
         layout.addWidget(self.rc_status, 0, 0, 1, 4)
         self.rc_bars = []
         for i in range(16):
             bar = QtWidgets.QProgressBar()
             bar.setRange(0, 2047)
+            bar.setToolTip("Raw CRSF (0–2047)")
             bar.setFormat("—")
             layout.addWidget(QtWidgets.QLabel(f"CH{i + 1}"), i % 8 + 1, (i // 8) * 2)
             layout.addWidget(bar, i % 8 + 1, (i // 8) * 2 + 1)
@@ -137,7 +139,8 @@ class ReceiverPanel(QtWidgets.QWidget):
 
     def update_sample(self, sample, age, data_connected):
         if sample is None:
-            self.rc_status.setText("RC: waiting for type 3 frames")
+            self.rc_status.setText("RC: waiting for data")
+            self.rc_status.setToolTip("")
             for bar in self.rc_bars:
                 bar.setValue(0)
                 bar.setFormat("—")
@@ -145,9 +148,11 @@ class ReceiverPanel(QtWidgets.QWidget):
             seq, ms, last_ms, connected, *channels = sample
             live = age < 0.5 and data_connected
             state = ("connected" if connected else "disconnected") if live else "telemetry stale"
-            self.rc_status.setText(
-                f"RC: {state} · snapshot #{seq}, age {age:.1f}s · "
-                f"last RC frame age at MCU snapshot {(ms - last_ms) % 2**32}ms · raw CRSF"
+            self.rc_status.setText(f"RC: {state}")
+            self.rc_status.setToolTip(
+                f"Raw CRSF (0–2047) · snapshot #{seq} · age {age:.1f}s · "
+                f"last RC frame age at MCU snapshot "
+                f"{(ms - last_ms) % 2**32}ms"
             )
             for bar, value in zip(self.rc_bars, channels):
                 bar.setValue(value)

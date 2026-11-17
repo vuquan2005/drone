@@ -55,6 +55,14 @@ class ViewerTests(unittest.TestCase):
         self.assertIsNone(panel.sticks[0].values)
         panel.close()
 
+    def test_rate_units(self):
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        from panels import RatePanel
+
+        rate = RatePanel()
+        self.assertTrue(all(not plot.getAxis("left").autoSIPrefix for plot in rate.plots))
+        rate.close()
+
     def test_dual_tcp_plot_filter_and_reconnect(self):
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         servers = [QtNetwork.QTcpServer(), QtNetwork.QTcpServer()]

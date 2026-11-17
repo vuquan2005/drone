@@ -93,6 +93,7 @@ class RatePanel(QtWidgets.QWidget):
         for title, unit, row, col, traces in groups:
             plot = self.graph.addPlot(row=row, col=col, title=title)
             plot.setLabel("left", unit)
+            plot.getAxis("left").enableAutoSIPrefix(False)
             if row == 2:
                 plot.setLabel("bottom", "Host time from segment start", units="s")
             plot.showGrid(x=True, y=True, alpha=0.2)

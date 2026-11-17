@@ -213,3 +213,5 @@ Phải/trên tăng raw; tâm ô là 1023,5 theo miền 0–2047, không phải �
 hiệu chuẩn của bộ thu. Khi vùng tab nhỏ hơn, cả 16 kênh trở về thanh.
 Nhãn raw và tuổi snapshot nằm dưới các thanh, tự ẩn khi vùng tab hẹp hơn 600 px hoặc thấp hơn
 300 px.
+
+Các trục dọc Rate giữ giá trị gốc rad/s hoặc normalized, không tự thêm hệ số SI.

@@ -14,6 +14,7 @@
 static app_imu_t imu;
 static app_command_t command;
 static app_rate_t rate;
+static bool imu_available;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
 static uint32_t last_receiver_ms;
@@ -133,16 +134,32 @@ bool app_get_rate_result(mixer_result_t *result) {
 static void process_imu(void) {
     const bsp_imu_result_t status = app_imu_poll(&imu);
     log_imu_transition(status);
-    if (!command.valid || imu_failed_for_rate(status) ||
-        (rate.have_time &&
-         (uint32_t)(bsp_time_now_us() - rate.previous_us) > 20000U)) {
-        app_rate_reset(&rate);
+    if (imu_failed_for_rate(status)) {
+        imu_available = false;
     }
     if (status == BSP_IMU_OK) {
-        (void)app_rate_step(&rate, &command, imu.sample.gyro_radps,
-                            imu.sample.t_read_us);
+        imu_available = true;
         APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
     }
+}
+
+static void process_rate(void) {
+    /* Sensor freshness is independent of the controller's consumed timestamp.
+     */
+    if (!command.valid || !imu_available ||
+        (uint32_t)(bsp_time_now_us() - imu.sample.t_read_us) > 20000U) {
+        app_rate_reset(&rate);
+        return;
+    }
+    if (!rate.configured)
+        return;
+    if (rate.have_time && (uint32_t)(imu.sample.t_read_us - rate.previous_us) <
+                              rate.config.period_us) {
+        return;
+    }
+    /* Use the latest sample once; never replay missed controller iterations. */
+    (void)app_rate_step(&rate, &command, imu.sample.gyro_radps,
+                        imu.sample.t_read_us);
 }
 
 #if DRONE_RTT && DRONE_TELEMETRY
@@ -180,6 +197,7 @@ bool app_get_command(app_command_t *sample) {
 void app_init(void) {
     command = (app_command_t){0};
     rate = (app_rate_t){0};
+    imu_available = false;
     bsp_rtt_init();
     app_telemetry_init();
     app_log_init(HAL_GetTick);
@@ -193,5 +211,6 @@ void app_process(void) {
     app_receiver_sample_t receiver_sample = {0};
     const bool receiver_available = process_receiver(&receiver_sample);
     process_imu();
+    process_rate();
     process_periodic_telemetry(&receiver_sample, receiver_available);
 }

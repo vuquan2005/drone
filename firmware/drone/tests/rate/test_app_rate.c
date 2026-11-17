@@ -5,7 +5,7 @@
 
 int main(void) {
     app_rate_t state = {0};
-    app_rate_config_t config = {0};
+    app_rate_config_t config = {.period_us = 1000};
     for (unsigned i = 0; i < 3; ++i) {
         config.axis[i] = (rate_axis_config_t){1, 0, 0, 0.5f, 1, 0};
         config.max_rate_radps[i] = 2;
@@ -52,6 +52,11 @@ int main(void) {
     assert(integral > 0);
     assert(app_rate_step(&state, &command, gyro, 2000));
     assert(state.controller.integral[0] == integral);
+    config.period_us = 0;
+    assert(!app_rate_configure(&state, &config));
+    config.period_us = 20001;
+    assert(!app_rate_configure(&state, &config));
+    config.period_us = 1000;
     config.max_rate_radps[2] = NAN;
     assert(!app_rate_configure(&state, &config));
     assert(!state.configured && !state.valid);

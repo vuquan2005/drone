@@ -142,3 +142,24 @@ ctest --test-dir /tmp/drone-rtt-tests --output-on-failure
 
 Test host kiểm tra buffer, format, counter và timestamp logic. Cần đo trên
 board để xác nhận SWD, nguồn µs và chi phí RTT trước khi kết luận timing.
+
+## Kiểm tra luồng rate/mixer
+
+`app_init()` khởi tạo luồng rate ở trạng thái chưa cấu hình. Sau đó gọi
+`app_configure_rate()` trong foreground với `app_rate_config_t`: PID từng trục,
+`max_rate_radps` và `period_us`. Không có bộ gain mặc định đã tune cho bay.
+`period_us = 2000` giới hạn rate ở 500 Hz dù IMU cung cấp mẫu ở 1 kHz.
+Nếu IMU chậm hơn, rate chờ mẫu mới; không tính lặp lại cùng mẫu hoặc chạy bù.
+`dt` dùng timestamp đọc của hai mẫu thực sự được controller tiêu thụ.
+
+`process_imu()` đọc mẫu và telemetry; `process_rate()` kiểm tra RC, lỗi/tuổi
+mẫu IMU và chu kỳ rate riêng. Mẫu quá 20 ms hoặc khoảng cách giữa hai bước PID
+quá 20 ms làm reset trạng thái. Đổi cấu hình cũng reset PID và residual.
+Gyro SI trong App vẫn là FLU; chỉ đầu vào controller chuyển sang FRD.
+Khi giảm mẫu đưa vào rate, cần cấu hình/kiểm chứng lọc gyro thích hợp;
+luồng hiện tại lấy mẫu mới nhất, chưa thêm bộ lọc chống alias.
+
+Đọc `app_get_rate_result()` sau `app_process()` để lấy kết quả tính toán;
+kiểm tra giá trị trả về trước khi sử dụng. Giữa các kỳ rate, kết quả hợp lệ
+trước đó được giữ lại. Chưa có arm/failsafe hoặc ghi kết quả mixer ra ESC;
+`arm_requested` không phải quyền chạy motor.

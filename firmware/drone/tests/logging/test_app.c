@@ -12,6 +12,7 @@
 static bsp_imu_result_t status = BSP_IMU_NO_DATA;
 static uint32_t tick = 1000U;
 static unsigned pwm_starts;
+static float gyro_roll_radps;
 uint32_t bsp_time_now_us(void) {
     return tick * 1000U + 123U;
 }
@@ -48,6 +49,7 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     imu->sample_valid = status == BSP_IMU_OK;
     if (imu->sample_valid) {
         imu->sample_count++;
+        imu->sample.gyro_radps[0] = gyro_roll_radps;
         imu->sample.t_read_us = tick * 1000U + 123U;
         imu->sample.sensor_time_ticks = 256U;
         imu->sample.accel_mps2[2] = 9.80665f;
@@ -222,7 +224,7 @@ int main(void) {
     assert(app_get_command(&command) && !command.valid);
     mixer_result_t preview;
     assert(!app_get_rate_result(&preview));
-    app_rate_config_t rate_config = {0};
+    app_rate_config_t rate_config = {.period_us = 1000};
     for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
         rate_config.axis[i] = (rate_axis_config_t){0.1f, 0, 0, 0.5f, 1, 0};
         rate_config.max_rate_radps[i] = 2;
@@ -251,6 +253,41 @@ int main(void) {
     assert(app_get_rate_result(&preview));
     receiver_connected = false;
     status = BSP_IMU_NO_DATA;
+    app_process();
+    assert(!app_get_rate_result(&preview));
+    /* IMU at 1 kHz, rate at 500 Hz: intermediate samples do not run PID. */
+    rate_config.period_us = 2000;
+    assert(app_configure_rate(&rate_config));
+    receiver_connected = true;
+    status = BSP_IMU_OK;
+    tick++;
+    app_process();
+    tick++;
+    gyro_roll_radps = 0.5f;
+    app_process();
+    assert(!app_get_rate_result(&preview));
+    tick++;
+    gyro_roll_radps = 1.0f;
+    app_process();
+    assert(app_get_rate_result(&preview));
+    assert(preview.achieved.roll > 3200 && preview.achieved.roll < 3350);
+    const norm_q15_t held_roll = preview.achieved.roll;
+    tick++;
+    gyro_roll_radps = 0;
+    app_process();
+    assert(app_get_rate_result(&preview) && preview.achieved.roll == held_roll);
+    tick++;
+    status = BSP_IMU_NO_DATA;
+    app_process();
+    assert(app_get_rate_result(&preview) && preview.achieved.roll == held_roll);
+    status = BSP_IMU_OK;
+    app_process();
+    assert(app_get_rate_result(&preview) && preview.achieved.roll > held_roll);
+    status = BSP_IMU_DRIVER_ERROR;
+    app_process();
+    assert(!app_get_rate_result(&preview));
+    status = BSP_IMU_NO_DATA;
+    tick++;
     app_process();
     assert(!app_get_rate_result(&preview));
     puts("App log/trace integration tests passed");

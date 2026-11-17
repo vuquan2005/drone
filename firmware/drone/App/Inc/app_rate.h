@@ -10,6 +10,8 @@
 typedef struct {
     rate_axis_config_t axis[RATE_AXIS_COUNT];
     float max_rate_radps[RATE_AXIS_COUNT];
+    uint32_t
+        period_us; /**< Minimum spacing of consumed samples, [1,20000] us. */
 } app_rate_config_t;
 
 /** Foreground-owned computational pipeline; no motor permission or I/O.

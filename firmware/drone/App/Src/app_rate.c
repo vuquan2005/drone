@@ -18,7 +18,7 @@ bool app_rate_configure(app_rate_t *state, const app_rate_config_t *config) {
     if (state == NULL)
         return false;
     *state = (app_rate_t){0};
-    if (config == NULL)
+    if (config == NULL || config->period_us == 0 || config->period_us > 20000U)
         return false;
     rate_controller_t probe = {0};
     float zero[RATE_AXIS_COUNT] = {0}, output[RATE_AXIS_COUNT];

@@ -61,6 +61,14 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define IMU_CS_Pin GPIO_PIN_4
 #define IMU_CS_GPIO_Port GPIOA
+#define MOTOR_3_Pin GPIO_PIN_6
+#define MOTOR_3_GPIO_Port GPIOB
+#define MOTOR_4_Pin GPIO_PIN_7
+#define MOTOR_4_GPIO_Port GPIOB
+#define MOTOR_1_Pin GPIO_PIN_8
+#define MOTOR_1_GPIO_Port GPIOB
+#define MOTOR_2_Pin GPIO_PIN_9
+#define MOTOR_2_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 

@@ -1,5 +1,5 @@
 #include "app_motor.h"
-#include "bsp_pwm.h"
+#include "bsp_motor_pwm.h"
 #include "mixer.h"
 #include "stm32f1xx_hal.h"
 #include <assert.h>
@@ -48,65 +48,68 @@ HAL_StatusTypeDef HAL_TIM_PWM_Stop(TIM_HandleTypeDef *handle,
 int main(void) {
     const uint16_t minimum[] = {1000, 1000, 1000, 1000};
     const uint16_t widths[] = {1000, 1250, 1750, 2000};
-    assert(!bsp_pwm_set_pulse_us(1, 1000));
-    assert(!bsp_pwm_set_all_us(widths));
-    assert(bsp_pwm_init());
+    /* Expected register order is TIM4 CH1..CH4, independent of BSP mapping. */
+    const uint16_t channel_widths[] = {1750, 2000, 1000, 1250};
+    assert(!bsp_motor_pwm_set_pulse_us(1, 1000));
+    assert(!bsp_motor_pwm_set_all_us(widths));
+    assert(bsp_motor_pwm_init());
     assert(enabled == 15);
     assert_pulses(minimum);
 
-    for (uint8_t channel = 1; channel <= 4; ++channel) {
-        assert(bsp_pwm_set_pulse_us(channel, widths[channel - 1]));
+    for (uint8_t motor = 1; motor <= 4; ++motor) {
+        assert(bsp_motor_pwm_set_pulse_us(motor, widths[motor - 1]));
     }
-    assert_pulses(widths);
-    assert(!bsp_pwm_set_pulse_us(0, 1500));
-    assert(!bsp_pwm_set_pulse_us(5, 1500));
-    assert(!bsp_pwm_set_pulse_us(255, 1500));
-    assert(!bsp_pwm_set_pulse_us(1, 999));
-    assert(!bsp_pwm_set_pulse_us(1, 2001));
-    assert(!bsp_pwm_set_pulse_us(1, UINT16_MAX));
-    assert(!bsp_pwm_set_all_us(NULL));
+    assert_pulses(channel_widths);
+    assert(!bsp_motor_pwm_set_pulse_us(0, 1500));
+    assert(!bsp_motor_pwm_set_pulse_us(5, 1500));
+    assert(!bsp_motor_pwm_set_pulse_us(255, 1500));
+    assert(!bsp_motor_pwm_set_pulse_us(1, 999));
+    assert(!bsp_motor_pwm_set_pulse_us(1, 2001));
+    assert(!bsp_motor_pwm_set_pulse_us(1, UINT16_MAX));
+    assert(!bsp_motor_pwm_set_all_us(NULL));
     for (unsigned i = 0; i < 4; ++i) {
         uint16_t invalid[] = {1500, 1500, 1500, 1500};
         invalid[i] = 2001;
-        assert(!bsp_pwm_set_all_us(invalid));
-        assert_pulses(widths);
+        assert(!bsp_motor_pwm_set_all_us(invalid));
+        assert_pulses(channel_widths);
     }
-    assert_pulses(widths);
+    assert_pulses(channel_widths);
 
     timer.CR1 = TIM_CR1_ARPE;
-    assert(bsp_pwm_set_all_us(minimum));
+    assert(bsp_motor_pwm_set_all_us(minimum));
     assert_pulses(minimum);
     assert(timer.CR1 == TIM_CR1_ARPE);
-    assert(bsp_pwm_set_all_us(widths));
-    assert_pulses(widths);
+    assert(bsp_motor_pwm_set_all_us(widths));
+    assert_pulses(channel_widths);
 
     timer.CNT = 12345;
-    assert(bsp_pwm_init());
+    assert(bsp_motor_pwm_init());
     assert(enabled == 15);
     assert_pulses(minimum);
-    bsp_pwm_stop();
-    bsp_pwm_stop();
+    bsp_motor_pwm_stop();
+    bsp_motor_pwm_stop();
     assert(enabled == 0);
-    assert(!bsp_pwm_set_pulse_us(1, 1500));
-    assert(!bsp_pwm_set_all_us(widths));
+    assert(!bsp_motor_pwm_set_pulse_us(1, 1500));
+    assert(!bsp_motor_pwm_set_all_us(widths));
 
     for (unsigned i = 0; i < 4; ++i) {
         fail_channel = channels[i];
-        assert(!bsp_pwm_init());
+        assert(!bsp_motor_pwm_init());
         assert(enabled == 0);
-        assert(!bsp_pwm_set_pulse_us(1, 1500));
-        assert(!bsp_pwm_set_all_us(widths));
+        assert(!bsp_motor_pwm_set_pulse_us(1, 1500));
+        assert(!bsp_motor_pwm_set_all_us(widths));
         fail_channel = UINT32_MAX;
-        assert(bsp_pwm_init());
+        assert(bsp_motor_pwm_init());
         assert(enabled == 15);
     }
-    bsp_pwm_stop();
+    bsp_motor_pwm_stop();
+    const uint16_t motor_widths[] = {1750, 2000, 1000, 1250};
     const norm_q15_t commands[] = {0, 8192, 24576, NORM_Q15_ONE};
     assert(!app_motor_set_all(commands));
     assert(app_motor_init());
     assert_pulses(minimum);
     assert(app_motor_set_all(commands));
-    assert_pulses(widths);
+    assert_pulses(motor_widths);
     assert(!app_motor_set_all(NULL));
     const norm_q15_t invalid_values[] = {-1, NORM_Q15_ONE + 1, INT32_MIN,
                                          INT32_MAX};
@@ -116,11 +119,11 @@ int main(void) {
             norm_q15_t invalid[] = {16384, 16384, 16384, 16384};
             invalid[i] = invalid_values[j];
             assert(!app_motor_set_all(invalid));
-            assert_pulses(widths);
+            assert_pulses(motor_widths);
         }
     }
     const norm_q15_t fractional[] = {16397, 16404, 0, NORM_Q15_ONE};
-    const uint16_t rounded[] = {1500, 1501, 1000, 2000};
+    const uint16_t rounded[] = {1000, 2000, 1500, 1501};
     assert(app_motor_set_all(fractional));
     assert_pulses(rounded);
     /* Every representable ESC command stays within half a timer tick of the
@@ -136,16 +139,16 @@ int main(void) {
         }
     }
     const norm_q15_t ties[] = {2047, 2048, 2049, NORM_Q15_ONE};
-    const uint16_t ties_expected[] = {1062, 1063, 1063, 2000};
+    const uint16_t ties_expected[] = {1063, 2000, 1062, 1063};
     assert(app_motor_set_all(ties));
     assert_pulses(ties_expected);
-    /* Identity thrust-to-ESC mapping and index-to-channel mapping are test
-     * assumptions only; production mapping/calibration remains App's job. */
+    /* Verify the mixer motor order reaches the wired TIM4 channels.
+     * Identity thrust-to-ESC calibration remains a test assumption. */
     const mixer_command_t request = {0.5f, 0.5f, 0, 0};
     mixer_result_t mixed;
     assert(mixer_quad_x(&request, &mixed));
     assert(app_motor_set_all(mixed.motor));
-    const uint16_t mixed_widths[] = {1250, 1250, 1750, 1750};
+    const uint16_t mixed_widths[] = {1750, 1750, 1250, 1250};
     assert_pulses(mixed_widths);
     assert(app_motor_init());
     assert_pulses(minimum);

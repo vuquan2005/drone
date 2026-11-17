@@ -3,7 +3,7 @@
 #include "app_imu.h"
 #include "app_receiver.h"
 #include "bsp_board.h"
-#include "bsp_pwm.h"
+#include "bsp_motor_pwm.h"
 #include "bsp_rtt.h"
 #include <assert.h>
 #include <stdio.h>
@@ -22,17 +22,18 @@ uint32_t bsp_time_now_us(void) {
 uint32_t HAL_GetTick(void) {
     return tick;
 }
-bool bsp_pwm_init(void) {
+bool bsp_motor_pwm_init(void) {
     pwm_starts++;
     return true;
 }
-bool bsp_pwm_set_all_us(const uint16_t pulse_us[BSP_PWM_CHANNEL_COUNT]) {
+bool bsp_motor_pwm_set_all_us(
+    const uint16_t pulse_us[BSP_MOTOR_PWM_MOTOR_COUNT]) {
     if (!pwm_write_ok)
         return false;
     memcpy(motor_pulse, pulse_us, sizeof(motor_pulse));
     return true;
 }
-void bsp_pwm_stop(void) {
+void bsp_motor_pwm_stop(void) {
     pwm_stops++;
 }
 const bsp_imu_config_t *bsp_board_imu_config(void) {

@@ -54,10 +54,12 @@ Sau lỗi khởi tạo, có thể gọi lại `app_init()` để khởi tạo l�
 
 ## PWM ESC
 
-`bsp_pwm` dùng TIM4 đã được CubeMX cấu hình: clock timer 72 MHz,
+`bsp_motor_pwm` dùng TIM4 đã được CubeMX cấu hình: clock timer 72 MHz,
 prescaler 71, ARR 2499, tick 1 µs, chu kỳ 2,5 ms (400 Hz), PWM1 active high.
-Kênh 1–4 tương ứng PB6–PB9 và M1–M4: trước-phải CCW, sau-phải CW,
-sau-trái CCW, trước-trái CW (nhìn từ trên).
+API dùng thứ tự motor M1–M4: trước-phải CCW, sau-phải CW,
+sau-trái CCW, trước-trái CW (nhìn từ trên). Ánh xạ board nằm trong BSP:
+M1 → PB8 / TIM4_CH3, M2 → PB9 / TIM4_CH4,
+M3 → PB6 / TIM4_CH1, M4 → PB7 / TIM4_CH2.
 
 `app_init()` khởi động cả bốn kênh ở 1000 µs trước khi khởi tạo IMU/receiver.
 Xem `pwm_ready` trong `App/Src/app.c` bằng debugger để biết kết quả. Nếu một
@@ -71,10 +73,10 @@ float ở cửa vào rồi trả lực đẩy và phản hồi fixed-point; xem
 [Control/README.md](Control/README.md). Hiện ánh xạ thrust → ESC tuyến tính
 để thử bộ gá; chưa có đường đặc tính motor/ESC đã đo và hiệu chuẩn.
 
-API tại [BSP/Inc/bsp_pwm.h](BSP/Inc/bsp_pwm.h), chỉ gọi trong foreground
+API tại [BSP/Inc/bsp_motor_pwm.h](BSP/Inc/bsp_motor_pwm.h), chỉ gọi trong foreground
 sau khởi tạo ngoại vi. Chấp nhận xung 1000–2000 µs; lệnh sai trả `false`
 và giữ giá trị cũ. Xung mới áp dụng tại update timer.
-`bsp_pwm_stop()` ngừng phát xung; init lại bắt đầu từ 1000 µs.
+`bsp_motor_pwm_stop()` ngừng phát xung; init lại bắt đầu từ 1000 µs.
 Tắt tín hiệu khác với gửi ga tối thiểu; phản ứng khi mất tín hiệu phụ thuộc ESC.
 
 Kiểm tra dải xung/tần số theo ESC, nối chung GND và tháo cánh trước khi thử.

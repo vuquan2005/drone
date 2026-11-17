@@ -50,6 +50,9 @@ bool runtime_get_command(app_command_t *out) {
 }
 
 static runtime_mode_t select_mode(void) {
+#if DRONE_DEBUG_FORCE_FLIGHT
+    return RUNTIME_FLIGHT;
+#else
     if (!command.valid || command.arm_requested ||
         command.throttle > APP_ARM_THROTTLE_MAX) {
         return RUNTIME_BOOT_SELECT;
@@ -61,6 +64,7 @@ static runtime_mode_t select_mode(void) {
         return RUNTIME_FLASH_EXPORT;
     }
     return RUNTIME_FLIGHT;
+#endif
 }
 
 void runtime_process(void) {

@@ -29,7 +29,7 @@ class ImuPanel(pg.GraphicsLayoutWidget):
             )
         self.plots[1].setXLink(self.plots[0])
 
-    def update_series(self, series):
+    def update_series(self, series, follow=True):
         points = np.asarray(series.points, dtype=float)
         for group, curves in enumerate(self.curves):
             for axis, curve in enumerate(curves):
@@ -37,7 +37,7 @@ class ImuPanel(pg.GraphicsLayoutWidget):
                     curve.setData(points[:, 0], points[:, 1 + group * 3 + axis])
                 else:
                     curve.setData([], [])
-        if points.size:
+        if points.size and follow:
             end = max(10, points[-1, 0])
             self.plots[0].setXRange(end - 10, end, padding=0)
 
@@ -112,11 +112,11 @@ class RatePanel(QtWidgets.QWidget):
     def text(self):
         return self.status.text()
 
-    def update_points(self, points):
+    def update_points(self, points, follow=True):
         data = np.asarray(points, dtype=float)
         for curve, column in self.curves:
             curve.setData(data[:, 0], data[:, column]) if data.size else curve.setData([], [])
-        if data.size:
+        if data.size and follow:
             end = max(10, data[-1, 0])
             self.plots[0].setXRange(end - 10, end, padding=0)
 

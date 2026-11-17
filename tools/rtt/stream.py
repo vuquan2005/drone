@@ -14,6 +14,7 @@ class Stream(QtCore.QObject):
     def __init__(self, host, port, parent, binary=False):
         super().__init__(parent)
         self.host, self.port = host, port
+        self.paused = False
         self.framing = Frames() if binary else Lines()
         self.socket = QtNetwork.QTcpSocket(self)
         self.socket.setReadBufferSize(65536)
@@ -27,6 +28,8 @@ class Stream(QtCore.QObject):
         QtCore.QTimer.singleShot(0, self.connect)
 
     def connect(self):
+        if self.paused:
+            return
         if self.socket.state() == QtNetwork.QAbstractSocket.SocketState.UnconnectedState:
             self.state.emit("connecting")
             self.socket.connectToHost(self.host, self.port)

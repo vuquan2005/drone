@@ -213,6 +213,17 @@ class ViewerTests(unittest.TestCase):
             self.assertGreater(
                 len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 48
             )
+            # Open the recorded session without live updates replacing its plots.
+            viewer.load_session(directory)
+            until(lambda: viewer.saved_session is not None)
+            self.assertFalse(viewer.record_button.isEnabled())
+            self.assertTrue(viewer.log_stream.paused)
+            self.assertIn("Saved session:", viewer.statusBar().currentMessage())
+            viewer.segment_box.setCurrentIndex(viewer.segment_box.count() - 1)
+            self.assertGreater(len(viewer.imu_panel.curves[0][0].getData()[0]), 0)
+            viewer.return_live()
+            self.assertIsNone(viewer.saved_session)
+            self.assertFalse(viewer.data_stream.paused)
             # Raw frames update the plot in SI/FLU and record original counts.
             viewer.toggle_recording()
             raw_fixture = bytes.fromhex(

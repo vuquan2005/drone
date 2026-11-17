@@ -7,6 +7,7 @@
 
 #include "app_command.h"
 #include "app_rate.h"
+#include "app_safety.h"
 
 /**
  * @brief Initialize application state and attempt to initialize the board IMU.
@@ -33,12 +34,13 @@ void app_process(void);
 bool app_get_command(app_command_t *sample);
 
 /** Configure the computational rate/mixer preview after app_init.
- * Initialization uses bench gains when DRONE_RATE_PREVIEW is enabled (Debug
- * preset), otherwise leaves it disabled. Invalid config disables it. Same
- * contract as app_rate_configure; serialized foreground access only. This
- * grants no motor permission. period_us sets minimum spacing between consumed
- * IMU samples; faster IMU samples are skipped until due, using the latest
- * available sample. No catch-up steps or gyro decimation filter are provided.
+ * Initialization uses bench gains when DRONE_RATE_CONTROL is enabled (Debug and
+ * Release presets), otherwise leaves it disabled. Invalid config disables it.
+ * Same contract as app_rate_configure; serialized foreground access only. This
+ * disarms and revokes the previous OFF token. period_us sets minimum spacing
+ * between consumed IMU samples; faster IMU samples are skipped until due, using
+ * the latest available sample. No catch-up steps or gyro decimation filter are
+ * provided.
  */
 bool app_configure_rate(const app_rate_config_t *config);
 
@@ -46,5 +48,9 @@ bool app_configure_rate(const app_rate_config_t *config);
  * zero after reset/errors; it may contain a previous sample between IMU polls.
  * Call after app_process in the same foreground context. No motor I/O. */
 bool app_get_rate_result(mixer_result_t *result);
+
+/** Return current arm state after app_process; serialized foreground only.
+ * No I/O. app_init starts DISARMED; invalid health enters FAILSAFE. */
+app_arm_state_t app_get_arm_state(void);
 
 #endif

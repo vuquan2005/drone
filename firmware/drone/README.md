@@ -49,19 +49,20 @@ Sau lỗi khởi tạo, có thể gọi lại `app_init()` để khởi tạo l�
 
 `bsp_pwm` dùng TIM4 đã được CubeMX cấu hình: clock timer 72 MHz,
 prescaler 71, ARR 2499, tick 1 µs, chu kỳ 2,5 ms (400 Hz), PWM1 active high.
-Kênh 1–4 tương ứng PB6–PB9; chưa gán vị trí motor trên khung drone.
+Kênh 1–4 tương ứng PB6–PB9 và M1–M4: trước-phải CCW, sau-phải CW,
+sau-trái CCW, trước-trái CW (nhìn từ trên).
 
 `app_init()` khởi động cả bốn kênh ở 1000 µs trước khi khởi tạo IMU/receiver.
 Xem `pwm_ready` trong `App/Src/app.c` bằng debugger để biết kết quả. Nếu một
 kênh khởi động lỗi, BSP tắt cả bốn đầu ra và từ chối lệnh ghi; gọi lại
-`bsp_pwm_init()` để thử lại. Hiện `app_process()` giữ nguyên xung tối thiểu,
-chưa nối throttle RC với PWM.
+`app_init()` để thử lại. `app_process()` chỉ xuất mixer khi ARMED và ga >2%;
+còn lại gửi 1000 µs. Lỗi ghi PWM tắt đầu ra cho đến lần App init tiếp theo.
 
 `app_motor_set_all()` nhận lệnh ESC fixed-point `norm_q15_t` (`int32_t`,
 1,0 = 32768), đổi sang microsecond hoàn toàn bằng số nguyên. Mixer nhận
 float ở cửa vào rồi trả lực đẩy và phản hồi fixed-point; xem
-[Control/README.md](Control/README.md). Ánh xạ motor và đường đặc tính lực
-đẩy sang lệnh ESC chưa được tích hợp vào vòng chạy ứng dụng.
+[Control/README.md](Control/README.md). Hiện ánh xạ thrust → ESC tuyến tính
+để thử bộ gá; chưa có đường đặc tính motor/ESC đã đo và hiệu chuẩn.
 
 API tại [BSP/Inc/bsp_pwm.h](BSP/Inc/bsp_pwm.h), chỉ gọi trong foreground
 sau khởi tạo ngoại vi. Chấp nhận xung 1000–2000 µs; lệnh sai trả `false`
@@ -115,8 +116,8 @@ serial protocol CRSF trên receiver. PA9 là TX của STM32 nhưng telemetry ch�
 `app_receiver_get_sample()` trả về 16 kênh CRSF thô và trạng thái `connected`;
 trạng thái này chỉ đúng khi đã nhận frame RC có CRC hợp lệ trong 100 ms gần
 nhất. Thứ tự kênh và ý nghĩa arm/throttle phụ thuộc cấu hình tay điều khiển.
-Đây chưa phải logic arm hoặc failsafe điều khiển động cơ; hệ thống điều khiển
-phải tự xử lý mất tín hiệu và kiểm tra các điều kiện an toàn trước khi chạy.
+App dùng trạng thái này để failsafe khi mất RC; phục hồi không tự arm.
+Cần OFF → ON với ga <=2%, IMU mới và controller/PWM sẵn sàng.
 
 USART1 RX dùng DMA1 Channel 5 circular và ngắt IDLE/half/full. Khi nhận
 liên tục ở 420 kbaud, cần phục vụ IRQ trong khoảng 0,76 ms để tránh DMA
@@ -195,11 +196,13 @@ telemetry hiện vẫn theo cấu hình build. Không có
 hysteresis, expo hoặc đảo chiều trong decoder. Dấu stick đi theo chiều tăng
 kênh radio; cần xác nhận tương ứng FRD trước khi đưa vào điều khiển.
 
-Command chưa gọi PID/mixer hoặc xuất motor. Lớp arm/failsafe sẽ xét yêu cầu
-arm cùng các điều kiện vận hành. Khi nối PID hiện dùng float, setpoint mỗi
-trục được tính bằng `command_axis / 32768.0f * max_rate_radps`; giới hạn rate
-và gain chưa được chọn. Throttle là yêu cầu chuẩn hóa, chưa phải lực đẩy đã
-hiệu chuẩn và không thể dùng trực tiếp như quyền xuất ESC.
+App chuyển command thành setpoint rad/s và gọi PID/mixer theo chu kỳ riêng.
+`app_safety` quản lý DISARMED/ARMED/FAILSAFE; cần OFF → ON với ga <=2%.
+RC hết hạn 100 ms, lỗi IMU/mẫu quá 20 ms, lỗi rate/PWM hoặc yêu cầu hiệu chuẩn
+ESC chặn motor. Sau failsafe cần tín hiệu khỏe, OFF rồi ON lại; ON từ lúc boot
+không arm. Debug và Release đều bật `DRONE_ENABLE_RATE_CONTROL`, với gain thử
+P=0,1, I=D=0, giới hạn 2 rad/s, chu kỳ 2000 µs. Xem quy trình thử và giới hạn
+trong [DEBUG.md](DEBUG.md#thử-trên-board).
 
 ```sh
 cmake -S firmware/drone/tests/command -B /tmp/drone-command-tests

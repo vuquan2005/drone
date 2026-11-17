@@ -20,3 +20,9 @@ target_include_directories(app_rate_tests PRIVATE ${FIRMWARE_ROOT}/App/Inc
 target_compile_options(app_rate_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 target_link_libraries(app_rate_tests PRIVATE m)
 add_test(NAME app_rate_tests COMMAND app_rate_tests)
+
+add_executable(safety_tests test_safety.c ${FIRMWARE_ROOT}/App/Src/app_safety.c)
+target_include_directories(safety_tests PRIVATE ${FIRMWARE_ROOT}/App/Inc
+                                                ${FIRMWARE_ROOT}/Control/Inc)
+target_compile_options(safety_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME safety_tests COMMAND safety_tests)

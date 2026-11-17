@@ -12,6 +12,9 @@
 static bsp_imu_result_t status = BSP_IMU_NO_DATA;
 static uint32_t tick = 1000U;
 static unsigned pwm_starts;
+static uint16_t motor_pulse[4];
+static bool pwm_write_ok = true;
+static unsigned pwm_stops;
 static float gyro_roll_radps;
 uint32_t bsp_time_now_us(void) {
     return tick * 1000U + 123U;
@@ -24,11 +27,14 @@ bool bsp_pwm_init(void) {
     return true;
 }
 bool bsp_pwm_set_all_us(const uint16_t pulse_us[BSP_PWM_CHANNEL_COUNT]) {
-    (void)pulse_us;
-    assert(false && "App must not command motors from its polling loop yet");
-    return false;
+    if (!pwm_write_ok)
+        return false;
+    memcpy(motor_pulse, pulse_us, sizeof(motor_pulse));
+    return true;
 }
-void bsp_pwm_stop(void) {}
+void bsp_pwm_stop(void) {
+    pwm_stops++;
+}
 const bsp_bmi270_config_t *bsp_board_imu_config(void) {
     static const bsp_bmi270_config_t config = {.timeout_ms = 100U};
     return &config;
@@ -62,6 +68,7 @@ void app_receiver_poll(void) {}
 static bool receiver_test_enabled;
 static bool receiver_connected = true;
 static uint16_t receiver_roll = 172U;
+static uint16_t receiver_throttle = 992U;
 static uint16_t receiver_switches[4] = {992U, 992U, 992U, 992U};
 bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     if (!receiver_test_enabled) {
@@ -72,6 +79,7 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample) {
         sample->channels[i] = 992U;
     }
     sample->channels[0] = receiver_roll;
+    sample->channels[2] = receiver_throttle;
     for (unsigned i = 0; i < 4U; ++i) {
         sample->channels[i + 4U] = receiver_switches[i];
     }
@@ -222,6 +230,7 @@ int main(void) {
     assert(strstr(output, "valid=1 arm_requested=1") != NULL);
     app_init();
     assert(app_get_command(&command) && !command.valid);
+    receiver_switches[0] = receiver_switches[2] = 172U;
     mixer_result_t preview;
     assert(!app_get_rate_result(&preview));
     app_rate_config_t rate_config = {.period_us = 1000};
@@ -290,6 +299,89 @@ int main(void) {
     tick++;
     app_process();
     assert(!app_get_rate_result(&preview));
+    /* Real App -> motor -> PWM path: no startup-high arm, OFF/ON, RC loss. */
+    receiver_connected = true;
+    receiver_switches[2] = 172;
+    receiver_switches[0] = 1811;
+    receiver_throttle = 172;
+    gyro_roll_radps = 0;
+    rate_config.period_us = 1000;
+    assert(app_configure_rate(&rate_config));
+    status = BSP_IMU_OK;
+    tick++;
+    app_process();
+    assert(app_get_arm_state() != APP_ARMED);
+    receiver_switches[0] = 172;
+    tick++;
+    app_process();
+    receiver_switches[0] = 1811;
+    tick++;
+    app_process();
+    assert(app_get_arm_state() == APP_ARMED);
+    for (unsigned i = 0; i < 4; ++i)
+        assert(motor_pulse[i] == 1000);
+    receiver_throttle = 992;
+    tick++;
+    app_process();
+    tick++;
+    app_process();
+    assert(app_get_arm_state() == APP_ARMED);
+    assert(motor_pulse[0] > 1000 && motor_pulse[0] <= 2000);
+    receiver_switches[0] = 172;
+    status = BSP_IMU_NO_DATA;
+    app_process();
+    assert(app_get_arm_state() == APP_DISARMED);
+    for (unsigned i = 0; i < 4; ++i)
+        assert(motor_pulse[i] == 1000);
+    receiver_throttle = 172;
+    receiver_switches[0] = 1811;
+    status = BSP_IMU_OK;
+    tick++;
+    app_process();
+    assert(app_get_arm_state() == APP_ARMED);
+    status = BSP_IMU_NO_DATA;
+    tick += 21;
+    app_process();
+    assert(app_get_arm_state() == APP_FAILSAFE);
+    for (unsigned i = 0; i < 4; ++i)
+        assert(motor_pulse[i] == 1000);
+    receiver_switches[0] = 172;
+    status = BSP_IMU_OK;
+    tick++;
+    app_process();
+    receiver_switches[0] = 1811;
+    tick++;
+    app_process();
+    assert(app_get_arm_state() == APP_ARMED);
+    receiver_connected = false;
+    status = BSP_IMU_NO_DATA;
+    app_process();
+    assert(app_get_arm_state() == APP_FAILSAFE);
+    for (unsigned i = 0; i < 4; ++i)
+        assert(motor_pulse[i] == 1000);
+    receiver_connected = true;
+    receiver_throttle = 172;
+    status = BSP_IMU_OK;
+    tick++;
+    app_process();
+    assert(app_get_arm_state() == APP_FAILSAFE);
+    receiver_switches[0] = 172;
+    app_process();
+    receiver_switches[0] = 1811;
+    tick++;
+    app_process();
+    assert(app_get_arm_state() == APP_ARMED);
+    status = BSP_IMU_DRIVER_ERROR;
+    app_process();
+    assert(app_get_arm_state() == APP_FAILSAFE);
+    for (unsigned i = 0; i < 4; ++i)
+        assert(motor_pulse[i] == 1000);
+    pwm_write_ok = false;
+    app_process();
+    assert(pwm_stops == 1);
+    pwm_write_ok = true;
+    app_process();
+    assert(app_get_arm_state() == APP_FAILSAFE && pwm_stops == 1);
     puts("App log/trace integration tests passed");
     return 0;
 }

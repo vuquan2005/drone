@@ -36,6 +36,7 @@ add_executable(
     ${FIRMWARE_ROOT}/Control/Src/mixer.c
     ${FIRMWARE_ROOT}/App/Src/app.c
     ${FIRMWARE_ROOT}/App/Src/app_rate.c
+    ${FIRMWARE_ROOT}/App/Src/app_safety.c
     ${FIRMWARE_ROOT}/App/Src/app_command.c
     ${FIRMWARE_ROOT}/App/Src/app_motor.c
     ${FIRMWARE_ROOT}/App/Src/app_log.c

@@ -145,9 +145,9 @@ board để xác nhận SWD, nguồn µs và chi phí RTT trước khi kết lu�
 
 ## Kiểm tra luồng rate/mixer
 
-Preset Debug bật `DRONE_ENABLE_RATE_PREVIEW`: `app_init()` tự cấu hình P = 0,1,
+Cả Debug và Release bật `DRONE_ENABLE_RATE_CONTROL`: `app_init()` tự cấu hình P = 0,1,
 I = D = 0, giới hạn mỗi trục 2 rad/s và chu kỳ 2000 µs (500 Hz). Đây là
-cấu hình thử tính toán, chưa tune cho bay. Release tắt tùy chọn này.
+cấu hình thử trên bộ gá, chưa tune cho bay; telemetry mặc định chỉ bật ở Debug.
 Có thể gọi lại `app_configure_rate()` trong foreground với `app_rate_config_t`: PID từng trục,
 `max_rate_radps` và `period_us`. Không có bộ gain mặc định đã tune cho bay.
 `period_us = 2000` giới hạn rate ở 500 Hz dù IMU cung cấp mẫu ở 1 kHz.
@@ -163,14 +163,14 @@ luồng hiện tại lấy mẫu mới nhất, chưa thêm bộ lọc chống al
 
 Đọc `app_get_rate_result()` sau `app_process()` để lấy kết quả tính toán;
 kiểm tra giá trị trả về trước khi sử dụng. Giữa các kỳ rate, kết quả hợp lệ
-trước đó được giữ lại. Chưa có arm/failsafe hoặc ghi kết quả mixer ra ESC;
-`arm_requested` không phải quyền chạy motor.
+trước đó được giữ lại. `app_safety` kiểm tra arm/failsafe trước khi cho phép
+ghi kết quả mixer ra ESC; `arm_requested` riêng lẻ không phải quyền chạy motor.
 
 ### Thử trên board
 
 1. Tháo cánh, build/nạp preset Debug bằng `make fw-flash`, rồi mở
    `make telemetry` theo hướng dẫn kết nối RTT ở trên.
-2. Kiểm tra log `rate` báo `preview configured=1`, mở tab **Rate · FRD**.
+2. Kiểm tra log `rate` báo `configured=1`, mở tab **Rate · FRD**.
    Bật bộ phát/thu: `valid=True` khi có RC hợp lệ và IMU mới; `dt` kỳ vọng
    khoảng 2000 µs hoặc lớn hơn nếu vòng foreground/IMU không theo kịp.
 3. Đưa cần roll/pitch/yaw qua hai đầu: setpoint tương ứng khoảng ±2 rad/s.
@@ -178,9 +178,31 @@ trước đó được giữ lại. Chưa có arm/failsafe hoặc ghi kết qu�
    Đứng yên có thể thấy gyro bias vì chưa hiệu chuẩn.
 4. Tắt bộ phát hoặc ngắt RC: bản tin phải báo `valid=False`, PID/motor bằng 0.
    Lỗi IMU hoặc mẫu quá 20 ms cũng reset kết quả. Giá trị 0 này là trạng thái
-   tính toán, không phải lệnh disarm ESC.
+   tính toán; App đồng thời đưa PWM về 1000 µs.
 5. Bấm **Start recording** để lưu `rate_*.csv` cùng IMU, RC và log trong
    thư mục phiên tại `experiments/`. Telemetry rate lấy snapshot 20 Hz,
    không giữ mọi bước PID 500 Hz; chưa dùng để kết luận jitter/timing toàn bộ.
 
-Kết quả mixer chưa xuất ESC. Các motor trong tab là lực đẩy chuẩn hóa dự kiến.
+Tab Rate có sẵn sáu plot trước khi nhận tín hiệu: setpoint/gyro từng trục FRD,
+PID, mixer và residual; trace chỉ xuất hiện khi có snapshot hợp lệ. Snapshot
+không hợp lệ tạo khoảng trống, không vẽ giá trị 0 như dữ liệu thật.
+
+### Arm/failsafe và thử ESC
+
+- PB6/PB7/PB8/PB9 nối M1/M2/M3/M4 theo thứ tự mixer đã xác nhận.
+- Tháo cánh trước khi cấp nguồn ESC. Ga <=2%, CH7 không ở HIGH, RC/IMU khỏe,
+  đưa CH5 OFF rồi ON để arm. ON từ lúc boot hoặc vừa phục hồi không arm.
+- Khi armed nhưng ga <=2%, PID được reset và cả bốn ESC nhận 1000 µs.
+  Tăng ga mới xuất mixer; không có idle quay tự động.
+- OFF disarm ngay trong vòng foreground; mất RC (timeout 100 ms), lỗi IMU,
+  mẫu quá 20 ms, lỗi tính rate hoặc yêu cầu hiệu chuẩn ESC gây FAILSAFE.
+  Failsafe gửi 1000 µs và cần OFF → ON lại. Nếu ghi PWM lỗi thì tắt tín hiệu,
+  khóa PWM đến `app_init()`; không tự khởi động lại output.
+- Ánh xạ thrust → ESC hiện tuyến tính 0..1 → 1000..2000 µs, chưa hiệu chuẩn.
+  PID P=0,1 là gain thử. Cần đo chiều motor, xung, trễ failsafe và đáp ứng trên
+  bộ gá trước khi dùng cánh. Điều khiển/failsafe chạy trong foreground, chưa có
+  watchdog xử lý CPU treo; không suy ra bảo vệ khi vòng lặp ngừng chạy.
+
+`app_get_arm_state()` trả DISARMED=0, ARMED=1, FAILSAFE=2; RTT log tag `arm`
+ghi chuyển trạng thái liên quan ARMED và lỗi ghi PWM. CH6 hiện chưa chọn mode
+bay; CH7 HIGH chỉ chặn arm/đưa vào failsafe, chưa chạy hiệu chuẩn ESC.

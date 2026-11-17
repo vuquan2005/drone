@@ -17,7 +17,7 @@
         "DRONE_ENABLE_RTT": "ON",
         "DRONE_LOG_LEVEL": "INFO",
         "DRONE_ENABLE_TELEMETRY": "ON",
-        "DRONE_ENABLE_RATE_PREVIEW": "ON"
+        "DRONE_ENABLE_RATE_CONTROL": "ON"
       }
     },
     {
@@ -28,7 +28,7 @@
         "DRONE_ENABLE_RTT": "OFF",
         "DRONE_LOG_LEVEL": "OFF",
         "DRONE_ENABLE_TELEMETRY": "OFF",
-        "DRONE_ENABLE_RATE_PREVIEW": "OFF"
+        "DRONE_ENABLE_RATE_CONTROL": "ON"
       }
     }
   ],

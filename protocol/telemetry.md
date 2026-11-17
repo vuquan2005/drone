@@ -72,18 +72,18 @@ thiếu chỗ thì bỏ nguyên frame mới và tăng counter đầy CH1. Tốc 
 Payload 32 byte, frame 44 byte. Đây là số đếm IMU nguyên gốc, chưa đổi đơn
 vị, hiệu chuẩn, lọc hoặc ánh xạ hệ trục. Offset tính từ đầu payload:
 
-| Offset | Kiểu     | Trường                 | Ý nghĩa                                                 |
-| ------ | -------- | ---------------------- | ------------------------------------------------------- |
-| 0      | uint32   | sequence               | Bộ đếm đọc IMU thành công                               |
-| 4      | uint32   | t_read_us              | Uptime MCU sau đọc BSP, µs; không phải acquisition time |
-| 8      | uint32   | sensor_time_ticks      | Clock cảm biến 24 bit, 8 bit cao bằng 0                 |
-| 12     | int16[3] | ax_raw, ay_raw, az_raw | Số đếm accel XYZ theo trục cảm biến                     |
-| 18     | int16[3] | gx_raw, gy_raw, gz_raw | Số đếm gyro XYZ theo trục cảm biến                      |
-| 24     | uint8    | accel_range_g          | Biên dương full scale, hiện tại 16 g                    |
-| 25     | uint8    | axis_map               | `1`: cảm biến → thân FLU bằng `[X, -Y, -Z]`             |
-| 26     | uint16   | gyro_range_dps         | Biên dương full scale, hiện tại 2000 °/s                |
-| 28     | uint16   | accel_odr_hz           | ODR cấu hình accel, hiện tại 400 Hz                     |
-| 30     | uint16   | gyro_odr_hz            | ODR cấu hình gyro, hiện tại 400 Hz                      |
+| Offset | Kiểu     | Trường                 | Ý nghĩa                                                          |
+| ------ | -------- | ---------------------- | ---------------------------------------------------------------- |
+| 0      | uint32   | sequence               | Bộ đếm đọc IMU thành công                                        |
+| 4      | uint32   | t_read_us              | Uptime MCU sau đọc BSP, µs; không phải acquisition time          |
+| 8      | uint32   | sensor_time_ticks      | Clock cảm biến 24 bit, 8 bit cao bằng 0                          |
+| 12     | int16[3] | ax_raw, ay_raw, az_raw | Số đếm accel XYZ theo trục cảm biến                              |
+| 18     | int16[3] | gx_raw, gy_raw, gz_raw | Số đếm gyro XYZ theo trục cảm biến                               |
+| 24     | uint8    | accel_range_g          | Biên dương full scale, hiện tại 16 g                             |
+| 25     | uint8    | axis_map               | `1`: gá cũ → FLU `[X, -Y, -Z]`; `2`: gá mới → FRD `[-X, +Y, -Z]` |
+| 26     | uint16   | gyro_range_dps         | Biên dương full scale, hiện tại 2000 °/s                         |
+| 28     | uint16   | accel_odr_hz           | ODR cấu hình accel, hiện tại 400 Hz                              |
+| 30     | uint16   | gyro_odr_hz            | ODR cấu hình gyro, hiện tại 400 Hz                               |
 
 Số int16 dùng bù hai, bao gồm đủ miền [-32768, 32767]. Firmware lấy trực tiếp
 counts từ cùng lần đọc tạo mẫu SI trong App, không dựng lại raw từ float.
@@ -93,10 +93,15 @@ phải cập nhật các hằng BSP tương ứng.
 
 Bên nhận đổi `accel = raw * accel_range_g * 9.80665 / 32768` (m/s²),
 `gyro = raw * gyro_range_dps * pi / (180 * 32768)` (rad/s), rồi áp dụng
-`[X, -Y, -Z]` cho cả hai vector để hiển thị FLU (X tiến, Y trái, Z lên).
+ánh xạ tương ứng cho cả hai vector. Firmware hiện gửi `axis_map=2`, đổi
+sensor → thân FRD bằng `[-X, +Y, -Z]`. FRD có X tiến, Y phải, Z xuống.
+Viewer luôn hiển thị type 4 theo FRD: map 2 dùng `[-X, +Y, -Z]`; map 1 cũ
+được đổi tiếp từ FLU sang FRD, tương đương `[+X, +Y, +Z]` từ sensor.
+Giữ nguyên nghĩa map 1 để đọc log cũ; không áp cách gá mới cho log cũ.
 Đổi sang kiểu rộng/float trước khi đảo dấu để giữ đúng raw -32768.
-Vận tốc góc dương theo quy tắc bàn tay phải; khi đứng yên với Z hướng lên,
-accel Z xấp xỉ +g. CSV raw giữ nguyên counts và metadata, không đảo dấu.
+Vận tốc góc dương theo quy tắc bàn tay phải: roll nghiêng phải, pitch ngẩng
+lên, yaw quay phải khi nhìn từ trên. Khi đứng yên đúng chiều, accel Z ≈ −g.
+CSV raw giữ nguyên counts và metadata, không đảo dấu.
 
 Decoder từ chối sai kích thước, sensor time ngoài 24 bit, accel range ngoài
 {2, 4, 8, 16}, gyro range ngoài {125, 250, 500, 1000, 2000}, ODR bằng 0 hoặc
@@ -165,7 +170,7 @@ cho biết snapshot bị thiếu, không đo số frame UART/radio mất.
 
 - Encoder: `firmware/drone/App/Src/app_telemetry.c`; API `app_telemetry_write_imu()`, compile option `DRONE_ENABLE_TELEMETRY`.
 - Framing và decoder: `tools/rtt/records.py`; không phụ thuộc UI.
-- Fixture chung: [IMU SI cũ](fixtures/imu_v1.hex), [IMU raw](fixtures/imu_raw_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
+- Fixture chung: [IMU SI cũ](fixtures/imu_v1.hex), [IMU raw gá cũ](fixtures/imu_raw_v1.hex), [IMU raw FRD gá mới](fixtures/imu_raw_frd_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
   Test C so output byte-for-byte; Python kiểm tra framing, CRC và giá trị
   trường theo cùng fixture.
 

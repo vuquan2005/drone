@@ -297,7 +297,7 @@ class ViewerTests(unittest.TestCase):
             viewer.return_live()
             self.assertIsNone(viewer.saved_session)
             self.assertFalse(viewer.data_stream.paused)
-            # Raw frames update the plot in SI/FLU and record original counts.
+            # Raw frames update the plot in SI/FRD and record original counts.
             viewer.toggle_recording()
             raw_fixture = bytes.fromhex(
                 (

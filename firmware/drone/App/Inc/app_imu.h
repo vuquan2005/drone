@@ -7,11 +7,12 @@
 
 #include "bsp_imu.h"
 
-/** @brief Original sensor counts and uncalibrated SI sample in body FLU.
- * Body axes: X forward, Y left, Z up. Raw fields remain in sensor XYZ.
- * @note Board mapping from sensor XYZ is [X, -Y, -Z], for both sensors.
+/** @brief Original sensor counts and uncalibrated SI sample in body FRD.
+ * Body axes: X forward, Y right, Z down. Raw fields remain in sensor XYZ.
+ * @note Board mapping from sensor XYZ is [-X, +Y, -Z], for both sensors.
  * Positive angular velocity
- * follows the right-hand rule. At rest with Z up, accel Z is approximately +g.
+ * follows the right-hand rule. At rest upright with body Z down, accel Z is
+ * approximately -g.
  */
 typedef struct {
     int16_t
@@ -64,7 +65,7 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config);
  * preserves sample; read_error_count increments only on a driver read error.
  * @note Blocking foreground API; no ISR or concurrent access. Does not schedule
  * polling, calibrate, check sample age or retry initialization. Maps SI axes
- * to body FLU while preserving the original sensor counts in raw fields.
+ * to body FRD while preserving the original sensor counts in raw fields.
  */
 bsp_imu_result_t app_imu_poll(app_imu_t *imu);
 

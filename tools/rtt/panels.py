@@ -30,6 +30,8 @@ class ImuPanel(pg.GraphicsLayoutWidget):
         self.plots[1].setXLink(self.plots[0])
 
     def update_series(self, series, follow=True):
+        for plot, title in zip(self.plots, ("Acceleration", "Gyroscope")):
+            plot.setTitle(f"{title} · {series.frame_label}")
         points = np.asarray(series.points, dtype=float)
         for group, curves in enumerate(self.curves):
             for axis, curve in enumerate(curves):

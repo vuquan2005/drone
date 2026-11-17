@@ -138,10 +138,12 @@ class ImuSeries:
         self.received = self.missing = self.invalid = self.unknown = self.resets = 0
         self.last = None
         self.elapsed_us = 0
+        self.frame_label = "FRD"
 
     def new_connection(self):
         self.last = None
         self.elapsed_us = 0
+        self.frame_label = "FRD"
         self.points.clear()
 
     def feed(self, frame):
@@ -162,7 +164,7 @@ class ImuSeries:
             accel_range, axis_map, gyro_range, accel_odr, gyro_odr = values[9:]
             if (
                 accel_range not in (2, 4, 8, 16)
-                or axis_map != 1
+                or axis_map not in (1, 2)
                 or gyro_range not in (125, 250, 500, 1000, 2000)
                 or accel_odr == 0
                 or gyro_odr == 0
@@ -172,13 +174,18 @@ class ImuSeries:
             scales = (accel_range * 9.80665 / 32768,) * 3 + (
                 gyro_range * math.pi / 180 / 32768,
             ) * 3
+            # Map 1 historically encoded sensor -> FLU [X,-Y,-Z].
+            # Convert that mounting to FRD; map 2 describes the new mounting.
+            signs = (1, 1, 1) if axis_map == 1 else (-1, 1, -1)
             axes = tuple(
-                value * scale * sign
-                for value, scale, sign in zip(values[3:9], scales, (1, -1, -1, 1, -1, -1))
+                value * scale * sign for value, scale, sign in zip(values[3:9], scales, signs * 2)
             )
         else:
             # Legacy type 1 has no axis metadata; preserve its historical values.
             axes = tuple(value / 1000 for value in values[3:])
+        frame_label = "FRD" if kind == 4 else "legacy axes unknown"
+        if frame_label != self.frame_label:
+            self.points.clear()
         gap = False
         if self.last is not None:
             delta_seq = (seq - self.last[0]) % 2**32
@@ -194,6 +201,7 @@ class ImuSeries:
                 self.missing += delta_seq - 1
                 gap = delta_seq > 1
                 self.elapsed_us += delta_us
+        self.frame_label = frame_label
         t = self.elapsed_us / 1e6
         if gap:
             self.points.append((t, *([float("nan")] * 6)))

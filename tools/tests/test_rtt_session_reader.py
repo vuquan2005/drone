@@ -44,7 +44,7 @@ class SessionReaderTests(unittest.TestCase):
             self.assertTrue(math.isnan(points[1][1]))
             self.assertEqual(segments[1].series.missing, 1)
             self.assertAlmostEqual(segments[3].series.points[0][1], 9.80665)
-            self.assertAlmostEqual(segments[3].series.points[0][2], -9.80665)
+            self.assertAlmostEqual(segments[3].series.points[0][2], 9.80665)
             rate = segments[1].rate_points
             self.assertEqual(len(rate), 3)
             self.assertEqual(rate[-1][0], 12)

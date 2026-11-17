@@ -38,18 +38,18 @@ bool app_rate_configure(app_rate_t *state, const app_rate_config_t *config);
 /** Clear dynamic state/output, preserving configuration; NULL is a no-op. */
 void app_rate_reset(app_rate_t *state);
 
-/** Consume one new IMU sample, with gyro in body FLU rad/s and wrapping MCU
- * read timestamp in microseconds. Call only for a new sample. Converts to FRD,
- * maps Q15 sticks linearly to configured rates, and feeds previous allocation
- * residual back to PID. First sample establishes time and returns false.
- * Invalid RC, duplicate timestamps, gaps >20 ms or calculation errors reset
- * dynamics/output and return false. Caller resets on IMU errors and sampling
- * timeout, including while no new sample arrives. arm_requested is not used:
- * this computes a preview and never arms or writes motors. NULL inputs return
- * false and reset a non-NULL state. Inputs must be distinct from state.
+/** Consume one new IMU sample, with gyro in body FRD rad/s and wrapping MCU
+ * read timestamp in microseconds. Call only for a new sample. Uses FRD
+ * directly, maps Q15 sticks linearly to configured rates, and feeds previous
+ * allocation residual back to PID. First sample establishes time and returns
+ * false. Invalid RC, duplicate timestamps, gaps >20 ms or calculation errors
+ * reset dynamics/output and return false. Caller resets on IMU errors and
+ * sampling timeout, including while no new sample arrives. arm_requested is not
+ * used: this computes a preview and never arms or writes motors. NULL inputs
+ * return false and reset a non-NULL state. Inputs must be distinct from state.
  * Nonblocking foreground API; serialize with configure/reset. */
 bool app_rate_step(app_rate_t *state, const app_command_t *command,
-                   const float gyro_flu_radps[RATE_AXIS_COUNT],
+                   const float gyro_frd_radps[RATE_AXIS_COUNT],
                    uint32_t time_us);
 
 #endif

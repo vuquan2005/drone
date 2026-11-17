@@ -28,7 +28,7 @@ void rate_controller_reset(rate_controller_t *state);
 
 /** Compute three normalized mixer commands using PID with D on measurement.
  * All arrays have three elements, ordered roll/pitch/yaw in body FRD.
- * setpoint and gyro are rad/s (convert App FLU gyro to [x,-y,-z] first).
+ * setpoint and gyro are rad/s (App IMU already supplies body FRD).
  * dt_s is actual elapsed sample time in seconds, in (0,0.02]. Caller must
  * reset on disarm, sensor errors or a sampling gap; no scheduling is provided.
  * allocation_residual is previous mixer requested-minus-achieved, converted

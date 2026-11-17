@@ -61,8 +61,8 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         imu->sample.gyro_radps[0] = gyro_roll_radps;
         imu->sample.t_read_us = tick * 1000U + 123U;
         imu->sample.sensor_time_ticks = 256U;
-        imu->sample.accel_mps2[2] = 9.80665f;
-        imu->sample.accel_raw[2] = -2048;
+        imu->sample.accel_mps2[2] = -9.80665f;
+        imu->sample.accel_raw[2] = 2048;
     }
     return status;
 }
@@ -157,7 +157,7 @@ int main(void) {
     assert(memcmp(output, "DRT!\x01\x04\x20\x00", 8U) == 0);
     assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
     assert(get_u32(output + 16) == 256U);
-    assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0xF8U);
+    assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0x08U);
     tick++;
     process_app();
     assert(drain(0U, output) == 0U);

@@ -44,16 +44,16 @@ class RawImuTests(unittest.TestCase):
             broken[offset] ^= 1
             self.assertEqual(list(Frames().feed(broken + raw)), [raw_record()])
 
-    def test_si_flu_conversion_preserves_int16_extrema(self):
+    def test_legacy_mount_to_frd_conversion_preserves_int16_extrema(self):
         stream = ImuSeries()
         stream.feed(raw_record(axes=(2048, -2048, -2048, 16384, -16384, -32768)))
         expected = (
             9.80665,
-            9.80665,
-            9.80665,
+            -9.80665,
+            -9.80665,
             math.radians(1000),
-            math.radians(1000),
-            math.radians(2000),
+            -math.radians(1000),
+            -math.radians(2000),
         )
         for actual, value in zip(stream.points[-1][1:], expected):
             self.assertAlmostEqual(actual, value)
@@ -61,12 +61,46 @@ class RawImuTests(unittest.TestCase):
         self.assertAlmostEqual(stream.points[-1][1], 2 * 9.80665 / 32768)
         self.assertAlmostEqual(stream.points[-1][4], math.radians(125) / 32768)
 
+    def test_new_mount_frd_and_shared_encoder_fixture(self):
+        raw = bytes.fromhex(
+            (
+                Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_raw_frd_v1.hex"
+            ).read_text()
+        )
+        frame = raw_record(config=(16, 2, 2000, 400, 400))
+        self.assertEqual(list(Frames().feed(raw)), [frame])
+        stream = ImuSeries()
+        self.assertTrue(stream.feed(frame))
+        self.assertEqual(stream.frame_label, "FRD")
+        expected = (
+            16 * 9.80665,
+            -16 * 9.80665 / 32768,
+            -32767 * 16 * 9.80665 / 32768,
+            -math.radians(2000) / 32768,
+            -math.radians(2000),
+            -32767 * math.radians(2000) / 32768,
+        )
+        for actual, value in zip(stream.points[-1][1:], expected):
+            self.assertAlmostEqual(actual, value)
+        # A stationary upright board and the three hand motions in FRD.
+        for seq, axes, expected_signs in (
+            (18, (0, 0, 2048, -100, 0, 0), (1, 0, 0)),
+            (19, (0, 0, 2048, 0, -100, 0), (0, -1, 0)),
+            (20, (0, 0, 2048, 0, 0, 100), (0, 0, -1)),
+        ):
+            self.assertTrue(
+                stream.feed(raw_record(seq, seq * 2500, axes=axes, config=(16, 2, 2000, 400, 400)))
+            )
+            self.assertAlmostEqual(stream.points[-1][3], -9.80665)
+            for value, sign in zip(stream.points[-1][4:], expected_signs):
+                self.assertEqual((value > 0) - (value < 0), sign)
+
     def test_invalid_metadata_does_not_advance_state(self):
         stream = ImuSeries()
         stream.feed(raw_record())
         for config in (
             (3, 1, 2000, 400, 400),
-            (16, 2, 2000, 400, 400),
+            (16, 3, 2000, 400, 400),
             (16, 1, 123, 400, 400),
             (16, 1, 2000, 0, 400),
             (16, 1, 2000, 400, 0),

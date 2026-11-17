@@ -25,7 +25,7 @@ typedef enum {
 
 /** Jumper T20 model04 mapping, dimensionless Q15 (ONE=32768).
  * Positive axes follow increasing radio channel values; verify radio direction
- * against body FRD before flight. No gyro FLU conversion belongs here.
+ * against body FRD before flight. No sensor-axis conversion belongs here.
  * valid is RC validity only, not permission to run motors. Invalid commands
  * have every field zeroed: mode LOW, telemetry OFF and requests false. */
 typedef struct {

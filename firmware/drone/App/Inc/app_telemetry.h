@@ -34,9 +34,10 @@ void app_telemetry_init(void);
  * space before encoding/CRC; FULL skips the frame and counts one drop. The
  * final write still checks capacity. Entire frame is queued in one BSP call.
  * No SI conversion, rounding or body mapping is applied to counts on the wire.
- * Metadata describes the fixed BSP configuration and mapping [X, -Y, -Z].
- * Caller sends once per successful sample; no decimation, retry or timestamp
- * generation here. All counters/times retain their original wrapping widths.
+ * Metadata describes the fixed BSP configuration and FRD mapping [-X, +Y, -Z]
+ * (axis_map=2). Caller sends once per successful sample; no decimation, retry
+ * or timestamp generation here. All counters/times retain their original
+ * wrapping widths.
  */
 bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
                                          uint32_t sequence);

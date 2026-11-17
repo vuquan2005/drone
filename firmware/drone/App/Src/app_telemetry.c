@@ -74,7 +74,7 @@ bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
         put_u16(frame + 26U + 2U * axis, (uint16_t)sample->gyro_raw[axis]);
     }
     frame[32U] = (uint8_t)BSP_IMU_ACCEL_RANGE_G;
-    frame[33U] = 1U; /* Sensor XYZ -> body FLU: [X, -Y, -Z]. */
+    frame[33U] = 2U; /* Sensor XYZ -> body FRD: [-X, Y, -Z]. */
     put_u16(frame + 34U, (uint16_t)BSP_IMU_GYRO_RANGE_DPS);
     put_u16(frame + 36U, BSP_IMU_ODR_HZ);
     put_u16(frame + 38U, BSP_IMU_ODR_HZ);

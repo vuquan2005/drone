@@ -157,7 +157,8 @@ Nếu IMU chậm hơn, rate chờ mẫu mới; không tính lặp lại cùng m�
 `process_imu()` đọc mẫu và telemetry; `process_rate()` kiểm tra RC, lỗi/tuổi
 mẫu IMU và chu kỳ rate riêng. Mẫu quá 20 ms hoặc khoảng cách giữa hai bước PID
 quá 20 ms làm reset trạng thái. Đổi cấu hình cũng reset PID và residual.
-Gyro SI trong App vẫn là FLU; chỉ đầu vào controller chuyển sang FRD.
+Accel và gyro SI trong App dùng FRD, ánh xạ gá `[-X, +Y, -Z]`.
+Controller nhận trực tiếp FRD; telemetry raw giữ nguyên counts với `axis_map=2`.
 Khi giảm mẫu đưa vào rate, cần cấu hình/kiểm chứng lọc gyro thích hợp;
 luồng hiện tại lấy mẫu mới nhất, chưa thêm bộ lọc chống alias.
 

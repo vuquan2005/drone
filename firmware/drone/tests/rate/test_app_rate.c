@@ -19,16 +19,16 @@ int main(void) {
     float gyro[3] = {1.75f, 0.25f, -0.125f};
     assert(!app_rate_step(&state, &command, gyro, 0));
     assert(app_rate_configure(&state, &config));
-    /* Wrapped timestamps and FLU -> FRD signs, with decoded full roll. */
+    /* Wrapped timestamps and direct FRD signs, with decoded full roll. */
     assert(!app_rate_step(&state, &command, gyro, UINT32_MAX - 499U));
     assert(app_rate_step(&state, &command, gyro, 500));
     assert(abs(state.mixer.achieved.roll - NORM_Q15_ONE / 4) <= 2);
-    assert(abs(state.mixer.achieved.pitch - NORM_Q15_ONE / 4) <= 2);
-    assert(abs(state.mixer.achieved.yaw + NORM_Q15_ONE / 8) <= 2);
+    assert(abs(state.mixer.achieved.pitch + NORM_Q15_ONE / 4) <= 2);
+    assert(abs(state.mixer.achieved.yaw - NORM_Q15_ONE / 8) <= 2);
     assert(state.valid);
     assert(state.dt_us == 1000);
     assert(state.setpoint_radps[0] == 2.0f);
-    assert(state.gyro_frd_radps[1] == -0.25f);
+    assert(state.gyro_frd_radps[1] == 0.25f);
     assert(state.output[0] == 0.25f);
     assert(!app_rate_step(&state, &command, gyro, 20501));
     assert(!state.have_time && !state.valid && state.mixer.motor[0] == 0);

@@ -41,13 +41,13 @@ bool app_rate_configure(app_rate_t *state, const app_rate_config_t *config) {
 }
 
 bool app_rate_step(app_rate_t *state, const app_command_t *command,
-                   const float gyro_flu_radps[RATE_AXIS_COUNT],
+                   const float gyro_frd_radps[RATE_AXIS_COUNT],
                    uint32_t time_us) {
     if (state == NULL)
         return false;
     state->valid = false;
     if (!state->configured || command == NULL || !command->valid ||
-        gyro_flu_radps == NULL || command->throttle < 0 ||
+        gyro_frd_radps == NULL || command->throttle < 0 ||
         command->throttle > NORM_Q15_ONE)
         goto fail;
     const norm_q15_t stick[RATE_AXIS_COUNT] = {command->roll, command->pitch,
@@ -56,11 +56,11 @@ bool app_rate_step(app_rate_t *state, const app_command_t *command,
         output[RATE_AXIS_COUNT];
     for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
         if (stick[i] < -NORM_Q15_ONE || stick[i] > NORM_Q15_ONE ||
-            !isfinite(gyro_flu_radps[i]))
+            !isfinite(gyro_frd_radps[i]))
             goto fail;
         target[i] =
             ((float)stick[i] / NORM_Q15_ONE) * state->config.max_rate_radps[i];
-        gyro[i] = gyro_flu_radps[i] * (i == 0 ? 1.0f : -1.0f);
+        gyro[i] = gyro_frd_radps[i];
     }
     if (!state->have_time) {
         state->previous_us = time_us;

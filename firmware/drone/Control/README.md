@@ -88,8 +88,8 @@ trong fixture. Timing và đáp ứng lực đẩy cần đo trên board/bộ g�
 được thêm vào build firmware, chưa nối vào `app_process()` hoặc xuất ESC.
 Không có gain mặc định đã hiệu chỉnh cho khung drone.
 
-Đầu vào là setpoint và gyro rad/s trong hệ FRD. Khi lấy gyro từ `app_imu`,
-đổi FLU sang FRD bằng `[x, -y, -z]`; không đổi dấu lại ở mixer. `dt_s` là
+Đầu vào là setpoint và gyro rad/s trong hệ FRD. `app_imu` xuất trực tiếp FRD theo ánh xạ gá
+`[-X, +Y, -Z]`; không đổi dấu lại ở rate controller hoặc mixer. `dt_s` là
 thời gian thực giữa hai mẫu mới, đơn vị giây, trong `(0; 0,02]`. App phải
 bỏ mẫu đầu để thiết lập timestamp, dùng phép trừ `uint32_t` để xử lý tràn
 `t_read_us`, reset khi disarm/lỗi IMU hoặc khoảng mẫu quá dài. Timestamp này

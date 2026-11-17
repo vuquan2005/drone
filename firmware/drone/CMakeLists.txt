@@ -69,6 +69,7 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library
 target_sources(
     ${CMAKE_PROJECT_NAME}
     PRIVATE Control/Src/mixer.c
+            Control/Src/rate_controller.c
             Drivers/BMI270/bmi2.c
             Drivers/BMI270/bmi270.c
             BSP/Src/bsp_bmi270.c

@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.22)
+project(rate_tests C)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+enable_testing()
+set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+add_executable(rate_tests test_rate.c ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
+                          ${FIRMWARE_ROOT}/Control/Src/mixer.c)
+target_include_directories(rate_tests PRIVATE ${FIRMWARE_ROOT}/Control/Inc)
+target_compile_options(rate_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+target_link_libraries(rate_tests PRIVATE m)
+add_test(NAME rate_tests COMMAND rate_tests)

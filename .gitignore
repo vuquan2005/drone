@@ -109,7 +109,7 @@ fp-info-cache
 /firmware/**/compile_commands.json
 
 # Local reference repositories
-/docs/external/repos/
+/docs/external/repos
 
 # Local reference metadata, PDF sync state and extracted images
 /docs/references/**/*.jpeg

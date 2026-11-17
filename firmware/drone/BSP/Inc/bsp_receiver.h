@@ -10,8 +10,8 @@ typedef enum {
     BSP_RECEIVER_DISCONTINUITY
 } bsp_receiver_result_t;
 
-/** @brief Start/restart board USART1 circular DMA/IDLE reception after HAL UART
- * init.
+/** @brief Start/restart board receiver circular DMA/IDLE reception after HAL
+ * UART init.
  * @return Whether reception started. Call in foreground only. */
 bool bsp_receiver_init(void);
 /** @brief Pop a byte and its DMA event HAL millisecond tick, or report lost

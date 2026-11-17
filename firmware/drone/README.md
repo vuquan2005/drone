@@ -218,6 +218,14 @@ nhất. Thứ tự kênh và ý nghĩa arm/throttle phụ thuộc cấu hình ta
 App dùng trạng thái này để failsafe khi mất RC; phục hồi không tự arm.
 Cần OFF → ON với ga <=2%, IMU mới và controller/PWM sẵn sàng.
 
+User Label trong CubeMX đặt theo phía STM32: `RECEIVER_RX` = PA10,
+`RECEIVER_TX` = PA9. Label chỉ định danh chân; không tự ánh xạ UART handle,
+DMA hoặc IRQ. Ánh xạ receiver nằm tập trung ở đầu `BSP/Src/bsp_receiver.c`
+(`RECEIVER_UART_HANDLE`, `RECEIVER_UART_IRQn`, `RECEIVER_RX_DMA_IRQn` và
+`RECEIVER_IRQ_PRIORITY`). Khi chuyển UART, cập nhật `.ioc`, sinh lại code
+bằng `make cubemx`, rồi cập nhật khối ánh xạ này. Hai IRQ UART/RX DMA phải
+cùng mức ưu tiên preemption vì dùng chung trạng thái nhận.
+
 USART1 RX dùng DMA1 Channel 5 circular và ngắt IDLE/half/full. Khi nhận
 liên tục ở 420 kbaud, cần phục vụ IRQ trong khoảng 0,76 ms để tránh DMA
 ghi đè; mất cả vòng DMA không tự phát hiện được. Timestamp nhận dùng HAL

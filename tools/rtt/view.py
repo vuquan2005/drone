@@ -94,7 +94,7 @@ class Viewer(QtWidgets.QMainWindow):
         layout.addWidget(self.record_status)
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         layout.addWidget(splitter)
-        tabs = QtWidgets.QTabWidget()
+        tabs = self.tabs = QtWidgets.QTabWidget()
         self.imu_panel = ImuPanel()
         self.receiver_panel = ReceiverPanel()
         self.rate_panel = RatePanel()
@@ -116,6 +116,7 @@ class Viewer(QtWidgets.QMainWindow):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.refresh)
         self.timer.start(40)
+        self.tabs.currentChanged.connect(self.tab_changed)
         if getattr(args, "record", False):
             QtCore.QTimer.singleShot(0, self.toggle_recording)
 
@@ -217,9 +218,15 @@ class Viewer(QtWidgets.QMainWindow):
             stream.retry.start(2000)
             stream.connect()
 
+    def tab_changed(self, *_):
+        # Hidden live panels catch up from the unchanged telemetry history.
+        self.dirty = True
+        self.refresh()
+
     def new_session(self):
         self.telemetry.new_connection()
-        self.receiver_panel.update_sample(None, 0, False)
+        if self.tabs.currentWidget() is self.receiver_panel:
+            self.receiver_panel.update_sample(None, 0, False)
         self.dirty = True
 
     def on_data(self, line):
@@ -327,23 +334,26 @@ class Viewer(QtWidgets.QMainWindow):
         self.update_record_status()
         state = self.telemetry
         now = time.monotonic()
-        self.receiver_panel.update_sample(
-            state.latest_rc,
-            now - state.rc_received_at if state.rc_received_at is not None else 0,
-            self.states["DATA"] == "connected",
-        )
-        self.rate_panel.update_points(state.rate_points)
-        rate = state.latest_rate
-        if rate is None:
-            self.rate_panel.setText("Waiting for rate telemetry")
-        else:
-            age = now - state.rate_received_at
-            connected = self.states["DATA"] == "connected"
-            self.rate_panel.setText(
-                f"Rate · valid={bool(rate[3] & 2)} · "
-                f"{'live' if connected and age < 0.5 else 'telemetry stale'} · "
-                f"age={age:.2f} s · dt={rate[2]} us"
+        active_panel = self.tabs.currentWidget()
+        if active_panel is self.receiver_panel:
+            self.receiver_panel.update_sample(
+                state.latest_rc,
+                now - state.rc_received_at if state.rc_received_at is not None else 0,
+                self.states["DATA"] == "connected",
             )
+        if active_panel is self.rate_panel:
+            self.rate_panel.update_points(state.rate_points)
+            rate = state.latest_rate
+            if rate is None:
+                self.rate_panel.setText("Waiting for rate telemetry")
+            else:
+                age = now - state.rate_received_at
+                connected = self.states["DATA"] == "connected"
+                self.rate_panel.setText(
+                    f"Rate · valid={bool(rate[3] & 2)} · "
+                    f"{'live' if connected and age < 0.5 else 'telemetry stale'} · "
+                    f"age={age:.2f} s · dt={rate[2]} us"
+                )
         self.mcu_stats.update_sample(
             state.latest_stats,
             now - state.stats_received_at if state.stats_received_at is not None else 0,
@@ -360,10 +370,9 @@ class Viewer(QtWidgets.QMainWindow):
             f"LOG: {self.states['LOG']} | DATA: {self.states['DATA']} | "
             f"RX {len(state.arrivals)}/s"
         )
-        if not self.dirty:
-            return
-        self.dirty = False
-        self.imu_panel.update_series(state.series)
+        if active_panel is self.imu_panel and self.dirty:
+            self.dirty = False
+            self.imu_panel.update_series(state.series)
 
 
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[2] / "experiments/raw/telemetry"

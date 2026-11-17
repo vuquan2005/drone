@@ -76,6 +76,8 @@ dùng `UV=/path/to/uv` để chỉ định executable cho Make.
   Mở **Diagnostics** để xem counter host, thống kê MCU type 2 kèm tuổi
   snapshot và queue/writer drops khi ghi phiên. Tốc độ nhận host chịu ảnh hưởng TCP, không phải
   phép đo chính xác tần số lấy mẫu.
+- Chỉ cập nhật đồ họa tab đang mở; khi chuyển tab, hiển thị lịch sử mới nhất.
+  Nhận/giải mã RTT và ghi phiên tiếp tục với mọi luồng kể cả khi tab bị ẩn.
 - Tự nối lại mỗi 2 giây. Nối lại DATA hoặc nghi reset bắt đầu segment mới,
   xóa plot và không đếm gap qua ranh giới; tổng counter host vẫn giữ.
   Không có dữ liệu thì giữ plot cuối.

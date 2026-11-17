@@ -4,6 +4,7 @@
 #include "app_receiver.h"
 #include "app_telemetry.h"
 #include "bsp_motor_pwm.h"
+#include "esc_calibration.h"
 #include "main.h"
 #include <stddef.h>
 
@@ -29,7 +30,7 @@ void runtime_init(void) {
 }
 
 bool runtime_mode_supported(void) {
-    return mode == RUNTIME_FLIGHT;
+    return mode == RUNTIME_FLIGHT || mode == RUNTIME_ESC_CALIB;
 }
 
 runtime_mode_t runtime_get_mode(void) {
@@ -77,6 +78,8 @@ void runtime_process(void) {
                          (unsigned)mode, (unsigned)runtime_mode_supported());
         if (mode == RUNTIME_FLIGHT) {
             app_init();
+        } else if (mode == RUNTIME_ESC_CALIB) {
+            esc_calibration_init();
         }
         /* Initialization can block: never forward the pre-init RC snapshot. */
         return;
@@ -86,6 +89,7 @@ void runtime_process(void) {
         app_process(&command);
         break;
     case RUNTIME_ESC_CALIB:
+        esc_calibration_process(&command);
         break;
     case RUNTIME_FLASH_EXPORT:
         break;

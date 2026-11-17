@@ -37,8 +37,8 @@ khởi tạo vì việc khởi tạo IMU có thể blocking.
 
 Runtime ưu tiên ESC_CALIB khi SB HIGH; nếu không, SD STREAM lúc boot chọn
 FLASH_EXPORT, còn OFF/RECORD chọn FLIGHT. SC dành cho chế độ bay. Runtime dùng `switch` để điều
-phối mode; ESC_CALIB/FLASH_EXPORT chưa triển khai giữ PWM
-tắt và báo `supported=0`. Mode chốt đến reset, chưa có chuyển giao tài nguyên
+phối mode; ESC_CALIB tự khởi tạo và quản lý PWM qua `esc_calibration`,
+FLASH_EXPORT chưa triển khai giữ PWM tắt và báo `supported=0`. Mode chốt đến reset, chưa có chuyển giao tài nguyên
 động. `app_get_status()` cung cấp sức khỏe IMU/PWM và trạng thái arm riêng với
 mode. Safety trong App quyết định quyền motor. Runtime khởi tạo RTT/log/telemetry
 chung và gửi RC thô; App gửi IMU, rate và thống kê.

@@ -1,5 +1,6 @@
 #include "app.h"
 #include "bsp_motor_pwm.h"
+#include "esc_calibration.h"
 #include "runtime.h"
 #include <assert.h>
 #include <stddef.h>
@@ -10,7 +11,15 @@ uint32_t HAL_GetTick(void) {
 static app_receiver_sample_t input;
 static bool available;
 static bool disconnect_during_init;
-static unsigned inits, polls, starts, processes, stops;
+static unsigned inits, polls, starts, processes, stops, calib_inits,
+    calib_polls;
+void esc_calibration_init(void) {
+    calib_inits++;
+}
+void esc_calibration_process(const app_command_t *command) {
+    assert(command != NULL);
+    calib_polls++;
+}
 
 void app_receiver_init(void) {
     inits++;
@@ -45,7 +54,7 @@ static void reset(void) {
     input.connected = true;
     available = true;
     disconnect_during_init = false;
-    inits = polls = starts = processes = stops = 0;
+    inits = polls = starts = processes = stops = calib_inits = calib_polls = 0;
     runtime_init();
     assert(inits == 1 && stops == 1 && starts == 0);
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
@@ -98,12 +107,13 @@ int main(void) {
         input.channels[6] = 1811;
         runtime_process();
         assert(runtime_get_mode() == RUNTIME_ESC_CALIB &&
-               !runtime_mode_supported());
+               runtime_mode_supported());
+        assert(calib_inits == 1 && calib_polls == 0);
         input.channels[6] = input.channels[7] = 172;
         runtime_process();
         assert(runtime_get_mode() == RUNTIME_ESC_CALIB && starts == 0 &&
                processes == 0);
-        assert(stops == 1);
+        assert(stops == 1 && calib_inits == 1 && calib_polls == 1);
     }
     reset();
     input.channels[7] = 1811;

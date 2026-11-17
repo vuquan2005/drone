@@ -24,10 +24,11 @@ void runtime_init(void);
  * otherwise telemetry STREAM selects FLASH_EXPORT, OFF/RECORD select FLIGHT.
  * CH6/SC is a flight-mode request and never selects a maintenance operation.
  * CH8/SD retains its telemetry request meaning after FLIGHT is selected.
- * Selection latches until reset. ESC_CALIB/FLASH_EXPORT are placeholders: no
- * App init, PWM, calibration or flash I/O. RC telemetry also runs during boot
- * selection. FLIGHT init may block on IMU SPI;
- * flight processing starts on the next poll with a fresh receiver snapshot.
+ * Selection latches until reset. ESC_CALIB initializes its own PWM session;
+ * FLASH_EXPORT remains a placeholder without PWM or flash I/O. No flight App
+ * initialization occurs in either maintenance mode. RC telemetry runs during
+ * boot selection. FLIGHT init may block on IMU SPI; flight processing starts on
+ * the next poll with a fresh receiver snapshot.
  */
 void runtime_process(void);
 
@@ -35,7 +36,7 @@ void runtime_process(void);
  */
 runtime_mode_t runtime_get_mode(void);
 
-/** Whether the selected mode has an implementation (currently FLIGHT only).
+/** Whether the selected mode has an implementation (FLIGHT and ESC_CALIB).
  * False while waiting for selection. No I/O, serialized foreground only.
  * This is not flight health or motor permission; use app_get_status in FLIGHT.
  */

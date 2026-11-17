@@ -69,7 +69,7 @@ thiếu chỗ thì bỏ nguyên frame mới và tăng counter đầy CH1. Tốc 
 
 ## IMU raw v1, type 4
 
-Payload 32 byte, frame 44 byte. Đây là số đếm BMI270 nguyên gốc, chưa đổi đơn
+Payload 32 byte, frame 44 byte. Đây là số đếm IMU nguyên gốc, chưa đổi đơn
 vị, hiệu chuẩn, lọc hoặc ánh xạ hệ trục. Offset tính từ đầu payload:
 
 | Offset | Kiểu     | Trường                 | Ý nghĩa                                                 |

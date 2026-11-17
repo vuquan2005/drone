@@ -1,0 +1,31 @@
+# Uncomment exactly one default. A -DDRONE_IMU=... override is also supported.
+if(NOT DEFINED DRONE_IMU)
+    set(DRONE_IMU BMI160)
+    # set(DRONE_IMU BMI270)
+endif()
+if(NOT DRONE_IMU MATCHES "^(BMI160|BMI270)$")
+    message(FATAL_ERROR "Invalid DRONE_IMU: ${DRONE_IMU}; expected BMI160 or BMI270")
+endif()
+message(STATUS "IMU: ${DRONE_IMU}")
+
+# Share backend selection between firmware and host tests.
+set(DRONE_IMU_ROOT "${CMAKE_CURRENT_LIST_DIR}/..")
+function(drone_imu_headers target sensor)
+    if(NOT sensor MATCHES "^(BMI160|BMI270)$")
+        message(FATAL_ERROR "Unknown IMU backend: ${sensor}")
+    endif()
+    target_compile_definitions(${target} PRIVATE DRONE_IMU_${sensor}=1)
+    target_include_directories(${target} PRIVATE "${DRONE_IMU_ROOT}/Drivers/${sensor}")
+endfunction()
+
+function(drone_imu_sources target sensor)
+    drone_imu_headers(${target} ${sensor})
+    string(TOLOWER "${sensor}" backend)
+    target_sources(${target} PRIVATE "${DRONE_IMU_ROOT}/BSP/Src/bsp_imu_${backend}.c")
+    if(sensor STREQUAL "BMI160")
+        target_sources(${target} PRIVATE "${DRONE_IMU_ROOT}/Drivers/BMI160/bmi160.c")
+    else()
+        target_sources(${target} PRIVATE "${DRONE_IMU_ROOT}/Drivers/BMI270/bmi2.c"
+                                         "${DRONE_IMU_ROOT}/Drivers/BMI270/bmi270.c")
+    endif()
+endfunction()

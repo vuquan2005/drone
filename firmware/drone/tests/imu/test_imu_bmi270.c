@@ -8,7 +8,7 @@
 #include <string.h>
 
 SPI_HandleTypeDef hspi1;
-GPIO_TypeDef mock_gpiod;
+GPIO_TypeDef mock_gpioa;
 static bool time_initialized;
 static uint8_t registers[128];
 static bool selected;
@@ -40,11 +40,11 @@ static void fake_delay(uint32_t period) {
     delayed_us += period;
 }
 
-static const bsp_bmi270_config_t config = {.spi = &hspi1,
-                                           .cs_port = &mock_gpiod,
-                                           .cs_pin = 1U << 7,
-                                           .timeout_ms = 100U,
-                                           .delay_us = fake_delay};
+static const bsp_imu_config_t config = {.spi = &hspi1,
+                                        .cs_port = &mock_gpioa,
+                                        .cs_pin = 1U << 4,
+                                        .timeout_ms = 100U,
+                                        .delay_us = fake_delay};
 
 static void reset_fixture(void) {
     memset(registers, 0, sizeof(registers));
@@ -61,7 +61,7 @@ static void reset_fixture(void) {
 }
 
 void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state) {
-    assert(port == &mock_gpiod && pin == config.cs_pin);
+    assert(port == &mock_gpioa && pin == config.cs_pin);
     if (state == GPIO_PIN_RESET) {
         assert(!selected);
         selected = true;
@@ -137,7 +137,7 @@ static void test_unconfigured_and_invalid(void) {
     assert(app_imu_init(NULL, &config) == BSP_IMU_INVALID_ARGUMENT);
     assert(app_imu_poll(NULL) == BSP_IMU_INVALID_ARGUMENT);
 
-    bsp_bmi270_config_t invalid = config;
+    bsp_imu_config_t invalid = config;
     invalid.cs_pin = 3U;
     assert(app_imu_init(&imu, &invalid) == BSP_IMU_INVALID_ARGUMENT);
     invalid = config;
@@ -151,7 +151,7 @@ static void test_unconfigured_and_invalid(void) {
 
 static void test_board_binding(void) {
     reset_fixture();
-    const bsp_bmi270_config_t *board = bsp_board_imu_config();
+    const bsp_imu_config_t *board = bsp_board_imu_config();
     assert(board != NULL && time_initialized);
     assert(board->spi == &hspi1);
     assert(board->cs_port == IMU_CS_GPIO_Port);

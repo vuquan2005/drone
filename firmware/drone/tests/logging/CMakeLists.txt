@@ -3,14 +3,14 @@ project(logging_tests C)
 set(CMAKE_C_STANDARD 11)
 enable_testing()
 set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+include(${FIRMWARE_ROOT}/cmake/imu.cmake)
 foreach(level IN ITEMS 0 3 4)
     set(TARGET logging_${level}_tests)
     add_executable(${TARGET} test_logging.c)
+    drone_imu_headers(${TARGET} ${DRONE_IMU})
     target_include_directories(
-        ${TARGET}
-        PRIVATE ../imu/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/Control/Inc
-                ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/Drivers/BMI270
-                ${FIRMWARE_ROOT}/Drivers/RTT)
+        ${TARGET} PRIVATE ../imu/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/Control/Inc
+                          ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/Drivers/RTT)
     target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     target_compile_definitions(
         ${TARGET}
@@ -43,15 +43,11 @@ add_executable(
     ${FIRMWARE_ROOT}/App/Src/app_telemetry.c
     ${FIRMWARE_ROOT}/BSP/Src/bsp_rtt.c
     ${FIRMWARE_ROOT}/Drivers/RTT/SEGGER_RTT.c)
+drone_imu_headers(app_logging_tests ${DRONE_IMU})
 target_include_directories(
     app_logging_tests
-    PRIVATE mocks
-            ../imu/mocks
-            ${FIRMWARE_ROOT}/App/Inc
-            ${FIRMWARE_ROOT}/Control/Inc
-            ${FIRMWARE_ROOT}/BSP/Inc
-            ${FIRMWARE_ROOT}/Drivers/BMI270
-            ${FIRMWARE_ROOT}/Drivers/RTT)
+    PRIVATE mocks ../imu/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/Control/Inc
+            ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/Drivers/RTT)
 target_compile_definitions(app_logging_tests PRIVATE DRONE_RTT=1 DRONE_LOG_LEVEL=3
                                                      DRONE_TELEMETRY=1)
 target_compile_options(app_logging_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)

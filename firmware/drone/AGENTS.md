@@ -1,6 +1,6 @@
 # Firmware drone
 
-Project STM32F103VET6 này hiện có khung ứng dụng và đọc BMI270;
+Project STM32F103VET6 này hiện có khung ứng dụng và đọc IMU;
 nhận RC qua CRSF và xuất PWM ESC qua TIM4. Mixer Quad X độc lập HAL đã có
 trong `Control/`; App nối RC → rate PID → mixer → PWM với arm/failsafe.
 Gain và ánh xạ thrust → ESC hiện dành cho thử trên bộ gá, chưa hiệu chuẩn bay.
@@ -43,7 +43,7 @@ phần cứng ở `Control/Inc/`.
   Chỉ format mã tự viết, tránh đổi định dạng mã CubeMX và driver upstream.
 - Theo cách đặt tên hiện có: tệp, hàm và biến dùng `snake_case`, kiểu tự định
   nghĩa có hậu tố `_t`, macro và giá trị enum dùng `UPPER_SNAKE_CASE`.
-  API module mang tiền tố tương ứng như `app_imu_`, `bsp_bmi270_`.
+  API module mang tiền tố tương ứng như `app_imu_`, `bsp_imu_`.
 - Khai báo API công khai trong `Inc/`, triển khai trong `Src/`; hàm và trạng
   thái chỉ dùng nội bộ tệp để `static`. Dùng `const` cho dữ liệu chỉ đọc và
   kiểu số nguyên có độ rộng rõ ràng cho thanh ghi, giao thức và bộ đếm.

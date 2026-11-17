@@ -77,7 +77,7 @@ module App tương ứng, tránh dồn mọi hành vi vào một tệp.
 
 | Công việc  | App                                                          | Control                               | BSP                                   |
 | ---------- | ------------------------------------------------------------ | ------------------------------------- | ------------------------------------- |
-| IMU        | Lấy mẫu, đổi SI, kiểm tra tuổi dữ liệu, điều phối hiệu chuẩn | Tính/áp dụng bias, đổi trục và lọc    | Giao tiếp và cấu hình BMI270          |
+| IMU        | Lấy mẫu, đổi SI, kiểm tra tuổi dữ liệu, điều phối hiệu chuẩn | Tính/áp dụng bias, đổi trục và lọc    | Giao tiếp và cấu hình IMU             |
 | Tư thế     | Cung cấp mẫu/`dt`, quản lý khởi tạo và sức khỏe              | Toán quaternion và estimator          | Không tính tư thế                     |
 | Điều khiển | RC, tham chiếu, lịch chạy và chuyển trạng thái               | PID rate/attitude và mixer            | Không tính lệnh điều khiển bay        |
 | Motor      | Chế độ thử, quyền output và xử lý lỗi                        | Trộn lệnh và xử lý giới hạn chuẩn hóa | Phát PWM hoặc DShot theo cấu hình ESC |
@@ -148,7 +148,7 @@ flowchart TB
   trục body. Throttle và lệnh từng motor dùng thang chuẩn hóa `[0, 1]`.
   Ghi rõ thứ tự thành phần quaternion và chiều phép quay trong API trước khi
   triển khai estimator/controller; dùng cùng quy ước trong test và phép đo.
-- Mẫu thô theo hệ trục package BMI270; dữ liệu đưa vào vòng rate và estimator
+- Mẫu thô theo hệ trục package IMU; dữ liệu đưa vào vòng rate và estimator
   phải được hiệu chuẩn bias và chuyển sang hệ trục body.
 - `psi_dot_cmd` là đạo hàm heading Euler, không mặc định bằng tốc độ quay
   quanh Z body khi drone nghiêng. Tích phân heading rate thành heading đặt,
@@ -156,10 +156,10 @@ flowchart TB
   đúng sang body và tránh tính hai lần cùng thành phần.
 - Khởi tạo heading đặt từ tư thế hiện tại khi arm hoặc chuyển chế độ. Chỉ
   đồng bộ lại theo chính sách rõ ràng, không ghi đè heading đặt bằng heading
-  đo ở mỗi chu kỳ. BMI270 đơn lẻ không cung cấp tham chiếu heading tuyệt đối;
+  đo ở mỗi chu kỳ. IMU đơn lẻ không cung cấp tham chiếu heading tuyệt đối;
   heading hold vẫn chịu trôi yaw.
 - Dữ liệu chung cần có thời điểm mẫu, trạng thái hợp lệ và quy tắc quá hạn.
-  Bộ đếm thời gian BMI270 là 24-bit; cần xử lý tràn và xác định quan hệ với thời
+  Bộ đếm thời gian IMU là 24-bit; cần xử lý tràn và xác định quan hệ với thời
   gian MCU trước khi dùng để tính `dt` hoặc kiểm tra tuổi mẫu.
 
 ### Mixer, giới hạn và anti-windup

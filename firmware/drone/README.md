@@ -1,6 +1,6 @@
 # Firmware drone
 
-Ứng dụng hiện khởi tạo và poll BMI270 qua SPI1/CS PD7, đổi mẫu đo sang SI.
+Ứng dụng hiện khởi tạo và poll IMU (BMI160 hoặc BMI270) qua SPI1/CS PA4, đổi mẫu đo sang SI.
 Đã nhận 16 kênh RC qua CRSF và xuất PWM ESC qua TIM4; chưa có estimator,
 vòng điều khiển, mixer hay arm/failsafe.
 Xem [cấu hình chân, build và debug](../README.md) để bắt đầu.
@@ -18,16 +18,23 @@ Khung RTT hai kênh và Live Watch được mô tả tại [DEBUG.md](DEBUG.md).
 | `tests/imu/`                   | Kiểm thử trên máy tính với HAL mô phỏng                                      |
 | `CMakeLists.txt`               | Source/include cho mã tự viết                                                |
 
-Luồng gọi: `main` → `app` → `app_imu` → `bsp_bmi270` → Bosch API → callback HAL.
+Luồng gọi: `main` → `app` → `app_imu` → `bsp_imu` → Bosch API → callback HAL.
 CubeMX khởi tạo HAL, clock và ngoại vi trước `app_init()`; vòng lặp gọi
 `app_process()`. [Kiến trúc](ARCHITECTURE.md) giải thích ranh giới module và
 chuỗi điều khiển dự kiến.
 
 ## Kiểm tra IMU
 
-Cấu hình ban đầu: accel/gyro 400 Hz, ±16 g và ±2000 °/s; advanced power save
-tắt. Chưa có FIFO, ngắt DRDY, hiệu chuẩn bias hoặc chuyển trục sang thân drone.
-IMU và định thời chưa được kiểm chứng trên board.
+Cấu hình ban đầu: accel/gyro 400 Hz, ±16 g và ±2000 °/s. BMI160 dùng normal
+mode; BMI270 tắt advanced power save. Chưa có FIFO, ngắt DRDY, hiệu chuẩn bias hoặc chuyển trục sang thân drone.
+IMU và định thời chưa được kiểm chứng trên board. Chip ID mong đợi:
+BMI160 `0xD1`, BMI270 `0x24`. Wiring giữ SPI1 và CS PA4; xác nhận chân module BMI160 trước khi nối.
+Ánh xạ trục trong `app_imu.c` được giữ nguyên; phải xác nhận lại theo cách lắp
+module thực tế trước khi dùng mẫu SI cho điều khiển.
+
+Driver Bosch tại [Drivers/BMI160](Drivers/BMI160/README.md) và
+[Drivers/BMI270](Drivers/BMI270/README.md). Mọi lời gọi
+init/read BSP phải tuần tự trong foreground vì callback Bosch không có context.
 
 Xem biến `imu` trong `App/Src/app.c` bằng debugger:
 
@@ -92,6 +99,26 @@ BSP dùng SPI đã được CubeMX khởi tạo và delay DWT bật sau cấu h�
 API truyền đồng bộ, timeout HAL 100 ms mỗi giao dịch; chưa hỗ trợ đọc FIFO dài.
 Hợp đồng sử dụng API nằm trong header `App/Inc` và `BSP/Inc`.
 
+## Chọn cảm biến
+
+Trong [cmake/imu.cmake](cmake/imu.cmake), comment dòng đang dùng và bỏ comment
+cho dòng cần chọn, giữ đúng một dòng hoạt động:
+
+```cmake
+set(DRONE_IMU BMI160)
+# set(DRONE_IMU BMI270)
+```
+
+Sau đó chạy `make fw-build` từ gốc repository và flash lại firmware. CMake
+chỉ biên dịch BSP và driver của cảm biến được chọn; App giữ API `bsp_imu_*`.
+Cả hai thư mục driver vẫn được giữ nguyên, không cần sửa mã upstream.
+
+Có thể ghi đè lựa chọn bằng `cube cmake --preset Debug -DDRONE_IMU=BMI270`
+khi chạy từ `firmware/drone`. Giá trị `-D` được lưu trong cache và ưu tiên hơn
+lựa chọn trong file; dùng `cube cmake --preset Debug -U DRONE_IMU` để trở lại
+lựa chọn bằng comment. Không tự dò cảm biến lúc chạy. Cần xác nhận wiring và
+hướng trục theo module thực tế mỗi khi thay cảm biến.
+
 ## Build và kiểm thử
 
 Build firmware theo [hướng dẫn chung](../README.md#build).
@@ -103,6 +130,7 @@ cmake --build /tmp/drone-imu-tests
 ctest --test-dir /tmp/drone-imu-tests --output-on-failure
 ```
 
+Suite IMU luôn chạy cả BMI160 và BMI270, độc lập với lựa chọn firmware.
 Test dùng driver Bosch thật và HAL mô phỏng để kiểm tra khởi tạo, đọc mẫu
 và xử lý lỗi; không xác nhận nối dây hoặc định thời trên board.
 

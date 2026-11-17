@@ -67,14 +67,14 @@ target_compile_definitions(STM32_Drivers PRIVATE USER_VECT_TAB_ADDRESS)
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library search paths
 )
 
+include(cmake/imu.cmake)
+drone_imu_sources(${CMAKE_PROJECT_NAME} ${DRONE_IMU})
+
 # Add user sources to executable when needed:
 target_sources(
     ${CMAKE_PROJECT_NAME}
     PRIVATE Control/Src/mixer.c
             Control/Src/rate_controller.c
-            Drivers/BMI270/bmi2.c
-            Drivers/BMI270/bmi270.c
-            BSP/Src/bsp_bmi270.c
             BSP/Src/bsp_board.c
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
@@ -91,8 +91,8 @@ target_sources(
 # Add include paths
 target_include_directories(
     ${CMAKE_PROJECT_NAME}
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BMI270 ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc
-            ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc ${CMAKE_CURRENT_SOURCE_DIR}/Control/Inc)
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/Control/Inc)
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RTT=$<BOOL:${DRONE_ENABLE_RTT}>)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_LOG_LEVEL=${DRONE_LOG_LEVEL_VALUE})

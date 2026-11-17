@@ -1,4 +1,4 @@
-#include "bsp_bmi270.h"
+#include "bsp_imu.h"
 #include <string.h>
 
 #define IMU_TRANSFER_BYTES 32U
@@ -6,7 +6,7 @@
 
 static BMI2_INTF_RETURN_TYPE spi_read(uint8_t reg, uint8_t *data,
                                       uint32_t length, void *context) {
-    bsp_bmi270_t *imu = context;
+    bsp_imu_t *imu = context;
     uint8_t tx[IMU_SPI_READ_BYTES + 1U] = {0};
     uint8_t rx[sizeof(tx)] = {0};
     if (length == 0U || length > IMU_SPI_READ_BYTES) {
@@ -30,7 +30,7 @@ static BMI2_INTF_RETURN_TYPE spi_read(uint8_t reg, uint8_t *data,
 
 static BMI2_INTF_RETURN_TYPE spi_write(uint8_t reg, const uint8_t *data,
                                        uint32_t length, void *context) {
-    bsp_bmi270_t *imu = context;
+    bsp_imu_t *imu = context;
     uint8_t tx[IMU_TRANSFER_BYTES + 1U];
     if (length == 0U || length > IMU_TRANSFER_BYTES) {
         return -1;
@@ -45,17 +45,16 @@ static BMI2_INTF_RETURN_TYPE spi_write(uint8_t reg, const uint8_t *data,
 }
 
 static void delay_us(uint32_t period, void *context) {
-    bsp_bmi270_t *imu = context;
+    bsp_imu_t *imu = context;
     imu->config.delay_us(period);
 }
 
-bsp_imu_result_t bsp_bmi270_init(bsp_bmi270_t *imu,
-                                 const bsp_bmi270_config_t *config) {
+bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
     if (imu == NULL) {
         return BSP_IMU_INVALID_ARGUMENT;
     }
     /* Copy before resetting, so reinitialization with &imu->config is valid. */
-    bsp_bmi270_config_t bus = {0};
+    bsp_imu_config_t bus = {0};
     if (config != NULL) {
         bus = *config;
     }
@@ -109,8 +108,7 @@ bsp_imu_result_t bsp_bmi270_init(bsp_bmi270_t *imu,
     return imu->initialized ? BSP_IMU_OK : BSP_IMU_DRIVER_ERROR;
 }
 
-bsp_imu_result_t bsp_bmi270_read(bsp_bmi270_t *imu,
-                                 bsp_imu_raw_sample_t *sample) {
+bsp_imu_result_t bsp_imu_read(bsp_imu_t *imu, bsp_imu_raw_sample_t *sample) {
     if (imu == NULL || sample == NULL) {
         return BSP_IMU_INVALID_ARGUMENT;
     }

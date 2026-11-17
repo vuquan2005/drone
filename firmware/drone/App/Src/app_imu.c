@@ -2,17 +2,16 @@
 #include "bsp_time.h"
 #include <string.h>
 
-bsp_imu_result_t app_imu_init(app_imu_t *imu,
-                              const bsp_bmi270_config_t *config) {
+bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config) {
     if (imu == NULL) {
         return BSP_IMU_INVALID_ARGUMENT;
     }
-    bsp_bmi270_config_t bus = {0};
+    bsp_imu_config_t bus = {0};
     if (config != NULL) {
         bus = *config;
     }
     memset(imu, 0, sizeof(*imu));
-    imu->status = bsp_bmi270_init(&imu->sensor, config == NULL ? NULL : &bus);
+    imu->status = bsp_imu_init(&imu->sensor, config == NULL ? NULL : &bus);
     return imu->status;
 }
 
@@ -31,7 +30,7 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     }
 
     bsp_imu_raw_sample_t raw;
-    imu->status = bsp_bmi270_read(&imu->sensor, &raw);
+    imu->status = bsp_imu_read(&imu->sensor, &raw);
     if (imu->status == BSP_IMU_DRIVER_ERROR) {
         imu->read_error_count++;
     }

@@ -5,15 +5,15 @@
 #ifndef BSP_BOARD_H
 #define BSP_BOARD_H
 
-#include "bsp_bmi270.h"
+#include "bsp_imu.h"
 
 /**
- * @brief Get the BMI270 bus and pin mapping for this board.
+ * @brief Get the IMU bus and pin mapping for this board.
  * @pre CubeMX clock, GPIO and SPI initialization has completed.
  * @return Static board-owned configuration for SPI1 and IMU_CS (PA4).
  * @note Call from the foreground. Enables the DWT delay provider before
  * returning. Does not initialize SPI/GPIO or probe the sensor.
  */
-const bsp_bmi270_config_t *bsp_board_imu_config(void);
+const bsp_imu_config_t *bsp_board_imu_config(void);
 
 #endif

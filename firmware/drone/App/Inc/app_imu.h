@@ -5,7 +5,7 @@
 #ifndef APP_IMU_H
 #define APP_IMU_H
 
-#include "bsp_bmi270.h"
+#include "bsp_imu.h"
 
 /** @brief Original sensor counts and uncalibrated SI sample in body FLU.
  * Body axes: X forward, Y left, Z up. Raw fields remain in sensor XYZ.
@@ -33,7 +33,7 @@ typedef struct {
  * concurrently.
  */
 typedef struct {
-    bsp_bmi270_t sensor;
+    bsp_imu_t sensor;
     app_imu_sample_t sample;
     bsp_imu_result_t status;
     bool sample_valid; /**< Most recent poll produced a new sample; not an age
@@ -49,12 +49,11 @@ typedef struct {
  * init.
  * @param[in] config Board configuration; NULL leaves the IMU unconfigured.
  * @pre For a valid config, board peripherals and the delay provider are ready.
- * @return Result of bsp_bmi270_init, or BSP_IMU_INVALID_ARGUMENT for NULL imu.
+ * @return Result of bsp_imu_init, or BSP_IMU_INVALID_ARGUMENT for NULL imu.
  * @note Blocking foreground API. Reinitialization using &imu->sensor.config is
  * supported; previous samples and counters are discarded even if init fails.
  */
-bsp_imu_result_t app_imu_init(app_imu_t *imu,
-                              const bsp_bmi270_config_t *config);
+bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config);
 /**
  * @brief Poll once and convert a new raw sample to SI units.
  * @param[in,out] imu Application state; initialize with app_imu_init first.

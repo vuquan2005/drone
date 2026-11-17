@@ -35,12 +35,11 @@ bool bsp_pwm_set_all_us(const uint16_t pulse_us[BSP_PWM_CHANNEL_COUNT]) {
 void bsp_pwm_stop(void) {
     pwm_stops++;
 }
-const bsp_bmi270_config_t *bsp_board_imu_config(void) {
-    static const bsp_bmi270_config_t config = {.timeout_ms = 100U};
+const bsp_imu_config_t *bsp_board_imu_config(void) {
+    static const bsp_imu_config_t config = {.timeout_ms = 100U};
     return &config;
 }
-bsp_imu_result_t app_imu_init(app_imu_t *imu,
-                              const bsp_bmi270_config_t *config) {
+bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config) {
     assert(config->timeout_ms == 100U);
     memset(imu, 0, sizeof(*imu));
     imu->status = BSP_IMU_OK;

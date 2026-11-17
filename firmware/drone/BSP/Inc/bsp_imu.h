@@ -1,11 +1,17 @@
 /**
- * @file bsp_bmi270.h
- * @brief BMI270 board integration through synchronous STM32 HAL SPI.
+ * @file bsp_imu.h
+ * @brief IMU board integration through synchronous STM32 HAL SPI.
  */
-#ifndef BSP_BMI270_H
-#define BSP_BMI270_H
+#ifndef BSP_IMU_H
+#define BSP_IMU_H
 
+#if defined(DRONE_IMU_BMI160) && !defined(DRONE_IMU_BMI270)
+#include "bmi160.h"
+#elif defined(DRONE_IMU_BMI270) && !defined(DRONE_IMU_BMI160)
 #include "bmi270.h"
+#else
+#error "Select exactly one IMU backend through CMake"
+#endif
 #include "stm32f1xx_hal.h"
 #include <stdbool.h>
 #include <stdint.h>
@@ -36,10 +42,10 @@ typedef struct {
     uint16_t cs_pin;        /**< Exactly one GPIO pin bit. */
     uint32_t timeout_ms;    /**< Nonzero HAL timeout per SPI transfer, in ms. */
     void (*delay_us)(uint32_t period_us); /**< Initialized blocking us delay. */
-} bsp_bmi270_config_t;
+} bsp_imu_config_t;
 
 /** @brief Initial sensor output data rate in Hz, not a polling scheduler.
- * @note Keep these constants and bsp_bmi270_init settings consistent. Changing
+ * @note Keep these constants and bsp_imu_init settings consistent. Changing
  * the constants alone does not reconfigure the sensor.
  */
 #define BSP_IMU_ODR_HZ 400U
@@ -60,19 +66,22 @@ typedef struct {
 
 /**
  * @brief Sensor state owned by one foreground context.
- * @note Keep at a stable address after init: device.intf_ptr points to this
- * instance. Do not copy an initialized instance or access it concurrently.
+ * @note All instances share synchronous Bosch callbacks. Serialize every BSP
+ * init/read across instances; do not call Bosch APIs on device directly.
  */
 typedef struct {
+#if defined(DRONE_IMU_BMI160)
+    struct bmi160_dev device;
+#else
     struct bmi2_dev device;
-    bsp_bmi270_config_t config;
+#endif
+    bsp_imu_config_t config;
     bool initialized;
-    int8_t
-        driver_error; /**< Last Bosch return code; BMI2_OK on driver success. */
-} bsp_bmi270_t;
+    int8_t driver_error; /**< Last Bosch return code; zero on driver success. */
+} bsp_imu_t;
 
 /**
- * @brief Bind board callbacks, initialize BMI270 and enable accel and gyro.
+ * @brief Bind board callbacks, initialize the IMU and enable accel and gyro.
  * @param[out] imu Sensor state; reset before validating config when non-NULL.
  * @param[in] config Board configuration copied into imu; NULL is permitted.
  * @pre For a valid config, SPI, CS GPIO and the delay provider are initialized.
@@ -83,8 +92,7 @@ typedef struct {
  * @note Blocking foreground API. Serialize shared SPI access. Reinitialization
  * with config == &imu->config is supported. Keep imu at a stable address.
  */
-bsp_imu_result_t bsp_bmi270_init(bsp_bmi270_t *imu,
-                                 const bsp_bmi270_config_t *config);
+bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config);
 /**
  * @brief Read one raw sample when both accel and gyro are ready.
  * @param[in,out] imu Sensor state, including the last Bosch error code.
@@ -98,7 +106,6 @@ bsp_imu_result_t bsp_bmi270_init(bsp_bmi270_t *imu,
  * @note Blocking foreground API; never call from an ISR. Serialize shared SPI
  * access. Reads registers directly; no FIFO buffering or automatic recovery.
  */
-bsp_imu_result_t bsp_bmi270_read(bsp_bmi270_t *imu,
-                                 bsp_imu_raw_sample_t *sample);
+bsp_imu_result_t bsp_imu_read(bsp_imu_t *imu, bsp_imu_raw_sample_t *sample);
 
 #endif

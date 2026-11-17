@@ -26,6 +26,10 @@ int main(void) {
     assert(abs(state.mixer.achieved.pitch - NORM_Q15_ONE / 4) <= 2);
     assert(abs(state.mixer.achieved.yaw + NORM_Q15_ONE / 8) <= 2);
     assert(state.valid);
+    assert(state.dt_us == 1000);
+    assert(state.setpoint_radps[0] == 2.0f);
+    assert(state.gyro_frd_radps[1] == -0.25f);
+    assert(state.output[0] == 0.25f);
     assert(!app_rate_step(&state, &command, gyro, 20501));
     assert(!state.have_time && !state.valid && state.mixer.motor[0] == 0);
     assert(!app_rate_step(&state, &command, gyro, 21000));
@@ -33,6 +37,8 @@ int main(void) {
     command.valid = false;
     assert(!app_rate_step(&state, &command, gyro, 23000));
     assert(!state.controller.initialized && state.residual[0] == 0);
+    assert(state.dt_us == 0 && state.setpoint_radps[0] == 0 &&
+           state.output[0] == 0);
     command.valid = true;
     gyro[2] = NAN;
     assert(!app_rate_step(&state, &command, gyro, 24000));

@@ -7,7 +7,7 @@ from queue import Empty, Full, Queue
 from threading import Event, Thread
 import time
 
-from records import RTT_STATS_FIELDS, RC_FIELDS, IMU_RAW_FIELDS
+from records import RTT_STATS_FIELDS, RC_FIELDS, IMU_RAW_FIELDS, RATE_FIELDS
 
 COLUMNS = (
     "segment",
@@ -65,17 +65,22 @@ class SessionWriter:
             self.files["rc"] = (self.directory / f"rc_{stamp}.csv").open(
                 "x", newline="", encoding="utf-8"
             )
+            self.files["rate"] = (self.directory / f"rate_{stamp}.csv").open(
+                "x", newline="", encoding="utf-8"
+            )
             self.files["log"] = (self.directory / f"events_{stamp}.log").open("xb")
             if raw:
                 self.files["raw"] = (self.directory / f"data_{stamp}.hex").open("xb")
             self.csv_writers = {
-                kind: csv.writer(self.files[kind]) for kind in ("csv", "imu_raw", "stats", "rc")
+                kind: csv.writer(self.files[kind])
+                for kind in ("csv", "imu_raw", "stats", "rc", "rate")
             }
             for kind, columns in (
                 ("csv", COLUMNS),
                 ("imu_raw", IMU_RAW_COLUMNS),
                 ("stats", STATS_COLUMNS),
                 ("rc", RC_COLUMNS),
+                ("rate", ("segment", *RATE_FIELDS)),
             ):
                 self.csv_writers[kind].writerow(columns)
                 self.files[kind].flush()
@@ -89,7 +94,7 @@ class SessionWriter:
         self.error = None
         self.accepted = 0
         self.processed = 0
-        self.dropped = dict.fromkeys(("csv", "imu_raw", "stats", "rc", "log", "raw"), 0)
+        self.dropped = dict.fromkeys(("csv", "imu_raw", "stats", "rc", "rate", "log", "raw"), 0)
         self.thread = Thread(target=self._run, name="telemetry-writer", daemon=True)
         self.thread.start()
 

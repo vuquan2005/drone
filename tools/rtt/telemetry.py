@@ -1,8 +1,9 @@
 """Telemetry validation and session state, independent of Qt and recording."""
 
 from collections import deque
+import math
 
-from records import IMU, IMU_RAW, ImuSeries, RC, RTT_STATS
+from records import IMU, IMU_RAW, ImuSeries, RC, RTT_STATS, RATE
 
 
 class TelemetryState:
@@ -17,6 +18,7 @@ class TelemetryState:
         self.series = ImuSeries()
         self.arrivals = deque(maxlen=20000)
         self.segment = 0
+        self.latest_rate = self.rate_received_at = self.rate_last = None
         self.latest_rc = self.rc_last = self.rc_received_at = None
         self.latest_stats = None
         self.stats_last = None
@@ -24,6 +26,7 @@ class TelemetryState:
         self.stats_received_at = None
 
     def new_connection(self):
+        self.latest_rate = self.rate_received_at = self.rate_last = None
         self.latest_rc = self.rc_last = self.rc_received_at = None
         self.latest_stats = self.stats_last = self.stats_received_at = None
         self.segment += 1
@@ -31,6 +34,32 @@ class TelemetryState:
         self.arrivals.clear()
 
     def feed(self, line, received_at):
+        if line[0] == 1 and line[1] == 5:
+            if len(line[2]) != RATE.size:
+                self.series.invalid += 1
+                return
+            values = RATE.unpack(line[2])
+            if (
+                values[3] not in (1, 3)
+                or not all(math.isfinite(x) for x in values[4:])
+                or (values[3] == 3 and not 0 < values[2] <= 20000)
+                or any(abs(x) > 1 for x in values[10:13])
+                or any(not 0 <= x <= 1 for x in values[13:17])
+            ):
+                self.series.invalid += 1
+                return
+            if self.rate_last is not None:
+                ds = (values[0] - self.rate_last) % 2**32
+                if ds == 0:
+                    self.series.invalid += 1
+                    return
+                if ds >= 2**31:
+                    self.series.resets += 1
+                    self.new_connection()
+            self.rate_last = values[0]
+            self.latest_rate = values
+            self.rate_received_at = received_at
+            return "rate", values
         if line[0] == 1 and line[1] == 3:
             if len(line[2]) != RC.size:
                 self.series.invalid += 1
@@ -74,6 +103,7 @@ class TelemetryState:
         resets = self.series.resets
         if self.series.feed(line):
             if self.series.resets != resets:
+                self.latest_rate = self.rate_received_at = self.rate_last = None
                 self.latest_rc = self.rc_last = self.rc_received_at = None
                 self.segment += 1
                 self.latest_stats = self.stats_last = self.stats_received_at = None

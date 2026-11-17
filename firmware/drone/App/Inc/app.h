@@ -32,12 +32,14 @@ void app_process(void);
  * Nonblocking; no concurrent or ISR access. Does not grant motor permission. */
 bool app_get_command(app_command_t *sample);
 
-/** Configure the computational rate/mixer preview after app_init. Disabled at
- * initialization. Invalid config disables it. Same contract as
- * app_rate_configure; serialized foreground access only. This grants no motor
- * permission. period_us sets minimum spacing between consumed IMU samples;
- * faster IMU samples are skipped until due, using the latest available sample.
- * No catch-up steps or gyro decimation filter are provided. */
+/** Configure the computational rate/mixer preview after app_init.
+ * Initialization uses bench gains when DRONE_RATE_PREVIEW is enabled (Debug
+ * preset), otherwise leaves it disabled. Invalid config disables it. Same
+ * contract as app_rate_configure; serialized foreground access only. This
+ * grants no motor permission. period_us sets minimum spacing between consumed
+ * IMU samples; faster IMU samples are skipped until due, using the latest
+ * available sample. No catch-up steps or gyro decimation filter are provided.
+ */
 bool app_configure_rate(const app_rate_config_t *config);
 
 /** Copy latest mixer preview; false for NULL or no valid calculation. Output is

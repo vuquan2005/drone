@@ -75,7 +75,19 @@ RC_FIELDS = (
     "connected",
     *(f"ch{i}_raw" for i in range(1, 17)),
 )
-KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size}
+RATE = struct.Struct("<4I16f")
+RATE_FIELDS = (
+    "sequence",
+    "t_sample_us",
+    "dt_us",
+    "flags",
+    *(f"setpoint_{axis}_radps" for axis in ("roll", "pitch", "yaw")),
+    *(f"gyro_{axis}_radps" for axis in ("roll", "pitch", "yaw")),
+    *(f"pid_{axis}" for axis in ("roll", "pitch", "yaw")),
+    *(f"motor_{i}_thrust_norm" for i in range(1, 5)),
+    *(f"residual_{axis}" for axis in ("roll", "pitch", "yaw")),
+)
+KNOWN_SIZES = {1: IMU.size, 2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size, 5: RATE.size}
 MAX_PAYLOAD = 256
 
 

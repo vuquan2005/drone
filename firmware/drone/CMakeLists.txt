@@ -48,6 +48,9 @@ endif()
 option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry over RTT"
        ${DRONE_RTT_DEFAULT})
 
+option(DRONE_ENABLE_RATE_PREVIEW
+       "Configure computational rate/mixer bench preview; no motor output" OFF)
+
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
@@ -117,3 +120,6 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME} stm32cubemx # Add user defined libraries
 )
+
+target_compile_definitions(${CMAKE_PROJECT_NAME}
+                           PRIVATE DRONE_RATE_PREVIEW=$<BOOL:${DRONE_ENABLE_RATE_PREVIEW}>)

@@ -55,8 +55,11 @@ class Viewer(QtWidgets.QMainWindow):
         tabs = QtWidgets.QTabWidget()
         self.imu_panel = ImuPanel()
         self.receiver_panel = ReceiverPanel()
+        self.rate_panel = QtWidgets.QLabel("Waiting for rate preview")
+        self.rate_panel.setWordWrap(True)
         tabs.addTab(self.imu_panel, "IMU")
         tabs.addTab(self.receiver_panel, "Receiver · RC")
+        tabs.addTab(self.rate_panel, "Rate · FRD")
         splitter.addWidget(tabs)
         self.log_panel = LogPanel()
         splitter.addWidget(self.log_panel)
@@ -142,7 +145,7 @@ class Viewer(QtWidgets.QMainWindow):
         drops = w.dropped
         self.record_status.setText(
             f"{state}: {w.directory} · queue {w.queue.qsize()} · "
-            f"writer drops CSV={drops['csv'] + drops['imu_raw']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
+            f"writer drops CSV={drops['csv'] + drops['imu_raw']} rate={drops['rate']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:
             QtCore.QTimer.singleShot(0, self.close)
@@ -169,6 +172,24 @@ class Viewer(QtWidgets.QMainWindow):
             now - state.rc_received_at if state.rc_received_at is not None else 0,
             self.states["DATA"] == "connected",
         )
+        rate = state.latest_rate
+        if rate is None:
+            self.rate_panel.setText("Waiting for rate preview (Debug preset)")
+        else:
+            age = now - state.rate_received_at
+            connected = self.states["DATA"] == "connected"
+            rows = [
+                f"Computational preview · valid={bool(rate[3] & 2)} · connected={connected} · age={age:.2f} s · dt={rate[2]} us"
+            ]
+            for title, values in (
+                ("Setpoint FRD rad/s", rate[4:7]),
+                ("Gyro FRD rad/s", rate[7:10]),
+                ("PID normalized", rate[10:13]),
+                ("Motors M1–M4 normalized thrust", rate[13:17]),
+                ("Allocation residual", rate[17:20]),
+            ):
+                rows.append(title + ": " + " / ".join(f"{x:+.4f}" for x in values))
+            self.rate_panel.setText("\n\n".join(rows))
         self.mcu_stats.update_sample(
             state.latest_stats,
             now - state.stats_received_at if state.stats_received_at is not None else 0,

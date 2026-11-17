@@ -18,6 +18,7 @@ static bool imu_available;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
 static uint32_t last_receiver_ms;
+static uint32_t last_rate_ms;
 #endif
 
 #if DRONE_RTT && DRONE_LOG_LEVEL > APP_LOG_LEVEL_OFF
@@ -103,6 +104,7 @@ static void init_imu(void) {
 static void init_telemetry_schedule(void) {
     last_stats_ms = HAL_GetTick();
     last_receiver_ms = last_stats_ms;
+    last_rate_ms = last_stats_ms;
 }
 #else
 static inline void init_telemetry_schedule(void) {}
@@ -166,6 +168,11 @@ static void process_rate(void) {
 static void process_periodic_telemetry(const app_receiver_sample_t *sample,
                                        bool receiver_available) {
     const uint32_t now = HAL_GetTick();
+    if ((uint32_t)(now - last_rate_ms) >= 50U) {
+        last_rate_ms = now;
+        if (rate.configured)
+            APP_TELEMETRY_RATE(&rate);
+    }
     if ((uint32_t)(now - last_receiver_ms) >= 50U) {
         last_receiver_ms = now;
         if (receiver_available) {
@@ -201,6 +208,22 @@ void app_init(void) {
     bsp_rtt_init();
     app_telemetry_init();
     app_log_init(HAL_GetTick);
+#if DRONE_RATE_PREVIEW
+    /* Computational bench gains only; this path never grants motor permission.
+     */
+    const app_rate_config_t preview_config = {
+        .axis = {{.kp = 0.1f, .output_limit = 1.0f},
+                 {.kp = 0.1f, .output_limit = 1.0f},
+                 {.kp = 0.1f, .output_limit = 1.0f}},
+        .max_rate_radps = {2.0f, 2.0f, 2.0f},
+        .period_us = 2000U};
+    const bool preview_ready = app_configure_rate(&preview_config);
+    (void)preview_ready;
+    APP_LOG_INFO(
+        "rate",
+        "preview configured=%u period_us=2000 P=0.1 I=0 D=0 max_radps=2",
+        (unsigned)preview_ready);
+#endif
     init_motor();
     init_imu();
     app_receiver_init();

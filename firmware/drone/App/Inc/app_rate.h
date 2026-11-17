@@ -22,6 +22,10 @@ typedef struct {
     rate_controller_t controller;
     mixer_result_t mixer;
     float residual[RATE_AXIS_COUNT];
+    float setpoint_radps[RATE_AXIS_COUNT];
+    float gyro_frd_radps[RATE_AXIS_COUNT];
+    float output[RATE_AXIS_COUNT];
+    uint32_t dt_us;
     uint32_t previous_us;
     bool configured, have_time, valid;
 } app_rate_t;

@@ -1,13 +1,15 @@
 #include "app_telemetry.h"
+#include <string.h>
 
 enum { IMU_FRAME_BYTES = 44U, STATS_FRAME_BYTES = 52U };
 
 static uint32_t stats_sequence;
 static uint32_t receiver_sequence;
+static uint32_t rate_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
 
 void app_telemetry_init(void) {
-    receiver_sequence = 0U;
+    receiver_sequence = rate_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
 }
 
@@ -133,5 +135,38 @@ app_telemetry_write_receiver(const app_receiver_sample_t *sample,
         frame[25U + 2U * i] = (uint8_t)(sample->channels[i] >> 8U);
     }
     put_u32(frame + 56U, crc32(frame, 56U));
+    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
+}
+
+static void put_float(uint8_t *out, float value) {
+    _Static_assert(sizeof(float) == sizeof(uint32_t),
+                   "Wire floats require binary32");
+    uint32_t bits;
+    memcpy(&bits, &value, sizeof(bits));
+    put_u32(out, bits);
+}
+
+bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate) {
+    const uint32_t sequence = ++rate_sequence;
+    if (rate == NULL)
+        return BSP_RTT_INVALID_ARGUMENT;
+    bsp_rtt_result_t ready = bsp_rtt_prepare_write(BSP_RTT_DATA, 92U);
+    if (ready != BSP_RTT_OK)
+        return ready;
+    uint8_t frame[92] = {'D', 'R', 'T', '!', 1U, 5U, 80U, 0U};
+    put_u32(frame + 8, sequence);
+    put_u32(frame + 12, rate->previous_us);
+    put_u32(frame + 16, rate->dt_us);
+    put_u32(frame + 20, (rate->configured ? 1U : 0U) | (rate->valid ? 2U : 0U));
+    for (unsigned i = 0; i < 3; ++i) {
+        put_float(frame + 24 + 4 * i, rate->setpoint_radps[i]);
+        put_float(frame + 36 + 4 * i, rate->gyro_frd_radps[i]);
+        put_float(frame + 48 + 4 * i, rate->output[i]);
+        put_float(frame + 76 + 4 * i, rate->residual[i]);
+    }
+    for (unsigned i = 0; i < 4; ++i)
+        put_float(frame + 60 + 4 * i,
+                  (float)rate->mixer.motor[i] / NORM_Q15_ONE);
+    put_u32(frame + 88, crc32(frame, 88));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }

@@ -145,8 +145,10 @@ board để xác nhận SWD, nguồn µs và chi phí RTT trước khi kết lu�
 
 ## Kiểm tra luồng rate/mixer
 
-`app_init()` khởi tạo luồng rate ở trạng thái chưa cấu hình. Sau đó gọi
-`app_configure_rate()` trong foreground với `app_rate_config_t`: PID từng trục,
+Preset Debug bật `DRONE_ENABLE_RATE_PREVIEW`: `app_init()` tự cấu hình P = 0,1,
+I = D = 0, giới hạn mỗi trục 2 rad/s và chu kỳ 2000 µs (500 Hz). Đây là
+cấu hình thử tính toán, chưa tune cho bay. Release tắt tùy chọn này.
+Có thể gọi lại `app_configure_rate()` trong foreground với `app_rate_config_t`: PID từng trục,
 `max_rate_radps` và `period_us`. Không có bộ gain mặc định đã tune cho bay.
 `period_us = 2000` giới hạn rate ở 500 Hz dù IMU cung cấp mẫu ở 1 kHz.
 Nếu IMU chậm hơn, rate chờ mẫu mới; không tính lặp lại cùng mẫu hoặc chạy bù.
@@ -163,3 +165,22 @@ luồng hiện tại lấy mẫu mới nhất, chưa thêm bộ lọc chống al
 kiểm tra giá trị trả về trước khi sử dụng. Giữa các kỳ rate, kết quả hợp lệ
 trước đó được giữ lại. Chưa có arm/failsafe hoặc ghi kết quả mixer ra ESC;
 `arm_requested` không phải quyền chạy motor.
+
+### Thử trên board
+
+1. Tháo cánh, build/nạp preset Debug bằng `make fw-flash`, rồi mở
+   `make telemetry` theo hướng dẫn kết nối RTT ở trên.
+2. Kiểm tra log `rate` báo `preview configured=1`, mở tab **Rate · FRD**.
+   Bật bộ phát/thu: `valid=True` khi có RC hợp lệ và IMU mới; `dt` kỳ vọng
+   khoảng 2000 µs hoặc lớn hơn nếu vòng foreground/IMU không theo kịp.
+3. Đưa cần roll/pitch/yaw qua hai đầu: setpoint tương ứng khoảng ±2 rad/s.
+   Đặt cần giữa và xoay khung: gyro FRD dương phải tạo PID âm trên cùng trục.
+   Đứng yên có thể thấy gyro bias vì chưa hiệu chuẩn.
+4. Tắt bộ phát hoặc ngắt RC: bản tin phải báo `valid=False`, PID/motor bằng 0.
+   Lỗi IMU hoặc mẫu quá 20 ms cũng reset kết quả. Giá trị 0 này là trạng thái
+   tính toán, không phải lệnh disarm ESC.
+5. Bấm **Start recording** để lưu `rate_*.csv` cùng IMU, RC và log trong
+   thư mục phiên tại `experiments/`. Telemetry rate lấy snapshot 20 Hz,
+   không giữ mọi bước PID 500 Hz; chưa dùng để kết luận jitter/timing toàn bộ.
+
+Kết quả mixer chưa xuất ESC. Các motor trong tab là lực đẩy chuẩn hóa dự kiến.

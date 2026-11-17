@@ -7,8 +7,13 @@ void app_rate_reset(app_rate_t *state) {
         return;
     rate_controller_reset(&state->controller);
     state->mixer = (mixer_result_t){0};
-    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i)
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
         state->residual[i] = 0.0f;
+        state->setpoint_radps[i] = 0.0f;
+        state->gyro_frd_radps[i] = 0.0f;
+        state->output[i] = 0.0f;
+    }
+    state->dt_us = 0;
     state->previous_us = 0;
     state->have_time = false;
     state->valid = false;
@@ -80,6 +85,12 @@ bool app_rate_step(app_rate_t *state, const app_command_t *command,
     state->residual[0] = (float)state->mixer.residual.roll / NORM_Q15_ONE;
     state->residual[1] = (float)state->mixer.residual.pitch / NORM_Q15_ONE;
     state->residual[2] = (float)state->mixer.residual.yaw / NORM_Q15_ONE;
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        state->setpoint_radps[i] = target[i];
+        state->gyro_frd_radps[i] = gyro[i];
+        state->output[i] = output[i];
+    }
+    state->dt_us = elapsed_us;
     state->valid = true;
     return true;
 fail:

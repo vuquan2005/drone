@@ -638,7 +638,7 @@ Các công thức ma trận, phép đổi thang và ví dụ số là phần di�
 
 Tài liệu đọc tiếp:
 
-- [Khảo sát mixer từ các dự án](MIXER_NGHIEN_CUU_TU_CAC_DU_AN.md): thuật toán phân bổ và bão hòa rộng hơn.
+- [Thuật toán mixer và giải bão hòa](control/02_THUAT_TOAN_MIXER_VA_GIAI_BAO_HOA.md): thuật toán phân bổ và bão hòa rộng hơn.
 - [Chi tiết các vòng điều khiển và input/output](control/01_CHI_TIET_CAC_VONG_DIEU_KHIEN_INPUT_OUTPUT.md): vị trí mixer trong chuỗi điều khiển.
 - [Bitcraze — PWM to Thrust](https://www.bitcraze.io/documentation/repository/crazyflie-firmware/master/functional-areas/pwm-to-thrust/): cách đo lực, RPM, điện áp và lệnh motor.
 - [Hướng dẫn các repo tham khảo](../external/README.md): phạm vi và cách lưu các bản sao mã nguồn.

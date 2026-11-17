@@ -61,5 +61,12 @@ uv run tools/sync_reference_pdfs.py docs/references/papers/huy2024-262.pdf --out
 và thư mục có nội dung nhưng không có manifest. Manifest chỉ lưu cục bộ;
 sau clone, dùng `--output-dir` khác để tạo bản đối chiếu.
 
+Ảnh trích xuất và manifest bị Git bỏ qua nên có thể thiếu sau khi clone.
+Lệnh đồng bộ giữ nguyên thư mục không có manifest (`KEEP`), kể cả khi thiếu
+ảnh; lệnh này không xác nhận bản trích xuất khớp PDF hiện tại. Khi cần ảnh,
+trích xuất vào thư mục riêng bằng `--output-dir` và mở bản Markdown ở đó.
+Tên ảnh của bản trích xuất mới có thể khác bản cũ, nên không chép ảnh sang
+bản biên tập thủ công chỉ dựa vào số thứ tự.
+
 Kiểm tra lại PDF gốc: file thiếu lớp văn bản cần OCR; sơ đồ vector, công
 thức và bảng có thể trích xuất không đầy đủ. Xem tùy chọn bằng `--help`.

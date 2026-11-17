@@ -7,7 +7,8 @@ docs/
 │   └── git.md
 ├── research/                # Ghi chú và phân tích nghiên cứu
 │   ├── README.md
-│   ├── MIXER_NGHIEN_CUU_TU_CAC_DU_AN.md
+│   ├── HAI_CACH_CHUYEN_LUC_SANG_PWM_DSHOT.md
+│   ├── PX4_ARDUPILOT_ENGINEERING.md
 │   ├── IMU_LOC_UOC_LUONG_TU_THE_VA_LICH_DIEU_KHIEN.md
 │   └── control/             # Các tài liệu khảo sát kiến trúc điều khiển
 ├── references/              # Tài liệu tham khảo gốc

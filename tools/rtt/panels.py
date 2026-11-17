@@ -42,6 +42,84 @@ class ImuPanel(pg.GraphicsLayoutWidget):
             self.plots[0].setXRange(end - 10, end, padding=0)
 
 
+class RatePanel(QtWidgets.QWidget):
+    """Plots exist before the first snapshot; invalid samples break traces."""
+
+    def __init__(self):
+        super().__init__()
+        layout = QtWidgets.QVBoxLayout(self)
+        self.status = QtWidgets.QLabel("Waiting for rate telemetry")
+        self.status.setWordWrap(True)
+        layout.addWidget(self.status)
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graph.setBackground("w")
+        layout.addWidget(self.graph)
+        self.curves = []
+        self.plots = []
+        colors = ("#d1495b", "#218739", "#246bc1", "#8f50aa")
+        groups = [
+            (
+                axis + " · FRD",
+                "rad/s",
+                row,
+                0,
+                [("Setpoint", 1 + row, colors[row]), ("Gyro", 4 + row, "#333333")],
+            )
+            for row, axis in enumerate(("Roll", "Pitch", "Yaw"))
+        ]
+        groups += [
+            (
+                "PID",
+                "normalized",
+                0,
+                1,
+                [(axis, 7 + i, colors[i]) for i, axis in enumerate(("Roll", "Pitch", "Yaw"))],
+            ),
+            (
+                "Mixer thrust",
+                "normalized",
+                1,
+                1,
+                [(f"M{i+1}", 10 + i, colors[i]) for i in range(4)],
+            ),
+            (
+                "Allocation residual",
+                "normalized",
+                2,
+                1,
+                [(axis, 14 + i, colors[i]) for i, axis in enumerate(("Roll", "Pitch", "Yaw"))],
+            ),
+        ]
+        for title, unit, row, col, traces in groups:
+            plot = self.graph.addPlot(row=row, col=col, title=title)
+            plot.setLabel("left", unit)
+            plot.setLabel("bottom", "Host time from segment start", units="s")
+            plot.showGrid(x=True, y=True, alpha=0.2)
+            plot.addLegend()
+            plot.setXRange(0, 10, padding=0)
+            for name, column, color in traces:
+                self.curves.append(
+                    (plot.plot(name=name, pen=pg.mkPen(color, width=1), connect="finite"), column)
+                )
+            if self.plots:
+                plot.setXLink(self.plots[0])
+            self.plots.append(plot)
+
+    def setText(self, text):
+        self.status.setText(text)
+
+    def text(self):
+        return self.status.text()
+
+    def update_points(self, points):
+        data = np.asarray(points, dtype=float)
+        for curve, column in self.curves:
+            curve.setData(data[:, 0], data[:, column]) if data.size else curve.setData([], [])
+        if data.size:
+            end = max(10, data[-1, 0])
+            self.plots[0].setXRange(end - 10, end, padding=0)
+
+
 class ReceiverPanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()

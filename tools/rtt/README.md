@@ -175,7 +175,8 @@ QT_QPA_PLATFORM=offscreen uv run --group rtt python -m unittest discover -s tool
 
 Tab **Rate · FRD** hiển thị snapshot setpoint/gyro (rad/s), output PID,
 lực đẩy mixer M1–M4, residual và dt của firmware Debug có bật
-`DRONE_ENABLE_RATE_PREVIEW`. Snapshot gửi ở 20 Hz; PID thử chạy 500 Hz.
+`DRONE_ENABLE_RATE_CONTROL`. Snapshot gửi ở 20 Hz; PID thử chạy 500 Hz.
 Khi recording, dữ liệu lưu ở `rate_*.csv`; `flags & 2` biểu thị kết quả hợp lệ.
-Đây là kiểm tra tính toán, chưa xuất ESC. Quy trình trên board và gain thử:
+Khung plot hiển thị ngay khi mở tab; trace đợi bản tin hợp lệ.
+Firmware đã có arm/failsafe và xuất ESC khi armed. Quy trình trên board và gain thử:
 [DEBUG.md](../../firmware/drone/DEBUG.md#thử-trên-board).

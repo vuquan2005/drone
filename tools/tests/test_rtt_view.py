@@ -36,6 +36,13 @@ class ViewerTests(unittest.TestCase):
                 data_port=servers[1].serverPort(),
             )
         )
+        self.assertEqual(len(viewer.rate_panel.plots), 6)
+        self.assertTrue(
+            all(
+                curve.getData()[0] is None or len(curve.getData()[0]) == 0
+                for curve, _ in viewer.rate_panel.curves
+            )
+        )
         viewer.show()
         output = tempfile.TemporaryDirectory()
         self.addCleanup(output.cleanup)
@@ -73,6 +80,8 @@ class ViewerTests(unittest.TestCase):
             peers[1].write(rate_frame)
             until(lambda: viewer.telemetry.latest_rate is not None)
             viewer.refresh()
+            self.assertEqual(len(viewer.rate_panel.curves[0][0].getData()[0]), 1)
+            self.assertAlmostEqual(viewer.rate_panel.curves[0][0].getData()[1][0], 0.25)
             self.assertIn("dt=2000 us", viewer.rate_panel.text())
             self.assertIn("valid=True", viewer.rate_panel.text())
             self.assertIn("+0.2500 / -0.5000 / +1.0000", viewer.rate_panel.text())

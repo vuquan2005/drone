@@ -19,6 +19,8 @@ class TelemetryState:
         self.arrivals = deque(maxlen=20000)
         self.segment = 0
         self.latest_rate = self.rate_received_at = self.rate_last = None
+        self.rate_points = deque(maxlen=500)
+        self.rate_start = None
         self.latest_rc = self.rc_last = self.rc_received_at = None
         self.latest_stats = None
         self.stats_last = None
@@ -27,6 +29,8 @@ class TelemetryState:
 
     def new_connection(self):
         self.latest_rate = self.rate_received_at = self.rate_last = None
+        self.rate_points = deque(maxlen=500)
+        self.rate_start = None
         self.latest_rc = self.rc_last = self.rc_received_at = None
         self.latest_stats = self.stats_last = self.stats_received_at = None
         self.segment += 1
@@ -56,6 +60,13 @@ class TelemetryState:
                 if ds >= 2**31:
                     self.series.resets += 1
                     self.new_connection()
+            if self.rate_start is None:
+                self.rate_start = received_at
+            t = received_at - self.rate_start
+            axes = values[4:] if values[3] & 2 else (float("nan"),) * 16
+            self.rate_points.append((t, *axes))
+            while self.rate_points and self.rate_points[0][0] < t - 10:
+                self.rate_points.popleft()
             self.rate_last = values[0]
             self.latest_rate = values
             self.rate_received_at = received_at
@@ -104,6 +115,8 @@ class TelemetryState:
         if self.series.feed(line):
             if self.series.resets != resets:
                 self.latest_rate = self.rate_received_at = self.rate_last = None
+                self.rate_points.clear()
+                self.rate_start = None
                 self.latest_rc = self.rc_last = self.rc_received_at = None
                 self.segment += 1
                 self.latest_stats = self.stats_last = self.stats_received_at = None

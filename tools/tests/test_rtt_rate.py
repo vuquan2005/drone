@@ -40,6 +40,7 @@ class RateTests(unittest.TestCase):
             self.assertEqual(len(rows), 2)
         state.new_connection()
         self.assertIsNone(state.latest_rate)
+        self.assertEqual(len(state.rate_points), 0)
 
     def test_invalid_reset_and_crc(self):
         state = TelemetryState()

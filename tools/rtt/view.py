@@ -8,7 +8,7 @@ import time
 
 from PySide6 import QtCore, QtWidgets
 
-from panels import ImuPanel, ReceiverPanel, StatsLabel, LogPanel
+from panels import ImuPanel, ReceiverPanel, StatsLabel, LogPanel, RatePanel
 from stream import Stream
 from telemetry import TelemetryState
 from session_writer import SessionWriter
@@ -55,8 +55,7 @@ class Viewer(QtWidgets.QMainWindow):
         tabs = QtWidgets.QTabWidget()
         self.imu_panel = ImuPanel()
         self.receiver_panel = ReceiverPanel()
-        self.rate_panel = QtWidgets.QLabel("Waiting for rate preview")
-        self.rate_panel.setWordWrap(True)
+        self.rate_panel = RatePanel()
         tabs.addTab(self.imu_panel, "IMU")
         tabs.addTab(self.receiver_panel, "Receiver · RC")
         tabs.addTab(self.rate_panel, "Rate · FRD")
@@ -172,14 +171,15 @@ class Viewer(QtWidgets.QMainWindow):
             now - state.rc_received_at if state.rc_received_at is not None else 0,
             self.states["DATA"] == "connected",
         )
+        self.rate_panel.update_points(state.rate_points)
         rate = state.latest_rate
         if rate is None:
-            self.rate_panel.setText("Waiting for rate preview (Debug preset)")
+            self.rate_panel.setText("Waiting for rate telemetry")
         else:
             age = now - state.rate_received_at
             connected = self.states["DATA"] == "connected"
             rows = [
-                f"Computational preview · valid={bool(rate[3] & 2)} · connected={connected} · age={age:.2f} s · dt={rate[2]} us"
+                f"Rate snapshot · valid={bool(rate[3] & 2)} · connected={connected} · age={age:.2f} s · dt={rate[2]} us"
             ]
             for title, values in (
                 ("Setpoint FRD rad/s", rate[4:7]),

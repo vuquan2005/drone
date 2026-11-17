@@ -155,6 +155,14 @@ command gần nhất; gọi sau `app_process()` và kiểm tra `valid` trước 
 Getter command không tự kiểm tra tuổi dữ liệu. Snapshot lỗi hoặc mất kết nối
 xóa command, không giữ throttle hoặc yêu cầu arm cũ.
 
+Khi bật RTT và log mức INFO trở lên, channel 0 xuất một dòng tag `command`
+khi arm, mode, yêu cầu hiệu chuẩn ESC hoặc chế độ telemetry thay đổi. Dòng
+log chứa snapshot bốn trường đó; thay đổi stick/throttle hoặc timestamp không
+phát sinh log. Frame hợp lệ đầu tiên và lần kết nối lại xuất snapshot;
+mất tính hợp lệ xuất `valid=0` một lần. Log phản ánh yêu cầu RC, không phải
+trạng thái armed hay xác nhận thao tác đã thực hiện. Đây là log một lần thử,
+không retry khi RTT đầy.
+
 Ánh xạ theo [Jumper T20 model04](../Jumper-T20/model04.yml):
 
 | Kênh | Command                   | Nguồn radio |

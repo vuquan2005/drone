@@ -51,6 +51,36 @@ static inline void log_imu_transition(bsp_imu_result_t status) {
 static inline void log_imu_init(void) {}
 #endif
 
+#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_INFO
+static void log_command_transition(const app_command_t *previous) {
+    if (!command.valid) {
+        if (previous->valid) {
+            APP_LOG_INFO("command", "valid=0");
+        }
+        return;
+    }
+    if (previous->valid && previous->arm_requested == command.arm_requested &&
+        previous->mode == command.mode &&
+        previous->esc_calibration_requested ==
+            command.esc_calibration_requested &&
+        previous->telemetry_mode == command.telemetry_mode) {
+        return;
+    }
+    static const char *const mode_names[] = {"low", "middle", "high"};
+    static const char *const telemetry_names[] = {"off", "stream", "record"};
+    APP_LOG_INFO("command",
+                 "valid=1 arm_requested=%u mode=%s "
+                 "esc_calibration_requested=%u telemetry=%s",
+                 (unsigned)command.arm_requested, mode_names[command.mode],
+                 (unsigned)command.esc_calibration_requested,
+                 telemetry_names[command.telemetry_mode]);
+}
+#else
+static inline void log_command_transition(const app_command_t *previous) {
+    (void)previous;
+}
+#endif
+
 static void init_motor(void) {
     const bool pwm_ready = app_motor_init();
     if (pwm_ready) {
@@ -75,8 +105,10 @@ static inline void init_telemetry_schedule(void) {}
 #endif
 
 static bool process_receiver(app_receiver_sample_t *sample) {
+    const app_command_t previous = command;
     const bool available = app_receiver_get_sample(sample);
     (void)app_command_decode(available ? sample : NULL, &command);
+    log_command_transition(&previous);
     return available;
 }
 

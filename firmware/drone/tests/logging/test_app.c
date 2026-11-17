@@ -57,6 +57,7 @@ void app_receiver_poll(void) {}
 static bool receiver_test_enabled;
 static bool receiver_connected = true;
 static uint16_t receiver_roll = 172U;
+static uint16_t receiver_switches[4] = {992U, 992U, 992U, 992U};
 bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     if (!receiver_test_enabled) {
         return false;
@@ -66,6 +67,9 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample) {
         sample->channels[i] = 992U;
     }
     sample->channels[0] = receiver_roll;
+    for (unsigned i = 0; i < 4U; ++i) {
+        sample->channels[i + 4U] = receiver_switches[i];
+    }
     sample->channels[15] = 1811U;
     sample->last_frame_ms = tick - 10U;
     sample->connected = receiver_connected;
@@ -156,11 +160,16 @@ int main(void) {
     tick = 499U;
     app_process();
     assert(drain(1U, output) == 52U); /* Scheduling survives HAL tick wrap. */
+    drain(0U, output);
     receiver_test_enabled = true;
     tick = 548U;
     app_process();
     assert(app_get_command(&command) && command.valid);
     assert(command.roll == -NORM_Q15_ONE);
+    assert(drain(0U, output) > 0U);
+    assert(strstr(output,
+                  "[I][command] valid=1 arm_requested=0 mode=middle "
+                  "esc_calibration_requested=0 telemetry=record\n") != NULL);
     assert(drain(1U, output) == 0U);
     tick = 549U;
     app_process();
@@ -177,11 +186,35 @@ int main(void) {
     tick++;
     app_process();
     assert(app_get_command(&command) && command.roll == NORM_Q15_ONE);
+    assert(drain(0U, output) == 0U);
+    const char *expected[] = {"arm_requested=1", "mode=high",
+                              "esc_calibration_requested=1",
+                              "telemetry=stream"};
+    for (unsigned i = 0; i < 4U; ++i) {
+        receiver_switches[i] = 1811U;
+        app_process();
+        assert(drain(0U, output) > 0U);
+        assert(strstr(output, expected[i]) != NULL);
+        assert(strstr(output, "roll=") == NULL &&
+               strstr(output, "pitch=") == NULL);
+        assert(strstr(output, "yaw=") == NULL &&
+               strstr(output, "throttle=") == NULL);
+        app_process();
+        assert(drain(0U, output) == 0U);
+    }
     receiver_connected = false;
     app_process();
     assert(app_get_command(&command) && !command.valid);
     assert(command.roll == 0 && command.throttle == 0 &&
            !command.arm_requested);
+    assert(drain(0U, output) > 0U);
+    assert(strstr(output, "[I][command] valid=0\n") != NULL);
+    app_process();
+    assert(drain(0U, output) == 0U);
+    receiver_connected = true;
+    app_process();
+    assert(drain(0U, output) > 0U);
+    assert(strstr(output, "valid=1 arm_requested=1") != NULL);
     app_init();
     assert(app_get_command(&command) && !command.valid);
     puts("App log/trace integration tests passed");

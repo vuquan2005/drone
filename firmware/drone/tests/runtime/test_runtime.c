@@ -10,6 +10,7 @@ uint32_t HAL_GetTick(void) {
 }
 static app_receiver_sample_t input;
 static bool available;
+static bool publish_update = true;
 static bool disconnect_during_init;
 static unsigned inits, polls, starts, processes, stops, calib_inits,
     calib_polls;
@@ -28,6 +29,18 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     polls++;
     *sample = input;
     return available;
+}
+bool app_receiver_update_sample(app_receiver_sample_t *sample,
+                                uint32_t *sequence) {
+    if (!publish_update) {
+        polls++;
+        return false;
+    }
+    (*sequence)++;
+    if (!app_receiver_get_sample(sample)) {
+        *sample = (app_receiver_sample_t){0};
+    }
+    return true;
 }
 void bsp_motor_pwm_stop(void) {
     stops++;
@@ -53,6 +66,7 @@ static void reset(void) {
         input.channels[6] = input.channels[7] = 172;
     input.connected = true;
     available = true;
+    publish_update = true;
     disconnect_during_init = false;
     inits = polls = starts = processes = stops = calib_inits = calib_polls = 0;
     runtime_init();
@@ -138,6 +152,24 @@ int main(void) {
     assert(starts == 1 && processes == 0);
     runtime_process();
     assert(processes == 1);
+    assert(runtime_get_command(&command) && !command.valid);
+    reset();
+    runtime_process();
+    runtime_process();
+    assert(runtime_get_command(&command) && command.roll == 0);
+    publish_update = false;
+    input.channels[0] = 1811;
+    runtime_process();
+    assert(runtime_get_command(&command) && command.roll == 0);
+    publish_update = true;
+    runtime_process();
+    assert(runtime_get_command(&command) && command.roll == NORM_Q15_ONE);
+    input.connected = false;
+    runtime_process();
+    assert(runtime_get_command(&command) && !command.valid &&
+           command.roll == 0);
+    publish_update = false;
+    runtime_process();
     assert(runtime_get_command(&command) && !command.valid);
     return 0;
 }

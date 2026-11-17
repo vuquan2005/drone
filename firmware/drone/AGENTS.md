@@ -13,7 +13,8 @@ Luồng gọi hiện tại: `Core/main` → `runtime` → chế độ trong `App
 SD STREAM chọn FLASH_EXPORT, còn lại FLIGHT;
 SC dành cho chế độ bay, SD dành cho yêu cầu tắt/ghi/stream telemetry theo
 `firmware/Jumper-T20/README.md`; không dùng SC để chọn xuất flash.
-chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime giải mã command một lần, sở hữu
+chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime poll receiver mỗi lượt, chỉ giải mã command khi frame mới hoặc kết nối
+thay đổi, sở hữu
 RTT/log/telemetry chung và lịch telemetry RC. ESC_CALIB khởi tạo module
 `esc_calibration` riêng, sở hữu PWM; hoàn tất/lỗi khóa đến reset. App không tự poll/giải mã receiver;
 `app_get_status()` cung cấp health riêng với mode.

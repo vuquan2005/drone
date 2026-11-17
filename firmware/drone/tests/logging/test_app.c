@@ -91,6 +91,14 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     sample->connected = receiver_connected;
     return true;
 }
+bool app_receiver_update_sample(app_receiver_sample_t *sample,
+                                uint32_t *sequence) {
+    (*sequence)++;
+    if (!app_receiver_get_sample(sample)) {
+        *sample = (app_receiver_sample_t){0};
+    }
+    return true;
+}
 static app_command_t command;
 static void init_app(void) {
     bsp_rtt_init();

@@ -10,6 +10,8 @@
 
 static runtime_mode_t mode;
 static app_command_t command;
+static app_receiver_sample_t receiver_sample;
+static uint32_t receiver_sequence;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_receiver_ms;
 #endif
@@ -17,6 +19,8 @@ static uint32_t last_receiver_ms;
 void runtime_init(void) {
     mode = RUNTIME_BOOT_SELECT;
     command = (app_command_t){0};
+    receiver_sample = (app_receiver_sample_t){0};
+    receiver_sequence = 0U;
     /* Establish safe outputs only; the selected mode owns PWM startup. */
     bsp_motor_pwm_stop();
     bsp_rtt_init();
@@ -60,15 +64,14 @@ static runtime_mode_t select_mode(void) {
 }
 
 void runtime_process(void) {
-    app_receiver_sample_t sample = {0};
-    const bool available = app_receiver_get_sample(&sample);
-    (void)app_command_decode(available ? &sample : NULL, &command);
+    if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
+        (void)app_command_decode(&receiver_sample, &command);
+    }
 #if DRONE_RTT && DRONE_TELEMETRY
     const uint32_t now = HAL_GetTick();
     if ((uint32_t)(now - last_receiver_ms) >= 50U) {
         last_receiver_ms = now;
-        if (available)
-            APP_TELEMETRY_RECEIVER(&sample, now);
+        APP_TELEMETRY_RECEIVER(&receiver_sample, now);
     }
 #endif
     if (mode == RUNTIME_BOOT_SELECT) {

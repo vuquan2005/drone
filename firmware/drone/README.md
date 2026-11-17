@@ -248,9 +248,12 @@ chưa xác nhận timing hoặc phần cứng.
 
 ### Ánh xạ RC thành command
 
-`runtime_process()` lấy snapshot receiver và gọi `app_command_decode()` một lần
-mỗi lượt, kể cả khi không có mẫu IMU mới hoặc tắt RTT/telemetry. Getter receiver
-đã poll UART bên trong. Runtime truyền command vào App; App sao chép đầu vào,
+`runtime_process()` gọi `app_receiver_update_sample()` mỗi lượt để poll UART
+và kiểm tra timeout/lỗi. Chỉ khi có frame RC mới hoặc trạng thái kết nối thay
+đổi, receiver mới copy snapshot và runtime gọi `app_command_decode()`. Bộ đếm
+frame riêng phân biệt cả các frame có cùng timestamp millisecond. Command
+được giữ giữa hai frame; mất RC xóa command ngay lượt phát hiện, không chờ
+frame mới. Cơ chế này độc lập IMU và RTT/telemetry. Runtime truyền command vào App; App sao chép đầu vào,
 không giữ con trỏ, không poll hoặc giải mã receiver. `runtime_get_command()`
 sao chép command gần nhất; gọi sau `runtime_process()` và kiểm tra `valid`.
 Runtime cũng gửi telemetry RC thô mỗi 50 ms kể cả khi đang chờ chọn mode; App chỉ gửi

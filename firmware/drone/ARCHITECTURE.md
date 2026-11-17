@@ -40,7 +40,9 @@ FLASH_EXPORT, còn OFF/RECORD chọn FLIGHT. SC dành cho chế độ bay. Runti
 phối mode; ESC_CALIB tự khởi tạo và quản lý PWM qua `esc_calibration`,
 FLASH_EXPORT chưa triển khai giữ PWM tắt và báo `supported=0`. Mode chốt đến reset, chưa có chuyển giao tài nguyên
 động. `app_get_status()` cung cấp sức khỏe IMU/PWM và trạng thái arm riêng với
-mode. Safety trong App quyết định quyền motor. Runtime khởi tạo RTT/log/telemetry
+mode. Safety trong App quyết định quyền motor. Runtime poll receiver mỗi lượt; snapshot/command chỉ cập nhật khi có frame RC
+mới hoặc thay đổi kết nối. Timeout và lỗi transport vẫn được kiểm tra mỗi lượt.
+Runtime khởi tạo RTT/log/telemetry
 chung và gửi RC thô; App gửi IMU, rate và thống kê.
 `main()` và `Error_Handler()` vẫn thuộc `Core/`.
 

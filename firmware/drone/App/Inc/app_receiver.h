@@ -26,4 +26,19 @@ void app_receiver_poll(void);
  * radio LQ or motor failsafe. */
 bool app_receiver_get_sample(app_receiver_sample_t *sample);
 
+/** Poll transport and refresh a caller-owned cached snapshot only on change.
+ * Before first call after receiver init, zero-initialize both sample and
+ * sequence; preserve them between calls. Each valid RC frame advances the
+ * sequence modulo 2^32 even when timestamps/channels are identical. Connection
+ * changes (timeout or transport discontinuity) also refresh the snapshot.
+ * Returns true only when snapshot was refreshed; false leaves both unchanged.
+ * Do not modify the cache externally; each consumer owns its sample/sequence.
+ * NULL arguments return false without polling. Poll frequently (target <=2 ms)
+ * even without updates: timeout/error detection must not depend on new frames.
+ * All access is serialized foreground only. Pointers are distinct, writable
+ * for the call and not retained. Do not skip 2^32 frames between calls.
+ */
+bool app_receiver_update_sample(app_receiver_sample_t *sample,
+                                uint32_t *sequence);
+
 #endif

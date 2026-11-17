@@ -1,11 +1,14 @@
 #include "app_receiver.h"
 #include "bsp_receiver.h"
 #include "main.h"
+#include <stddef.h>
 
 static crsf_t receiver;
+static uint32_t frame_sequence;
 
 void app_receiver_init(void) {
     crsf_init(&receiver);
+    frame_sequence = 0U;
     (void)bsp_receiver_init();
 }
 
@@ -22,7 +25,9 @@ void app_receiver_poll(void) {
             crsf_reset_stream(&receiver);
             receiver.valid = false;
         } else {
-            (void)crsf_feed(&receiver, byte, timestamp_ms);
+            if (crsf_feed(&receiver, byte, timestamp_ms)) {
+                frame_sequence++;
+            }
         }
     }
 }
@@ -40,5 +45,26 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     sample->connected =
         receiver.valid && (uint32_t)(HAL_GetTick() - receiver.last_frame_ms) <
                               APP_RECEIVER_TIMEOUT_MS;
+    return true;
+}
+
+bool app_receiver_update_sample(app_receiver_sample_t *sample,
+                                uint32_t *sequence) {
+    if (sample == NULL || sequence == NULL) {
+        return false;
+    }
+    app_receiver_poll();
+    const bool connected =
+        receiver.valid && (uint32_t)(HAL_GetTick() - receiver.last_frame_ms) <
+                              APP_RECEIVER_TIMEOUT_MS;
+    if (*sequence == frame_sequence && sample->connected == connected) {
+        return false;
+    }
+    for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; ++i) {
+        sample->channels[i] = receiver.channels[i];
+    }
+    sample->last_frame_ms = receiver.last_frame_ms;
+    sample->connected = connected;
+    *sequence = frame_sequence;
     return true;
 }

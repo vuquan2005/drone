@@ -55,15 +55,20 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
 void app_receiver_init(void) {}
 void app_receiver_poll(void) {}
 static bool receiver_test_enabled;
+static bool receiver_connected = true;
+static uint16_t receiver_roll = 172U;
 bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     if (!receiver_test_enabled) {
         return false;
     }
     memset(sample, 0, sizeof(*sample));
-    sample->channels[0] = 172U;
+    for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; ++i) {
+        sample->channels[i] = 992U;
+    }
+    sample->channels[0] = receiver_roll;
     sample->channels[15] = 1811U;
     sample->last_frame_ms = tick - 10U;
-    sample->connected = true;
+    sample->connected = receiver_connected;
     return true;
 }
 static unsigned drain(unsigned channel, char *output) {
@@ -82,6 +87,9 @@ static uint32_t get_u32(const char *p) {
 }
 int main(void) {
     app_init();
+    app_command_t command;
+    assert(!app_get_command(NULL));
+    assert(app_get_command(&command) && !command.valid);
     char output[512];
     drain(0U, output);
     assert(strstr(output, "[1000][I][pwm] initialized\n") != NULL);
@@ -151,6 +159,8 @@ int main(void) {
     receiver_test_enabled = true;
     tick = 548U;
     app_process();
+    assert(app_get_command(&command) && command.valid);
+    assert(command.roll == -NORM_Q15_ONE);
     assert(drain(1U, output) == 0U);
     tick = 549U;
     app_process();
@@ -162,6 +172,18 @@ int main(void) {
     assert(get_u32(output + 20U) == 1U);
     app_process();
     assert(drain(1U, output) == 0U);
+    /* Commands update with NO_DATA IMU and before the next telemetry slot. */
+    receiver_roll = 1811U;
+    tick++;
+    app_process();
+    assert(app_get_command(&command) && command.roll == NORM_Q15_ONE);
+    receiver_connected = false;
+    app_process();
+    assert(app_get_command(&command) && !command.valid);
+    assert(command.roll == 0 && command.throttle == 0 &&
+           !command.arm_requested);
+    app_init();
+    assert(app_get_command(&command) && !command.valid);
     puts("App log/trace integration tests passed");
     return 0;
 }

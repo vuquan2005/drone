@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.22)
+project(command_tests C)
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
+enable_testing()
+set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
+add_executable(command_tests test_command.c ${FIRMWARE_ROOT}/App/Src/app_command.c)
+target_include_directories(command_tests PRIVATE ${FIRMWARE_ROOT}/App/Inc
+                                                 ${FIRMWARE_ROOT}/Control/Inc)
+target_compile_options(command_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME command_tests COMMAND command_tests)

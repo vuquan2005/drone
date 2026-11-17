@@ -30,6 +30,7 @@ add_executable(
     app_logging_tests
     test_app.c
     ${FIRMWARE_ROOT}/App/Src/app.c
+    ${FIRMWARE_ROOT}/App/Src/app_command.c
     ${FIRMWARE_ROOT}/App/Src/app_motor.c
     ${FIRMWARE_ROOT}/App/Src/app_log.c
     ${FIRMWARE_ROOT}/App/Src/app_telemetry.c

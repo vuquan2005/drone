@@ -5,6 +5,8 @@
 #ifndef APP_H
 #define APP_H
 
+#include "app_command.h"
+
 /**
  * @brief Initialize application state and attempt to initialize the board IMU.
  * @pre HAL, clocks and board peripherals have been initialized.
@@ -22,5 +24,11 @@ void app_init(void);
  * Does not schedule a fixed polling rate or recover failed IMU initialization.
  */
 void app_process(void);
+
+/** Copy the command last decoded by app_process; false only for NULL output.
+ * Check sample->valid before use. Init clears command. No receiver polling or
+ * age check occurs here; call after app_process in the same foreground context.
+ * Nonblocking; no concurrent or ISR access. Does not grant motor permission. */
+bool app_get_command(app_command_t *sample);
 
 #endif

@@ -145,3 +145,61 @@ ctest --test-dir /tmp/drone-crsf-tests --output-on-failure
 
 Test kiểm tra parser, DMA/buffer, timeout và phục hồi lỗi với HAL mô phỏng;
 chưa xác nhận timing hoặc phần cứng.
+
+### Ánh xạ RC thành command
+
+`app_process()` lấy snapshot receiver và gọi `app_command_decode()` mỗi lượt,
+kể cả khi không có mẫu IMU mới hoặc tắt RTT/telemetry. Getter receiver đã poll
+UART bên trong nên App không poll thêm lần riêng. `app_get_command()` sao chép
+command gần nhất; gọi sau `app_process()` và kiểm tra `valid` trước khi dùng.
+Getter command không tự kiểm tra tuổi dữ liệu. Snapshot lỗi hoặc mất kết nối
+xóa command, không giữ throttle hoặc yêu cầu arm cũ.
+
+Ánh xạ theo [Jumper T20 model04](../Jumper-T20/model04.yml):
+
+| Kênh | Command                   | Nguồn radio |
+| ---- | ------------------------- | ----------- |
+| CH1  | roll                      | Ail         |
+| CH2  | pitch                     | Ele         |
+| CH3  | throttle                  | Thr         |
+| CH4  | yaw                       | Rud         |
+| CH5  | arm_requested             | SA          |
+| CH6  | mode                      | SC          |
+| CH7  | esc_calibration_requested | SB          |
+| CH8  | telemetry_mode            | SD          |
+
+Command dùng `norm_q15_t`: 32768 tương ứng 1. Roll/pitch/yaw nằm trong
+`[-32768,32768]`; throttle trong `[0,32768]`. Toàn bộ ánh xạ dùng số nguyên
+32-bit, làm tròn gần nhất; tích trung gian lớn nhất dưới 54 triệu.
+Endpoint giả định là 172/992/1811, khai báo tại `App/Inc/app_command.h`,
+chưa phải kết quả hiệu chuẩn tay điều khiển. Stick có deadband ±10 count,
+phần còn lại được co giãn lại để vẫn đạt ±1; throttle không áp dụng deadband.
+Giá trị trong 0–2047 được kẹp theo endpoint, giá trị lớn hơn 2047 ở CH1–CH8
+làm command không hợp lệ. Kênh không dùng không ảnh hưởng command.
+
+Switch LOW khi raw ≤582, HIGH khi raw ≥1402, còn lại MIDDLE. CH5 chỉ yêu cầu
+arm khi HIGH; vị trí SA thực tế tương ứng HIGH cần kiểm tra qua telemetry.
+CH6 chỉ lưu vị trí, chưa gán rate/angle hay chế độ bay khác. CH7 HIGH yêu cầu
+hiệu chuẩn ESC; CH8 LOW/MIDDLE/HIGH yêu cầu telemetry OFF/RECORD/STREAM.
+Đây là yêu cầu mức, chưa có phát hiện cạnh hoặc kiểm tra điều kiện thực hiện.
+Hiệu chuẩn ESC và lựa chọn đích telemetry bằng command chưa được thực thi;
+telemetry hiện vẫn theo cấu hình build. Không có
+hysteresis, expo hoặc đảo chiều trong decoder. Dấu stick đi theo chiều tăng
+kênh radio; cần xác nhận tương ứng FRD trước khi đưa vào điều khiển.
+
+Command chưa gọi PID/mixer hoặc xuất motor. Lớp arm/failsafe sẽ xét yêu cầu
+arm cùng các điều kiện vận hành. Khi nối PID hiện dùng float, setpoint mỗi
+trục được tính bằng `command_axis / 32768.0f * max_rate_radps`; giới hạn rate
+và gain chưa được chọn. Throttle là yêu cầu chuẩn hóa, chưa phải lực đẩy đã
+hiệu chuẩn và không thể dùng trực tiếp như quyền xuất ESC.
+
+```sh
+cmake -S firmware/drone/tests/command -B /tmp/drone-command-tests
+cmake --build /tmp/drone-command-tests
+ctest --test-dir /tmp/drone-command-tests --output-on-failure
+```
+
+Test quét đủ 2048 mức CRSF để kiểm tra tính đơn điệu/giới hạn, endpoint,
+deadband, ánh xạ kênh, switch và xóa command khi dữ liệu lỗi. Test tích hợp
+trong `tests/logging` kiểm tra cập nhật command giữa các slot telemetry,
+khi IMU không có mẫu mới và khi receiver mất kết nối.

@@ -9,7 +9,7 @@
 #define APP_COMMAND_RC_MAX INT32_C(1811)
 #define APP_COMMAND_DEADBAND INT32_C(10)
 
-/** Raw switch position; no flight mode is implied. */
+/** Raw switch position; flight-mode behavior is assigned by the flight App. */
 typedef enum {
     APP_COMMAND_SWITCH_LOW,
     APP_COMMAND_SWITCH_MIDDLE,
@@ -33,8 +33,8 @@ typedef struct {
         yaw;             /**< [-ONE,ONE], deadband rescaled to endpoints. */
     norm_q15_t throttle; /**< [0,ONE], no deadband. Not calibrated thrust. */
     bool arm_requested;  /**< CH5 high only; not an armed state. */
-    app_command_switch_t
-        mode; /**< CH6 position, not a supported flight mode. */
+    app_command_switch_t mode;      /**< CH6/SC flight-mode request;
+                                       position-to-controller mapping pending. */
     bool esc_calibration_requested; /**< CH7 HIGH level, not an edge or
                                        permission. */
     app_command_telemetry_mode_t

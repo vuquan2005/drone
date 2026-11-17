@@ -79,6 +79,7 @@ target_sources(
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
             BSP/Src/bsp_motor_pwm.c
+            App/Src/runtime.c
             App/Src/app.c
             App/Src/app_rate.c
             App/Src/app_safety.c

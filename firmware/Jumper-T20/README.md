@@ -6,16 +6,16 @@ Hai tệp YAML ghi phiên bản `2.11.0`:
 - [`radio.yml`](radio.yml): cấu hình chung, hiệu chuẩn cần điều khiển và công tắc.
 - [`model04.yml`](model04.yml): input, mixer và cấu hình module CRSF của model.
 
-| Kênh | Chức năng | Nguồn |
-| --- | --- | --- |
-| CH1 | Roll | Ail |
-| CH2 | Pitch | Ele |
-| CH3 | Throttle | Thr |
-| CH4 | Yaw | Rud |
-| CH5 | ARM | SA |
-| CH6 | Mode | SC |
-| CH7 | Calib - ESC | SB |
-| CH8 | Telem - ghi/xuất telemetry | SD |
+| Kênh | Chức năng                  | Nguồn |
+| ---- | -------------------------- | ----- |
+| CH1  | Roll                       | Ail   |
+| CH2  | Pitch                      | Ele   |
+| CH3  | Throttle                   | Thr   |
+| CH4  | Yaw                        | Rud   |
+| CH5  | ARM                        | SA    |
+| CH6  | Mode - chế độ bay          | SC    |
+| CH7  | Calib - ESC                | SB    |
+| CH8  | Telem - ghi/xuất telemetry | SD    |
 
 SB dùng yêu cầu hiệu chuẩn ESC. SD chọn một trong ba trạng thái: tắt,
 xuất telemetry hoặc ghi telemetry; không xuất và ghi đồng thời.

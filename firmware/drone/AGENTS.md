@@ -7,9 +7,15 @@ Gain và ánh xạ thrust → ESC hiện dành cho thử trên bộ gá, chưa h
 
 ## Kiến trúc cơ bản
 
-Luồng gọi hiện tại: `Core/main` → `App` → `BSP` → driver → callback HAL.
-`main()` khởi tạo HAL, clock, ngoại vi rồi gọi `app_init()`; vòng lặp gọi
-`app_process()`.
+Luồng gọi hiện tại: `Core/main` → `runtime` → chế độ trong `App` → `BSP` → driver.
+`main()` khởi tạo HAL, clock, ngoại vi rồi gọi `runtime_init()`; vòng lặp gọi
+`runtime_process()`. Runtime sở hữu receiver và chọn mode một lần sau reset: SB HIGH ưu tiên ESC_CALIB,
+SD STREAM chọn FLASH_EXPORT, còn lại FLIGHT;
+SC dành cho chế độ bay, SD dành cho yêu cầu tắt/ghi/stream telemetry theo
+`firmware/Jumper-T20/README.md`; không dùng SC để chọn xuất flash.
+chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime giải mã command một lần, sở hữu
+RTT/log/telemetry chung và lịch telemetry RC. App không tự poll/giải mã receiver;
+`app_get_status()` cung cấp health riêng với mode.
 
 | Thành phần                     | Trách nhiệm                                                              |
 | ------------------------------ | ------------------------------------------------------------------------ |

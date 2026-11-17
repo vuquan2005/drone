@@ -130,7 +130,7 @@ mixData:
     delayDown: 0
     speedUp: 0
     speedDown: 0
-    name: "Aux3"
+    name: "Calib"
   - destCh: 7
     srcRaw: "SD"
     carryTrim: 0
@@ -146,7 +146,7 @@ mixData:
     delayDown: 0
     speedUp: 0
     speedDown: 0
-    name: "Aux4"
+    name: "Telem"
 expoData:
   - mode: 3
     scale: 0

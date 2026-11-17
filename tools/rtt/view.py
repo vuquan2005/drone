@@ -5,6 +5,7 @@ import argparse
 from pathlib import Path
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 
 from PySide6 import QtCore, QtWidgets
 
@@ -12,6 +13,7 @@ from panels import ImuPanel, ReceiverPanel, StatsLabel, LogPanel, RatePanel
 from stream import Stream
 from telemetry import TelemetryState
 from session_writer import SessionWriter
+from session_reader import read_session
 
 
 class Viewer(QtWidgets.QMainWindow):
@@ -20,6 +22,9 @@ class Viewer(QtWidgets.QMainWindow):
         self.setWindowTitle("Drone · RTT")
         self.resize(1100, 820)
         self.telemetry = TelemetryState()
+        self.saved_session = None
+        self.load_future = None
+        self.loader = ThreadPoolExecutor(max_workers=1)
         self.writer = None
         self.recording = False
         self.close_when_done = False
@@ -31,9 +36,20 @@ class Viewer(QtWidgets.QMainWindow):
         endpoints = QtWidgets.QLabel(
             f"{args.host} · LOG :{args.log_port} · DATA :{args.data_port} · 10 s history"
         )
-        layout.addWidget(endpoints)
+        self.diagnostics = QtWidgets.QPushButton("Diagnostics")
+        self.diagnostics.setCheckable(True)
+        self.diagnostics.setChecked(False)
+        self.diagnostic_details = QtWidgets.QWidget()
+        details_layout = QtWidgets.QVBoxLayout(self.diagnostic_details)
+        details_layout.setContentsMargins(0, 0, 0, 0)
+        details_layout.addWidget(endpoints)
         self.mcu_stats = StatsLabel()
-        layout.addWidget(self.mcu_stats)
+        details_layout.addWidget(self.mcu_stats)
+        self.host_stats = QtWidgets.QLabel()
+        self.host_stats.setWordWrap(True)
+        details_layout.addWidget(self.host_stats)
+        self.diagnostic_details.hide()
+        self.diagnostics.toggled.connect(self.diagnostic_details.setVisible)
         controls = QtWidgets.QHBoxLayout()
         self.output_dir = QtWidgets.QLineEdit(str(getattr(args, "output_dir", DEFAULT_OUTPUT)))
         self.browse = QtWidgets.QPushButton("Save folder…")
@@ -42,17 +58,43 @@ class Viewer(QtWidgets.QMainWindow):
         self.raw_checkbox.setChecked(getattr(args, "raw", False))
         self.record_button = QtWidgets.QPushButton("Start recording")
         self.record_button.clicked.connect(self.toggle_recording)
-        controls.addWidget(self.output_dir)
-        controls.addWidget(self.browse)
-        controls.addWidget(self.raw_checkbox)
+        self.record_options_button = QtWidgets.QPushButton("Recording options")
+        self.record_options_button.setCheckable(True)
+        controls.addWidget(self.diagnostics)
+        controls.addWidget(self.record_options_button)
+        self.open_button = QtWidgets.QPushButton("Open session…")
+        self.open_button.clicked.connect(self.choose_session)
+        controls.addWidget(self.open_button)
+        self.live_button = QtWidgets.QPushButton("Return to live")
+        self.live_button.clicked.connect(self.return_live)
+        self.live_button.hide()
+        controls.addWidget(self.live_button)
+        self.segment_box = QtWidgets.QComboBox()
+        self.segment_box.currentIndexChanged.connect(self.show_segment)
+        self.segment_box.hide()
+        controls.addWidget(self.segment_box)
+        controls.addStretch()
         controls.addWidget(self.record_button)
         layout.addLayout(controls)
-        self.record_status = QtWidgets.QLabel("Recording off")
+        layout.addWidget(self.diagnostic_details)
+        self.record_options = QtWidgets.QWidget()
+        options_layout = QtWidgets.QHBoxLayout(self.record_options)
+        options_layout.setContentsMargins(0, 0, 0, 0)
+        for widget in (self.output_dir, self.browse, self.raw_checkbox):
+            options_layout.addWidget(widget)
+        self.record_options.hide()
+        self.record_options_button.toggled.connect(self.record_options.setVisible)
+        layout.addWidget(self.record_options)
+        self.writer_stats = QtWidgets.QLabel()
+        self.writer_stats.setWordWrap(True)
+        details_layout.addWidget(self.writer_stats)
+        self.record_status = QtWidgets.QLabel()
+        self.record_status.hide()
         self.record_status.setWordWrap(True)
         layout.addWidget(self.record_status)
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         layout.addWidget(splitter)
-        tabs = QtWidgets.QTabWidget()
+        tabs = self.tabs = QtWidgets.QTabWidget()
         self.imu_panel = ImuPanel()
         self.receiver_panel = ReceiverPanel()
         self.rate_panel = RatePanel()
@@ -74,15 +116,122 @@ class Viewer(QtWidgets.QMainWindow):
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.refresh)
         self.timer.start(40)
+        self.tabs.currentChanged.connect(self.tab_changed)
         if getattr(args, "record", False):
             QtCore.QTimer.singleShot(0, self.toggle_recording)
 
+    def choose_session(self):
+        directory = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Open telemetry session", self.output_dir.text()
+        )
+        if directory:
+            self.load_session(directory)
+
+    def load_session(self, directory):
+        if self.recording or (self.writer is not None and not self.writer.done.is_set()):
+            return
+        if self.load_future is not None:
+            return
+        self.open_button.setEnabled(False)
+        self.record_button.setEnabled(False)
+        self.statusBar().showMessage("Loading session…")
+        self.pending_directory = str(directory)
+        self.load_future = self.loader.submit(read_session, directory)
+
+    def finish_load(self):
+        future, self.load_future = self.load_future, None
+        self.open_button.setEnabled(True)
+        self.record_button.setEnabled(self.saved_session is None)
+        try:
+            segments, logs = future.result()
+        except Exception as error:
+            QtWidgets.QMessageBox.warning(self, "Cannot open session", str(error))
+            return
+        self.load_directory = self.pending_directory
+        self.saved_session = segments
+        for stream in (self.log_stream, self.data_stream):
+            stream.paused = True
+            stream.retry.stop()
+            stream.socket.abort()
+        self.record_button.setEnabled(False)
+        self.record_status.hide()
+        self.log_panel.clear_log()
+        for line in logs:
+            self.log_panel.add_line(line)
+        self.log_panel.setToolTip("Session-wide log tail; not synchronized to the selected segment")
+        self.segment_box.blockSignals(True)
+        self.segment_box.clear()
+        for segment in sorted(segments):
+            self.segment_box.addItem(f"Segment {segment}", segment)
+        self.segment_box.blockSignals(False)
+        self.segment_box.show()
+        self.live_button.show()
+        self.show_segment()
+
+    def show_segment(self, *_):
+        if self.saved_session is None or self.segment_box.currentData() is None:
+            return
+        state = self.saved_session[self.segment_box.currentData()]
+        self.imu_panel.update_series(state.series, follow=False)
+        self.rate_panel.update_points(state.rate_points, follow=False)
+        for plot in (*self.imu_panel.plots, *self.rate_panel.plots):
+            plot.enableAutoRange()
+        for plot in self.rate_panel.plots[-2:]:
+            plot.setLabel("bottom", "MCU time from first rate sample", units="s")
+        self.receiver_panel.update_sample(state.latest_rc, 0, True, saved=True)
+        self.receiver_panel.set_saved_snapshots(state.rc_snapshots)
+        self.mcu_stats.update_sample(state.latest_stats, 0)
+        self.mcu_stats.setText(
+            self.mcu_stats.text().replace("age 0.0s · ", "")
+            if state.latest_stats is not None
+            else "No saved MCU statistics in this segment"
+        )
+        self.rate_panel.setText(
+            "Saved rate · MCU time · streams have independent time origins"
+            if state.latest_rate is not None
+            else "No saved rate telemetry in this segment"
+        )
+        self.host_stats.setText(
+            f"Saved IMU: {state.series.received} samples · missing seq {state.series.missing}"
+        )
+        self.writer_stats.clear()
+        self.statusBar().showMessage(f"Saved session: {self.load_directory} · saved data")
+
+    def return_live(self):
+        if self.load_future is not None:
+            return
+        self.saved_session = None
+        self.receiver_panel.set_saved_snapshots([])
+        self.telemetry = TelemetryState()
+        self.log_panel.clear_log()
+        self.log_panel.setToolTip("")
+        self.segment_box.hide()
+        self.live_button.hide()
+        self.record_button.setEnabled(True)
+        self.imu_panel.update_series(self.telemetry.series)
+        self.imu_panel.plots[0].setXRange(0, 10, padding=0)
+        self.rate_panel.plots[0].setXRange(0, 10, padding=0)
+        for plot in self.rate_panel.plots[-2:]:
+            plot.setLabel("bottom", "Host time from segment start", units="s")
+        for stream in (self.log_stream, self.data_stream):
+            stream.paused = False
+            stream.retry.start(2000)
+            stream.connect()
+
+    def tab_changed(self, *_):
+        # Hidden live panels catch up from the unchanged telemetry history.
+        self.dirty = True
+        self.refresh()
+
     def new_session(self):
         self.telemetry.new_connection()
-        self.receiver_panel.update_sample(None, 0, False)
+        if self.tabs.currentWidget() is self.receiver_panel:
+            self.receiver_panel.update_sample(None, 0, False)
         self.dirty = True
 
     def on_data(self, line):
+        if self.saved_session is not None:
+            return
         segment = self.telemetry.segment
         record = self.telemetry.feed(line, time.monotonic())
         if record is None:
@@ -98,6 +247,8 @@ class Viewer(QtWidgets.QMainWindow):
             self.writer.submit("raw", data)
 
     def on_log(self, line):
+        if self.saved_session is not None:
+            return
         if self.recording:
             self.writer.submit("log", line + b"\n")
         self.log_panel.add_line(line)
@@ -110,6 +261,8 @@ class Viewer(QtWidgets.QMainWindow):
             self.output_dir.setText(directory)
 
     def toggle_recording(self):
+        if self.saved_session is not None or self.load_future is not None:
+            return
         if self.recording:
             self.recording = False
             self.writer.stop()
@@ -119,6 +272,7 @@ class Viewer(QtWidgets.QMainWindow):
         try:
             self.writer = SessionWriter(self.output_dir.text(), raw=self.raw_checkbox.isChecked())
         except OSError as error:
+            self.record_status.show()
             self.record_status.setText(f"Recording ERROR: {error}")
             return
         self.recording = True
@@ -142,8 +296,12 @@ class Viewer(QtWidgets.QMainWindow):
         if w.error:
             state = f"Recording ERROR: {w.error} (session may be incomplete)"
         drops = w.dropped
-        self.record_status.setText(
-            f"{state}: {w.directory} · queue {w.queue.qsize()} · "
+        self.record_status.show()
+        drop_count = sum(drops.values())
+        warning = f" · writer drops {drop_count}" if drop_count else ""
+        self.record_status.setText(f"{state}: {w.directory}{warning}")
+        self.writer_stats.setText(
+            f"Queue {w.queue.qsize()} · "
             f"writer drops CSV={drops['csv'] + drops['imu_raw']} rate={drops['rate']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:
@@ -157,39 +315,45 @@ class Viewer(QtWidgets.QMainWindow):
             self.update_record_status()
             event.ignore()
             return
+        self.loader.shutdown(wait=False, cancel_futures=True)
         for stream in (self.log_stream, self.data_stream):
             stream.retry.stop()
             stream.socket.abort()
         super().closeEvent(event)
 
     def refresh(self):
+        if self.load_future is not None:
+            if self.load_future.done():
+                self.finish_load()
+            return
+        if self.saved_session is not None:
+            return
+        self.open_button.setEnabled(
+            not self.recording and (self.writer is None or self.writer.done.is_set())
+        )
         self.update_record_status()
         state = self.telemetry
         now = time.monotonic()
-        self.receiver_panel.update_sample(
-            state.latest_rc,
-            now - state.rc_received_at if state.rc_received_at is not None else 0,
-            self.states["DATA"] == "connected",
-        )
-        self.rate_panel.update_points(state.rate_points)
-        rate = state.latest_rate
-        if rate is None:
-            self.rate_panel.setText("Waiting for rate telemetry")
-        else:
-            age = now - state.rate_received_at
-            connected = self.states["DATA"] == "connected"
-            rows = [
-                f"Rate snapshot · valid={bool(rate[3] & 2)} · connected={connected} · age={age:.2f} s · dt={rate[2]} us"
-            ]
-            for title, values in (
-                ("Setpoint FRD rad/s", rate[4:7]),
-                ("Gyro FRD rad/s", rate[7:10]),
-                ("PID normalized", rate[10:13]),
-                ("Motors M1–M4 normalized thrust", rate[13:17]),
-                ("Allocation residual", rate[17:20]),
-            ):
-                rows.append(title + ": " + " / ".join(f"{x:+.4f}" for x in values))
-            self.rate_panel.setText("\n\n".join(rows))
+        active_panel = self.tabs.currentWidget()
+        if active_panel is self.receiver_panel:
+            self.receiver_panel.update_sample(
+                state.latest_rc,
+                now - state.rc_received_at if state.rc_received_at is not None else 0,
+                self.states["DATA"] == "connected",
+            )
+        if active_panel is self.rate_panel:
+            self.rate_panel.update_points(state.rate_points)
+            rate = state.latest_rate
+            if rate is None:
+                self.rate_panel.setText("Waiting for rate telemetry")
+            else:
+                age = now - state.rate_received_at
+                connected = self.states["DATA"] == "connected"
+                self.rate_panel.setText(
+                    f"Rate · valid={bool(rate[3] & 2)} · "
+                    f"{'live' if connected and age < 0.5 else 'telemetry stale'} · "
+                    f"age={age:.2f} s · dt={rate[2]} us"
+                )
         self.mcu_stats.update_sample(
             state.latest_stats,
             now - state.stats_received_at if state.stats_received_at is not None else 0,
@@ -197,16 +361,18 @@ class Viewer(QtWidgets.QMainWindow):
         while state.arrivals and state.arrivals[0] < now - 1:
             state.arrivals.popleft()
         s = state.series
-        self.statusBar().showMessage(
-            f"LOG: {self.states['LOG']} | DATA: {self.states['DATA']} | "
-            f"RX {len(state.arrivals)}/s · records {s.received} · missing seq {s.missing} · "
+        self.host_stats.setText(
+            f"Records {s.received} · missing seq {s.missing} · "
             f"invalid {s.invalid} · unknown {s.unknown} · resets? {s.resets} · "
             f"log oversize {self.log_stream.framing.errors} · frame errors {self.data_stream.framing.errors}"
         )
-        if not self.dirty:
-            return
-        self.dirty = False
-        self.imu_panel.update_series(state.series)
+        self.statusBar().showMessage(
+            f"LOG: {self.states['LOG']} | DATA: {self.states['DATA']} | "
+            f"RX {len(state.arrivals)}/s"
+        )
+        if active_panel is self.imu_panel and self.dirty:
+            self.dirty = False
+            self.imu_panel.update_series(state.series)
 
 
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[2] / "experiments/raw/telemetry"

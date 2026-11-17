@@ -4,7 +4,7 @@ from collections import deque
 import re
 
 import numpy as np
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 
 
@@ -29,7 +29,7 @@ class ImuPanel(pg.GraphicsLayoutWidget):
             )
         self.plots[1].setXLink(self.plots[0])
 
-    def update_series(self, series):
+    def update_series(self, series, follow=True):
         points = np.asarray(series.points, dtype=float)
         for group, curves in enumerate(self.curves):
             for axis, curve in enumerate(curves):
@@ -37,7 +37,7 @@ class ImuPanel(pg.GraphicsLayoutWidget):
                     curve.setData(points[:, 0], points[:, 1 + group * 3 + axis])
                 else:
                     curve.setData([], [])
-        if points.size:
+        if points.size and follow:
             end = max(10, points[-1, 0])
             self.plots[0].setXRange(end - 10, end, padding=0)
 
@@ -93,7 +93,9 @@ class RatePanel(QtWidgets.QWidget):
         for title, unit, row, col, traces in groups:
             plot = self.graph.addPlot(row=row, col=col, title=title)
             plot.setLabel("left", unit)
-            plot.setLabel("bottom", "Host time from segment start", units="s")
+            plot.getAxis("left").enableAutoSIPrefix(False)
+            if row == 2:
+                plot.setLabel("bottom", "Host time from segment start", units="s")
             plot.showGrid(x=True, y=True, alpha=0.2)
             plot.addLegend()
             plot.setXRange(0, 10, padding=0)
@@ -111,48 +113,192 @@ class RatePanel(QtWidgets.QWidget):
     def text(self):
         return self.status.text()
 
-    def update_points(self, points):
+    def update_points(self, points, follow=True):
         data = np.asarray(points, dtype=float)
         for curve, column in self.curves:
             curve.setData(data[:, 0], data[:, column]) if data.size else curve.setData([], [])
-        if data.size:
+        if data.size and follow:
             end = max(10, data[-1, 0])
             self.plots[0].setXRange(end - 10, end, padding=0)
+
+
+class ChannelStick(QtWidgets.QWidget):
+    """Read-only XY display of two raw channels."""
+
+    def __init__(self, horizontal, vertical, horizontal_name, vertical_name):
+        super().__init__()
+        self.horizontal, self.vertical = horizontal, vertical
+        self.horizontal_name, self.vertical_name = horizontal_name, vertical_name
+        self.values = None
+        self.active = False
+        self.setMinimumSize(150, 160)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
+        )
+
+    def set_channels(self, values, active):
+        self.values, self.active = values, active
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        palette = self.palette()
+        color = palette.color(QtGui.QPalette.ColorRole.Text)
+        if not self.active:
+            color.setAlpha(100)
+        painter.setPen(QtGui.QPen(color, 1))
+        side = max(1, min(self.width() - 28, self.height() - 60))
+        box = QtCore.QRectF((self.width() - side) / 2, 12, side, side)
+        painter.drawRect(box)
+        painter.drawLine(
+            QtCore.QPointF(box.center().x(), box.top()),
+            QtCore.QPointF(box.center().x(), box.bottom()),
+        )
+        painter.drawLine(
+            QtCore.QPointF(box.left(), box.center().y()),
+            QtCore.QPointF(box.right(), box.center().y()),
+        )
+        label = (
+            f"{self.horizontal_name} CH{self.horizontal} ↔ / "
+            f"{self.vertical_name} CH{self.vertical} ↕"
+        )
+        if self.values is not None:
+            x, y = self.values
+            point = QtCore.QPointF(box.left() + x / 2047 * side, box.bottom() - y / 2047 * side)
+            painter.setBrush(color)
+            painter.drawEllipse(point, 6, 6)
+            label += f"\n{x} / {y}"
+        else:
+            label += "\n— / —"
+        painter.drawText(
+            QtCore.QRectF(0, box.bottom() + 6, self.width(), 42),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            label,
+        )
 
 
 class ReceiverPanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
-        layout = QtWidgets.QGridLayout(self)
-        self.rc_status = QtWidgets.QLabel("RC: waiting for type 3 frames")
-        layout.addWidget(self.rc_status, 0, 0, 1, 4)
-        self.rc_bars = []
+        layout = QtWidgets.QVBoxLayout(self)
+        self.rc_status = QtWidgets.QLabel("RC: waiting for data")
+        layout.addWidget(self.rc_status)
+        body = QtWidgets.QHBoxLayout()
+        layout.addLayout(body, 1)
+        self.stick_group = QtWidgets.QWidget()
+        stick_layout = QtWidgets.QHBoxLayout(self.stick_group)
+        stick_layout.setContentsMargins(0, 0, 0, 0)
+        # Jumper T20 DA-Drone channel mapping: firmware/Jumper-T20/README.md.
+        self.sticks = [
+            ChannelStick(4, 3, "Yaw", "Throttle"),
+            ChannelStick(1, 2, "Roll", "Pitch"),
+        ]
+        for stick in self.sticks:
+            stick_layout.addWidget(stick)
+        body.addWidget(self.stick_group, 1)
+        self.bar_group = QtWidgets.QWidget()
+        grid = self.bar_layout = QtWidgets.QGridLayout(self.bar_group)
+        grid.setContentsMargins(0, 0, 0, 0)
+        body.addWidget(self.bar_group, 1)
+        self.rc_bars, self.channel_labels = [], []
         for i in range(16):
             bar = QtWidgets.QProgressBar()
             bar.setRange(0, 2047)
             bar.setFormat("—")
-            layout.addWidget(QtWidgets.QLabel(f"CH{i + 1}"), i % 8 + 1, (i // 8) * 2)
-            layout.addWidget(bar, i % 8 + 1, (i // 8) * 2 + 1)
+            label = QtWidgets.QLabel(f"CH{i + 1}")
+            grid.addWidget(label, i % 8, (i // 8) * 2)
+            grid.addWidget(bar, i % 8, (i // 8) * 2 + 1)
+            self.channel_labels.append(label)
             self.rc_bars.append(bar)
+        self.rc_snapshots = []
+        self.replay_controls = QtWidgets.QWidget()
+        replay_layout = QtWidgets.QHBoxLayout(self.replay_controls)
+        replay_layout.setContentsMargins(0, 0, 0, 0)
+        self.replay_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.replay_slider.setAccessibleName("Saved receiver snapshot")
+        self.replay_slider.valueChanged.connect(self.show_saved_snapshot)
+        self.replay_position = QtWidgets.QLabel()
+        replay_layout.addWidget(self.replay_slider, 1)
+        replay_layout.addWidget(self.replay_position)
+        self.replay_controls.hide()
+        layout.addWidget(self.replay_controls)
+        self.details = QtWidgets.QLabel("Raw CRSF (0–2047)")
+        self.details.setWordWrap(True)
+        self.details.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Preferred
+        )
+        layout.addWidget(self.details)
+        self.wide = None
+        self.update_responsive()
 
-    def update_sample(self, sample, age, data_connected):
+    def set_saved_snapshots(self, snapshots):
+        self.rc_snapshots = snapshots
+        self.replay_slider.blockSignals(True)
+        self.replay_slider.setRange(0, max(0, len(snapshots) - 1))
+        self.replay_slider.setValue(max(0, len(snapshots) - 1))
+        self.replay_slider.setEnabled(len(snapshots) > 1)
+        self.replay_slider.blockSignals(False)
+        self.replay_controls.setVisible(bool(snapshots))
+        if snapshots:
+            self.show_saved_snapshot(self.replay_slider.value())
+        else:
+            self.replay_position.clear()
+
+    def show_saved_snapshot(self, index):
+        if not self.rc_snapshots:
+            return
+        seconds, sample = self.rc_snapshots[index]
+        self.update_sample(sample, 0, True, saved=True)
+        self.replay_position.setText(f"{seconds:.2f}s · {index + 1}/{len(self.rc_snapshots)}")
+
+    def update_responsive(self):
+        wide = self.width() >= 850 and self.height() >= 280
+        self.stick_group.setVisible(wide)
+        if wide != self.wide:
+            self.wide = wide
+            start, rows = (4, 6) if wide else (0, 8)
+            for index in range(start, 16):
+                row, col = (index - start) % rows, ((index - start) // rows) * 2
+                self.bar_layout.addWidget(self.channel_labels[index], row, col)
+                self.bar_layout.addWidget(self.rc_bars[index], row, col + 1)
+        for label, bar in zip(self.channel_labels[:4], self.rc_bars[:4]):
+            label.setVisible(not wide)
+            bar.setVisible(not wide)
+        self.details.setVisible(self.width() >= 600 and self.height() >= 300)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_responsive()
+
+    def update_sample(self, sample, age, data_connected, saved=False):
         if sample is None:
-            self.rc_status.setText("RC: waiting for type 3 frames")
+            self.rc_status.setText(
+                "No saved RC in this segment" if saved else "RC: waiting for data"
+            )
+            self.details.setText("Raw CRSF (0–2047)")
             for bar in self.rc_bars:
                 bar.setValue(0)
                 bar.setFormat("—")
-        else:
-            seq, ms, last_ms, connected, *channels = sample
-            live = age < 0.5 and data_connected
-            state = ("connected" if connected else "disconnected") if live else "telemetry stale"
-            self.rc_status.setText(
-                f"RC: {state} · snapshot #{seq}, age {age:.1f}s · "
-                f"last RC frame age at MCU snapshot {(ms - last_ms) % 2**32}ms · raw CRSF"
+                bar.setEnabled(False)
+            for stick in self.sticks:
+                stick.set_channels(None, False)
+            return
+        _, _, _, connected, *channels = sample
+        live = age < 0.5 and data_connected
+        state = ("connected" if connected else "disconnected") if live else "telemetry stale"
+        self.rc_status.setText(f"Saved RC: {state}" if saved else f"RC: {state}")
+        freshness = "saved" if saved else f"age {age:.1f}s"
+        self.details.setText(f"Raw CRSF (0–2047) · {freshness}")
+        for bar, value in zip(self.rc_bars, channels):
+            bar.setValue(value)
+            bar.setFormat(str(value))
+            bar.setEnabled(live and bool(connected))
+        for stick in self.sticks:
+            stick.set_channels(
+                (channels[stick.horizontal - 1], channels[stick.vertical - 1]),
+                live and bool(connected),
             )
-            for bar, value in zip(self.rc_bars, channels):
-                bar.setValue(value)
-                bar.setFormat(str(value))
-                bar.setEnabled(live and bool(connected))
 
 
 class StatsLabel(QtWidgets.QLabel):

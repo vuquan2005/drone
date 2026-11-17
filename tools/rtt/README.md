@@ -67,14 +67,17 @@ dùng `UV=/path/to/uv` để chỉ định executable cho Make.
   20000 điểm, vẽ 25 lần/giây. Gap sequence được ngắt nét.
 - Tab **Receiver · RC** hiển thị CH1–CH16 dạng thanh và số raw CRSF
   (0–2047), cập nhật danh định 20 Hz. Di chuyển từng cần/công tắc để kiểm
-  tra mapping. Không gán sẵn chức năng kênh và không đổi raw thành µs.
+  tra mapping. Không đổi raw thành µs.
   `connected` phản ánh frame RC hợp lệ mới hơn 100 ms; khi disconnected
   giữ số cuối và làm mờ thanh. `telemetry stale` nghĩa là không có snapshot
   mới trong 0,5 s hoặc TCP DATA ngắt, chưa kết luận được trạng thái RC.
   Cần nạp firmware mới có telemetry type 3; Debug bật telemetry mặc định.
-- Status hiển thị kết nối, tốc độ nhận host, gap/lỗi frame và thống kê MCU
-  type 2 kèm tuổi snapshot. Tốc độ nhận host chịu ảnh hưởng TCP, không phải
+- Thanh trạng thái hiển thị kết nối, tốc độ nhận host.
+  Mở **Diagnostics** để xem counter host, thống kê MCU type 2 kèm tuổi
+  snapshot và queue/writer drops khi ghi phiên. Tốc độ nhận host chịu ảnh hưởng TCP, không phải
   phép đo chính xác tần số lấy mẫu.
+- Chỉ cập nhật đồ họa tab đang mở; khi chuyển tab, hiển thị lịch sử mới nhất.
+  Nhận/giải mã RTT và ghi phiên tiếp tục với mọi luồng kể cả khi tab bị ẩn.
 - Tự nối lại mỗi 2 giây. Nối lại DATA hoặc nghi reset bắt đầu segment mới,
   xóa plot và không đếm gap qua ranh giới; tổng counter host vẫn giữ.
   Không có dữ liệu thì giữ plot cuối.
@@ -86,7 +89,8 @@ type/version chưa hỗ trợ được đếm unknown. Không hỗ trợ CSV `IM
 
 ## Ghi phiên CSV, text log và raw
 
-Chọn thư mục gốc rồi **Start recording** / **Stop recording**, hoặc chạy:
+Mở **Recording options** để chọn thư mục gốc và bật **Save raw hex** khi cần,
+rồi **Start recording** / **Stop recording**, hoặc chạy:
 
 ```sh
 make telemetry TELEMETRY_ARGS="--record --raw"
@@ -180,3 +184,40 @@ Khi recording, dữ liệu lưu ở `rate_*.csv`; `flags & 2` biểu thị kết
 Khung plot hiển thị ngay khi mở tab; trace đợi bản tin hợp lệ.
 Firmware đã có arm/failsafe và xuất ESC khi armed. Quy trình trên board và gain thử:
 [DEBUG.md](../../firmware/drone/DEBUG.md#thử-trên-board).
+
+## Mở phiên đã lưu
+
+Chọn **Open session…** rồi thư mục `telemetry_*`. Viewer đọc CSV ở luồng nền,
+ngắt TCP khi mở thành công và chuyển sang chế độ xem tĩnh. Chọn **Segment**
+để xem toàn bộ đồ thị IMU/Rate của đoạn đó; có thể zoom/pan. **Return to live**
+xóa dữ liệu đang xem và nối lại TCP. Không mở phiên khi đang ghi hoặc flush;
+không ghi phiên trong chế độ xem dữ liệu cũ. File nguồn không bị thay đổi.
+
+Thống kê MCU hiển thị snapshot cuối segment. Receiver có thanh trượt chọn
+từng snapshot RC, cập nhật cả thanh kênh và joystick; mặc định chọn snapshot
+cuối. Nhãn thời gian tính từ snapshot RC đầu segment theo `uptime_ms` MCU,
+không nội suy qua các snapshot bị mất. Thanh trượt chỉ điều khiển Receiver,
+không đồng bộ IMU/Rate/log. Segment không có RC thì ẩn thanh trượt; một snapshot
+thì vô hiệu hóa kéo. Các giá trị đã lưu không phải trạng thái thiết bị hiện tại. Log hiển thị tối đa 2000 dòng cuối toàn phiên và vẫn lọc
+được; log không đồng bộ theo segment. Mỗi luồng đồ thị có gốc thời gian riêng:
+IMU dùng `t_read_us`, Rate dùng `t_sample_us` MCU thay cho thời gian nhận host
+ở chế độ live. Timestamp được xử lý tràn 32 bit; không nối trace qua gap hoặc
+segment. Không suy ra căn chỉnh thời gian giữa các luồng.
+
+Chỉ cần có một loại CSV hợp lệ; file vắng mặt hoặc chỉ có header được bỏ qua.
+Header/payload không hợp lệ sẽ báo tên file và dòng, giữ chế độ đang xem.
+Bản đầu giới hạn 1.000.000 dòng CSV mỗi phiên; chưa có phát lại theo thời gian,
+con trỏ thời gian chung hoặc nhập file raw hex. Thư mục chỉ có log chưa được hỗ trợ.
+
+## Receiver thích ứng
+
+Receiver tự đổi bố cục theo kích thước vùng tab: từ 850 × 280 px, bốn kênh
+đầu hiển thị thành hai ô joystick thay cho thanh. Theo mapping
+[Jumper T20 DA-Drone](../../firmware/Jumper-T20/README.md), ô trái là Yaw CH4
+ngang / Throttle CH3 dọc; ô phải là Roll CH1 ngang / Pitch CH2 dọc.
+Phải/trên tăng raw; tâm ô là 1023,5 theo miền 0–2047, không phải điểm giữa đã
+hiệu chuẩn của bộ thu. Khi vùng tab nhỏ hơn, cả 16 kênh trở về thanh.
+Nhãn raw và tuổi snapshot nằm dưới các thanh, tự ẩn khi vùng tab hẹp hơn 600 px hoặc thấp hơn
+300 px.
+
+Các trục dọc Rate giữ giá trị gốc rad/s hoặc normalized, không tự thêm hệ số SI.

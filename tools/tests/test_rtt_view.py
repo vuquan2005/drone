@@ -24,6 +24,102 @@ if HAS_GUI:
 
 @unittest.skipUnless(HAS_GUI, "Run inside the RTT viewer dependency environment")
 class ViewerTests(unittest.TestCase):
+    def test_receiver_responsive(self):
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        from panels import ReceiverPanel
+
+        panel = ReceiverPanel()
+        panel.resize(1000, 450)
+        panel.show()
+        app.processEvents()
+        self.assertTrue(panel.stick_group.isVisible())
+        self.assertTrue(panel.details.isVisible())
+        self.assertFalse(panel.rc_bars[0].isVisible())
+        sample = (1, 100, 90, 1, *range(16))
+        panel.update_sample(sample, 0.1, True)
+        self.assertEqual(panel.sticks[0].values, (3, 2))
+        self.assertEqual(panel.sticks[1].values, (0, 1))
+        self.assertEqual(panel.details.text(), "Raw CRSF (0–2047) · age 0.1s")
+        panel.update_sample(sample, 0, True, saved=True)
+        self.assertIn("saved", panel.details.text())
+        self.assertEqual(panel.rc_status.toolTip(), "")
+        panel.set_saved_snapshots([(0, sample), (0.1, (2, 200, 190, 0, *([1811] * 16)))])
+        self.assertTrue(panel.replay_controls.isVisible())
+        self.assertEqual(panel.rc_bars[0].value(), 1811)
+        panel.replay_slider.setValue(0)
+        self.assertEqual(panel.rc_bars[0].value(), 0)
+        self.assertEqual(panel.sticks[0].values, (3, 2))
+        self.assertIn("1/2", panel.replay_position.text())
+        panel.set_saved_snapshots([(0, sample)])
+        self.assertFalse(panel.replay_slider.isEnabled())
+        panel.set_saved_snapshots([])
+        self.assertFalse(panel.replay_controls.isVisible())
+        panel.resize(500, 250)
+        app.processEvents()
+        self.assertFalse(panel.stick_group.isVisible())
+        self.assertFalse(panel.details.isVisible())
+        self.assertTrue(panel.rc_bars[0].isVisible())
+        self.assertEqual(panel.rc_bars[2].value(), 2)
+        panel.update_sample(sample, 1, False)
+        self.assertFalse(panel.sticks[0].active)
+        panel.update_sample(None, 0, False, saved=True)
+        self.assertIsNone(panel.sticks[0].values)
+        panel.close()
+
+    def test_rate_units(self):
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        from panels import RatePanel
+
+        rate = RatePanel()
+        self.assertTrue(all(not plot.getAxis("left").autoSIPrefix for plot in rate.plots))
+        rate.close()
+
+    def test_live_timer_updates_after_repeated_tab_switches(self):
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        from records import RATE, RC
+        from unittest.mock import patch
+
+        viewer = Viewer(SimpleNamespace(host="127.0.0.1", log_port=9090, data_port=9091))
+        viewer.show()
+        viewer.states["DATA"] = "connected"
+        sequence = 0
+        try:
+            for tab in (1, 2, 0, 2, 1):
+                viewer.tabs.setCurrentIndex(tab)
+                for _ in range(3):
+                    sequence += 1
+                    value = 200 + sequence * 20
+                    rate = sequence / 100
+                    viewer.on_data(
+                        (1, 3, RC.pack(sequence, sequence * 50, sequence * 50, 1, *([value] * 16)))
+                    )
+                    viewer.on_data(
+                        (1, 5, RATE.pack(sequence, sequence * 50000, 2000, 3, rate, *([0.0] * 15)))
+                    )
+                    deadline = time.monotonic() + 0.08
+                    while time.monotonic() < deadline:
+                        app.processEvents()
+                        time.sleep(0.002)
+                    if tab == 1:
+                        self.assertEqual(viewer.receiver_panel.rc_bars[0].value(), value)
+                        self.assertEqual(viewer.receiver_panel.sticks[0].values, (value, value))
+                    if tab == 2:
+                        self.assertAlmostEqual(
+                            viewer.rate_panel.curves[0][0].getData()[1][-1], rate
+                        )
+            # Hidden panels do not receive periodic rendering work.
+            viewer.tabs.setCurrentIndex(0)
+            with (
+                patch.object(viewer.receiver_panel, "update_sample") as receiver,
+                patch.object(viewer.rate_panel, "update_points") as rate_plot,
+            ):
+                viewer.refresh()
+                receiver.assert_not_called()
+                rate_plot.assert_not_called()
+        finally:
+            viewer.timer.stop()
+            viewer.close()
+
     def test_dual_tcp_plot_filter_and_reconnect(self):
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         servers = [QtNetwork.QTcpServer(), QtNetwork.QTcpServer()]
@@ -80,11 +176,17 @@ class ViewerTests(unittest.TestCase):
             peers[1].write(rate_frame)
             until(lambda: viewer.telemetry.latest_rate is not None)
             viewer.refresh()
+            # Rate history is collected/recorded while its tab stays hidden.
+            self.assertTrue(
+                viewer.rate_panel.curves[0][0].getData()[0] is None
+                or len(viewer.rate_panel.curves[0][0].getData()[0]) == 0
+            )
+            viewer.tabs.setCurrentWidget(viewer.rate_panel)
             self.assertEqual(len(viewer.rate_panel.curves[0][0].getData()[0]), 1)
             self.assertAlmostEqual(viewer.rate_panel.curves[0][0].getData()[1][0], 0.25)
             self.assertIn("dt=2000 us", viewer.rate_panel.text())
             self.assertIn("valid=True", viewer.rate_panel.text())
-            self.assertIn("+0.2500 / -0.5000 / +1.0000", viewer.rate_panel.text())
+            self.assertNotIn("Setpoint", viewer.rate_panel.text())
             viewer.log_panel.level.setCurrentText("E")
             self.assertIn("lost", viewer.log_panel.log_view.toPlainText())
             self.assertNotIn("init", viewer.log_panel.log_view.toPlainText())
@@ -138,6 +240,8 @@ class ViewerTests(unittest.TestCase):
             peers[-1].write(rc_frame[19:])
             until(lambda: viewer.telemetry.latest_rc is not None)
             viewer.refresh()
+            self.assertEqual(viewer.receiver_panel.rc_bars[2].format(), "—")
+            viewer.tabs.setCurrentWidget(viewer.receiver_panel)
             self.assertIn("RC: connected", viewer.receiver_panel.rc_status.text())
             self.assertEqual(viewer.receiver_panel.rc_bars[2].value(), 1811)
             self.assertEqual(viewer.telemetry.series.unknown, 0)
@@ -182,6 +286,17 @@ class ViewerTests(unittest.TestCase):
             self.assertGreater(
                 len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 48
             )
+            # Open the recorded session without live updates replacing its plots.
+            viewer.load_session(directory)
+            until(lambda: viewer.saved_session is not None)
+            self.assertFalse(viewer.record_button.isEnabled())
+            self.assertTrue(viewer.log_stream.paused)
+            self.assertIn("Saved session:", viewer.statusBar().currentMessage())
+            viewer.segment_box.setCurrentIndex(viewer.segment_box.count() - 1)
+            self.assertGreater(len(viewer.imu_panel.curves[0][0].getData()[0]), 0)
+            viewer.return_live()
+            self.assertIsNone(viewer.saved_session)
+            self.assertFalse(viewer.data_stream.paused)
             # Raw frames update the plot in SI/FLU and record original counts.
             viewer.toggle_recording()
             raw_fixture = bytes.fromhex(
@@ -191,6 +306,7 @@ class ViewerTests(unittest.TestCase):
             )
             from records import Frames
 
+            viewer.tabs.setCurrentWidget(viewer.imu_panel)
             viewer.on_data(next(Frames().feed(raw_fixture)))
             self.assertTrue(viewer.dirty)
             viewer.refresh()

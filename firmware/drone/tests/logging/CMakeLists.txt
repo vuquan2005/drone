@@ -33,6 +33,7 @@ endforeach()
 add_executable(
     app_logging_tests
     test_app.c
+    ${FIRMWARE_ROOT}/Control/Src/attitude_controller.c
     ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
     ${FIRMWARE_ROOT}/Control/Src/mahony.c
     ${FIRMWARE_ROOT}/Control/Src/mixer.c

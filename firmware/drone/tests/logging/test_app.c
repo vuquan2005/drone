@@ -11,6 +11,7 @@
 #include "imu_calibration_store.h"
 #include "runtime.h"
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -22,6 +23,7 @@ static uint16_t motor_pulse[4];
 static bool pwm_write_ok = true;
 static unsigned pwm_stops;
 static float gyro_roll_radps;
+static float accel_mps2[3] = {0.0f, 0.0f, -9.80665f};
 static const app_imu_calibration_t *stored_calibration;
 static const char *flight_mode_label;
 static unsigned attitude_transmissions;
@@ -103,7 +105,7 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         imu->sample.gyro_radps[0] = gyro_roll_radps;
         imu->sample.t_read_us = tick * 1000U + 123U;
         imu->sample.sensor_time_ticks = 256U;
-        imu->sample.accel_mps2[2] = -9.80665f;
+        memcpy(imu->sample.accel_mps2, accel_mps2, sizeof(accel_mps2));
         imu->sample.accel_raw[2] = 2048;
     }
     return status;
@@ -179,6 +181,98 @@ static uint32_t get_u32(const char *p) {
     return (uint32_t)(uint8_t)p[0] | ((uint32_t)(uint8_t)p[1] << 8U) |
            ((uint32_t)(uint8_t)p[2] << 16U) | ((uint32_t)(uint8_t)p[3] << 24U);
 }
+
+static void test_attitude_control(const app_rate_config_t *rate_config) {
+    tick = 4294966U; /* MCU microsecond clock wraps during the first batch. */
+    imu_init_status = BSP_IMU_OK;
+    stored_calibration = NULL;
+    init_app();
+    status = BSP_IMU_OK;
+    app_process(NULL);
+    float q[4];
+    assert(app_get_attitude(q) && q[1] == 0.0f);
+    gyro_roll_radps = 2.0f;
+    tick += 2U;
+    app_process(NULL);
+    assert(app_get_attitude(q) && q[1] == 0.0f);
+    app_process(NULL); /* A duplicate timestamp contributes no interval. */
+    assert(app_get_attitude(q) && q[1] == 0.0f);
+    gyro_roll_radps = 0.0f;
+    tick += 3U;
+    app_process(NULL);
+    assert(app_get_attitude(q) && fabsf(q[1] - 0.002f) < 1e-6f);
+
+    init_app();
+    assert(app_configure_rate(rate_config));
+    app_command_t pilot = {.valid = true,
+                           .mode = APP_COMMAND_SWITCH_MIDDLE,
+                           .throttle = NORM_Q15_ONE / 2};
+    app_process(&pilot);
+    mixer_result_t result;
+    pilot.roll = NORM_Q15_ONE;
+    pilot.pitch = -NORM_Q15_ONE;
+    pilot.yaw = NORM_Q15_ONE / 2;
+    for (unsigned sample = 0U; sample < 3U; ++sample) {
+        tick += sample % 2U == 0U ? 2U : 3U;
+        app_process(&pilot);
+        assert(app_get_rate_result(&result));
+        assert(result.achieved.roll == 0 && result.achieved.pitch == 0);
+        assert(result.achieved.yaw > 3200 && result.achieved.yaw < 3350);
+    }
+    tick += 3U;
+    app_process(&pilot);
+    assert(app_get_rate_result(&result));
+    assert(result.achieved.roll > 5000 && result.achieved.roll < 6000);
+    assert(result.achieved.pitch < -5000 && result.achieved.pitch > -6000);
+    pilot.mode = APP_COMMAND_SWITCH_LOW;
+    tick += 2U;
+    app_process(&pilot);
+    assert(app_get_rate_result(&result) && result.achieved.roll > 6500);
+    pilot.mode = APP_COMMAND_SWITCH_HIGH;
+    pilot.roll = pilot.pitch = 0;
+    tick += 3U;
+    app_process(&pilot);
+    assert(app_get_rate_result(&result) && result.achieved.roll == 0 &&
+           result.achieved.pitch == 0);
+
+    pilot.throttle = 0;
+    pilot.arm_requested = true;
+    status = BSP_IMU_NO_DATA;
+    app_process(&pilot);
+    assert(app_get_arm_state() == APP_ARMED);
+    status = BSP_IMU_OK;
+    tick += 19U;
+    app_process(&pilot);
+    assert(app_get_arm_state() == APP_ARMED);
+    status = BSP_IMU_NO_DATA;
+    tick += 2U;
+    app_process(&pilot);
+    app_status_t health;
+    assert(app_get_status(&health) && health.imu_ready);
+    assert(!app_get_attitude(q) && health.arm_state == APP_FAILSAFE);
+    assert(!app_get_rate_result(&result));
+    for (unsigned i = 0U; i < 4U; ++i)
+        assert(motor_pulse[i] == 1000U);
+    status = BSP_IMU_OK;
+    app_process(&pilot); /* Reinitializes the estimate after the long gap. */
+    assert(app_get_attitude(q));
+    assert(app_get_arm_state() == APP_FAILSAFE);
+
+    init_app();
+    assert(app_configure_rate(rate_config));
+    accel_mps2[1] = -2.538f;
+    accel_mps2[2] = -9.472f; /* Approximately +15 degrees of body roll. */
+    pilot.arm_requested = false;
+    pilot.throttle = NORM_Q15_ONE / 2;
+    pilot.yaw = 0;
+    app_process(&pilot);
+    tick += 2U;
+    app_process(&pilot);
+    assert(app_get_rate_result(&result));
+    assert(result.achieved.roll < -3300 && result.achieved.roll > -3500);
+    assert(result.achieved.pitch == 0 && result.achieved.yaw == 0);
+}
+
 int main(void) {
     init_app();
     app_status_t health;
@@ -297,6 +391,7 @@ int main(void) {
     init_app();
     assert(app_get_status(&health) && !health.imu_ready);
     receiver_switches[0] = receiver_switches[2] = 172U;
+    receiver_switches[1] = 172U;
     mixer_result_t preview;
     assert(!app_get_rate_result(&preview));
     app_rate_config_t rate_config = {.period_us = 1000};
@@ -543,6 +638,8 @@ int main(void) {
     assert(!health.imu_initialized && !health.imu_ready &&
            health.safety_reason == APP_SAFETY_IMU);
     assert(flight_mode_label && strcmp(flight_mode_label, "IMU INIT") == 0);
+
+    test_attitude_control(&rate_config);
     puts("App log/trace integration tests passed");
     return 0;
 }

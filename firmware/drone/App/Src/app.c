@@ -5,6 +5,7 @@
 #include "app_rate.h"
 #include "app_safety.h"
 #include "app_telemetry.h"
+#include "attitude_controller.h"
 #include "bsp_board.h"
 #include "bsp_time.h"
 #include "imu_calibration_store.h"
@@ -13,13 +14,35 @@
 #include <stddef.h>
 
 #define IMU_TIMEOUT_US 20000U
+#define MAHONY_HZ 200U
+#define ATTITUDE_CONTROL_HZ 100U
 #define MAHONY_KP_PER_S 2.0f
 #define MAHONY_KI_PER_S2 0.0f
+#define ATTITUDE_KP_PER_S 4.0f
+#define ATTITUDE_MAX_ANGLE_RAD (25.0f * 0.01745329252f)
+
+_Static_assert(BSP_IMU_ODR_HZ >= MAHONY_HZ && BSP_IMU_ODR_HZ % MAHONY_HZ == 0U,
+               "Mahony updates require an integer IMU decimation factor");
+_Static_assert(MAHONY_HZ >= ATTITUDE_CONTROL_HZ &&
+                   MAHONY_HZ % ATTITUDE_CONTROL_HZ == 0U,
+               "Attitude control requires an integer Mahony decimation factor");
 
 static app_imu_t imu;
-static mahony_t attitude;
-static uint32_t attitude_time_us;
-static bool attitude_valid;
+static struct {
+    mahony_t filter;
+    float gyro_delta_rad[3];
+    uint32_t sample_us;
+    uint32_t estimate_us;
+    uint32_t updates;
+    unsigned intervals;
+    bool valid;
+} attitude;
+static struct {
+    float rate_radps[2];
+    uint32_t attitude_updates;
+    bool have_update;
+    bool valid;
+} tilt_target;
 static app_command_t command;
 static app_rate_t rate;
 static bool imu_initialized;
@@ -36,12 +59,12 @@ static uint32_t last_control_ms;
 static bool attitude_reported;
 #endif
 
-#if DRONE_RTT && DRONE_LOG_LEVEL > APP_LOG_LEVEL_OFF
-static bsp_imu_result_t last_imu_status;
-
 static bool imu_failed(bsp_imu_result_t status) {
     return status != BSP_IMU_OK && status != BSP_IMU_NO_DATA;
 }
+
+#if DRONE_RTT && DRONE_LOG_LEVEL > APP_LOG_LEVEL_OFF
+static bsp_imu_result_t last_imu_status;
 
 static void log_imu_transition(bsp_imu_result_t status) {
     if (imu_failed(status) && status != last_imu_status) {
@@ -111,13 +134,10 @@ static void init_telemetry_schedule(void) {
 static inline void init_telemetry_schedule(void) {}
 #endif
 
-static bool imu_failed_for_rate(bsp_imu_result_t status) {
-    return status != BSP_IMU_OK && status != BSP_IMU_NO_DATA;
-}
-
 bool app_configure_rate(const app_rate_config_t *config) {
     /* Reconfiguration revokes motor permission immediately. */
     safety = (app_safety_t){0};
+    tilt_target.have_update = false;
     if (pwm_ready) {
         const norm_q15_t zero[APP_MOTOR_COUNT] = {0};
         if (!app_motor_set_all(zero)) {
@@ -136,31 +156,59 @@ bool app_get_rate_result(mixer_result_t *result) {
 }
 
 static void update_attitude(const app_imu_sample_t *sample) {
+    const uint32_t elapsed_us = sample->t_read_us - attitude.estimate_us;
+    const bool initialize = !attitude.valid || elapsed_us > IMU_TIMEOUT_US;
+    if (!initialize) {
+        const uint32_t interval_us = sample->t_read_us - attitude.sample_us;
+        if (interval_us == 0U)
+            return;
+        /* Retain the rotation from each sample interval when decimating. */
+        const float interval_s = interval_us * 1e-6f;
+        for (unsigned axis = 0; axis < 3U; ++axis) {
+            attitude.gyro_delta_rad[axis] +=
+                sample->gyro_radps[axis] * interval_s;
+        }
+        attitude.sample_us = sample->t_read_us;
+        if (++attitude.intervals < BSP_IMU_ODR_HZ / MAHONY_HZ)
+            return;
+    }
+
     const float *accel = sample->accel_mps2;
     const float accel_sq =
         accel[0] * accel[0] + accel[1] * accel[1] + accel[2] * accel[2];
     /* Reject gravity feedback outside approximately 0.8 to 1.2 g. */
     const bool gravity_usable =
         accel_sq >= 7.85f * 7.85f && accel_sq <= 11.77f * 11.77f;
-    const uint32_t elapsed_us = sample->t_read_us - attitude_time_us;
-    if (!attitude_valid || elapsed_us > IMU_TIMEOUT_US) {
-        attitude_valid = gravity_usable && mahony_init(&attitude, accel);
-    } else if (elapsed_us == 0U) {
-        return;
+    if (initialize) {
+        tilt_target.have_update = false;
+        attitude.valid = gravity_usable && mahony_init(&attitude.filter, accel);
     } else {
-        attitude_valid = mahony_update(
-            &attitude, sample->gyro_radps, gravity_usable ? accel : NULL,
-            elapsed_us * 1e-6f, MAHONY_KP_PER_S, MAHONY_KI_PER_S2);
+        const float dt_s = elapsed_us * 1e-6f;
+        const float inverse_dt = 1.0f / dt_s;
+        float mean_gyro_radps[3];
+        for (unsigned axis = 0; axis < 3U; ++axis) {
+            mean_gyro_radps[axis] = attitude.gyro_delta_rad[axis] * inverse_dt;
+        }
+        attitude.valid = mahony_update(&attitude.filter, mean_gyro_radps,
+                                       gravity_usable ? accel : NULL, dt_s,
+                                       MAHONY_KP_PER_S, MAHONY_KI_PER_S2);
     }
-    attitude_time_us = sample->t_read_us;
+    attitude.intervals = 0U;
+    for (unsigned axis = 0; axis < 3U; ++axis) {
+        attitude.gyro_delta_rad[axis] = 0.0f;
+    }
+    attitude.sample_us = sample->t_read_us;
+    attitude.estimate_us = sample->t_read_us;
+    if (attitude.valid)
+        attitude.updates++;
 }
 
 static void process_imu(void) {
     const bsp_imu_result_t status = app_imu_poll(&imu);
     log_imu_transition(status);
-    if (imu_failed_for_rate(status)) {
+    if (imu_failed(status)) {
         imu_available = false;
-        attitude_valid = false;
+        attitude.valid = false;
     }
     if (status == BSP_IMU_OK) {
         imu_available = true;
@@ -174,6 +222,30 @@ static bool imu_healthy(void) {
                                        imu.sample.t_read_us) <= IMU_TIMEOUT_US;
 }
 
+static bool attitude_is_fresh(void) {
+    return attitude.valid && (uint32_t)(bsp_time_now_us() -
+                                        attitude.estimate_us) <= IMU_TIMEOUT_US;
+}
+
+static bool process_tilt_target(void) {
+    if (!attitude_is_fresh()) {
+        tilt_target.have_update = false;
+        return false;
+    }
+    if (!tilt_target.have_update ||
+        (uint32_t)(attitude.updates - tilt_target.attitude_updates) >=
+            MAHONY_HZ / ATTITUDE_CONTROL_HZ) {
+        const float angle_per_q15 = ATTITUDE_MAX_ANGLE_RAD / NORM_Q15_ONE;
+        tilt_target.valid = attitude_controller_step(
+            attitude.filter.q, command.roll * angle_per_q15,
+            command.pitch * angle_per_q15, ATTITUDE_KP_PER_S,
+            tilt_target.rate_radps);
+        tilt_target.attitude_updates = attitude.updates;
+        tilt_target.have_update = true;
+    }
+    return tilt_target.valid;
+}
+
 app_arm_state_t app_get_arm_state(void) {
     return safety.state;
 }
@@ -183,10 +255,19 @@ static void process_rate(void) {
     /* Sensor freshness is independent of the controller's consumed timestamp.
      */
     if (!command.valid || !imu_healthy()) {
+        tilt_target.have_update = false;
         app_rate_reset(&rate);
         return;
     }
     if (!rate.configured)
+        return;
+    const bool use_attitude = command.mode != APP_COMMAND_SWITCH_LOW;
+    if (use_attitude && !process_tilt_target()) {
+        rate_failed = true;
+        app_rate_reset(&rate);
+        return;
+    }
+    if (!imu.sample_valid)
         return;
     if (rate.have_time && (uint32_t)(imu.sample.t_read_us - rate.previous_us) <
                               rate.config.period_us) {
@@ -194,8 +275,9 @@ static void process_rate(void) {
     }
     /* Use the latest sample once; never replay missed controller iterations. */
     const bool had_time = rate.have_time;
-    const bool calculated = app_rate_step(
-        &rate, &command, imu.sample.gyro_radps, imu.sample.t_read_us);
+    const bool calculated = app_rate_step_with_tilt(
+        &rate, &command, use_attitude ? tilt_target.rate_radps : NULL,
+        imu.sample.gyro_radps, imu.sample.t_read_us);
     rate_failed = !calculated && (had_time || !rate.have_time);
 }
 
@@ -281,7 +363,7 @@ static void process_periodic_telemetry(void) {
         float q[4];
         const bool fresh = app_get_attitude(q);
         if (fresh) {
-            (void)app_telemetry_write_attitude(q, attitude_time_us);
+            (void)app_telemetry_write_attitude(q, attitude.estimate_us);
         }
         if (fresh != attitude_reported) {
             if (fresh)
@@ -312,18 +394,19 @@ bool app_get_status(app_status_t *status) {
 }
 
 bool app_get_attitude(float body_to_ned[4]) {
-    if (body_to_ned == NULL || !attitude_valid ||
-        (uint32_t)(bsp_time_now_us() - attitude_time_us) > IMU_TIMEOUT_US) {
+    if (body_to_ned == NULL || !attitude_is_fresh()) {
         return false;
     }
     for (size_t i = 0; i < 4; ++i) {
-        body_to_ned[i] = attitude.q[i];
+        body_to_ned[i] = attitude.filter.q[i];
     }
     return true;
 }
 
 void app_init(void) {
-    attitude_valid = false;
+    attitude.valid = false;
+    attitude.updates = 0U;
+    tilt_target.have_update = false;
     command = (app_command_t){0};
     rate = (app_rate_t){0};
     imu_available = false;
@@ -354,6 +437,8 @@ void app_init(void) {
 
 void app_process(const app_command_t *input) {
     command = input != NULL && input->valid ? *input : (app_command_t){0};
+    if (command.mode == APP_COMMAND_SWITCH_LOW)
+        tilt_target.have_update = false;
     process_imu();
     process_rate();
     process_motor();

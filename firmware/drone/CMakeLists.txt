@@ -79,7 +79,8 @@ drone_imu_sources(${CMAKE_PROJECT_NAME} ${DRONE_IMU})
 # Add user sources to executable when needed:
 target_sources(
     ${CMAKE_PROJECT_NAME}
-    PRIVATE Control/Src/mixer.c
+    PRIVATE Control/Src/attitude_controller.c
+            Control/Src/mixer.c
             Control/Src/rate_controller.c
             Control/Src/mahony.c
             Control/Src/gyro_bias.c

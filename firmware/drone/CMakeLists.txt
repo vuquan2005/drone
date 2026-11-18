@@ -50,6 +50,8 @@ option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry ove
 
 option(DRONE_DEBUG_FORCE_FLIGHT "Enter FLIGHT without waiting for RC boot selection" OFF)
 
+option(DRONE_FLASH_BOARD_SMOKE "Run only the SWD SPI flash board check" OFF)
+
 option(DRONE_ENABLE_RATE_CONTROL "Configure rate controller with initial bench gains" ON)
 option(DRONE_ENABLE_BENCH_IDLE_DISARM "Disarm after 5 s of low throttle on the bench" ON)
 
@@ -87,6 +89,7 @@ target_sources(
             Control/Src/gyro_bias.c
             Control/Src/accel_calibration.c
             BSP/Src/bsp_board.c
+            BSP/Src/bsp_flash.c
             BSP/Src/bsp_imu_flash.c
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
@@ -104,6 +107,11 @@ target_sources(
             App/Src/app_motor.c
             App/Src/app_receiver.c
             App/Src/crsf.c)
+
+if(DRONE_FLASH_BOARD_SMOKE)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE tests/flash/board_smoke.c)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_FLASH_BOARD_SMOKE=1)
+endif()
 
 # Add include paths
 target_include_directories(

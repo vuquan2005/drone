@@ -13,6 +13,30 @@ from session_writer import IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS
 
 
 class SessionReaderTests(unittest.TestCase):
+    def test_rate_reset_rows_break_traces_without_resetting_time(self):
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "rate_20261119.csv"
+            with path.open("w", newline="") as file:
+                writer = csv.writer(file)
+                writer.writerow(("segment", *RATE_FIELDS))
+                for seq, stamp, dt, flags in (
+                    (1, 0, 0, 1),
+                    (2, 2**32 - 150000, 2000, 3),
+                    (3, 0, 0, 1),
+                    (4, 0, 0, 1),
+                    (5, 0, 2000, 3),
+                    (6, 50000, 2000, 3),
+                    (7, 0, 0, 1),
+                ):
+                    writer.writerow((1, seq, stamp, dt, flags, *([0.0] * 16)))
+            segments, _ = read_session(root)
+            points = segments[1].rate_points
+            self.assertEqual([point[0] for point in points], [0, 0, 0, 0, 0.15, 0.2, 0.2])
+            self.assertEqual(
+                [all(math.isnan(value) for value in point[1:]) for point in points],
+                [True, False, True, True, False, False, True],
+            )
+
     def test_full_history_wrap_gap_segments_and_raw_units(self):
         with tempfile.TemporaryDirectory() as root:
             path = Path(root)

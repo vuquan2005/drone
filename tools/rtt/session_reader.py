@@ -64,15 +64,24 @@ def read_session(directory):
                         if state.series.points.maxlen is not None:
                             state.series.points = deque(state.series.points)
                         seq, stamp = values[:2]
+                        # A reset Rate frame has no sample timestamp. Keep it as a
+                        # plot break at the last known time until a timestamp arrives.
+                        if kind == 5 and values[1:4] == [0, 0, 1]:
+                            stamp = None
                         elapsed, last_seq, last_stamp = previous.get(segment, (0, None, None))
                         gap = False
                         if last_seq is not None:
                             ds = (seq - last_seq) % 2**32
-                            dt = (stamp - last_stamp) % 2**32
-                            if ds == 0 or ds >= 2**31 or dt >= 2**31:
+                            if ds == 0 or ds >= 2**31:
                                 raise ValueError("nonmonotonic stream within segment")
-                            elapsed += dt
                             gap = ds > 1
+                        if stamp is not None:
+                            if last_stamp is not None:
+                                dt = (stamp - last_stamp) % 2**32
+                                if dt >= 2**31:
+                                    raise ValueError("nonmonotonic stream within segment")
+                                elapsed += dt
+                            last_stamp = stamp
                         if kind == 6 and state.attitude_points.maxlen is not None:
                             state.attitude_points = deque(state.attitude_points)
                         # Rate CSV has MCU timestamps, unlike the live host-time plot.
@@ -86,7 +95,7 @@ def read_session(directory):
                             if gap:
                                 history.append((point[0], *([float("nan")] * 16)))
                             history.append(point)
-                        previous[segment] = (elapsed, seq, stamp)
+                        previous[segment] = (elapsed, seq, last_stamp)
                     except (ValueError, OverflowError, struct.error) as error:
                         raise ValueError(f"{path.name}:{line_number}: {error}") from error
     if not segments:

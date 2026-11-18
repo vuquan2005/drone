@@ -95,6 +95,7 @@ target_sources(
             BSP/Src/bsp_receiver.c
             BSP/Src/bsp_motor_pwm.c
             App/Src/runtime.c
+            App/Src/app_flash_journal.c
             App/Src/esc_calibration.c
             App/Src/imu_calibration.c
             App/Src/imu_calibration_store.c

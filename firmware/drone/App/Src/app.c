@@ -25,6 +25,9 @@ static bool imu_available;
 static bool pwm_ready;
 static bool rate_failed;
 static app_safety_t safety;
+#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_WARN
+static bool last_arm_requested;
+#endif
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_stats_ms;
 static uint32_t last_control_ms;
@@ -66,36 +69,6 @@ static inline void log_imu_transition(bsp_imu_result_t status) {
 static inline void log_imu_init(void) {}
 #endif
 
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_INFO
-static void log_command_transition(const app_command_t *previous) {
-    if (!command.valid) {
-        if (previous->valid) {
-            APP_LOG_INFO("command", "valid=0");
-        }
-        return;
-    }
-    if (previous->valid && previous->arm_requested == command.arm_requested &&
-        previous->mode == command.mode &&
-        previous->esc_calibration_requested ==
-            command.esc_calibration_requested &&
-        previous->telemetry_mode == command.telemetry_mode) {
-        return;
-    }
-    static const char *const mode_names[] = {"low", "middle", "high"};
-    static const char *const telemetry_names[] = {"off", "stream", "record"};
-    APP_LOG_INFO("command",
-                 "valid=1 arm_requested=%u mode=%s "
-                 "esc_calibration_requested=%u telemetry=%s",
-                 (unsigned)command.arm_requested, mode_names[command.mode],
-                 (unsigned)command.esc_calibration_requested,
-                 telemetry_names[command.telemetry_mode]);
-}
-#else
-static inline void log_command_transition(const app_command_t *previous) {
-    (void)previous;
-}
-#endif
-
 static void init_motor(void) {
     pwm_ready = app_motor_init();
     if (pwm_ready) {
@@ -119,12 +92,6 @@ static void init_telemetry_schedule(void) {
 #else
 static inline void init_telemetry_schedule(void) {}
 #endif
-
-static void process_command(const app_command_t *input) {
-    const app_command_t previous = command;
-    command = input != NULL && input->valid ? *input : (app_command_t){0};
-    log_command_transition(&previous);
-}
 
 static bool imu_failed_for_rate(bsp_imu_result_t status) {
     return status != BSP_IMU_OK && status != BSP_IMU_NO_DATA;
@@ -214,15 +181,52 @@ static void process_rate(void) {
     rate_failed = !calculated && (had_time || !rate.have_time);
 }
 
+#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_WARN
+static void log_arm_result(app_arm_state_t previous, app_safety_reason_t reason,
+                           bool pwm_failed) {
+    static const char *const reason_names[] = {
+        [APP_SAFETY_RC] = "rc_invalid",
+        [APP_SAFETY_IMU] = "imu_unhealthy",
+        [APP_SAFETY_CONTROL] = "control_unhealthy",
+        [APP_SAFETY_PWM] = "pwm_failure",
+        [APP_SAFETY_CALIBRATION] = "esc_calibration_requested",
+        [APP_SAFETY_ARM_OFF_REQUIRED] = "arm_off_required",
+        [APP_SAFETY_THROTTLE_HIGH] = "throttle_high",
+    };
+    const bool new_request =
+        command.valid && command.arm_requested && !last_arm_requested;
+    /* A lost RC link does not establish that the switch went OFF. */
+    if (command.valid)
+        last_arm_requested = command.arm_requested;
+    if (pwm_failed)
+        return;
+    if (previous == APP_ARMED && safety.state == APP_FAILSAFE) {
+        APP_LOG_WARN("arm", "failsafe reason=%s", reason_names[reason]);
+    } else if (previous == APP_ARMED && safety.state == APP_DISARMED) {
+        APP_LOG_INFO("arm", "disarmed");
+    } else if (previous != APP_ARMED && safety.state == APP_ARMED) {
+        APP_LOG_INFO("arm", "armed");
+    } else if (new_request && reason != APP_SAFETY_OK) {
+        APP_LOG_WARN("arm", "rejected reason=%s", reason_names[reason]);
+    }
+}
+#else
+static inline void log_arm_result(app_arm_state_t previous,
+                                  app_safety_reason_t reason, bool pwm_failed) {
+    (void)previous;
+    (void)reason;
+    (void)pwm_failed;
+}
+#endif
+
 static void process_motor(void) {
     const app_arm_state_t previous = safety.state;
-    app_safety_update(&safety, &command, imu_healthy(),
-                      rate.configured && !rate_failed, pwm_ready);
+    const app_safety_reason_t reason =
+        app_safety_update(&safety, &command, imu_healthy(),
+                          rate.configured && !rate_failed, pwm_ready);
     if (previous != safety.state &&
         (previous == APP_ARMED || safety.state == APP_ARMED)) {
         app_rate_reset(&rate);
-        APP_LOG_INFO("arm", "state=%u reason=%u", (unsigned)safety.state,
-                     (unsigned)safety.reason);
     }
     norm_q15_t output[APP_MOTOR_COUNT] = {0};
     if (safety.state == APP_ARMED && command.throttle > APP_ARM_THROTTLE_MAX &&
@@ -236,13 +240,17 @@ static void process_motor(void) {
         /* Mixer can raise collective at zero throttle; bypass it at idle. */
         app_rate_reset(&rate);
     }
-    if (pwm_ready && !app_motor_set_all(output)) {
+    const bool pwm_failed = pwm_ready && !app_motor_set_all(output);
+    if (pwm_failed) {
         pwm_ready = false;
         app_motor_stop();
         app_safety_update(&safety, &command, imu_healthy(), false, false);
         app_rate_reset(&rate);
-        APP_LOG_ERROR("arm", "PWM failure: outputs disabled until app_init");
+        APP_LOG_ERROR(
+            "arm",
+            "failsafe reason=pwm_failure outputs disabled until app_init");
     }
+    log_arm_result(previous, reason, pwm_failed);
 }
 
 #if DRONE_RTT && DRONE_TELEMETRY
@@ -301,6 +309,9 @@ void app_init(void) {
     imu_available = false;
     pwm_ready = false;
     safety = (app_safety_t){0};
+#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_WARN
+    last_arm_requested = false;
+#endif
 #if DRONE_RATE_CONTROL
     /* Bench gains only; motor permission is owned by the arm/failsafe state.
      */
@@ -312,9 +323,9 @@ void app_init(void) {
         .period_us = 2000U};
     const bool rate_ready = app_configure_rate(&rate_config);
     (void)rate_ready;
-    APP_LOG_INFO("rate",
-                 "configured=%u period_us=2000 P=0.1 I=0 D=0 max_radps=2",
-                 (unsigned)rate_ready);
+    APP_LOG_DEBUG("rate",
+                  "configured=%u period_us=2000 P=0.1 I=0 D=0 max_radps=2",
+                  (unsigned)rate_ready);
 #endif
     init_motor();
     init_imu();
@@ -322,7 +333,7 @@ void app_init(void) {
 }
 
 void app_process(const app_command_t *input) {
-    process_command(input);
+    command = input != NULL && input->valid ? *input : (app_command_t){0};
     process_imu();
     process_rate();
     process_motor();

@@ -206,10 +206,7 @@ int main(void) {
     process_app();
     assert(command.valid);
     assert(command.roll == -NORM_Q15_ONE);
-    assert(drain(0U, output) > 0U);
-    assert(strstr(output,
-                  "[I][command] valid=1 arm_requested=0 mode=middle "
-                  "esc_calibration_requested=0 telemetry=record\n") != NULL);
+    assert(drain(0U, output) == 0U);
     assert(drain(1U, output) == 0U);
     tick = 549U;
     process_app();
@@ -222,18 +219,15 @@ int main(void) {
     process_app();
     assert(command.roll == NORM_Q15_ONE);
     assert(drain(0U, output) == 0U);
-    const char *expected[] = {"arm_requested=1", "mode=high",
-                              "esc_calibration_requested=1",
-                              "telemetry=stream"};
-    for (unsigned i = 0; i < 4U; ++i) {
+    receiver_switches[0] = 1811U;
+    process_app();
+    assert(drain(0U, output) > 0U);
+    assert(strcmp(output, "[550][W][arm] rejected reason=imu_unhealthy\n") ==
+           0);
+    process_app();
+    assert(drain(0U, output) == 0U);
+    for (unsigned i = 1; i < 4U; ++i) {
         receiver_switches[i] = 1811U;
-        process_app();
-        assert(drain(0U, output) > 0U);
-        assert(strstr(output, expected[i]) != NULL);
-        assert(strstr(output, "roll=") == NULL &&
-               strstr(output, "pitch=") == NULL);
-        assert(strstr(output, "yaw=") == NULL &&
-               strstr(output, "throttle=") == NULL);
         process_app();
         assert(drain(0U, output) == 0U);
     }
@@ -242,14 +236,12 @@ int main(void) {
     assert(!command.valid);
     assert(command.roll == 0 && command.throttle == 0 &&
            !command.arm_requested);
-    assert(drain(0U, output) > 0U);
-    assert(strstr(output, "[I][command] valid=0\n") != NULL);
+    assert(drain(0U, output) == 0U);
     process_app();
     assert(drain(0U, output) == 0U);
     receiver_connected = true;
     process_app();
-    assert(drain(0U, output) > 0U);
-    assert(strstr(output, "valid=1 arm_requested=1") != NULL);
+    assert(drain(0U, output) == 0U);
     init_app();
     assert(app_get_status(&health) && !health.imu_ready);
     receiver_switches[0] = receiver_switches[2] = 172U;
@@ -334,13 +326,31 @@ int main(void) {
     tick++;
     process_app();
     assert(app_get_arm_state() != APP_ARMED);
+    drain(0U, output);
+    assert(strstr(output, "[W][arm] rejected reason=arm_off_required\n") !=
+           NULL);
     receiver_switches[0] = 172;
     tick++;
+    process_app();
+    receiver_switches[0] = 1811;
+    receiver_throttle = 992;
+    tick++;
+    process_app();
+    assert(app_get_arm_state() == APP_DISARMED);
+    drain(0U, output);
+    assert(strstr(output, "[W][arm] rejected reason=throttle_high\n") != NULL);
+    receiver_throttle = 172;
+    process_app();
+    assert(app_get_arm_state() == APP_DISARMED);
+    assert(drain(0U, output) == 0U);
+    receiver_switches[0] = 172;
     process_app();
     receiver_switches[0] = 1811;
     tick++;
     process_app();
     assert(app_get_arm_state() == APP_ARMED);
+    drain(0U, output);
+    assert(strstr(output, "[I][arm] armed\n") != NULL);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     receiver_throttle = 992;
@@ -354,6 +364,8 @@ int main(void) {
     status = BSP_IMU_NO_DATA;
     process_app();
     assert(app_get_arm_state() == APP_DISARMED);
+    drain(0U, output);
+    assert(strstr(output, "[I][arm] disarmed\n") != NULL);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     receiver_throttle = 172;
@@ -366,6 +378,8 @@ int main(void) {
     tick += 21;
     process_app();
     assert(app_get_arm_state() == APP_FAILSAFE);
+    drain(0U, output);
+    assert(strstr(output, "[W][arm] failsafe reason=imu_unhealthy\n") != NULL);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     receiver_switches[0] = 172;
@@ -380,6 +394,8 @@ int main(void) {
     status = BSP_IMU_NO_DATA;
     process_app();
     assert(app_get_arm_state() == APP_FAILSAFE);
+    drain(0U, output);
+    assert(strstr(output, "[W][arm] failsafe reason=rc_invalid\n") != NULL);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     receiver_connected = true;
@@ -402,6 +418,8 @@ int main(void) {
     pwm_write_ok = false;
     process_app();
     assert(pwm_stops == 1);
+    drain(0U, output);
+    assert(strstr(output, "[E][arm] failsafe reason=pwm_failure ") != NULL);
     pwm_write_ok = true;
     process_app();
     assert(app_get_arm_state() == APP_FAILSAFE && pwm_stops == 1);
@@ -414,10 +432,14 @@ int main(void) {
     tick += 50U;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
+    assert(drain(0U, output) == 0U);
     assert(drain(1U, output) == 60U); /* RC visible before mode selection. */
     receiver_connected = true;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT && runtime_mode_supported());
+    drain(0U, output);
+    assert(strstr(output, "[I][runtime] selected mode=flight supported=1\n") !=
+           NULL);
     assert(app_configure_rate(&rate_config));
     tick += 50U;
     status = BSP_IMU_OK;

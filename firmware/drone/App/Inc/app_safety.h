@@ -11,7 +11,9 @@ typedef enum {
     APP_SAFETY_IMU,
     APP_SAFETY_CONTROL,
     APP_SAFETY_PWM,
-    APP_SAFETY_CALIBRATION
+    APP_SAFETY_CALIBRATION,
+    APP_SAFETY_ARM_OFF_REQUIRED,
+    APP_SAFETY_THROTTLE_HIGH
 } app_safety_reason_t;
 
 /** Zero-initialize in one foreground context. A healthy OFF observation permits
@@ -30,8 +32,12 @@ typedef struct {
  * whenever state is not ARMED, and reset controller on transitions involving
  * ARMED. No auto-arming. state must be non-NULL, initialized, and distinct from
  * command. Nonblocking; inputs consumed synchronously; serialized foreground
- * only. */
-void app_safety_update(app_safety_t *state, const app_command_t *command,
-                       bool imu_healthy, bool control_healthy,
-                       bool pwm_healthy);
+ * only.
+ * @return Current fault or arm rejection reason, or APP_SAFETY_OK if there
+ * is no fault or rejection. A healthy ON that remains blocked in FAILSAFE
+ * preserves the recorded fault in state->reason. */
+app_safety_reason_t app_safety_update(app_safety_t *state,
+                                      const app_command_t *command,
+                                      bool imu_healthy, bool control_healthy,
+                                      bool pwm_healthy);
 #endif

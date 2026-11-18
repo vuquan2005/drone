@@ -30,7 +30,7 @@ void runtime_init(void) {
 #if DRONE_RTT && DRONE_TELEMETRY
     last_receiver_ms = HAL_GetTick();
 #endif
-    APP_LOG_INFO("runtime", "waiting for boot mode selection");
+    APP_LOG_DEBUG("runtime", "waiting for boot mode selection");
 }
 
 bool runtime_mode_supported(void) {
@@ -79,9 +79,16 @@ void runtime_process(void) {
 #endif
     if (mode == RUNTIME_BOOT_SELECT) {
         mode = select_mode();
+#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_INFO
+        static const char *const mode_names[] = {
+            [RUNTIME_FLIGHT] = "flight",
+            [RUNTIME_ESC_CALIB] = "esc_calib",
+            [RUNTIME_FLASH_EXPORT] = "flash_export",
+        };
         if (mode != RUNTIME_BOOT_SELECT)
-            APP_LOG_INFO("runtime", "selected mode=%u supported=%u",
-                         (unsigned)mode, (unsigned)runtime_mode_supported());
+            APP_LOG_INFO("runtime", "selected mode=%s supported=%u",
+                         mode_names[mode], (unsigned)runtime_mode_supported());
+#endif
         if (mode == RUNTIME_FLIGHT) {
             app_init();
         } else if (mode == RUNTIME_ESC_CALIB) {

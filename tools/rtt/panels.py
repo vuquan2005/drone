@@ -9,6 +9,9 @@ import pyqtgraph as pg
 
 from telemetry import attitude_degrees
 
+AXIS_COLORS = ("#d1495b", "#218739", "#246bc1")
+AXIS_LINE_WIDTH = 1
+
 
 class ImuPanel(pg.GraphicsLayoutWidget):
     def __init__(self):
@@ -16,17 +19,21 @@ class ImuPanel(pg.GraphicsLayoutWidget):
         self.setBackground("w")
         self.plots, self.curves = [], []
         for index, (title, unit) in enumerate((("Acceleration", "m/s²"), ("Gyroscope", "rad/s"))):
-            plot = self.addPlot(row=index, col=0, title=f"{title} · FRD")
+            plot = self.addPlot(row=index, col=0, title=title)
             plot.setLabel("left", unit)
             plot.getAxis("left").enableAutoSIPrefix(False)
-            plot.setLabel("bottom", "MCU time from session start", units="s")
+            plot.setLabel("bottom", "Elapsed time", units="s")
             plot.showGrid(x=True, y=True, alpha=0.2)
             plot.addLegend()
             self.plots.append(plot)
             self.curves.append(
                 [
-                    plot.plot(name=axis, pen=pg.mkPen(color, width=1), connect="finite")
-                    for axis, color in zip("XYZ", ("#d1495b", "#218739", "#246bc1"))
+                    plot.plot(
+                        name=axis,
+                        pen=pg.mkPen(color, width=AXIS_LINE_WIDTH),
+                        connect="finite",
+                    )
+                    for axis, color in zip("XYZ", AXIS_COLORS)
                 ]
             )
         self.plots[1].setXLink(self.plots[0])
@@ -58,10 +65,10 @@ class RatePanel(QtWidgets.QWidget):
         layout.addWidget(self.graph)
         self.curves = []
         self.plots = []
-        colors = ("#d1495b", "#218739", "#246bc1", "#8f50aa")
+        colors = (*AXIS_COLORS, "#8f50aa")
         groups = [
             (
-                axis + " · FRD",
+                axis,
                 "rad/s",
                 row,
                 0,
@@ -97,13 +104,20 @@ class RatePanel(QtWidgets.QWidget):
             plot.setLabel("left", unit)
             plot.getAxis("left").enableAutoSIPrefix(False)
             if row == 2:
-                plot.setLabel("bottom", "Host time from segment start", units="s")
+                plot.setLabel("bottom", "Elapsed time", units="s")
             plot.showGrid(x=True, y=True, alpha=0.2)
             plot.addLegend()
             plot.setXRange(0, 10, padding=0)
             for name, column, color in traces:
                 self.curves.append(
-                    (plot.plot(name=name, pen=pg.mkPen(color, width=1), connect="finite"), column)
+                    (
+                        plot.plot(
+                            name=name,
+                            pen=pg.mkPen(color, width=AXIS_LINE_WIDTH),
+                            connect="finite",
+                        ),
+                        column,
+                    )
                 )
             if self.plots:
                 plot.setXLink(self.plots[0])
@@ -129,13 +143,13 @@ class AttitudeModel(pg.PlotWidget):
 
     # Screen right and screen up, expressed in NED.
     camera = np.array(((0.6, 0.8, 0), (0.4, -0.3, -np.sqrt(0.75))))
-    hubs = np.array(((0.53, -0.53, 0), (-0.53, 0.53, 0), (0.53, 0.53, 0), (-0.53, -0.53, 0)))
 
     def __init__(self):
-        super().__init__(background="w")
+        super().__init__()
+        self.setBackground("w")
         self.setMinimumSize(220, 220)
         self.setAspectLocked()
-        self.setRange(xRange=(-1.3, 1.3), yRange=(-1.3, 1.3), padding=0)
+        self.setRange(xRange=(-1.2, 1.2), yRange=(-1.2, 1.2), padding=0)
         self.disableAutoRange()
         self.setMouseEnabled(x=False, y=False)
         self.setMenuEnabled(False)
@@ -143,36 +157,33 @@ class AttitudeModel(pg.PlotWidget):
         self.hideAxis("left")
         self.hideAxis("bottom")
 
-        for offset in np.linspace(-1, 1, 9):
-            for line in (
-                ((offset, -1, 0.72), (offset, 1, 0.72)),
-                ((-1, offset, 0.72), (1, offset, 0.72)),
+        # Fixed NED reference plane, projected with the same orthographic camera.
+        grid_extent = 0.75
+        grid_down = 0.72
+        self.grid = []
+        grid_pen = pg.mkPen("#e8edf2", width=0.7)
+        for offset in np.linspace(-grid_extent, grid_extent, 9):
+            for points in (
+                ((offset, -grid_extent, grid_down), (offset, grid_extent, grid_down)),
+                ((-grid_extent, offset, grid_down), (grid_extent, offset, grid_down)),
             ):
-                self.plot(*(np.asarray(line) @ self.camera.T).T, pen="#e3e8ee")
+                projected = np.asarray(points) @ self.camera.T
+                self.grid.append(self.plot(*projected.T, pen=grid_pen))
 
-        self.arms = self.plot(pen=pg.mkPen("#334155", width=5), connect="pairs")
-        self.rotors = self.plot(
-            pen=None, symbol="o", symbolSize=16, symbolBrush="#e2e8f0", symbolPen="#334155"
-        )
-        self.nose = self.plot(
-            pen=None, symbol="o", symbolSize=8, symbolBrush="#f59e0b", symbolPen=None
-        )
         self.axes = []
         for name, color in (
-            ("X · Forward", "#b91c1c"),
-            ("Y · Right", "#15803d"),
-            ("Z · Down", "#1d4ed8"),
+            ("X · Forward", AXIS_COLORS[0]),
+            ("Y · Right", AXIS_COLORS[1]),
+            ("Z · Down", AXIS_COLORS[2]),
         ):
-            line = self.plot(pen=pg.mkPen(color, width=2))
-            label = pg.TextItem(
-                name, color=color, anchor=(0.5, 0.5), fill=pg.mkBrush(255, 255, 255, 220)
-            )
+            line = self.plot(pen=pg.mkPen(color, width=AXIS_LINE_WIDTH))
+            label = pg.TextItem(name, color=color, anchor=(0.5, 0.5))
             self.addItem(label)
             self.axes.append((line, label))
         self.set_quaternion(None)
 
     def set_quaternion(self, q):
-        items = (self.arms, self.rotors, self.nose, *(item for pair in self.axes for item in pair))
+        items = tuple(item for pair in self.axes for item in pair)
         for item in items:
             item.setVisible(q is not None)
         if q is None:
@@ -187,10 +198,6 @@ class AttitudeModel(pg.PlotWidget):
             )
         )
         body_to_screen = self.camera @ body_to_ned
-        hubs = self.hubs @ body_to_screen.T
-        self.arms.setData(*hubs.T)
-        self.rotors.setData(*hubs.T)
-        self.nose.setData(*((0.43 * body_to_screen[:, 0])[:, None]))
         for axis, (line, label) in enumerate(self.axes):
             tip_x, tip_y = body_to_screen[:, axis]
             line.setData([0, tip_x], [0, tip_y])
@@ -201,8 +208,6 @@ class AttitudePanel(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
         layout = QtWidgets.QVBoxLayout(self)
-        self.status = QtWidgets.QLabel()
-        layout.addWidget(self.status)
         graph = pg.PlotWidget(background="w")
         content = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.model = AttitudeModel()
@@ -210,16 +215,16 @@ class AttitudePanel(QtWidgets.QWidget):
         content.addWidget(graph)
         content.setStretchFactor(0, 1)
         content.setStretchFactor(1, 2)
-        layout.addWidget(content)
+        layout.addWidget(content, 1)
+        self.status = QtWidgets.QLabel("Waiting for attitude")
+        layout.insertWidget(0, self.status)
         self.plot = graph.getPlotItem()
         self.plot.setLabel("left", "Angle (°)")
         self.plot.showGrid(x=True, y=True, alpha=0.2)
         self.plot.addLegend()
         self.curves = [
-            self.plot.plot(name=axis, pen=pg.mkPen(color, width=2), connect="finite")
-            for axis, color in zip(
-                ("Roll", "Pitch", "Yaw (relative)"), ("#d1495b", "#218739", "#246bc1")
-            )
+            self.plot.plot(name=axis, pen=pg.mkPen(color, width=AXIS_LINE_WIDTH), connect="finite")
+            for axis, color in zip(("Roll", "Pitch", "Yaw"), AXIS_COLORS)
         ]
 
     def update_attitude(self, state, now=None):
@@ -228,25 +233,19 @@ class AttitudePanel(QtWidgets.QWidget):
         age = now - state.attitude_received_at if not saved and sample is not None else 0
         self.model.set_quaternion(sample[2:] if sample is not None and age <= 0.25 else None)
         if sample is None:
-            self.status.setText(
-                "No saved attitude telemetry" if saved else "Waiting for Mahony attitude"
-            )
+            self.status.setText("No saved attitude" if saved else "Waiting for attitude")
         elif age > 0.25:
-            self.status.setText(f"Mahony estimate stale · {age:.2f} s")
+            self.status.setText(f"Attitude stale · {age:.2f} s")
         else:
             roll, pitch, yaw = attitude_degrees(sample[2:])
-            self.status.setText(
-                f"Mahony · roll {roll:+.1f}° · pitch {pitch:+.1f}° · relative yaw {yaw:+.1f}°"
-            )
+            self.status.setText(f"Roll {roll:+.1f}°    Pitch {pitch:+.1f}°    Yaw {yaw:+.1f}°")
         data = np.asarray(state.attitude_points, dtype=float)
         for axis, curve in enumerate(self.curves, 1):
             if data.size:
                 curve.setData(data[:, 0], data[:, axis])
             else:
                 curve.setData([], [])
-        self.plot.setLabel(
-            "bottom", "MCU elapsed time" if saved else "Host elapsed time", units="s"
-        )
+        self.plot.setLabel("bottom", "Elapsed time", units="s")
         if saved:
             self.plot.enableAutoRange()
         else:

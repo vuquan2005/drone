@@ -99,7 +99,7 @@ class Viewer(QtWidgets.QMainWindow):
         self.receiver_panel = ReceiverPanel()
         self.rate_panel = RatePanel()
         self.attitude_panel = AttitudePanel()
-        tabs.addTab(self.imu_panel, "IMU")
+        tabs.addTab(self.imu_panel, "IMU · FRD")
         tabs.addTab(self.receiver_panel, "Receiver · RC")
         tabs.addTab(self.rate_panel, "Rate · FRD")
         tabs.addTab(self.attitude_panel, "Attitude")

@@ -57,6 +57,10 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
+set_property(
+    TARGET ${CMAKE_PROJECT_NAME}
+    APPEND
+    PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/STM32F103xx_FLASH.ld)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -78,12 +82,16 @@ target_sources(
     PRIVATE Control/Src/mixer.c
             Control/Src/rate_controller.c
             Control/Src/mahony.c
+            Control/Src/gyro_bias.c
             BSP/Src/bsp_board.c
+            BSP/Src/bsp_imu_flash.c
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
             BSP/Src/bsp_motor_pwm.c
             App/Src/runtime.c
             App/Src/esc_calibration.c
+            App/Src/imu_calibration.c
+            App/Src/imu_calibration_store.c
             App/Src/app.c
             App/Src/app_rate.c
             App/Src/app_safety.c

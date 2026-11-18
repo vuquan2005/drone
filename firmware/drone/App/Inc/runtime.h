@@ -8,6 +8,7 @@ typedef enum {
     RUNTIME_FLIGHT,
     RUNTIME_ESC_CALIB,
     RUNTIME_FLASH_EXPORT,
+    RUNTIME_IMU_CALIB,
 } runtime_mode_t;
 
 /** Initialize shared RC input and disable motor outputs before selection.
@@ -19,17 +20,18 @@ typedef enum {
 void runtime_init(void);
 
 /** Poll RC once and dispatch the selected mode from serialized foreground.
- * Requires runtime_init. BOOT_SELECT waits for valid RC. CH7/SB HIGH selects
- * ESC_CALIB with priority. With CH7 below HIGH, telemetry STREAM selects
+ * Requires runtime_init. BOOT_SELECT waits for valid RC. CH7/SB HIGH with
+ * CH6/SC MIDDLE selects IMU_CALIB. Other CH7 HIGH requests select ESC_CALIB.
+ * With CH7 below HIGH, telemetry STREAM selects
  * FLASH_EXPORT and OFF/RECORD select FLIGHT. Arm and throttle are ignored
  * during mode selection.
- * CH6/SC is a flight-mode request and never selects a maintenance operation.
+ * After boot selection, CH6/SC remains the flight-mode request in FLIGHT.
  * CH8/SD retains its telemetry request meaning after FLIGHT is selected.
  * Selection latches until reset. ESC_CALIB initializes its own PWM session;
- * FLASH_EXPORT remains a placeholder without PWM or flash I/O. No flight App
- * initialization occurs in either maintenance mode. RC telemetry runs during
- * boot selection. FLIGHT init may block on IMU SPI; flight processing starts on
- * the next poll with a fresh receiver snapshot.
+ * IMU_CALIB keeps PWM off and FLASH_EXPORT remains a placeholder. Flight App
+ * initialization only occurs in FLIGHT. RC telemetry runs during
+ * boot selection. IMU_CALIB waits for a new RC frame after initializing its
+ * sensor. FLIGHT processing starts on the poll after flight initialization.
  */
 void runtime_process(void);
 
@@ -37,7 +39,7 @@ void runtime_process(void);
  */
 runtime_mode_t runtime_get_mode(void);
 
-/** Whether the selected mode has an implementation (FLIGHT and ESC_CALIB).
+/** Whether the selected mode has an implementation.
  * False while waiting for selection. No I/O, serialized foreground only.
  * This is not flight health or motor permission; use app_get_status in FLIGHT.
  */

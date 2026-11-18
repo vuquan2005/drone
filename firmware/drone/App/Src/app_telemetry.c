@@ -1,4 +1,5 @@
 #include "app_telemetry.h"
+#include "app_crc32.h"
 #include <string.h>
 
 enum { IMU_FRAME_BYTES = 44U, STATS_FRAME_BYTES = 52U };
@@ -38,17 +39,6 @@ static void put_u32(uint8_t *out, uint32_t value) {
     }
 }
 
-static uint32_t crc32(const uint8_t *data, size_t size) {
-    uint32_t crc = UINT32_MAX;
-    for (size_t i = 0; i < size; ++i) {
-        crc ^= data[i];
-        for (unsigned bit = 0; bit < 8U; ++bit) {
-            crc = (crc >> 1U) ^ ((crc & 1U) ? 0xEDB88320U : 0U);
-        }
-    }
-    return crc ^ UINT32_MAX;
-}
-
 static void put_u16(uint8_t *out, uint16_t value) {
     for (unsigned i = 0; i < 2U; ++i) {
         out[i] = (uint8_t)(value >> (8U * i));
@@ -75,11 +65,11 @@ bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
         put_u16(frame + 26U + 2U * axis, (uint16_t)sample->gyro_raw[axis]);
     }
     frame[32U] = (uint8_t)BSP_IMU_ACCEL_RANGE_G;
-    frame[33U] = 2U; /* Sensor XYZ -> body FRD: [-X, Y, -Z]. */
+    frame[33U] = APP_IMU_AXIS_MAP_ID;
     put_u16(frame + 34U, (uint16_t)BSP_IMU_GYRO_RANGE_DPS);
     put_u16(frame + 36U, BSP_IMU_ODR_HZ);
     put_u16(frame + 38U, BSP_IMU_ODR_HZ);
-    put_u32(frame + 40U, crc32(frame, 40U));
+    put_u32(frame + 40U, app_crc32(frame, 40U));
     return track_imu(bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame)));
 }
 
@@ -106,7 +96,7 @@ bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
     for (unsigned i = 0; i < 10U; ++i) {
         put_u32(frame + 8U + i * 4U, values[i]);
     }
-    put_u32(frame + 48U, crc32(frame, 48U));
+    put_u32(frame + 48U, app_crc32(frame, 48U));
     return track_stats(bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame)));
 }
 
@@ -135,7 +125,7 @@ app_telemetry_write_receiver(const app_receiver_sample_t *sample,
         frame[24U + 2U * i] = (uint8_t)sample->channels[i];
         frame[25U + 2U * i] = (uint8_t)(sample->channels[i] >> 8U);
     }
-    put_u32(frame + 56U, crc32(frame, 56U));
+    put_u32(frame + 56U, app_crc32(frame, 56U));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }
 
@@ -168,7 +158,7 @@ bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate) {
     for (unsigned i = 0; i < 4; ++i)
         put_float(frame + 60 + 4 * i,
                   (float)rate->mixer.motor[i] / NORM_Q15_ONE);
-    put_u32(frame + 88, crc32(frame, 88));
+    put_u32(frame + 88, app_crc32(frame, 88));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }
 
@@ -186,6 +176,6 @@ bsp_rtt_result_t app_telemetry_write_attitude(const float q[4],
     put_u32(frame + 12, t_sample_us);
     for (unsigned i = 0; i < 4; ++i)
         put_float(frame + 16 + 4 * i, q[i]);
-    put_u32(frame + 32, crc32(frame, 32));
+    put_u32(frame + 32, app_crc32(frame, 32));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }

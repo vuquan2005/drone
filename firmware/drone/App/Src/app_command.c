@@ -63,6 +63,9 @@ bool app_command_decode(const app_receiver_sample_t *sample,
     command->mode = switch_position(sample->channels[5]);
     command->esc_calibration_requested =
         switch_position(sample->channels[6]) == APP_COMMAND_SWITCH_HIGH;
+    command->imu_calibration_requested =
+        command->esc_calibration_requested &&
+        command->mode == APP_COMMAND_SWITCH_MIDDLE;
     switch (switch_position(sample->channels[7])) {
     case APP_COMMAND_SWITCH_LOW:
         command->telemetry_mode = APP_COMMAND_TELEMETRY_OFF;

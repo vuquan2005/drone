@@ -5,6 +5,7 @@
 #include "app_telemetry.h"
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
+#include "imu_calibration.h"
 #include "main.h"
 #include <stddef.h>
 
@@ -34,7 +35,8 @@ void runtime_init(void) {
 }
 
 bool runtime_mode_supported(void) {
-    return mode == RUNTIME_FLIGHT || mode == RUNTIME_ESC_CALIB;
+    return mode == RUNTIME_FLIGHT || mode == RUNTIME_ESC_CALIB ||
+           mode == RUNTIME_IMU_CALIB;
 }
 
 runtime_mode_t runtime_get_mode(void) {
@@ -52,9 +54,12 @@ bool runtime_get_command(app_command_t *out) {
 static runtime_mode_t select_mode(void) {
 #if DRONE_DEBUG_FORCE_FLIGHT
     return RUNTIME_FLIGHT;
-#else
+#endif
     if (!command.valid) {
         return RUNTIME_BOOT_SELECT;
+    }
+    if (command.imu_calibration_requested) {
+        return RUNTIME_IMU_CALIB;
     }
     if (command.esc_calibration_requested) {
         return RUNTIME_ESC_CALIB;
@@ -63,7 +68,6 @@ static runtime_mode_t select_mode(void) {
         return RUNTIME_FLASH_EXPORT;
     }
     return RUNTIME_FLIGHT;
-#endif
 }
 
 void runtime_process(void) {
@@ -84,6 +88,7 @@ void runtime_process(void) {
             [RUNTIME_FLIGHT] = "flight",
             [RUNTIME_ESC_CALIB] = "esc_calib",
             [RUNTIME_FLASH_EXPORT] = "flash_export",
+            [RUNTIME_IMU_CALIB] = "imu_calib",
         };
         if (mode != RUNTIME_BOOT_SELECT)
             APP_LOG_INFO("runtime", "selected mode=%s supported=%u",
@@ -93,6 +98,11 @@ void runtime_process(void) {
             app_init();
         } else if (mode == RUNTIME_ESC_CALIB) {
             esc_calibration_init();
+        } else if (mode == RUNTIME_IMU_CALIB) {
+            imu_calibration_init();
+            /* The sensor init can outlast the RC snapshot. Require a frame
+             * decoded by a later poll before qualifying calibration. */
+            command = (app_command_t){0};
         }
         /* Initialization can block: never forward the pre-init RC snapshot. */
         return;
@@ -103,6 +113,9 @@ void runtime_process(void) {
         break;
     case RUNTIME_ESC_CALIB:
         esc_calibration_process(&command);
+        break;
+    case RUNTIME_IMU_CALIB:
+        imu_calibration_process(&command);
         break;
     case RUNTIME_FLASH_EXPORT:
         break;

@@ -7,6 +7,9 @@
 
 #include "bsp_imu.h"
 
+/** Sensor XYZ to body FRD, [-X, +Y, -Z]. Change with the mounting map. */
+#define APP_IMU_AXIS_MAP_ID 2U
+
 /** @brief Original sensor counts and SI sample in body FRD.
  * Body axes: X forward, Y right, Z down. Raw fields remain in sensor XYZ.
  * @note Board mapping from sensor XYZ is [-X, +Y, -Z], for both sensors.

@@ -28,18 +28,19 @@ Nối chung GND và tháo cánh trước khi thử motor.
 ## Chọn chế độ sau reset
 
 Với cấu hình chọn mode thông thường, runtime giữ PWM tắt trong khi chờ RC
-hợp lệ. Frame RC hợp lệ đầu tiên xác định chế độ theo SB và SD, giữ đến lần
+hợp lệ. Frame RC hợp lệ đầu tiên xác định chế độ theo bảng dưới, giữ đến lần
 reset tiếp theo. Trong FLIGHT, hệ thống phải khỏe và firmware phải thấy
 CH5/SA OFF trước khi chấp nhận lần gạt SA ON với ga ≤2%.
 
-| CH7/SB     | CH8/SD                         | Chế độ                                        |
-| ---------- | ------------------------------ | --------------------------------------------- |
-| HIGH       | Bất kỳ                         | ESC_CALIB: hiệu chuẩn ESC                     |
-| Không HIGH | HIGH / STREAM                  | FLASH_EXPORT: chưa triển khai, PWM không chạy |
-| Không HIGH | LOW / OFF hoặc MIDDLE / RECORD | FLIGHT                                        |
+| CH7/SB     | CH6/SC        | CH8/SD                         | Chế độ                                     |
+| ---------- | ------------- | ------------------------------ | ------------------------------------------ |
+| HIGH       | MIDDLE        | Bất kỳ                         | `IMU_CALIB`, hiệu chuẩn bias gyro, PWM tắt |
+| HIGH       | LOW hoặc HIGH | Bất kỳ                         | `ESC_CALIB`, hiệu chuẩn ESC                |
+| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, chờ triển khai, PWM tắt    |
+| Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                   |
 
 Preset Debug mặc định bật `DRONE_DEBUG_FORCE_FLIGHT`, bỏ qua bước chọn trên;
-Release mặc định tắt tùy chọn này. Để thử chọn mode hoặc hiệu chuẩn ESC bằng
+Release mặc định tắt tùy chọn này. Để thử chọn mode hoặc hiệu chuẩn bằng
 Debug, tắt tùy chọn trong cấu hình build. Xem
 [cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. CH6/SC chưa chọn
 thuật toán bay; trong FLIGHT, SB HIGH chặn motor, không chuyển sang calib.
@@ -48,7 +49,7 @@ Các yêu cầu ghi/xuất telemetry qua SD chưa được thực thi trong FLIG
 ## Hiệu chuẩn ESC
 
 Tháo cánh và xác nhận ESC hỗ trợ hiệu chuẩn endpoint bằng PWM 400 Hz. Chọn
-ESC_CALIB bằng cách đặt SB ở HIGH khi khởi động với RC hợp lệ. Firmware bắt đầu
+ESC_CALIB bằng cách đặt SB ở HIGH và SC ở LOW khi khởi động với RC hợp lệ. Firmware bắt đầu
 ở 1000 µs, sau đó phát 2000 µs nếu vẫn nhận được SB HIGH. Nếu ESC học endpoint
 lúc cấp nguồn, cấp nguồn flight controller và receiver riêng trước, xác nhận
 đang phát max rồi mới cấp nguồn ESC. Theo hướng dẫn ESC, đưa SB về OFF để phát
@@ -60,6 +61,40 @@ tắt output. Các thời gian thử nằm trong `App/Inc/esc_calibration.h`. Ti
 phát xung nếu CPU bị kẹt, nên timeout phần mềm không bảo vệ trường hợp đó.
 Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 
+## Hiệu chuẩn bias gyro
+
+1. Tháo cánh và đặt khung đứng yên. Trên tay điều khiển, để SA ở OFF, ga ở
+   mức thấp nhất, SB ở HIGH và SC ở giữa. Giữ các vị trí này khi reset bo.
+2. Dùng build có RTT và `DRONE_LOG_LEVEL=INFO` để xem log `imu_calib`. Sau
+   1 giây chờ cảm biến và frame RC mới, firmware tìm một cửa sổ liên tục 3 giây với ít nhất
+   1.140 mẫu mới ở ODR 400 Hz. Chuyển động hoặc khoảng cách giữa hai mẫu vượt
+   20 ms sẽ làm thu lại cửa sổ. Từ lúc hết 1 giây chờ, RC mất kết nối, tổ hợp
+   công tắc sai, arm bật hoặc ga trên 2% đều sẽ hủy phiên.
+   Phiên hết hạn sau 20 giây tính từ lúc khởi tạo IMU xong.
+3. Khi RTT báo `saved bias`, trả SB và SD về LOW rồi reset để vào FLIGHT. Log `imu`
+   báo `gyro bias loaded from flash`. Có thể kiểm tra gyro đã bù trong tab
+   **Rate · FRD** khi snapshot hợp lệ và khung đứng yên.
+
+Để build và nạp bản Debug có RTT và chọn mode, chạy từ gốc repo:
+
+```sh
+cd firmware/drone
+cube cmake --preset Debug -DDRONE_DEBUG_FORCE_FLIGHT=OFF
+cube cmake --build --preset Debug
+cube programmer -c port=SWD freq=1000 reset=SWrst -w build/Debug/drone.elf -v -rst
+```
+
+`IMU_CALIB` giữ PWM tắt đến reset, kể cả khi hiệu chuẩn hoàn tất hoặc lỗi.
+Cần đặt khung cố định trong suốt cửa sổ đo vì IMU sáu trục có thể nhầm chuyển
+động yaw rất chậm với bias.
+
+Firmware dành hai trang flash cuối (`0x0807F000` đến `0x0807FFFF`) cho bias.
+Mỗi bản ghi có mã IMU, mã ánh xạ trục, dải gyro, phiên bản, số thứ tự và CRC.
+Firmware ghi trang còn lại, đọc kiểm tra rồi đánh dấu hoàn tất. Nếu việc ghi
+bị gián đoạn, bản hợp lệ trước đó vẫn có thể được nạp. Khi nạp firmware, dùng
+quy trình chỉ xóa các trang của ảnh chương trình để giữ hệ số. Lệnh
+`make fw-erase` xóa toàn chip và cả hệ số đã lưu.
+
 ## IMU và receiver
 
 IMU được cấu hình 400 Hz, accel ±16 g và gyro ±2000 °/s. App đổi mẫu sang SI
@@ -69,13 +104,14 @@ thành công và tràn uint32 sau khoảng 71,6 phút. Xem API trong
 [app_imu.h](App/Inc/app_imu.h) và driver [BMI160](Drivers/BMI160/README.md),
 [BMI270](Drivers/BMI270/README.md).
 
-Trong FLIGHT với BMI160, App trừ bias gyro mặc định
+Trong FLIGHT, App nạp bản bias tương thích mới nhất trong flash và trừ bias
+trước Mahony và PID tốc độ góc. Khi flash chưa có bản phù hợp, BMI160 dùng
 `[-0.001541997, -0.004106014, -0.005377476]` rad/s theo thứ tự XYZ trong FRD
-trước Mahony và PID tốc độ góc. Bias là trung bình của 2.020 mẫu trong 5 giây
+và BMI270 dùng bias bằng 0. Bộ mặc định BMI160 là trung bình của 2.020 mẫu trong 5 giây
 cuối phiên `telemetry_20261119_023330` tại `experiments/raw/telemetry/`, từ
 sequence 8258 đến 10277. Đổi số đếm sang FRD và rad/s theo
 [định dạng telemetry](../../protocol/telemetry.md) trước khi lấy trung bình.
-BMI270 dùng bias bằng 0. Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến.
+Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến.
 
 USART1 nhận CRSF qua DMA; nối TX receiver vào PA10 và chung GND. `connected`
 chỉ phản ánh frame RC hợp lệ trong 100 ms gần nhất, không đánh giá chất lượng
@@ -111,5 +147,5 @@ cmake --build /tmp/drone-command-tests
 ctest --test-dir /tmp/drone-command-tests --output-on-failure
 ```
 
-Thay `command` bằng `imu`, `crsf`, `pwm` hoặc `esc_calibration` để chọn bộ
+Thay `command` bằng `imu`, `imu_calibration`, `crsf`, `pwm` hoặc `esc_calibration` để chọn bộ
 tương ứng. Các test mô phỏng không xác nhận I/O hoặc timing trên board.

@@ -6,7 +6,7 @@ static void cleared(const app_command_t *c) {
     assert(!c->valid && !c->arm_requested && c->last_frame_ms == 0);
     assert(c->roll == 0 && c->pitch == 0 && c->yaw == 0 && c->throttle == 0);
     assert(c->mode == APP_COMMAND_SWITCH_LOW);
-    assert(!c->esc_calibration_requested);
+    assert(!c->esc_calibration_requested && !c->imu_calibration_requested);
     assert(c->telemetry_mode == APP_COMMAND_TELEMETRY_OFF);
 }
 
@@ -66,6 +66,7 @@ int main(void) {
         assert(c.arm_requested == (positions[i] == APP_COMMAND_SWITCH_HIGH));
         assert(c.esc_calibration_requested ==
                (positions[i] == APP_COMMAND_SWITCH_HIGH));
+        assert(!c.imu_calibration_requested);
         const app_command_telemetry_mode_t expected =
             positions[i] == APP_COMMAND_SWITCH_LOW ? APP_COMMAND_TELEMETRY_OFF
             : positions[i] == APP_COMMAND_SWITCH_MIDDLE
@@ -77,6 +78,13 @@ int main(void) {
     assert(app_command_decode(&rc, &c));
     assert(c.esc_calibration_requested &&
            c.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM);
+    rc.channels[7] = 992;
+    assert(app_command_decode(&rc, &c));
+    assert(c.esc_calibration_requested && !c.imu_calibration_requested);
+    rc.channels[5] = 992;
+    assert(app_command_decode(&rc, &c));
+    assert(c.esc_calibration_requested && c.imu_calibration_requested &&
+           c.telemetry_mode == APP_COMMAND_TELEMETRY_RECORD);
     for (unsigned i = 0; i < 8; ++i) {
         uint16_t saved = rc.channels[i];
         rc.channels[i] = 2048;

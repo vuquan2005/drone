@@ -1,28 +1,14 @@
 {
   "version": "2.0.0",
-  "options": {
-    "cwd": "${workspaceFolder}/firmware/drone"
-  },
   "tasks": [
-    {
-      "label": "firmware: configure Debug",
-      "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
-      "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
-      },
-      "args": ["cmake", "--preset", "Debug"],
-      "problemMatcher": []
-    },
     {
       "label": "firmware: build Debug",
       "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
-      "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+      "command": "make",
+      "args": ["fw-build", "PRESET=Debug"],
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
-      "args": ["cmake", "--build", "--preset", "Debug"],
-      "dependsOn": ["firmware: configure Debug"],
       "group": {
         "kind": "build",
         "isDefault": true
@@ -30,28 +16,40 @@
       "problemMatcher": []
     },
     {
-      "label": "firmware: configure Release",
+      "label": "telemetry: view",
       "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
-      "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
+      "command": "make",
+      "args": ["telemetry"],
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
-      "args": ["cmake", "--preset", "Release"],
-      "problemMatcher": []
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "telemetry",
+        "pattern": {
+          "regexp": "^(.*):(\\d+): (.*)$",
+          "file": 1,
+          "line": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^RTT viewer starting$",
+          "endsPattern": "^RTT viewer ready$"
+        }
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
     },
     {
-      "label": "firmware: build Release",
-      "type": "process",
-      "command": "${command:stm32cube-ide-core.get-cube-path}/cube",
-      "windows": {
-        "command": "${command:stm32cube-ide-core.get-cube-path}/cube.exe"
-      },
-      "args": ["cmake", "--build", "--preset", "Release"],
-      "dependsOn": ["firmware: configure Release"],
-      "group": {
-        "kind": "build",
-        "isDefault": false
-      },
+      "label": "firmware: build Debug + telemetry",
+      "dependsOrder": "sequence",
+      "dependsOn": ["firmware: build Debug", "telemetry: view"],
       "problemMatcher": []
     }
   ]

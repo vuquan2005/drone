@@ -9,7 +9,8 @@
     "ms-python.black-formatter",
     "davidanson.vscode-markdownlint",
     "redhat.vscode-yaml",
-    "cheshirekow.cmake-format"
+    "cheshirekow.cmake-format",
+    "marus25.cortex-debug"
   ],
   "unwantedRecommendations": ["ms-vscode.cpptools-extension-pack"]
 }

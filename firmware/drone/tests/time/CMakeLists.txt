@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.22)
+project(time_tests C)
+set(CMAKE_C_STANDARD 11)
+enable_testing()
+add_executable(time_tests test_time.c ../../BSP/Src/bsp_time.c)
+target_include_directories(time_tests PRIVATE mocks ../../BSP/Inc)
+target_compile_options(time_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME time_tests COMMAND time_tests)

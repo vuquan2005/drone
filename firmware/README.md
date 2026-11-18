@@ -66,6 +66,10 @@ Không cần ghi đường dẫn cài extension hoặc sửa `PATH` trong task; 
 theo bundle của project tại thư mục làm việc `firmware/drone`.
 Semihosting đang tắt; debug thông thường không cần bật tính năng này.
 
+Khung **STM32: Debug + RTT (OpenOCD)** hỗ trợ hai kênh: log văn bản và dữ
+liệu cho công cụ máy tính. Preset Debug bật transport, Release tắt. Ứng dụng
+hiện chỉ khởi tạo buffer, chưa tự xuất log/stream. Xem [RTT và Live Watch](drone/DEBUG.md).
+
 Gốc repo có task configure/build cho cả **Debug** và **Release**; build task tự
 chạy configure tương ứng trước. `Ctrl+Shift+B` mặc định build Debug;
 **Terminal → Run Task → firmware: build Release** build Release mà không nạp board.
@@ -104,6 +108,18 @@ chọn lại Debug trước phiên debug cần thông tin symbol đầy đủ.
   **Output → STM32Cube clangd** và `--query-driver`, rồi **Developer: Reload Window**.
 
 </details>
+
+## Hướng triển khai thuật toán
+
+Thuật toán lọc, quaternion, estimator, PID, allocator và mô hình motor dự kiến
+đặt trong `drone/Control/Inc/` và `drone/Control/Src/`, dùng API độc lập HAL.
+`App/` sở hữu trạng thái và điều phối; `BSP/` tích hợp ngoại vi. Chỉ tạo
+module khi triển khai mã thực.
+
+Kế hoạch kiểm chứng gồm kiểm thử thuật toán nhỏ trên máy tính và đo I/O,
+timing, đáp ứng điều khiển trên board/bộ gá; không triển khai mô phỏng vòng
+kín/SITL. Dữ liệu đo ở `experiments/`, script vẽ và khớp đường cong motor ở
+`tools/` tại gốc repository.
 
 Xem tiếp: [IMU và kiểm thử](drone/README.md),
 [kiến trúc và hướng phát triển](drone/ARCHITECTURE.md).

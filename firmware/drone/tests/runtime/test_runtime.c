@@ -79,21 +79,18 @@ int main(void) {
     reset();
     available = false;
     runtime_process();
+    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT && starts == 0);
     input.connected = false;
     available = true;
     runtime_process();
-    input.connected = true;
-    input.channels[4] = 1811;
-    runtime_process();
-    input.channels[4] = 172;
-    input.channels[2] = 992;
-    runtime_process();
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT && starts == 0);
-    input.channels[2] = 172;
+    input.connected = true;
+    input.channels[2] = input.channels[4] = 1811;
     input.channels[5] = 992;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT && starts == 1 &&
            processes == 0);
+    input.channels[2] = 172;
     input.channels[5] = input.channels[6] = 1811;
     assert(runtime_mode_supported());
     runtime_process();
@@ -104,7 +101,7 @@ int main(void) {
     app_command_t command;
     assert(runtime_get_command(&command) && !command.valid);
     assert(!runtime_get_command(NULL));
-    assert(processes == 2 && inits == 1 && polls == 7);
+    assert(processes == 2 && inits == 1 && polls == 5);
 
     /* SC never selects maintenance or conflicts with SB, at any position. */
     const uint16_t positions[] = {172, 992, 1811};
@@ -130,7 +127,7 @@ int main(void) {
         assert(stops == 1 && calib_inits == 1 && calib_polls == 1);
     }
     reset();
-    input.channels[7] = 1811;
+    input.channels[2] = input.channels[4] = input.channels[7] = 1811;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT);
     assert(!runtime_mode_supported() && starts == 0 && processes == 0);
@@ -139,9 +136,15 @@ int main(void) {
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT && stops == 1);
     reset();
-    input.channels[6] = input.channels[7] = 1811;
+    input.channels[2] = input.channels[4] = input.channels[6] =
+        input.channels[7] = 1811;
+    input.connected = false;
     runtime_process();
-    assert(runtime_get_mode() == RUNTIME_ESC_CALIB && starts == 0);
+    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT && calib_inits == 0);
+    input.connected = true;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_ESC_CALIB && calib_inits == 1 &&
+           starts == 0);
     reset();
     input.channels[7] = 992;
     runtime_process();

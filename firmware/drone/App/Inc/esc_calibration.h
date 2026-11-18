@@ -20,26 +20,25 @@ typedef enum {
 typedef enum {
     ESC_CALIBRATION_OK,
     ESC_CALIBRATION_RC_LOST,
-    ESC_CALIBRATION_ARM_REQUESTED,
-    ESC_CALIBRATION_THROTTLE_HIGH,
-    ESC_CALIBRATION_CANCELLED,
+    ESC_CALIBRATION_CANCELLED = 4, /* Keep the existing log reason codes. */
     ESC_CALIBRATION_TIMEOUT,
     ESC_CALIBRATION_PWM_FAILED,
 } esc_calibration_reason_t;
 
 /** Initialize an exclusive calibration session, starting PWM at minimum.
  * Requires initialized HAL/TIM4 and shared logging; call once on mode entry.
- * No App/IMU/controller initialization. A fresh safe command in process starts
- * maximum PWM. Failure disables outputs and latches PWM_ERROR until reset.
+ * No App/IMU/controller initialization. A valid calibration request starts
+ * maximum PWM in process. Failure disables outputs and latches PWM_ERROR until
+ * reset.
  * Nonblocking foreground only. Never call while flight owns PWM.
  */
 void esc_calibration_init(void);
 
 /** Advance calibration using a fresh runtime command; NULL/invalid aborts.
- * Requires init; copies no pointers. Arm ON or throttle >2% aborts. READY
- * requires calibration ON; MAX holds 2000 us until OFF, then MIN holds 1000 us
- * for MIN_HOLD_MS before DONE. MAX_HOLD_MS expiry aborts even if OFF arrives
- * on that poll. HAL tick differences wrap modulo 2^32; poll regularly.
+ * Requires init; copies no pointers. READY requires calibration ON. MAX holds
+ * 2000 us until calibration OFF, then MIN holds 1000 us for MIN_HOLD_MS before
+ * DONE. Arm and throttle are ignored. MAX_HOLD_MS expiry aborts even if OFF
+ * arrives on that poll. HAL tick differences wrap modulo 2^32; poll regularly.
  * DONE/ABORT_MIN retain minimum PWM and cannot restart until reset. A queued
  * PWM write failure stops all outputs and latches PWM_ERROR. Timer hardware
  * maintains pulses between calls; this is not protection against CPU stalls.

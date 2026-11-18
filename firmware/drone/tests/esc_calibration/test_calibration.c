@@ -1,4 +1,3 @@
-#include "app_safety.h"
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
 #include <assert.h>
@@ -45,6 +44,8 @@ static void maximum(void) {
 int main(void) {
     tick = UINT32_MAX - 1000;
     reset();
+    command.arm_requested = true;
+    command.throttle = NORM_Q15_ONE;
     maximum();
     tick += 2000;
     command.esc_calibration_requested = false;
@@ -61,30 +62,27 @@ int main(void) {
     unsigned held = writes;
     esc_calibration_process(NULL);
     assert(writes == held && output == 1000);
-    for (unsigned cause = 0; cause < 4; cause++) {
-        reset();
-        maximum();
-        if (cause == 0)
-            command.valid = false;
-        if (cause == 1)
-            command.arm_requested = true;
-        if (cause == 2)
-            command.throttle = APP_ARM_THROTTLE_MAX + 1;
-        if (cause == 3)
-            tick += ESC_CALIBRATION_MAX_HOLD_MS;
-        esc_calibration_process(&command);
-        assert(output == 1000 &&
-               esc_calibration_get_state() == ESC_CALIBRATION_ABORT_MIN);
-        assert(esc_calibration_get_reason() ==
-               (cause == 0   ? ESC_CALIBRATION_RC_LOST
-                : cause == 1 ? ESC_CALIBRATION_ARM_REQUESTED
-                : cause == 2 ? ESC_CALIBRATION_THROTTLE_HIGH
-                             : ESC_CALIBRATION_TIMEOUT));
-        command =
-            (app_command_t){.valid = true, .esc_calibration_requested = true};
-        esc_calibration_process(&command);
-        assert(output == 1000);
-    }
+    reset();
+    maximum();
+    command.valid = false;
+    esc_calibration_process(&command);
+    assert(output == 1000 &&
+           esc_calibration_get_state() == ESC_CALIBRATION_ABORT_MIN &&
+           esc_calibration_get_reason() == ESC_CALIBRATION_RC_LOST);
+    command.valid = true;
+    esc_calibration_process(&command);
+    assert(output == 1000);
+
+    reset();
+    maximum();
+    tick += ESC_CALIBRATION_MAX_HOLD_MS;
+    esc_calibration_process(&command);
+    assert(output == 1000 &&
+           esc_calibration_get_state() == ESC_CALIBRATION_ABORT_MIN &&
+           esc_calibration_get_reason() == ESC_CALIBRATION_TIMEOUT);
+    esc_calibration_process(&command);
+    assert(output == 1000);
+
     reset();
     command.esc_calibration_requested = false;
     esc_calibration_process(&command);

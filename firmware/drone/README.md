@@ -27,9 +27,10 @@ Nối chung GND và tháo cánh trước khi thử motor.
 
 ## Chọn chế độ sau reset
 
-Với cấu hình chọn mode thông thường, runtime chờ RC hợp lệ, CH5/SA arm OFF
-và ga ≤2%; PWM tắt trong lúc chờ. Snapshot đầu tiên đủ điều kiện chọn mode
-đến lần reset tiếp theo:
+Với cấu hình chọn mode thông thường, runtime giữ PWM tắt trong khi chờ RC
+hợp lệ. Frame RC hợp lệ đầu tiên xác định chế độ theo SB và SD, giữ đến lần
+reset tiếp theo. Trong FLIGHT, hệ thống phải khỏe và firmware phải thấy
+CH5/SA OFF trước khi chấp nhận lần gạt SA ON với ga ≤2%.
 
 | CH7/SB     | CH8/SD                         | Chế độ                                        |
 | ---------- | ------------------------------ | --------------------------------------------- |
@@ -47,14 +48,14 @@ Các yêu cầu ghi/xuất telemetry qua SD chưa được thực thi trong FLIG
 ## Hiệu chuẩn ESC
 
 Tháo cánh và xác nhận ESC hỗ trợ hiệu chuẩn endpoint bằng PWM 400 Hz. Chọn
-ESC_CALIB với SB HIGH, arm OFF và ga ≤2%. Firmware bắt đầu ở 1000 µs, sau đó
-phát 2000 µs khi command còn hợp lệ. Nếu ESC học endpoint lúc cấp nguồn, cấp
-nguồn flight controller và receiver riêng trước, xác nhận đang phát max rồi
-mới cấp nguồn ESC. Theo hướng dẫn ESC, đưa SB về OFF để phát min; firmware giữ
-min 3 giây rồi chờ reset. DONE chỉ xác nhận trình tự xung, không xác nhận ESC
-đã học thành công.
+ESC_CALIB bằng cách đặt SB ở HIGH khi khởi động với RC hợp lệ. Firmware bắt đầu
+ở 1000 µs, sau đó phát 2000 µs nếu vẫn nhận được SB HIGH. Nếu ESC học endpoint
+lúc cấp nguồn, cấp nguồn flight controller và receiver riêng trước, xác nhận
+đang phát max rồi mới cấp nguồn ESC. Theo hướng dẫn ESC, đưa SB về OFF để phát
+min. Firmware giữ min 3 giây rồi chờ reset. DONE chỉ xác nhận trình tự xung,
+không xác nhận ESC đã học thành công.
 
-Mất RC, bật arm, ga >2% hoặc giữ max quá 30 giây hủy phiên về min; lỗi PWM
+Mất RC hoặc giữ max đến 30 giây sẽ hủy phiên và đưa xung về min. Lỗi PWM sẽ
 tắt output. Các thời gian thử nằm trong `App/Inc/esc_calibration.h`. Timer vẫn
 phát xung nếu CPU bị kẹt, nên timeout phần mềm không bảo vệ trường hợp đó.
 Cần kiểm chứng xung, timing và kết quả trên board/ESC.

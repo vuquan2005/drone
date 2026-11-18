@@ -1,6 +1,5 @@
 #include "esc_calibration.h"
 #include "app_log.h"
-#include "app_safety.h"
 #include "bsp_motor_pwm.h"
 #include "main.h"
 #include <stddef.h>
@@ -63,16 +62,8 @@ void esc_calibration_process(const app_command_t *command) {
         state != ESC_CALIBRATION_MIN) {
         return;
     }
-    esc_calibration_reason_t failure = ESC_CALIBRATION_OK;
     if (command == NULL || !command->valid) {
-        failure = ESC_CALIBRATION_RC_LOST;
-    } else if (command->arm_requested) {
-        failure = ESC_CALIBRATION_ARM_REQUESTED;
-    } else if (command->throttle > APP_ARM_THROTTLE_MAX) {
-        failure = ESC_CALIBRATION_THROTTLE_HIGH;
-    }
-    if (failure != ESC_CALIBRATION_OK) {
-        minimum(ESC_CALIBRATION_ABORT_MIN, failure);
+        minimum(ESC_CALIBRATION_ABORT_MIN, ESC_CALIBRATION_RC_LOST);
         return;
     }
     const uint32_t elapsed_ms = (uint32_t)(HAL_GetTick() - phase_start_ms);

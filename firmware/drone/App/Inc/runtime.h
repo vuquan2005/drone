@@ -19,9 +19,10 @@ typedef enum {
 void runtime_init(void);
 
 /** Poll RC once and dispatch the selected mode from serialized foreground.
- * Requires runtime_init. BOOT_SELECT waits for valid RC, arm OFF and throttle
- * <= APP_ARM_THROTTLE_MAX. CH7/SB HIGH selects ESC_CALIB with priority;
- * otherwise telemetry STREAM selects FLASH_EXPORT, OFF/RECORD select FLIGHT.
+ * Requires runtime_init. BOOT_SELECT waits for valid RC. CH7/SB HIGH selects
+ * ESC_CALIB with priority. With CH7 below HIGH, telemetry STREAM selects
+ * FLASH_EXPORT and OFF/RECORD select FLIGHT. Arm and throttle are ignored
+ * during mode selection.
  * CH6/SC is a flight-mode request and never selects a maintenance operation.
  * CH8/SD retains its telemetry request meaning after FLIGHT is selected.
  * Selection latches until reset. ESC_CALIB initializes its own PWM session;

@@ -53,8 +53,7 @@ static runtime_mode_t select_mode(void) {
 #if DRONE_DEBUG_FORCE_FLIGHT
     return RUNTIME_FLIGHT;
 #else
-    if (!command.valid || command.arm_requested ||
-        command.throttle > APP_ARM_THROTTLE_MAX) {
+    if (!command.valid) {
         return RUNTIME_BOOT_SELECT;
     }
     if (command.esc_calibration_requested) {

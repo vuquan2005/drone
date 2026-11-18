@@ -407,24 +407,27 @@ int main(void) {
     assert(app_get_arm_state() == APP_FAILSAFE && pwm_stops == 1);
     assert(app_get_status(&health) && !health.motor_ready && !health.imu_ready);
     /* Runtime owns shared transport, decodes RC and emits raw RC telemetry. */
-    receiver_connected = true;
-    receiver_throttle = receiver_switches[0] = receiver_switches[1] =
-        receiver_switches[2] = receiver_switches[3] = 172;
+    receiver_connected = false;
+    receiver_throttle = receiver_switches[0] = 1811;
+    receiver_switches[1] = receiver_switches[2] = receiver_switches[3] = 172;
     runtime_init();
-    receiver_throttle = 992;
     tick += 50U;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
     assert(drain(1U, output) == 60U); /* RC visible before mode selection. */
-    receiver_throttle = 172;
+    receiver_connected = true;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT && runtime_mode_supported());
-    drain(0U, output);
+    assert(app_configure_rate(&rate_config));
     tick += 50U;
-    status = BSP_IMU_NO_DATA;
+    status = BSP_IMU_OK;
     runtime_process();
+    assert(app_get_status(&health) && health.imu_ready && health.motor_ready);
+    assert(health.arm_state == APP_DISARMED);
+    for (unsigned i = 0; i < 4; ++i)
+        assert(motor_pulse[i] == 1000);
     assert(runtime_get_command(&command) && command.valid);
-    assert(drain(1U, output) == 60U && (uint8_t)output[5] == 3U);
+    assert(drain(1U, output) >= 60U && (uint8_t)output[5] == 3U);
     assert(get_u32(output + 12U) == tick);
     assert(get_u32(output + 16U) == tick - 10U);
     app_process(NULL);

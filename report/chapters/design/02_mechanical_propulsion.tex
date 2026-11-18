@@ -4,6 +4,15 @@
 
 \subsection{Lựa chọn khung và bố trí các cụm thiết bị}
 
+Khung F450 gồm hai tấm trung tâm và bốn tay đòn, như \fref{fig:design-f450-frame}. Kết cấu này cung cấp vị trí lắp động cơ ở bốn đầu tay đòn và không gian bố trí bo điều khiển, pin cùng các module ở giữa khung. Các tay đòn khác màu hỗ trợ nhận biết hướng thân khi lắp ráp và quan sát.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.58\linewidth]{figures/ch03/f450-frame.png}
+	\caption{Khung F450 với hai tấm trung tâm và bốn tay đòn.}
+	\label{fig:design-f450-frame}
+\end{figure}
+
 Khung F450 được sử dụng theo cấu hình chữ X, với bốn cụm động cơ đặt tại đầu các tay đòn. Kích thước cơ sở của dòng khung này là khoảng cách đường chéo giữa hai trục động cơ đối diện $D=450$ mm~\cite{djiF450Manual}. Lấy tâm hình học của khung làm vị trí trọng tâm danh định, tay đòn và hình chiếu lên các trục thân là
 \begin{equation}
 	l=\frac{D}{2}=0{,}225\ \mathrm m,\qquad
@@ -48,7 +57,28 @@ Biểu thức cho $J_y$ được lập tương tự bằng các khoảng cách t
 \end{equation}
 Với tiêu chí này, lực đẩy cần thiết để cân bằng lực không vượt quá một nửa lực đẩy cực đại của cụm, xét trên mô hình bốn rôto giống nhau. Tỉ lệ này là tỉ lệ lực đẩy, không đồng nghĩa với mức 50\% độ rộng xung hoặc 50\% lệnh ga.
 
-Động cơ của đề tài là A2212/10T 1400KV, kết hợp cánh quạt đường kính 9 inch. Hằng số tốc độ $K_V=1400$ vòng/phút/V cho giá trị tham chiếu tốc độ không tải tại $V_{\mathrm{ref}}=11{,}2$ V:
+Động cơ của đề tài là loại không chổi than A2212/10T 1400KV, kết hợp cánh quạt đường kính 9 inch. Động cơ và ESC được minh họa trong \fref{fig:design-motor-esc}. ESC nhận nguồn một chiều từ pin và chuyển mạch ba pha để điều khiển động cơ; bộ xử lý chỉ gửi lệnh điều khiển đến ESC qua đường tín hiệu PWM.
+
+\begin{figure}[htbp]
+	\centering
+	\begin{subfigure}[t]{0.46\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{figures/ch03/a2212-1400kv-motor.png}
+		\caption{Động cơ A2212/10T 1400KV.}
+		\label{fig:design-a2212-motor}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}[t]{0.46\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{figures/ch03/esc-30a.png}
+		\caption{Bộ điều tốc ESC ghi nhãn 30 A.}
+		\label{fig:design-esc-30a}
+	\end{subfigure}
+	\caption{Các phần tử chính của một nhánh truyền động.}
+	\label{fig:design-motor-esc}
+\end{figure}
+
+Hằng số tốc độ $K_V=1400$ vòng/phút/V cho giá trị tham chiếu tốc độ không tải tại $V_{\mathrm{ref}}=11{,}2$ V:
 \begin{equation}
 	n_0\approx K_V\,V_{\mathrm{ref}}
 	=15680\ \text{vòng/phút}.
@@ -69,28 +99,60 @@ Nếu 30 A là dòng liên tục được nhà sản xuất cho phép trong đi�
 	\label{tab:design-propulsion}
 	\begin{tabularx}{\linewidth}{|C{3.2cm}|Y|}
 		\hline
-		\textbf{Thành phần} & \textbf{Lựa chọn và thông số dùng tính toán}              \\
+		\textbf{Thành phần} & \textbf{Lựa chọn và thông số dùng tính toán}                       \\
 		\hline
-		Khung               & F450, cấu hình chữ X; đường chéo danh định 450 mm         \\
+		Khung               & F450, cấu hình chữ X; đường chéo danh định 450 mm                  \\
 		\hline
-		Động cơ             & 4 động cơ A2212/10T 1400KV                                \\
+		Động cơ             & 4 động cơ A2212/10T 1400KV                                         \\
 		\hline
-		Cánh quạt           & 4 cánh đường kính 9 inch, gồm hai cặp chiều quay đối nhau \\
+		Cánh quạt           & 4 cánh đường kính 9 inch, gồm hai cặp chiều quay đối nhau          \\
 		\hline
-		ESC                 & 4 ESC ghi nhãn 30 A; giao tiếp điều khiển PWM             \\
+		ESC                 & 4 ESC ghi nhãn 30 A; giao tiếp điều khiển PWM                      \\
 		\hline
-		Pin                 & LiPo 3S, 5200 mAh; điện áp tham chiếu tính toán 11,2 V    \\
+		Pin                 & LiPo 3S1P, 5200 mAh; danh định 11,1 V; tham chiếu tính toán 11,2 V \\
 		\hline
-		Hình học phân bổ    & $l=0{,}225$ m; $a\approx0{,}1591$ m                       \\
+		Hình học phân bổ    & $l=0{,}225$ m; $a\approx0{,}1591$ m                                \\
 		\hline
-		Dự trữ lực đẩy      & Tiêu chí ban đầu $\lambda_T=2$                            \\
+		Dự trữ lực đẩy      & Tiêu chí ban đầu $\lambda_T=2$                                     \\
 		\hline
 	\end{tabularx}
 \end{table}
 
 \subsection{Tính toán nguồn pin và khả năng cấp dòng}
 
-Pin LiPo 3S dung lượng $Q_b=5200$ mAh $=5{,}2$ Ah cấp năng lượng cho cả hệ động lực và điện tử. Dòng tổng được xác định từ bốn nhánh ESC và nhánh hạ áp. Với hiệu suất nhánh nguồn $\eta_{\mathrm{dc}}$, công suất điện tử $P_{\mathrm{dt}}$ và điện áp pin $V_b$, dòng yêu cầu xấp xỉ
+Pin LiPo trong \fref{fig:design-lipo-battery} cấp năng lượng cho cả hệ động lực và điện tử. Nhãn pin thể hiện cấu hình 3S1P, gồm ba cell nối tiếp trong một nhánh, với dung lượng $Q_b=5200$ mAh $=5{,}2$ Ah. Các thông số đọc từ nhãn được tổng hợp trong \tref{tab:design-battery-specifications}.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[trim=0 40bp 0 55bp,clip,width=0.66\linewidth]{figures/ch03/lipo-3s-5200mah.png}
+	\caption{Pin LiPo 3S1P dung lượng 5200 mAh dùng làm nguồn chính.}
+	\label{fig:design-lipo-battery}
+\end{figure}
+
+\begin{table}[htbp]
+	\centering
+	\caption{Thông số ghi trên nhãn pin LiPo.}
+	\label{tab:design-battery-specifications}
+	\begin{tabularx}{\linewidth}{|C{4.2cm}|Y|}
+		\hline
+		\textbf{Thông số}    & \textbf{Giá trị}  \\
+		\hline
+		Cấu hình cell        & 3S1P              \\
+		\hline
+		Điện áp danh định    & 11,1 V            \\
+		\hline
+		Dung lượng           & 5200 mAh (5,2 Ah) \\
+		\hline
+		Năng lượng danh định & 57,72 Wh          \\
+		\hline
+		Hệ số xả ghi nhãn    & 90C               \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Năng lượng danh định được đối chiếu theo $E_{b,\mathrm{nom}}=V_{b,\mathrm{nom}}Q_b=11{,}1\times5{,}2=57{,}72$ Wh, phù hợp với nhãn pin. Hệ số 90C là thông tin ghi nhãn; ảnh không phân biệt mức xả liên tục và mức xả ngắn hạn, do đó chưa dùng giá trị này để xác lập dòng làm việc liên tục của hệ thống.
+
+Dòng tổng được xác định từ bốn nhánh ESC và nhánh hạ áp. Với hiệu suất nhánh nguồn $\eta_{\mathrm{dc}}$, công suất điện tử $P_{\mathrm{dt}}$ và điện áp pin $V_b$, dòng yêu cầu xấp xỉ
 \begin{equation}
 	I_b=\sum_{i=1}^{4}I_{\mathrm{ESC},i}
 	+\frac{P_{\mathrm{dt}}}{\eta_{\mathrm{dc}}V_b}.

@@ -1,12 +1,12 @@
 % !TEX root = ../../main.tex
-\section{Yêu cầu và phương án thiết kế tổng thể}
+\subsection{Yêu cầu và phương án thiết kế tổng thể}
 \label{sec:design-requirements}
 
-\subsection{Yêu cầu thiết kế}
+\subsubsection{Yêu cầu thiết kế}
 
 Hệ thống được thiết kế để tạo mômen hiệu chỉnh khi thân quadrotor lệch khỏi tư thế đặt, với trọng tâm là hai kênh roll và pitch gần tư thế nằm ngang. Bộ điều khiển nhận góc đặt từ người vận hành, sử dụng IMU để xác định trạng thái quay và điều chỉnh bốn cụm động cơ--cánh quạt. Khi khảo sát khả năng tự cân bằng, hai góc đặt được đưa về không; khi khảo sát khả năng bám, góc đặt thay đổi trong miền góc nhỏ.
 
-Cấu hình phần cứng của đề tài gồm khung F450, bốn động cơ A2212/10T 1400KV, cánh quạt đường kính 9 inch, bốn ESC 30 A và pin LiPo 3S dung lượng 5200 mAh. Khối xử lý sử dụng STM32F103VET6, cảm biến BMI270, bộ thu điều khiển 2,4 GHz Nano và mạch hạ áp LM2596. Trong các phép tính nguồn, $V_{\mathrm{ref}}=11{,}2$ V là điện áp tham chiếu do nhóm cung cấp, không phải điện áp cố định trong suốt quá trình sử dụng pin.
+Cấu hình phần cứng của đề tài gồm khung F450, bốn động cơ A2212/10T 1400KV, cánh quạt đường kính 9 inch, bốn ESC 30 A và pin LiPo 3S dung lượng 5200 mAh. Khối xử lý sử dụng STM32F103VET6, cảm biến BMI270, bộ thu ExpressLRS (ELRS) 2,4 GHz dạng Nano và mạch hạ áp LM2596. Người vận hành gửi lệnh bằng tay điều khiển Jumper T20 V2 theo phương án liên kết ELRS 2,4 GHz. Điện áp danh định ghi trên pin là 11,1 V; trong các phép tính nguồn, $V_{\mathrm{ref}}=11{,}2$ V là điện áp tham chiếu do nhóm cung cấp, không phải điện áp cố định trong suốt quá trình sử dụng pin.
 
 Các yêu cầu chính được tổng hợp trong \tref{tab:design-requirements}. Các đại lượng tính toán nội bộ sử dụng hệ SI; góc đổi sang độ chỉ phục vụ hiển thị và phân tích đồ thị.
 
@@ -37,7 +37,7 @@ Các yêu cầu chính được tổng hợp trong \tref{tab:design-requirements
 
 Tổng lực đẩy là đầu vào nền của hệ động lực và được điều chỉnh độc lập với hai kênh cân bằng. Trong phép phân bổ phục vụ khảo sát roll và pitch, mômen yaw yêu cầu được đặt bằng không. Thiết kế này tập trung vào chuyển động quay; chức năng giữ độ cao, vị trí và góc hướng tuyệt đối nằm ngoài phạm vi tổng hợp bộ điều khiển.
 
-\subsection{Phương án cấu trúc hệ thống}
+\subsubsection{Phương án cấu trúc hệ thống}
 
 Phương án tổng thể được thể hiện trên \fref{fig:design-system-architecture}. Bộ thu truyền lệnh người vận hành đến STM32 qua giao tiếp nối tiếp. BMI270 cung cấp gia tốc và vận tốc góc qua SPI. STM32 thực hiện hiệu chỉnh, chuyển hệ trục, ước lượng tư thế, tính mômen hiệu chỉnh và phân bổ lực đẩy, sau đó chuyển kết quả thành bốn độ rộng xung gửi tới ESC.
 
@@ -52,6 +52,6 @@ Hai vòng điều khiển được tổ chức xếp tầng. Vòng ngoài dùng 
 
 Đối với hệ động lực, khâu phân bổ tính lực đẩy từng rôto theo hình học khung và giới hạn cơ cấu chấp hành. Quan hệ lực đẩy--lệnh ESC được tách khỏi phép phân bổ để giữ ý nghĩa vật lý của các hệ số điều khiển. Khối quản lý trạng thái quyết định khi nào các lệnh tính toán được phép đưa ra chân PWM.
 
-\subsection{Cơ sở xác định tham số thiết kế}
+\subsubsection{Cơ sở xác định tham số thiết kế}
 
 Kích thước khung và cấu hình ngoại vi cung cấp các tham số hình học, thời gian và giao tiếp. Khối lượng toàn bộ, mômen quán tính, lực đẩy khả dụng, dòng điện và quan hệ lực đẩy--PWM phụ thuộc cấu hình lắp ráp thực tế. Trong chương này, những đại lượng chưa có số đo được giữ dưới dạng tham số; các giá trị lựa chọn cho thuật toán là thông số khởi tạo thiết kế. Kết quả kiểm chứng và mức đáp ứng đạt được được trình bày theo dữ liệu thực nghiệm trong \charef{chap:evaluation}.

@@ -1,8 +1,8 @@
 % !TEX root = ../../main.tex
-\section{Thiết kế điều khiển cân bằng và phân bổ lệnh động cơ}
+\subsection{Thiết kế điều khiển cân bằng và phân bổ lệnh động cơ}
 \label{sec:design-controller}
 
-\subsection{Thiết kế vòng góc và vòng vận tốc góc}
+\subsubsection{Thiết kế vòng góc và vòng vận tốc góc}
 
 Bộ điều khiển sử dụng cấu trúc P ở vòng góc và PID ở vòng vận tốc góc đã trình bày trong \secref{sec:background-control}. Hai kênh roll và pitch dùng cùng cấu trúc nhưng có tham số riêng theo $J_x$ và $J_y$. Giá trị đặt được giới hạn trước khi đưa vào vòng góc; vận tốc góc đặt tiếp tục được giới hạn theo khả năng đáp ứng của hệ động lực.
 
@@ -58,7 +58,7 @@ Khi vòng vận tốc góc bám đủ nhanh, mô hình gần đúng của vòng 
 
 Nhánh D tác động lên tín hiệu đo theo~\eqref{eq:background-filtered-derivative}. Nếu bổ sung $K_{D,j}>0$, chọn khởi tạo $T_f=0{,}01$ s, tương ứng hệ số lọc vi phân $\beta=0{,}8$ ở chu kỳ 2,5 ms. Bộ tham số sau khi thay đổi nhánh D phải được đánh giá lại trên mô hình có lọc và cơ cấu chấp hành; quan hệ đặt cực trong~\eqref{eq:design-rate-gain-selection} áp dụng cho trường hợp khởi tạo $K_D=0$.
 
-\subsection{Phân bổ lực đẩy theo cấu hình F450 chữ X}
+\subsubsection{Phân bổ lực đẩy theo cấu hình F450 chữ X}
 
 Thứ tự rôto và chiều quay tuân theo quy ước của \charef{chap:background}. Phương án gán bốn kênh PWM được xác định trong \tref{tab:design-motor-assignment}. Việc gán vị trí là thông số tích hợp giữa bộ phân bổ và đầu ra; bốn kênh PWM hiện có mới xác định thứ tự ngoại vi.
 
@@ -104,7 +104,7 @@ Nếu giữ nguyên tổng lực đẩy và các rôto có cùng giới hạn $f
 \end{equation}
 Quan hệ này cho thấy dự trữ điều khiển giảm khi lực đẩy nền tiến gần một trong hai giới hạn. Tổng lực đẩy được giới hạn trong $[4f_{\min},4f_{\max}]$ trước phép phân bổ.
 
-\subsection{Xử lý giới hạn và chống bão hòa tích phân}
+\subsubsection{Xử lý giới hạn và chống bão hòa tích phân}
 
 Thiết kế chọn ưu tiên giữ tỉ lệ mômen roll--pitch, chấp nhận điều chỉnh lực đẩy nền trong miền khả dụng. Gọi $\delta_{\max}=\max_i\delta_i$ và $\delta_{\min}=\min_i\delta_i$. Khi độ chênh lệch yêu cầu vượt dải lực của một rôto, hệ số giảm chung được tính:
 \begin{equation}
@@ -133,7 +133,7 @@ Thông tin mômen khả dụng theo mô hình được trả về vòng vận t�
 
 Khi chưa cho phép chạy hoặc khi mất dữ liệu phản hồi, trạng thái tích phân được đưa về không. Nếu khâu chuyển lệnh động cơ có thêm giới hạn, mômen đưa về cơ chế chống bão hòa phải được tính lại từ bộ lệnh cuối cùng. Giá trị này phản ánh mômen khả dụng theo mô hình, chưa bao gồm sai lệch do động lực học và đặc tính thực của bốn cụm.
 
-\subsection{Chuyển lực đẩy thành độ rộng xung ESC}
+\subsubsection{Chuyển lực đẩy thành độ rộng xung ESC}
 
 Để giữ đầu ra bộ điều khiển theo đơn vị mômen, mỗi cụm được mô tả bằng đặc tính tĩnh
 \begin{equation}

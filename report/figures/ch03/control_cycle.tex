@@ -1,0 +1,31 @@
+\begin{tikzpicture}[
+		x=1cm,y=1cm,>=latex,line width=0.8pt,
+		font=\fontsize{11}{13}\selectfont,
+		block/.style={draw,fill=gray!6,align=center,inner sep=5pt,
+				minimum height=1.15cm,text width=4.2cm},
+		every node/.style={align=center}
+	]
+	\node[block] (poll) at (0,0)
+	{Phục vụ RC và giám sát\\Áp lệnh dừng nếu có lỗi};
+	\draw (0,-1.3) -- (2.4,-2.2) -- (0,-3.1) -- (-2.4,-2.2) -- cycle;
+	\node[text width=2.8cm] at (0,-2.2) {Có mẫu\\IMU mới?};
+	\draw (0,-3.9) -- (2.4,-4.8) -- (0,-5.7) -- (-2.4,-4.8) -- cycle;
+	\node[text width=2.8cm] at (0,-4.8) {Mẫu và thời\\gian hợp lệ?};
+	\node[block,text width=4.6cm,minimum height=1.7cm] (compute) at (0,-7.1)
+	{Hiệu chỉnh, lọc, ước lượng\\P góc theo lịch, PID vận tốc góc\\Phân bổ và chuyển lệnh};
+	\node[block,text width=4.6cm,minimum height=1.7cm] (output) at (0,-9.5)
+	{Áp quyền xuất lệnh, cập nhật PWM\\Cập nhật tích phân\\Lưu dữ liệu trong ngân sách thời gian};
+	\node[block,text width=2.8cm,minimum height=1.6cm] (fault) at (5.4,-4.8)
+	{Chuyển trạng thái lỗi\\Chọn lệnh dừng\\Xóa tích phân};
+
+	\draw[->] (poll.south) -- (0,-1.3);
+	\draw[->] (0,-3.1) -- node[right] {Có} (0,-3.9);
+	\draw[->] (0,-5.7) -- node[right] {Có} (compute.north);
+	\draw[->] (compute.south) -- (output.north);
+	\draw[->] (2.4,-4.8) -- node[above] {Không} (fault.west);
+	\draw[->] (fault.south) |- (output.east);
+	\draw[->] (-2.4,-2.2) -- node[above] {Không} (-3.6,-2.2)
+	-- (-3.6,0) -- (poll.west);
+	\draw[->] (output.west) -- (-4.1,-9.5) -- (-4.1,0.8)
+	-| (poll.north);
+\end{tikzpicture}

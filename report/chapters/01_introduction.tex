@@ -43,7 +43,7 @@ Mômen yêu cầu còn phải nằm trong khả năng thực hiện của hệ �
 
 Mục tiêu tổng quát của đề tài là nghiên cứu, thiết kế bộ điều khiển cân bằng quadrotor theo hướng ổn định góc lăn (roll) và góc chúc ngóc (pitch) gần tư thế nằm ngang, với nền tảng xử lý là vi điều khiển STM32. Bộ điều khiển hướng đến giảm sai lệch giữa góc mong muốn và góc phản hồi, hạn chế dao động và tạo tác động đưa thân máy bay trở lại tư thế mong muốn sau nhiễu trong miền khảo sát.
 
-Các nhiệm vụ chuyên môn gồm thiết lập mô hình động lực học quay, nghiên cứu phương pháp ước lượng tư thế từ cảm biến quán tính, xây dựng luật điều khiển và phân bổ tác động cho bốn động cơ. Bộ lọc bổ sung và cấu trúc điều khiển xếp tầng là các phương án được khảo sát. Trong đó, vòng ngoài xử lý sai lệch góc, còn vòng trong xử lý sai lệch vận tốc góc. Chất lượng đáp ứng được xem xét thông qua sai lệch, dao động, độ quá điều chỉnh và thời gian xác lập, thay vì chỉ dựa vào quan sát thân máy bay có trở về nằm ngang hay không.
+Các nhiệm vụ chuyên môn gồm thiết lập mô hình động lực học quay, nghiên cứu phương pháp ước lượng tư thế từ cảm biến quán tính, xây dựng luật điều khiển và phân bổ tác động cho bốn động cơ. Cấu trúc điều khiển được khảo sát là điều khiển xếp tầng, trong đó vòng ngoài xử lý sai lệch góc, còn vòng trong xử lý sai lệch vận tốc góc. Chất lượng đáp ứng được xem xét thông qua sai lệch, dao động, độ quá điều chỉnh và thời gian xác lập, thay vì chỉ dựa vào quan sát thân máy bay có trở về nằm ngang hay không.
 
 \section{Đối tượng và phạm vi nghiên cứu}
 \label{sec:introduction-scope}
@@ -64,7 +64,7 @@ Phạm vi trình bày hiện gồm cơ sở mô hình hóa và phương án thi�
 
 Mô hình động lực học được thiết lập theo phương pháp Newton--Euler, với hệ tọa độ, chiều dương và đơn vị thống nhất. Từ phương trình quay tổng quát, mô hình được giản lược quanh tư thế nằm ngang để phân tích quan hệ giữa mômen, vận tốc góc và góc nghiêng. Các tham số chưa có dữ liệu xác nhận được giữ dưới dạng ký hiệu, làm cơ sở xác định yêu cầu đo đạc hoặc tính toán.
 
-Đối với đo lường, hướng nghiên cứu là hiệu chỉnh sai lệch điểm không, quy đổi dữ liệu về hệ trục thân và kết hợp gia tốc kế với con quay hồi chuyển bằng bộ lọc bổ sung. Đối với điều khiển, phương án khảo sát gồm bộ điều khiển tỉ lệ ở vòng góc và PID ở vòng vận tốc góc. Luật điều khiển được biểu diễn ở dạng rời rạc để phân tích ảnh hưởng của chu kỳ lấy mẫu, lọc thành phần vi phân và giới hạn tích phân. Khâu phân bổ chuyển tổng lực đẩy và mômen yêu cầu thành lực đẩy từng rôto, sau đó liên hệ với tín hiệu gửi đến ESC.
+Đối với đo lường, hướng nghiên cứu là hiệu chỉnh sai lệch điểm không, quy đổi dữ liệu về hệ trục thân và xác định góc nghiêng, vận tốc góc từ cảm biến quán tính. Đối với điều khiển, phương án khảo sát gồm bộ điều khiển tỉ lệ ở vòng góc và PID ở vòng vận tốc góc. Luật điều khiển được biểu diễn ở dạng rời rạc để phân tích ảnh hưởng của chu kỳ lấy mẫu, lọc thành phần vi phân và giới hạn tích phân. Khâu phân bổ chuyển tổng lực đẩy và mômen yêu cầu thành lực đẩy từng rôto, sau đó liên hệ với tín hiệu gửi đến ESC.
 
 Phương án chương trình trên STM32 tổ chức các chức năng thu nhận dữ liệu, ước lượng tư thế, tính toán điều khiển và cập nhật lệnh động cơ theo chu kỳ. Việc kiểm chứng từng khối tập trung vào chiều trục cảm biến, dấu phản hồi, chiều mômen và thời gian thực hiện. Các điều kiện này giúp phân biệt sai lệch do quy ước hoặc kết nối với sai lệch do hệ số điều khiển.
 

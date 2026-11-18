@@ -49,8 +49,8 @@ Rung động của cụm động cơ--cánh quạt có thể tạo các thành p
 Trong các biểu thức rời rạc, $T_s$ là chu kỳ cập nhật thuật toán, tính bằng giây. Góc sử dụng radian, vận tốc góc sử dụng radian trên giây, còn gia tốc sử dụng mét trên giây bình phương. Dữ liệu gia tốc kế và con quay hồi chuyển cần tương ứng về thời điểm lấy mẫu để phép kết hợp phản ánh cùng một trạng thái chuyển động.
 % Cần bổ sung: hướng lắp IMU, thông số quy đổi tín hiệu, điều kiện hiệu chỉnh và chu kỳ cập nhật thực tế.
 
-\subsection{Ước lượng góc roll và pitch bằng bộ lọc bổ sung}
-\label{subsec:background-complementary-filter}
+\subsection{Xác định góc roll và pitch từ gia tốc kế}
+\label{subsec:background-accelerometer-angles}
 
 Trong điều kiện gần tĩnh, gia tốc chuyển động tại cảm biến nhỏ so với gia tốc trọng trường. Thay $\mathbf a_E\approx\mathbf 0$ vào biểu thức~\eqref{eq:background-specific-force}, với biểu diễn tư thế $R=R_z(\psi)R_y(\theta)R_x(\phi)$, thu được
 \begin{equation}
@@ -73,26 +73,4 @@ Gọi $a_x$, $a_y$, $a_z$ là các thành phần gia tốc riêng sau hiệu ch�
 \end{equation}
 Hàm $\operatorname{atan2}$ xét dấu của hai đối số để xác định góc. Các dấu âm trong biểu thức roll xuất phát từ quy ước gia tốc riêng và hệ trục đã chọn. Các góc $\phi_a$, $\theta_a$ là thông tin tham chiếu từ phương trọng lực, với điều kiện gia tốc chuyển động không chi phối tín hiệu đo.
 
-Để kết hợp khả năng theo dõi chuyển động nhanh của con quay hồi chuyển với thông tin hiệu chỉnh từ gia tốc kế, phương án được khảo sát là bộ lọc bổ sung. Đây là cách kết hợp thường dùng cho hai nhóm cảm biến quán tính~\cite{chovancova2014mathematical}. Trong miền góc và vận tốc góc nhỏ, quan hệ động học cho phép dùng $\dot\phi\approx p$ và $\dot\theta\approx q$. Góc ở mẫu hiện tại được dự báo bằng góc ở mẫu trước cộng với phần biến thiên do vận tốc góc, rồi hiệu chỉnh theo góc gia tốc kế:
-\begin{equation}
-    \begin{aligned}
-        \widehat\phi[k]
-        &=\alpha_f\left(\widehat\phi[k-1]+T_s p_c[k]\right)
-        +(1-\alpha_f)\phi_a[k],\\
-        \widehat\theta[k]
-        &=\alpha_f\left(\widehat\theta[k-1]+T_s q_c[k]\right)
-        +(1-\alpha_f)\theta_a[k].
-    \end{aligned}
-    \label{eq:background-complementary-update}
-\end{equation}
-Trong đó, $p_c$, $q_c$ là hai thành phần vận tốc góc sau hiệu chỉnh; $\widehat\phi$, $\widehat\theta$ là góc ước lượng; $\alpha_f$ là hệ số phối hợp. Với hằng số thời gian lọc $\tau_f>0$, có thể chọn
-\begin{equation}
-    \alpha_f=\frac{\tau_f}{\tau_f+T_s},
-    \qquad 0<\alpha_f<1.
-    \label{eq:background-complementary-coefficient}
-\end{equation}
-\clubpenalty=10000
-Giá trị $\alpha_f$ lớn làm tăng trọng số của góc dự báo từ con quay hồi chuyển; giá trị nhỏ tăng mức hiệu chỉnh theo gia tốc kế. Lựa chọn hệ số gắn với chu kỳ cập nhật, mức nhiễu và đặc điểm chuyển động. Bộ lọc bổ sung không tách được hoàn toàn gia tốc chuyển động khỏi trọng lực; điều kiện gần tĩnh của nhánh gia tốc kế vẫn ảnh hưởng đến độ tin cậy của góc ước lượng.
-% Cần bổ sung: hằng số thời gian hoặc hệ số bộ lọc từ cấu hình xử lý và dữ liệu cảm biến thực tế.
-
-Phương trọng lực không thay đổi khi thân quay quanh phương thẳng đứng, nên chỉ dùng gia tốc kế và con quay hồi chuyển không tạo được tham chiếu lâu dài cho góc hướng yaw. Tích phân con quay có thể theo dõi biến thiên hướng trong thời gian ngắn nhưng vẫn chịu trôi góc. Với bài toán cân bằng roll và pitch đang khảo sát, hai góc ước lượng cung cấp thông tin về sai lệch tư thế, còn vận tốc góc sau xử lý phản ánh chuyển động quay tức thời. Hai nhóm đại lượng này cho phép tổ chức phản hồi theo góc và theo vận tốc góc.
+Phương trọng lực không thay đổi khi thân quay quanh phương thẳng đứng, nên gia tốc kế không xác định được góc hướng yaw. Tích phân con quay có thể theo dõi biến thiên hướng trong thời gian ngắn nhưng vẫn chịu trôi góc. Với bài toán cân bằng roll và pitch đang khảo sát, góc nghiêng và vận tốc góc thân là các đại lượng phản hồi cho hai vòng điều khiển.

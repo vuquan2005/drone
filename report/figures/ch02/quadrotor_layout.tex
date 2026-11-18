@@ -11,7 +11,7 @@
     \draw[fill=gray!10,rounded corners=2pt] (-0.48,-0.48) rectangle (0.48,0.48);
 
     % Opposite rotors rotate in the same direction.
-    \foreach \x/\y/\n in {-2/2/1,2/-2/3}{
+    \foreach \x/\y/\n in {-2/2/4,2/-2/2}{
         \begin{scope}[shift={(\x,\y)}]
             \draw[fill=white] (0,0) circle (0.73);
             \draw[->,line width=1pt] (130:0.87) arc (130:-130:0.87);
@@ -19,7 +19,7 @@
             \node at (0,-0.22) {CW};
         \end{scope}
     }
-    \foreach \x/\y/\n in {2/2/2,-2/-2/4}{
+    \foreach \x/\y/\n in {2/2/1,-2/-2/3}{
         \begin{scope}[shift={(\x,\y)}]
             \draw[fill=white] (0,0) circle (0.73);
             \draw[->,line width=1pt] (50:0.87) arc (50:310:0.87);

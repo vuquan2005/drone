@@ -15,7 +15,7 @@ Vị trí của khâu phân bổ trong hệ thống được minh họa trên \f
     \label{fig:background-allocation-chain}
 \end{figure}
 
-Với cấu hình chữ X đã quy ước, gọi $l$ là khoảng cách từ trọng tâm đến trục rôto và $a=l/\sqrt{2}$ là độ lớn hình chiếu khoảng cách này lên mỗi trục $x_B$, $y_B$. Các tọa độ của rôto thứ $i$ trong hệ thân là $x_i,y_i$; vectơ lực đẩy là $[0,0,-f_i]^{\mathsf T}$. Tích có hướng giữa vectơ vị trí và lực cho các thành phần mômen $\tau_{x,i}=-y_i f_i$, $\tau_{y,i}=x_i f_i$. Vì thế, dấu mômen roll và pitch phụ thuộc vào vị trí rôto so với trọng tâm. Mômen yaw phụ thuộc chiều quay: rôto 1 và 3 tạo mômen phản lực âm quanh $z_B$, rôto 2 và 4 tạo mômen dương.
+Với cấu hình chữ X đã quy ước, gọi $l$ là khoảng cách từ trọng tâm đến trục rôto và $a=l/\sqrt{2}$ là độ lớn hình chiếu khoảng cách này lên mỗi trục $x_B$, $y_B$. Các tọa độ của rôto thứ $i$ trong hệ thân là $x_i,y_i$; vectơ lực đẩy là $[0,0,-f_i]^{\mathsf T}$. Tích có hướng giữa vectơ vị trí và lực cho các thành phần mômen $\tau_{x,i}=-y_i f_i$, $\tau_{y,i}=x_i f_i$. Vì thế, dấu mômen roll và pitch phụ thuộc vào vị trí rôto so với trọng tâm. Mômen yaw phụ thuộc chiều quay: rôto 1 và 3 tạo mômen phản lực dương quanh $z_B$, rôto 2 và 4 tạo mômen âm.
 
 \begin{samepage}
 Đặt $\mathbf f=[f_1,f_2,f_3,f_4]^{\mathsf T}$ và $\kappa=c_Q/c_T>0$. Quan hệ phân bổ là:
@@ -23,9 +23,9 @@ Với cấu hình chữ X đã quy ước, gọi $l$ là khoảng cách từ tr�
     \underbrace{\begin{bmatrix}T\\\tau_x\\\tau_y\\\tau_z\end{bmatrix}}_{\mathbf U}
     =\underbrace{\begin{bmatrix}
         1&1&1&1\\
+        -a&-a&a&a\\
         a&-a&-a&a\\
-        a&a&-a&-a\\
-        -\kappa&\kappa&-\kappa&\kappa
+        \kappa&-\kappa&\kappa&-\kappa
     \end{bmatrix}}_{\mathbf A}
     \begin{bmatrix}f_1\\f_2\\f_3\\f_4\end{bmatrix}.
     \label{eq:background-allocation-matrix}
@@ -36,14 +36,14 @@ Trong đó, $f_i$ và $T$ có đơn vị N; $a$ và $\kappa$ có đơn vị m; c
 Với $a,\kappa\ne0$, ma trận $\mathbf A$ khả nghịch. Ký hiệu dấu $*$ cho giá trị yêu cầu, lực đẩy từng rôto được tính từ $\mathbf U^*=[T,\tau_x^*,\tau_y^*,\tau_z^*]^{\mathsf T}$:
 \begin{equation}
     \begin{aligned}
-        f_1^*&=\frac T4+\frac{\tau_x^*}{4a}+\frac{\tau_y^*}{4a}
-            -\frac{\tau_z^*}{4\kappa},\\
-        f_2^*&=\frac T4-\frac{\tau_x^*}{4a}+\frac{\tau_y^*}{4a}
+        f_1^*&=\frac T4-\frac{\tau_x^*}{4a}+\frac{\tau_y^*}{4a}
             +\frac{\tau_z^*}{4\kappa},\\
-        f_3^*&=\frac T4-\frac{\tau_x^*}{4a}-\frac{\tau_y^*}{4a}
+        f_2^*&=\frac T4-\frac{\tau_x^*}{4a}-\frac{\tau_y^*}{4a}
             -\frac{\tau_z^*}{4\kappa},\\
-        f_4^*&=\frac T4+\frac{\tau_x^*}{4a}-\frac{\tau_y^*}{4a}
-            +\frac{\tau_z^*}{4\kappa}.
+        f_3^*&=\frac T4+\frac{\tau_x^*}{4a}-\frac{\tau_y^*}{4a}
+            +\frac{\tau_z^*}{4\kappa},\\
+        f_4^*&=\frac T4+\frac{\tau_x^*}{4a}+\frac{\tau_y^*}{4a}
+            -\frac{\tau_z^*}{4\kappa}.
     \end{aligned}
     \label{eq:background-inverse-allocation}
 \end{equation}

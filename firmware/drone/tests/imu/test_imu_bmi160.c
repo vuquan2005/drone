@@ -17,6 +17,8 @@ static bool fail_write;
 static bool fail_config;
 static bool fail_data;
 static unsigned transactions;
+static unsigned chip_id_reads;
+static uint64_t chip_id_ready_us;
 static uint64_t delayed_us;
 static uint32_t read_time_us;
 static unsigned clock_reads;
@@ -54,6 +56,8 @@ static void reset_fixture(void) {
     selected = false;
     fail_read = fail_write = fail_config = fail_data = false;
     transactions = 0U;
+    chip_id_reads = 0U;
+    chip_id_ready_us = 0U;
     delayed_us = 0U;
     time_initialized = false;
     read_time_us = 0U;
@@ -87,6 +91,12 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *handle,
         assert(address + i - 1U < sizeof(registers));
         assert(tx[i] == 0U);
         rx[i] = registers[address + i - 1U];
+    }
+    if (address == BMI160_CHIP_ID_ADDR) {
+        chip_id_reads++;
+        if (delayed_us < chip_id_ready_us) {
+            rx[1] = 0xffU;
+        }
     }
     if (address == BMI160_GYRO_DATA_ADDR && length == 16U) {
         registers[BMI160_STATUS_ADDR] &= ~(0x80U | 0x40U);
@@ -258,6 +268,7 @@ static void test_init_failures(void) {
     registers[BMI160_CHIP_ID_ADDR] = 0U;
     assert(app_imu_init(&imu, &config) == BSP_IMU_DRIVER_ERROR);
     assert(imu.sensor.driver_error == BMI160_E_DEV_NOT_FOUND);
+    assert(chip_id_reads == 9U);
     assert(!imu.sensor.initialized && !selected);
     reset_fixture();
     fail_read = true;
@@ -274,11 +285,22 @@ static void test_init_failures(void) {
     assert(!imu.sensor.initialized);
 }
 
+static void test_init_retries_chip_id_after_delay(void) {
+    reset_fixture();
+    chip_id_ready_us = 12000U;
+    app_imu_t imu;
+    assert(app_imu_init(&imu, &config) == BSP_IMU_OK);
+    assert(imu.sensor.initialized &&
+           imu.sensor.device.chip_id == BMI160_CHIP_ID);
+    assert(chip_id_reads == 4U);
+}
+
 int main(void) {
     test_unconfigured_and_invalid();
     test_board_binding();
     test_real_driver_init_and_samples();
     test_init_failures();
+    test_init_retries_chip_id_after_delay();
     puts("IMU tests passed (real Bosch driver, simulated SPI HAL)");
     return 0;
 }

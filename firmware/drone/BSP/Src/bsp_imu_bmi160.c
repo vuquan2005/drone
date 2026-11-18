@@ -3,6 +3,8 @@
 
 #define IMU_TRANSFER_BYTES 32U
 #define IMU_SPI_READ_BYTES IMU_TRANSFER_BYTES
+#define IMU_INIT_ATTEMPTS 3U
+#define IMU_INIT_RETRY_DELAY_US 10000U
 
 /* Legacy Bosch callbacks have no context pointer. Bound for each public call;
  * all instances must be serialized in the foreground. */
@@ -87,6 +89,13 @@ bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
     bus.delay_us(2000U);
 
     int8_t result = bmi160_init(&imu->device);
+    /* Replay SPI selection with a delay if the initial chip-ID reads fail. */
+    for (unsigned attempt = 1U;
+         attempt < IMU_INIT_ATTEMPTS && result == BMI160_E_DEV_NOT_FOUND;
+         attempt++) {
+        bus.delay_us(IMU_INIT_RETRY_DELAY_US);
+        result = bmi160_init(&imu->device);
+    }
     if (result == BMI160_OK) {
         imu->device.accel_cfg = (struct bmi160_cfg){
             .odr = BMI160_ACCEL_ODR_400HZ,

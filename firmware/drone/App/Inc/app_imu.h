@@ -7,7 +7,7 @@
 
 #include "bsp_imu.h"
 
-/** @brief Original sensor counts and uncalibrated SI sample in body FRD.
+/** @brief Original sensor counts and SI sample in body FRD.
  * Body axes: X forward, Y right, Z down. Raw fields remain in sensor XYZ.
  * @note Board mapping from sensor XYZ is [-X, +Y, -Z], for both sensors.
  * Positive angular velocity
@@ -19,14 +19,19 @@ typedef struct {
         accel_raw[3]; /**< Original sensor XYZ counts, before body mapping. */
     int16_t
         gyro_raw[3]; /**< Original sensor XYZ counts, before body mapping. */
-    float accel_mps2[3];        /**< Acceleration in m/s^2. */
-    float gyro_radps[3];        /**< Angular velocity in rad/s. */
+    float accel_mps2[3]; /**< Acceleration in m/s^2. */
+    float gyro_radps[3]; /**< Bias-corrected angular velocity in rad/s. */
     uint32_t sensor_time_ticks; /**< Raw wrapping 24-bit sensor clock, not MCU
                                    time. */
     uint32_t t_read_us; /**< MCU uptime captured after a successful BSP read,
                           before conversion; wraps modulo 2^32. Not acquisition
                           time. Preserved with the sample on NO_DATA/error. */
 } app_imu_sample_t;
+
+/** @brief Calibration parameters applied in body FRD. */
+typedef struct {
+    float gyro_bias_radps[3]; /**< Finite bias to subtract, in rad/s. */
+} app_imu_calibration_t;
 
 /**
  * @brief IMU application state owned by one foreground context.
@@ -35,6 +40,7 @@ typedef struct {
  */
 typedef struct {
     bsp_imu_t sensor;
+    app_imu_calibration_t calibration; /**< Set after init, before polling. */
     app_imu_sample_t sample;
     bsp_imu_result_t status;
     bool sample_valid; /**< Most recent poll produced a new sample; not an age
@@ -45,14 +51,15 @@ typedef struct {
 } app_imu_t;
 
 /**
- * @brief Reset samples and counters, then initialize the board IMU.
+ * @brief Reset application IMU state and initialize the board IMU.
  * @param[out] imu Application state; must remain at a stable address after
  * init.
  * @param[in] config Board configuration; NULL leaves the IMU unconfigured.
  * @pre For a valid config, board peripherals and the delay provider are ready.
  * @return Result of bsp_imu_init, or BSP_IMU_INVALID_ARGUMENT for NULL imu.
  * @note Blocking foreground API. Reinitialization using &imu->sensor.config is
- * supported; previous samples and counters are discarded even if init fails.
+ * supported; previous samples, counters and calibration are discarded even if
+ * init fails. The initial gyro offsets are zero.
  */
 bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config);
 /**
@@ -64,8 +71,8 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config);
  * replaces sample, sets sample_valid and increments sample_count. Otherwise,
  * preserves sample; read_error_count increments only on a driver read error.
  * @note Blocking foreground API; no ISR or concurrent access. Does not schedule
- * polling, calibrate, check sample age or retry initialization. Maps SI axes
- * to body FRD while preserving the original sensor counts in raw fields.
+ * polling, estimate bias, check sample age or retry initialization. Applies the
+ * configured gyro bias after mapping to body FRD and preserves the raw counts.
  */
 bsp_imu_result_t app_imu_poll(app_imu_t *imu);
 

@@ -64,11 +64,18 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 
 IMU được cấu hình 400 Hz, accel ±16 g và gyro ±2000 °/s. App đổi mẫu sang SI
 và hệ thân FRD (X tiến, Y phải, Z xuống), theo ánh xạ sensor `[-X, +Y, -Z]`;
-cần xác nhận lại theo cách lắp thực tế. Chưa có hiệu chuẩn gyro bias. Timestamp
-`t_read_us` là uptime MCU sau khi đọc thành công, không phải thời điểm cảm biến
-lấy mẫu; tràn uint32 sau khoảng 71,6 phút. Xem API trong
+cần xác nhận lại theo cách lắp thực tế. `t_read_us` là uptime MCU sau khi đọc
+thành công và tràn uint32 sau khoảng 71,6 phút. Xem API trong
 [app_imu.h](App/Inc/app_imu.h) và driver [BMI160](Drivers/BMI160/README.md),
 [BMI270](Drivers/BMI270/README.md).
+
+Trong FLIGHT với BMI160, App trừ bias gyro mặc định
+`[-0.001541997, -0.004106014, -0.005377476]` rad/s theo thứ tự XYZ trong FRD
+trước Mahony và PID tốc độ góc. Bias là trung bình của 2.020 mẫu trong 5 giây
+cuối phiên `telemetry_20261119_023330` tại `experiments/raw/telemetry/`, từ
+sequence 8258 đến 10277. Đổi số đếm sang FRD và rad/s theo
+[định dạng telemetry](../../protocol/telemetry.md) trước khi lấy trung bình.
+BMI270 dùng bias bằng 0. Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến.
 
 USART1 nhận CRSF qua DMA; nối TX receiver vào PA10 và chung GND. `connected`
 chỉ phản ánh frame RC hợp lệ trong 100 ms gần nhất, không đánh giá chất lượng

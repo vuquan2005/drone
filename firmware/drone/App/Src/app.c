@@ -80,6 +80,11 @@ static void init_motor(void) {
 
 static void init_imu(void) {
     app_imu_init(&imu, bsp_board_imu_config());
+#if defined(DRONE_IMU_BMI160)
+    /* Body FRD mean from the last 5 s of telemetry_20261119_023330. */
+    imu.calibration = (app_imu_calibration_t){
+        .gyro_bias_radps = {-0.001541997f, -0.004106014f, -0.005377476f}};
+#endif
     log_imu_init();
 }
 

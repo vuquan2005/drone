@@ -49,7 +49,8 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
          * Apply the sign after conversion so INT16_MIN cannot overflow. */
         const float sign = axis == 1U ? 1.0f : -1.0f;
         imu->sample.accel_mps2[axis] = raw.accel[axis] * accel_scale * sign;
-        imu->sample.gyro_radps[axis] = raw.gyro[axis] * gyro_scale * sign;
+        imu->sample.gyro_radps[axis] = raw.gyro[axis] * gyro_scale * sign -
+                                       imu->calibration.gyro_bias_radps[axis];
     }
     imu->sample.sensor_time_ticks = raw.sensor_time_ticks;
     imu->sample.t_read_us = t_read_us;

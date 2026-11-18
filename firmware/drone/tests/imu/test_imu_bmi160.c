@@ -211,6 +211,8 @@ static void test_real_driver_init_and_samples(void) {
     registers[0x18U] = 0x56;
     registers[0x18U + 1U] = 0x34;
     registers[0x18U + 2U] = 0x12;
+    imu.calibration =
+        (app_imu_calibration_t){.gyro_bias_radps = {0.125f, -0.25f, 0.5f}};
     assert(app_imu_poll(&imu) == BSP_IMU_OK);
     assert(imu.sample_valid && imu.sample_count == 1U);
     assert(fabsf(imu.sample.accel_mps2[0] + 9.80665f) < 0.0001f);
@@ -220,9 +222,9 @@ static void test_real_driver_init_and_samples(void) {
     assert(memcmp(imu.sample.gyro_raw, gyro_raw, sizeof(gyro_raw)) == 0);
     assert(fabsf(imu.sample.accel_mps2[1] + 9.80665f) < 0.0001f);
     assert(fabsf(imu.sample.accel_mps2[2] - 156.9064f) < 0.0001f);
-    assert(fabsf(imu.sample.gyro_radps[0] + 17.4532925f) < 0.0001f);
-    assert(fabsf(imu.sample.gyro_radps[1] + 17.4532925f) < 0.0001f);
-    assert(fabsf(imu.sample.gyro_radps[2] + 34.90552f) < 0.0001f);
+    assert(fabsf(imu.sample.gyro_radps[0] + 17.5782925f) < 0.0001f);
+    assert(fabsf(imu.sample.gyro_radps[1] + 17.2032925f) < 0.0001f);
+    assert(fabsf(imu.sample.gyro_radps[2] + 35.40552f) < 0.0001f);
     assert(imu.sample.sensor_time_ticks == 0x123456U);
     assert(imu.sample.t_read_us == UINT32_MAX - 5U && clock_reads == 1U);
     assert(registers[BMI160_STATUS_ADDR] == 0U);
@@ -258,6 +260,9 @@ static void test_real_driver_init_and_samples(void) {
 
     assert(app_imu_init(&imu, &imu.sensor.config) == BSP_IMU_OK);
     assert(imu.sample_count == 0U && !imu.sample_valid);
+    for (unsigned axis = 0; axis < 3U; ++axis) {
+        assert(imu.calibration.gyro_bias_radps[axis] == 0.0f);
+    }
     assert(app_imu_init(&imu, NULL) == BSP_IMU_NOT_CONFIGURED);
     assert(!imu.sensor.initialized && !imu.sample_valid);
 }

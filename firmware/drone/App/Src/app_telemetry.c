@@ -6,10 +6,11 @@ enum { IMU_FRAME_BYTES = 44U, STATS_FRAME_BYTES = 52U };
 static uint32_t stats_sequence;
 static uint32_t receiver_sequence;
 static uint32_t rate_sequence;
+static uint32_t attitude_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
 
 void app_telemetry_init(void) {
-    receiver_sequence = rate_sequence = 0U;
+    receiver_sequence = rate_sequence = attitude_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
 }
 
@@ -168,5 +169,23 @@ bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate) {
         put_float(frame + 60 + 4 * i,
                   (float)rate->mixer.motor[i] / NORM_Q15_ONE);
     put_u32(frame + 88, crc32(frame, 88));
+    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
+}
+
+bsp_rtt_result_t app_telemetry_write_attitude(const float q[4],
+                                              uint32_t t_sample_us) {
+    const uint32_t sequence = ++attitude_sequence;
+    if (q == NULL)
+        return BSP_RTT_INVALID_ARGUMENT;
+    uint8_t frame[36] = {'D', 'R', 'T', '!', 1U, 6U, 24U, 0U};
+    const bsp_rtt_result_t ready =
+        bsp_rtt_prepare_write(BSP_RTT_DATA, sizeof(frame));
+    if (ready != BSP_RTT_OK)
+        return ready;
+    put_u32(frame + 8, sequence);
+    put_u32(frame + 12, t_sample_us);
+    for (unsigned i = 0; i < 4; ++i)
+        put_float(frame + 16 + 4 * i, q[i]);
+    put_u32(frame + 32, crc32(frame, 32));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }

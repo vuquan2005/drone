@@ -30,7 +30,9 @@ Viewer hiển thị log có filter, IMU, receiver và rate/mixer. IMU hiển th�
 m/s² và rad/s trong hệ thân FRD; receiver hiển thị CH1–CH16 dạng raw CRSF
 0–2047. `connected` phản ánh tuổi frame RC hợp lệ, còn `telemetry stale`
 chỉ báo snapshot cũ hoặc TCP DATA ngắt. Tab **Rate · FRD** nhận snapshot
-20 Hz, không phải mọi bước PID. **Diagnostics** hiển thị counter host, MCU
+20 Hz, không phải mọi bước PID. Tab **Attitude** hiển thị mô hình quadrotor với ba trục thân và đồ thị roll, pitch
+và yaw tương đối từ quaternion Mahony (tối đa 20 Hz). Bản ghi
+`attitude_*.csv` lưu quaternion gốc để xem lại. **Diagnostics** hiển thị counter host, MCU
 và lỗi ghi; tốc độ nhận host không phải phép đo chính xác tần số lấy mẫu.
 
 Mở **Recording options**, chọn thư mục và **Start recording**; có thể bật

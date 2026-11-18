@@ -16,6 +16,7 @@ foreach(level IN ITEMS 0 3 4)
         ${TARGET}
         PRIVATE DRONE_LOG_LEVEL=${level}
                 RATE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rate_v1.hex"
+                ATTITUDE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_v1.hex"
                 TELEMETRY_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_raw_frd_v1.hex"
                 RC_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rc_v1.hex"
                 RTT_STATS_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rtt_stats_v1.hex")
@@ -33,6 +34,7 @@ add_executable(
     app_logging_tests
     test_app.c
     ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
+    ${FIRMWARE_ROOT}/Control/Src/mahony.c
     ${FIRMWARE_ROOT}/Control/Src/mixer.c
     ${FIRMWARE_ROOT}/App/Src/runtime.c
     ${FIRMWARE_ROOT}/App/Src/esc_calibration.c

@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from PySide6 import QtCore, QtWidgets
 
-from panels import ImuPanel, ReceiverPanel, StatsLabel, LogPanel, RatePanel
+from panels import ImuPanel, ReceiverPanel, StatsLabel, LogPanel, RatePanel, AttitudePanel
 from stream import Stream
 from telemetry import TelemetryState
 from session_writer import SessionWriter
@@ -98,9 +98,11 @@ class Viewer(QtWidgets.QMainWindow):
         self.imu_panel = ImuPanel()
         self.receiver_panel = ReceiverPanel()
         self.rate_panel = RatePanel()
-        tabs.addTab(self.imu_panel, "IMU")
+        self.attitude_panel = AttitudePanel()
+        tabs.addTab(self.imu_panel, "IMU · FRD")
         tabs.addTab(self.receiver_panel, "Receiver · RC")
         tabs.addTab(self.rate_panel, "Rate · FRD")
+        tabs.addTab(self.attitude_panel, "Attitude")
         splitter.addWidget(tabs)
         self.log_panel = LogPanel()
         splitter.addWidget(self.log_panel)
@@ -174,6 +176,7 @@ class Viewer(QtWidgets.QMainWindow):
         state = self.saved_session[self.segment_box.currentData()]
         self.imu_panel.update_series(state.series, follow=False)
         self.rate_panel.update_points(state.rate_points, follow=False)
+        self.attitude_panel.update_attitude(state)
         for plot in (*self.imu_panel.plots, *self.rate_panel.plots):
             plot.enableAutoRange()
         for plot in self.rate_panel.plots[-2:]:
@@ -302,7 +305,7 @@ class Viewer(QtWidgets.QMainWindow):
         self.record_status.setText(f"{state}: {w.directory}{warning}")
         self.writer_stats.setText(
             f"Queue {w.queue.qsize()} · "
-            f"writer drops CSV={drops['imu_raw']} rate={drops['rate']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
+            f"writer drops CSV={drops['imu_raw']} rate={drops['rate']} attitude={drops['attitude']} stats={drops['stats']} RC={drops['rc']} LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:
             QtCore.QTimer.singleShot(0, self.close)
@@ -341,6 +344,8 @@ class Viewer(QtWidgets.QMainWindow):
                 now - state.rc_received_at if state.rc_received_at is not None else 0,
                 self.states["DATA"] == "connected",
             )
+        if active_panel is self.attitude_panel:
+            self.attitude_panel.update_attitude(state, now)
         if active_panel is self.rate_panel:
             self.rate_panel.update_points(state.rate_points)
             rate = state.latest_rate

@@ -40,6 +40,13 @@ void app_process(const app_command_t *command);
  */
 bool app_get_status(app_status_t *status);
 
+/** @brief Copy the latest fresh attitude estimate from the foreground context.
+ * @param body_to_ned Writable quaternion (w,x,y,z), body FRD to NED with
+ * arbitrary initial heading.
+ * @return True on success. On failure the output is unchanged.
+ */
+bool app_get_attitude(float body_to_ned[4]);
+
 /** Configure the flight rate controller and mixer after app_init.
  * Initialization uses bench gains when DRONE_RATE_CONTROL is enabled (Debug and
  * Release presets), otherwise leaves it disabled. Invalid config disables it.

@@ -8,14 +8,14 @@ CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                                              |
-| ------ | ------- | -------------- | -------------------------------------------------------------------- |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                         |
-| 4      | 1       | version        | `1`                                                                  |
-| 5      | 1       | type           | `1`: ngừng dùng; `2`: thống kê RTT; `3`: RC; `4`: IMU raw; `5`: rate |
-| 6      | 2       | payload_length | uint16; stats = 40, RC = 48, IMU raw = 32, rate = 80                 |
-| 8      | N       | payload        | Theo version và type                                                 |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                         |
+| Offset | Số byte | Trường         | Quy ước                                                                           |
+| ------ | ------- | -------------- | --------------------------------------------------------------------------------- |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                      |
+| 4      | 1       | version        | `1`                                                                               |
+| 5      | 1       | type           | `1`: ngừng dùng; `2`: thống kê RTT; `3`: RC; `4`: IMU raw; `5`: rate; `6`: tư thế |
+| 6      | 2       | payload_length | uint16; stats = 40, RC = 48, IMU raw = 32, rate = 80, tư thế = 24                 |
+| 8      | N       | payload        | Theo version và type                                                              |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                      |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -185,3 +185,17 @@ counter DATA chung; chưa có counter drop riêng type 5.
 
 Fixture dùng chung C/Python: `protocol/fixtures/rate_v1.hex`. Viewer hiển thị
 snapshot trong tab Rate · FRD và ghi `rate_*.csv` khi người dùng bật recording.
+
+## Tư thế Mahony v1, type 6
+
+Payload 24 byte, frame 36 byte, cùng header và CRC32 với các type khác.
+Firmware gửi tối đa 20 Hz trên CH1 khi ước lượng còn mới.
+
+| Offset | Kiểu        | Nội dung                                                                                 |
+| ------ | ----------- | ---------------------------------------------------------------------------------------- |
+| 0      | uint32      | Sequence riêng, tăng theo mỗi lần thử gửi                                                |
+| 4      | uint32      | Timestamp đọc mẫu dùng để ước lượng, µs modulo 2^32                                      |
+| 8      | float32 × 4 | Quaternion đơn vị theo thứ tự `w, x, y, z`, quay từ FRD sang NED với yaw ban đầu quy ước |
+
+Viewer đổi quaternion thành roll, pitch và yaw tương đối theo độ. CSV
+`attitude_*.csv` giữ nguyên quaternion và timestamp để xem lại.

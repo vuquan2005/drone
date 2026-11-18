@@ -9,6 +9,9 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
+from session_reader import read_session
+from records import Frames
+from telemetry import TelemetryState
 from session_writer import IMU_RAW_COLUMNS, STATS_COLUMNS, SessionWriter
 
 
@@ -29,6 +32,11 @@ class SessionWriterTests(unittest.TestCase):
                     "imu_raw", (2, 17, 123456, 42, -1, 2, 3, 4, 5, 6, 16, 2, 2000, 400, 400)
                 )
             )
+            fixture = Path(__file__).resolve().parents[2] / "protocol/fixtures/attitude_v1.hex"
+            (frame,) = Frames().feed(bytes.fromhex(fixture.read_text()))
+            kind, attitude = TelemetryState().feed(frame, 0)
+            self.assertEqual(kind, "attitude")
+            self.assertTrue(writer.submit(kind, (2, *attitude)))
             self.assertTrue(writer.submit("stats", (2, 1, 1234, 17, 3, 0, 225, 224, 1, 0, 0)))
             self.assertTrue(writer.submit("log", b"[1][I][imu] ready\n"))
             self.assertTrue(writer.submit("raw", b"\x00\xff\x10"))
@@ -43,6 +51,7 @@ class SessionWriterTests(unittest.TestCase):
                     f"rtt_stats_{stamp}.csv",
                     f"rc_{stamp}.csv",
                     f"rate_{stamp}.csv",
+                    f"attitude_{stamp}.csv",
                     f"events_{stamp}.log",
                     f"data_{stamp}.hex",
                 },
@@ -55,6 +64,9 @@ class SessionWriterTests(unittest.TestCase):
             self.assertEqual(
                 stats_rows[1], ["2", "1", "1234", "17", "3", "0", "225", "224", "1", "0", "0"]
             )
+            segments, _ = read_session(writer.directory)
+            self.assertEqual(segments[2].latest_attitude, attitude)
+            self.assertAlmostEqual(segments[2].attitude_points[-1][1], 73.7398, places=3)
             self.assertFalse(list(writer.directory.glob("imu_[0-9]*.csv")))
             self.assertFalse(writer.submit("csv", (1,) * 10))
             self.assertEqual(rows[0], list(IMU_RAW_COLUMNS))
@@ -139,7 +151,15 @@ class SessionWriterTests(unittest.TestCase):
                 self.assertFalse(writer.submit("imu_raw", (1,) * 10))
                 self.assertEqual(
                     writer.dropped,
-                    {"imu_raw": 1, "stats": 0, "rc": 0, "rate": 0, "log": 0, "raw": 0},
+                    {
+                        "imu_raw": 1,
+                        "stats": 0,
+                        "rc": 0,
+                        "rate": 0,
+                        "attitude": 0,
+                        "log": 0,
+                        "raw": 0,
+                    },
                 )
             finally:
                 release.set()

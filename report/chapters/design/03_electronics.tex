@@ -1,0 +1,89 @@
+% !TEX root = ../../main.tex
+\section{Thiết kế hệ thống điện và phần cứng điều khiển}
+\label{sec:design-electronics}
+
+\subsection{Lựa chọn vi điều khiển và cấu hình xung nhịp}
+
+STM32F103VET6 được chọn làm bộ xử lý trung tâm. Vi điều khiển thuộc dòng Cortex-M3, có tần số xử lý tối đa 72 MHz, bộ nhớ Flash 512 KiB và SRAM 64 KiB~\cite{stm32f103veDatasheet}. Các ngoại vi SPI, USART, DMA và timer cho phép bố trí riêng đường cảm biến, đường nhận lệnh và đường xuất PWM. Phương án này sử dụng một vi điều khiển để thực hiện cả xử lý tín hiệu và điều khiển, giúp thống nhất thời điểm cập nhật các đại lượng trong vòng phản hồi.
+
+Cấu hình sử dụng thạch anh ngoài 8 MHz và hệ số nhân PLL bằng 9, cho tần số hệ thống 72 MHz. Bus APB2 chạy ở 72 MHz; APB1 được chia hai để chạy ở 36 MHz. Theo cấu trúc cấp xung của STM32F1, khi bộ chia APB khác một, xung timer tương ứng bằng hai lần xung bus~\cite{stm32Rm0008}. Vì vậy, TIM4 nhận xung 72 MHz dù nằm trên APB1.
+
+Giao tiếp SPI1 dùng cấu hình ánh xạ lại chân sang PB3, PB4, PB5. Chức năng JTAG được tắt để sử dụng các chân này, trong khi SWD trên PA13 và PA14 được giữ cho nạp và gỡ lỗi. Chân PD7 điều khiển chọn BMI270 và được đặt mức cao khi khởi tạo, giữ cảm biến ở trạng thái chưa được chọn trước khi giao dịch.
+
+\subsection{Kết nối cảm biến và bộ thu điều khiển}
+
+BMI270 tích hợp gia tốc kế ba trục và con quay hồi chuyển ba trục, đáp ứng nhu cầu đo hai nhóm đại lượng phản hồi của hệ thống. Cảm biến có các dải đo lập trình được, bao gồm $\pm16g$ và $\pm2000^\circ$/s~\cite{boschBmi270Datasheet}. Cấu hình hiện tại chọn hai dải này cùng tốc độ xuất dữ liệu 400 Hz cho cả gia tốc kế và con quay. Dải đo được giữ theo cấu hình khởi tạo phần cứng; việc thu hẹp dải để tăng độ phân giải phụ thuộc biên độ tín hiệu trong điều kiện hoạt động.
+
+Đường SPI1 sử dụng mode 0, dữ liệu 8 bit, truyền bit cao trước và chọn thiết bị bằng GPIO. Với xung APB2 72 MHz và bộ chia SPI bằng 32, tốc độ xung nối tiếp là
+\begin{equation}
+	f_{\mathrm{SPI}}=\frac{72\ \mathrm{MHz}}{32}
+	=2{,}25\ \mathrm{MHz}.
+	\label{eq:design-spi-clock}
+\end{equation}
+Các đường SCK, MISO, MOSI và CS được đi ngắn, cùng tham chiếu GND. Vị trí chân và chức năng được tổng hợp trong \tref{tab:design-pin-assignment}.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Phân bổ chân và ngoại vi của bộ điều khiển.}
+	\label{tab:design-pin-assignment}
+	\begin{tabularx}{\linewidth}{|C{2.4cm}|C{3.0cm}|Y|}
+		\hline
+		\textbf{Khối} & \textbf{Chân STM32} & \textbf{Chức năng và cấu hình}                        \\
+		\hline
+		BMI270        & PB3, PB4, PB5       & SPI1: SCK, MISO, MOSI; ánh xạ lại chân; 2,25 MHz      \\
+		\hline
+		BMI270        & PD7                 & CS tác động mức thấp; khởi tạo mức cao                \\
+		\hline
+		Bộ thu        & PA10                & USART1 RX, nối TX bộ thu; 420000 baud, 8N1            \\
+		\hline
+		Bộ thu        & PA9                 & USART1 TX, nối RX bộ thu; dành cho chiều truyền ngược \\
+		\hline
+		ESC 1--4      & PB6--PB9            & TIM4 CH1--CH4; PWM 400 Hz, độ phân giải 1 $\mu$s      \\
+		\hline
+		Nạp, gỡ lỗi   & PA13, PA14          & SWDIO, SWCLK; dùng cùng GND tham chiếu                \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Bộ thu 2,4 GHz Nano được ghép với USART1 bằng giao thức CRSF theo phương án firmware. Các bộ thu ExpressLRS dùng UART có thể cung cấp CRSF, với TX của bộ thu đưa lệnh đến RX bộ điều khiển~\cite{expresslrsReceiverWiring}; tốc độ mặc định được tài liệu ExpressLRS nêu là 420000 baud~\cite{expresslrsUartConfiguration}. Phương án kết nối sử dụng PA10 làm đầu vào lệnh và PA9 cho chiều truyền ngược. Cấu hình 8N1 tương ứng mỗi byte có một bit bắt đầu, tám bit dữ liệu và một bit dừng.
+
+DMA nhận nối tiếp được cấu hình vòng để thu byte độc lập với vòng tính toán chính. Chương trình chỉ cập nhật kênh điều khiển sau khi nhận đủ khung RC và kiểm tra CRC. Giá trị kênh được chuẩn hóa theo điểm thấp, trung tâm và điểm cao đã hiệu chỉnh trên tay điều khiển; thứ tự kênh là một phần của cấu hình hệ thống, không suy ra từ số thứ tự chân UART.
+
+\subsection{Thiết kế tín hiệu PWM cho ESC}
+
+Bốn ESC nhận tín hiệu từ bốn kênh TIM4. Chọn bộ chia trước $\mathrm{PSC}=71$, giá trị tự nạp $\mathrm{ARR}=2499$ và chế độ PWM tác động mức cao. Tần số đếm và tần số khung xung được tính:
+\begin{equation}
+	\begin{aligned}
+		f_{\mathrm{cnt}} & =\frac{72\times10^6}{71+1}
+		=10^6\ \mathrm{Hz},                                 \\
+		f_{\mathrm{PWM}} & =\frac{f_{\mathrm{cnt}}}{2499+1}
+		=400\ \mathrm{Hz}.
+	\end{aligned}
+	\label{eq:design-pwm-timing}
+\end{equation}
+Một bước đếm bằng 1 $\mu$s và chu kỳ khung bằng 2,5 ms. Do đó, giá trị thanh ghi so sánh $\mathrm{CCR}=1000$ tương ứng xung cao 1000 $\mu$s, còn $\mathrm{CCR}=2000$ tương ứng xung cao 2000 $\mu$s. Khoảng lệnh được cấu hình là 1000--2000 $\mu$s và khởi tạo tại 1000 $\mu$s.
+
+Dải xung và tốc độ khung này là phương án giao tiếp của bộ điều khiển; khả năng tiếp nhận được đối chiếu với loại ESC sử dụng. Giá trị 1000 $\mu$s chỉ có ý nghĩa lệnh thấp nhất sau khi thống nhất giao thức và hiệu chuẩn hành trình ESC. Bốn kênh dùng thanh ghi đệm để đưa bộ lệnh mới vào hiệu lực tại sự kiện cập nhật timer, hạn chế chênh lệch thời điểm giữa các động cơ.
+
+\subsection{Thiết kế phân phối và ổn định nguồn}
+
+Nguồn được chia thành nhánh công suất cho bốn ESC và nhánh điện tử qua LM2596, như \fref{fig:design-power-distribution}. LM2596 là bộ biến đổi hạ áp; trong thiết kế, đầu ra được đặt 5 V để cấp bo điều khiển. Đường 3,3 V trên bo cấp cho cảm biến và các mạch logic tương ứng. Bộ thu được cấp theo dải điện áp của module, với mức tín hiệu UART tương thích đầu vào STM32.
+
+\begin{figure}[htbp]
+	\centering
+	\resizebox{\linewidth}{!}{\input{figures/ch03/power_distribution}}
+	\caption{Phương án phân phối nguồn cho hệ động lực và khối điều khiển.}
+	\label{fig:design-power-distribution}
+\end{figure}
+
+Khả năng cấp dòng của mạch hạ áp được xác định theo tổng tải điện tử và điều kiện tản nhiệt. Tài liệu LM2596 nêu khả năng của IC đến 3 A trong các điều kiện thiết kế tương ứng~\cite{tiLm2596}; dòng liên tục của module thực tế còn phụ thuộc cuộn cảm, diode và bố trí tản nhiệt. Vì vậy, ngân sách nhánh 5 V được lập theo công suất các tải thay vì lấy trực tiếp 3 A làm dòng sử dụng.
+
+Gọi $P_5$ là công suất các tải trực tiếp trên đường 5 V, $P_{3{,}3}$ là công suất tải 3,3 V và $\eta_{3{,}3}$ là hiệu suất tầng tạo 3,3 V. Dòng đầu ra yêu cầu của LM2596 xấp xỉ
+\begin{equation}
+	I_{5,\mathrm{req}}
+	=\frac{P_5+P_{3{,}3}/\eta_{3{,}3}}{5}.
+	\label{eq:design-logic-power-budget}
+\end{equation}
+Trong công thức, công suất tính bằng W và dòng tính bằng A. Hiệu suất các tầng nguồn đồng thời được dùng để quy đổi công suất điện tử về dòng pin trong~\eqref{eq:design-battery-current}.
+
+Các nhánh công suất và điện tử dùng chung GND tham chiếu nhưng dòng lớn của động cơ được dẫn về điểm phân phối nguồn bằng đường riêng. Tụ lọc đặt gần đầu cấp bo và IMU; dây tín hiệu cảm biến được bố trí cách các dây pha động cơ. Cách phân phối này giảm ảnh hưởng của sụt áp đường dây và dòng chuyển mạch đến tín hiệu đo.

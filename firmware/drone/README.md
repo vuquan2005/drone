@@ -19,7 +19,7 @@ mức tín hiệu và wiring trên board thực tế trước khi nạp hoặc c
 | Thiết bị          | Kết nối STM32             | Cấu hình                      |
 | ----------------- | ------------------------- | ----------------------------- |
 | IMU BMI160/BMI270 | SPI1: PA5/PA6/PA7, CS PA4 | SPI mode 0, 9 MHz             |
-| Receiver ELRS     | TX → PA10, RX ← PA9       | USART1, CRSF 420000 baud, 8N1 |
+| Receiver ELRS     | TX → PA3, RX ← PA2        | USART2, CRSF 420000 baud, 8N1 |
 | ESC               | PB6/PB7/PB8/PB9           | TIM4 PWM 400 Hz, 1000–2000 µs |
 
 Thứ tự chân không trùng thứ tự motor: xem [PWM ESC](#pwm-esc).
@@ -154,8 +154,8 @@ sequence 8258 đến 10277. Đổi số đếm sang FRD và rad/s theo
 Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến. Tab IMU của RTT hiển
 thị giá trị đổi đơn vị từ số đếm đó.
 
-USART1 nhận CRSF qua DMA. Nối TX receiver vào PA10, RX receiver vào PA9 và
-chung GND. `connected` phản ánh frame RC hợp lệ trong 100 ms gần nhất.
+USART2 nhận CRSF qua DMA1 Channel 6. Nối TX receiver vào PA3, RX receiver vào
+PA2 và chung GND. `connected` phản ánh frame RC hợp lệ trong 100 ms gần nhất.
 Command dùng CH1–CH4 cho roll/pitch/throttle/yaw, CH5 arm, CH6 mode,
 CH7 calib và CH8 telemetry. Endpoint và chiều stick cần xác nhận trên radio và
 board; hợp đồng giải mã nằm trong [app_command.h](App/Inc/app_command.h).

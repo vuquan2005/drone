@@ -14,7 +14,7 @@ typedef struct {
     bool connected; /**< A valid RC frame was received within the timeout. */
 } app_receiver_sample_t;
 
-/** Start USART1 reception. Call once after UART initialization, outside ISR. */
+/** Start USART2 reception. Call once after UART initialization, outside ISR. */
 void app_receiver_init(void);
 /** @brief Drain buffered UART bytes and update RC state. Foreground only;
  * call frequently (target <= 2 ms; 255 queued bytes maximum). */

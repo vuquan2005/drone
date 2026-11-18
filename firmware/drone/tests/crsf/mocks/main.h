@@ -13,8 +13,8 @@ typedef enum { HAL_OK, HAL_ERROR, HAL_BUSY } HAL_StatusTypeDef;
 #define HAL_UART_ERROR_NONE 0U
 #define HAL_UART_STATE_READY 0x20U
 #define HAL_UART_STATE_BUSY_TX 0x21U
-#define USART1_IRQn 37
-#define DMA1_Channel5_IRQn 15
+#define USART2_IRQn 38
+#define DMA1_Channel6_IRQn 16
 #define __HAL_DMA_GET_COUNTER(dma) ((dma)->remaining)
 #define __HAL_UART_CLEAR_OREFLAG(uart) ((void)(uart))
 uint32_t HAL_GetTick(void);

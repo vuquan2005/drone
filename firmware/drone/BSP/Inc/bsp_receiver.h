@@ -25,7 +25,7 @@ bool bsp_receiver_init(void);
  * Nonblocking, foreground only. Also retries failed receive requests. */
 bsp_receiver_result_t bsp_receiver_read(uint8_t *byte, uint32_t *timestamp_ms);
 
-/** @brief Copy a frame into the USART1 TX buffer and start interrupt-driven
+/** @brief Copy a frame into the USART2 TX buffer and start interrupt-driven
  * transmission alongside RX DMA.
  * @param frame Readable bytes for this call only. Must be non-NULL.
  * @param length Frame size in bytes, from 1 to 64.

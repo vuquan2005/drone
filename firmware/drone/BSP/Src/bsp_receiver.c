@@ -5,9 +5,9 @@
 /* Board mapping: keep in sync with drone.ioc and CubeMX IRQ handlers.
  * Pin labels RECEIVER_TX/RX describe the STM32 side of the connection.
  * Both IRQs share producer state and must use the same preemption priority. */
-#define RECEIVER_UART_HANDLE huart1
-#define RECEIVER_UART_IRQn USART1_IRQn
-#define RECEIVER_RX_DMA_IRQn DMA1_Channel5_IRQn
+#define RECEIVER_UART_HANDLE huart2
+#define RECEIVER_UART_IRQn USART2_IRQn
+#define RECEIVER_RX_DMA_IRQn DMA1_Channel6_IRQn
 #define RECEIVER_IRQ_PRIORITY 5U
 
 /* Owned and initialized by CubeMX before bsp_receiver_init(). */

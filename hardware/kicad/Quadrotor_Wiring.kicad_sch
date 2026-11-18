@@ -3480,7 +3480,7 @@
 		(uuid "6e5ca123-7002-5dfd-bba5-232598ed9e96")
 	)
 	(no_connect
-		(at 64.77 111.76)
+		(at 186.69 127)
 		(uuid "6fab21c4-d7a1-57bc-a96f-994a95f051ad")
 	)
 	(no_connect
@@ -3684,7 +3684,7 @@
 		(uuid "fe61224b-3e15-524c-96e4-488fb934990f")
 	)
 	(no_connect
-		(at 64.77 106.68)
+		(at 186.69 129.54)
 		(uuid "ff760b16-4fb3-5340-ae75-ed58671c4cc2")
 	)
 	(wire
@@ -3919,7 +3919,7 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 127) (xy 191.77 127)
+			(xy 64.77 111.76) (xy 59.69 111.76)
 		)
 		(stroke
 			(width 0)
@@ -4189,7 +4189,7 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 129.54) (xy 191.77 129.54)
+			(xy 64.77 106.68) (xy 59.69 106.68)
 		)
 		(stroke
 			(width 0)
@@ -4448,12 +4448,12 @@
 		(uuid "02ed9484-dc96-4353-b22b-999702c5ff53")
 	)
 	(label "STM32_TX_ELRS_RX"
-		(at 191.77 129.54 0)
+		(at 59.69 106.68 180)
 		(effects
 			(font
 				(size 0.95 0.95)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "0960a46b-24e4-4cd9-967a-61ff7bca3319")
 	)
@@ -4568,12 +4568,12 @@
 		(uuid "4dba1240-d269-4b86-a82f-36559f9ad910")
 	)
 	(label "ELRS_TX_STM32_RX"
-		(at 191.77 127 0)
+		(at 59.69 111.76 180)
 		(effects
 			(font
 				(size 0.95 0.95)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "528646ec-cfd3-423b-a781-553bfdbeb014")
 	)

@@ -18,7 +18,11 @@ class ImuPanel(pg.GraphicsLayoutWidget):
         super().__init__()
         self.setBackground("w")
         self.plots, self.curves = [], []
-        for index, (title, unit) in enumerate((("Acceleration", "m/s²"), ("Gyroscope", "rad/s"))):
+        groups = (
+            ("Acceleration", "m/s²", ("X", "Y", "Z")),
+            ("Gyroscope", "rad/s", ("Roll", "Pitch", "Yaw")),
+        )
+        for index, (title, unit, labels) in enumerate(groups):
             plot = self.addPlot(row=index, col=0, title=title)
             plot.setLabel("left", unit)
             plot.getAxis("left").enableAutoSIPrefix(False)
@@ -29,11 +33,11 @@ class ImuPanel(pg.GraphicsLayoutWidget):
             self.curves.append(
                 [
                     plot.plot(
-                        name=axis,
+                        name=label,
                         pen=pg.mkPen(color, width=AXIS_LINE_WIDTH),
                         connect="finite",
                     )
-                    for axis, color in zip("XYZ", AXIS_COLORS)
+                    for label, color in zip(labels, AXIS_COLORS)
                 ]
             )
         self.plots[1].setXLink(self.plots[0])

@@ -38,7 +38,7 @@ static struct {
     bool valid;
 } attitude;
 static struct {
-    float rate_radps[2];
+    attitude_control_result_t result;
     uint32_t attitude_updates;
     bool have_update;
     bool valid;
@@ -57,6 +57,8 @@ static bool last_arm_requested;
 static uint32_t last_stats_ms;
 static uint32_t last_control_ms;
 static bool attitude_reported;
+static app_attitude_control_sample_t attitude_control_sample;
+static bool attitude_control_pending;
 #endif
 
 static bool imu_failed(bsp_imu_result_t status) {
@@ -129,6 +131,7 @@ static void init_telemetry_schedule(void) {
     last_stats_ms = HAL_GetTick();
     last_control_ms = last_stats_ms;
     attitude_reported = false;
+    attitude_control_pending = false;
 }
 #else
 static inline void init_telemetry_schedule(void) {}
@@ -236,12 +239,29 @@ static bool process_tilt_target(void) {
         (uint32_t)(attitude.updates - tilt_target.attitude_updates) >=
             MAHONY_HZ / ATTITUDE_CONTROL_HZ) {
         const float angle_per_q15 = ATTITUDE_MAX_ANGLE_RAD / NORM_Q15_ONE;
-        tilt_target.valid = attitude_controller_step(
-            attitude.filter.q, command.roll * angle_per_q15,
-            command.pitch * angle_per_q15, ATTITUDE_KP_PER_S,
-            tilt_target.rate_radps);
+        const float roll_rad = command.roll * angle_per_q15;
+        const float pitch_rad = command.pitch * angle_per_q15;
+#if DRONE_RTT && DRONE_TELEMETRY
+        const uint32_t t_control_us = bsp_time_now_us();
+#endif
+        tilt_target.valid =
+            attitude_controller_step(attitude.filter.q, roll_rad, pitch_rad,
+                                     ATTITUDE_KP_PER_S, &tilt_target.result);
         tilt_target.attitude_updates = attitude.updates;
         tilt_target.have_update = true;
+#if DRONE_RTT && DRONE_TELEMETRY
+        const float *q = attitude.filter.q;
+        const attitude_control_result_t *result = &tilt_target.result;
+        attitude_control_sample = (app_attitude_control_sample_t){
+            .t_control_us = t_control_us,
+            .t_estimate_us = attitude.estimate_us,
+            .body_to_ned = {q[0], q[1], q[2], q[3]},
+            .target_rad = {roll_rad, pitch_rad},
+            .tilt_error = {result->tilt_error[0], result->tilt_error[1]},
+            .rate_radps = {result->rate_radps[0], result->rate_radps[1]},
+            .valid = tilt_target.valid};
+        attitude_control_pending = true;
+#endif
     }
     return tilt_target.valid;
 }
@@ -276,7 +296,7 @@ static void process_rate(void) {
     /* Use the latest sample once; never replay missed controller iterations. */
     const bool had_time = rate.have_time;
     const bool calculated = app_rate_step_with_tilt(
-        &rate, &command, use_attitude ? tilt_target.rate_radps : NULL,
+        &rate, &command, use_attitude ? tilt_target.result.rate_radps : NULL,
         imu.sample.gyro_radps, imu.sample.t_read_us);
     rate_failed = !calculated && (had_time || !rate.have_time);
 }
@@ -355,6 +375,11 @@ static void process_motor(void) {
 
 #if DRONE_RTT && DRONE_TELEMETRY
 static void process_periodic_telemetry(void) {
+    if (attitude_control_pending) {
+        /* Encode after the motor update to keep RTT off the output path. */
+        attitude_control_pending = false;
+        (void)app_telemetry_write_attitude_control(&attitude_control_sample);
+    }
     const uint32_t now = HAL_GetTick();
     if ((uint32_t)(now - last_control_ms) >= 50U) {
         last_control_ms = now;

@@ -3,7 +3,7 @@
 from collections import deque
 import math
 
-from records import ATTITUDE, IMU_RAW, ImuSeries, RC, RTT_STATS, RATE
+from records import ATTITUDE, ATTITUDE_CONTROL, IMU_RAW, ImuSeries, RC, RTT_STATS, RATE
 
 
 def attitude_degrees(q):
@@ -52,8 +52,52 @@ class TelemetryState:
         self.latest_attitude = self.attitude_received_at = None
         self.attitude_points = deque(maxlen=250)
         self.attitude_start = None
+        self.latest_attitude_control = self.attitude_control_received_at = None
+        self.attitude_control_points = deque(maxlen=2000)
+        self.attitude_control_elapsed_us = 0
+
+    def feed_attitude_control(self, payload, received_at):
+        if len(payload) != ATTITUDE_CONTROL.size:
+            self.series.invalid += 1
+            return
+        values = ATTITUDE_CONTROL.unpack(payload)
+        seq, stamp, _, flags = values[:4]
+        q = values[4:8]
+        if (
+            flags not in (0, 1)
+            or not 0.99 <= sum(v * v for v in q) <= 1.01
+            or not all(math.isfinite(v) for v in values[8:])
+        ):
+            self.series.invalid += 1
+            return
+        gap = False
+        if self.latest_attitude_control is not None:
+            ds = (seq - self.latest_attitude_control[0]) % 2**32
+            dt = (stamp - self.latest_attitude_control[1]) % 2**32
+            if ds >= 2**31 or dt >= 2**31:
+                self.series.resets += 1
+                self.new_connection()
+            elif ds == 0:
+                self.series.invalid += 1
+                return
+            else:
+                self.attitude_control_elapsed_us += dt
+                gap = ds > 1 or dt > 50000
+        t = self.attitude_control_elapsed_us / 1e6
+        roll, pitch, _ = attitude_degrees(q)
+        target_roll, target_pitch = map(math.degrees, values[8:10])
+        correction = values[10:] if flags else (math.nan,) * 4
+        points = self.attitude_control_points
+        if points and (gap or abs(roll - points[-1][2]) > 180):
+            points.append((t, *((math.nan,) * 8)))
+        points.append((t, target_roll, roll, target_pitch, pitch, *correction))
+        self.latest_attitude_control = values
+        self.attitude_control_received_at = received_at
+        return "attitude_control", values
 
     def feed(self, line, received_at):
+        if line[:2] == (1, 7):
+            return self.feed_attitude_control(line[2], received_at)
         if line[:2] == (1, 6):
             if len(line[2]) != ATTITUDE.size:
                 self.series.invalid += 1

@@ -14,12 +14,14 @@ foreach(level IN ITEMS 0 3 4)
     target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     target_compile_definitions(
         ${TARGET}
-        PRIVATE DRONE_LOG_LEVEL=${level}
-                RATE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rate_v1.hex"
-                ATTITUDE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_v1.hex"
-                TELEMETRY_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_raw_frd_v1.hex"
-                RC_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rc_v1.hex"
-                RTT_STATS_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rtt_stats_v1.hex")
+        PRIVATE
+            DRONE_LOG_LEVEL=${level}
+            RATE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rate_v1.hex"
+            ATTITUDE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_v1.hex"
+            ATTITUDE_CONTROL_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_control_v1.hex"
+            TELEMETRY_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_raw_frd_v1.hex"
+            RC_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rc_v1.hex"
+            RTT_STATS_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rtt_stats_v1.hex")
     if(level GREATER 0)
         target_sources(
             ${TARGET}

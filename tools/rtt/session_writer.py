@@ -7,7 +7,14 @@ from queue import Empty, Full, Queue
 from threading import Event, Thread
 import time
 
-from records import ATTITUDE_COLUMNS, RTT_STATS_FIELDS, RC_FIELDS, IMU_RAW_FIELDS, RATE_FIELDS
+from records import (
+    ATTITUDE_COLUMNS,
+    ATTITUDE_CONTROL_COLUMNS,
+    RTT_STATS_FIELDS,
+    RC_FIELDS,
+    IMU_RAW_FIELDS,
+    RATE_FIELDS,
+)
 
 STATS_COLUMNS = ("segment", *RTT_STATS_FIELDS)
 RC_COLUMNS = ("segment", *RC_FIELDS)
@@ -54,12 +61,15 @@ class SessionWriter:
             self.files["attitude"] = (self.directory / f"attitude_{stamp}.csv").open(
                 "x", newline="", encoding="utf-8"
             )
+            self.files["attitude_control"] = (
+                self.directory / f"attitude_control_{stamp}.csv"
+            ).open("x", newline="", encoding="utf-8")
             self.files["log"] = (self.directory / f"events_{stamp}.log").open("xb")
             if raw:
                 self.files["raw"] = (self.directory / f"data_{stamp}.hex").open("xb")
             self.csv_writers = {
                 kind: csv.writer(self.files[kind])
-                for kind in ("imu_raw", "stats", "rc", "rate", "attitude")
+                for kind in ("imu_raw", "stats", "rc", "rate", "attitude", "attitude_control")
             }
             for kind, columns in (
                 ("imu_raw", IMU_RAW_COLUMNS),
@@ -67,6 +77,7 @@ class SessionWriter:
                 ("rc", RC_COLUMNS),
                 ("rate", ("segment", *RATE_FIELDS)),
                 ("attitude", ATTITUDE_COLUMNS),
+                ("attitude_control", ATTITUDE_CONTROL_COLUMNS),
             ):
                 self.csv_writers[kind].writerow(columns)
                 self.files[kind].flush()
@@ -81,7 +92,7 @@ class SessionWriter:
         self.accepted = 0
         self.processed = 0
         self.dropped = dict.fromkeys(
-            ("imu_raw", "stats", "rc", "rate", "attitude", "log", "raw"), 0
+            ("imu_raw", "stats", "rc", "rate", "attitude", "attitude_control", "log", "raw"), 0
         )
         self.thread = Thread(target=self._run, name="telemetry-writer", daemon=True)
         self.thread.start()

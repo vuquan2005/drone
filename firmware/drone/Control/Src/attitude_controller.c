@@ -3,7 +3,7 @@
 
 bool attitude_controller_step(const float body_to_ned[4], float roll_rad,
                               float pitch_rad, float kp_per_s,
-                              float tilt_rate_radps[2]) {
+                              attitude_control_result_t *result) {
     const float half_pi = 1.5707963268f;
     if (!(fabsf(roll_rad) <= half_pi && fabsf(pitch_rad) <= half_pi) ||
         !isfinite(kp_per_s) || kp_per_s < 0.0f) {
@@ -25,13 +25,16 @@ bool attitude_controller_step(const float body_to_ned[4], float roll_rad,
 
     /* Cross(target down, estimated down) divided by cos(error/2) gives
      * twice the vector part of the shortest tilt-error quaternion. */
-    const float gain = kp_per_s / sqrtf(0.5f * (1.0f + dot));
-    const float roll_rate = gain * (target_y * down_z - target_z * down_y);
-    const float pitch_rate = gain * (target_z * down_x - target_x * down_z);
+    const float scale = 1.0f / sqrtf(0.5f * (1.0f + dot));
+    const float roll_error = scale * (target_y * down_z - target_z * down_y);
+    const float pitch_error = scale * (target_z * down_x - target_x * down_z);
+    const float roll_rate = kp_per_s * roll_error;
+    const float pitch_rate = kp_per_s * pitch_error;
     if (!isfinite(roll_rate) || !isfinite(pitch_rate)) {
         return false;
     }
-    tilt_rate_radps[0] = roll_rate;
-    tilt_rate_radps[1] = pitch_rate;
+    *result =
+        (attitude_control_result_t){.tilt_error = {roll_error, pitch_error},
+                                    .rate_radps = {roll_rate, pitch_rate}};
     return true;
 }

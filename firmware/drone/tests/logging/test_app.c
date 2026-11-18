@@ -207,7 +207,12 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     app_command_t pilot = {.valid = true,
                            .mode = APP_COMMAND_SWITCH_MIDDLE,
                            .throttle = NORM_Q15_ONE / 2};
+    char trace[512];
     app_process(&pilot);
+    assert(drain(1U, trace) == 112U); /* IMU then attitude control. */
+    assert((uint8_t)trace[49] == 7U && get_u32(trace + 52U) == 1U);
+    assert(get_u32(trace + 56U) == bsp_time_now_us());
+    assert(get_u32(trace + 60U) == bsp_time_now_us());
     mixer_result_t result;
     pilot.roll = NORM_Q15_ONE;
     pilot.pitch = -NORM_Q15_ONE;
@@ -215,18 +220,22 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     for (unsigned sample = 0U; sample < 3U; ++sample) {
         tick += sample % 2U == 0U ? 2U : 3U;
         app_process(&pilot);
+        assert(drain(1U, trace) == 44U);
         assert(app_get_rate_result(&result));
         assert(result.achieved.roll == 0 && result.achieved.pitch == 0);
         assert(result.achieved.yaw > 3200 && result.achieved.yaw < 3350);
     }
     tick += 3U;
     app_process(&pilot);
+    assert(drain(1U, trace) == 112U);
+    assert((uint8_t)trace[49] == 7U && get_u32(trace + 52U) == 2U);
     assert(app_get_rate_result(&result));
     assert(result.achieved.roll > 5000 && result.achieved.roll < 6000);
     assert(result.achieved.pitch < -5000 && result.achieved.pitch > -6000);
     pilot.mode = APP_COMMAND_SWITCH_LOW;
     tick += 2U;
     app_process(&pilot);
+    assert(drain(1U, trace) == 44U);
     assert(app_get_rate_result(&result) && result.achieved.roll > 6500);
     pilot.mode = APP_COMMAND_SWITCH_HIGH;
     pilot.roll = pilot.pitch = 0;

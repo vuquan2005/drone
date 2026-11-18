@@ -257,6 +257,69 @@ class AttitudePanel(QtWidgets.QWidget):
             self.plot.setXRange(end - 10, end, padding=0)
 
 
+class AttitudeControlPanel(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QtWidgets.QVBoxLayout(self)
+        self.status = QtWidgets.QLabel()
+        layout.addWidget(self.status)
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graph.setBackground("w")
+        layout.addWidget(self.graph, 1)
+        self.plots, self.curves = [], []
+        groups = (
+            ("Roll", "°", (("Target", AXIS_COLORS[0]), ("Estimated", "#333333"))),
+            ("Pitch", "°", (("Target", AXIS_COLORS[1]), ("Estimated", "#333333"))),
+            ("Tilt error", "2 × quaternion vector", (("X", AXIS_COLORS[0]), ("Y", AXIS_COLORS[1]))),
+            ("Rate request", "rad/s", (("X", AXIS_COLORS[0]), ("Y", AXIS_COLORS[1]))),
+        )
+        for index, (title, unit, traces) in enumerate(groups):
+            plot = self.graph.addPlot(row=index // 2, col=index % 2, title=title)
+            plot.setLabel("left", unit)
+            plot.getAxis("left").enableAutoSIPrefix(False)
+            if index >= 2:
+                plot.setLabel("bottom", "Elapsed time", units="s")
+            plot.showGrid(x=True, y=True, alpha=0.2)
+            plot.addLegend()
+            self.curves.extend(
+                plot.plot(name=name, pen=pg.mkPen(color, width=AXIS_LINE_WIDTH), connect="finite")
+                for name, color in traces
+            )
+            if self.plots:
+                plot.setXLink(self.plots[0])
+            self.plots.append(plot)
+        self.status.setText("Waiting for attitude control (SC MIDDLE/HIGH)")
+
+    def update_control(self, state, now=None):
+        sample = state.latest_attitude_control
+        if sample is None:
+            self.status.setText(
+                "No saved attitude control"
+                if now is None
+                else "Waiting for attitude control (SC MIDDLE/HIGH)"
+            )
+        elif now is not None and now - state.attitude_control_received_at > 0.25:
+            self.status.setText("No recent attitude control samples")
+        else:
+            _, control_us, estimate_us, flags = sample[:4]
+            estimate_age_ms = (control_us - estimate_us) % 2**32 / 1000
+            source = "Saved" if now is None else "Live"
+            status = "valid" if flags else "invalid correction"
+            self.status.setText(f"{source} · {status} · estimate age {estimate_age_ms:.2f} ms")
+        data = np.asarray(state.attitude_control_points, dtype=float)
+        for column, curve in enumerate(self.curves, 1):
+            if data.size:
+                curve.setData(data[:, 0], data[:, column])
+            else:
+                curve.setData([], [])
+        if now is None:
+            for plot in self.plots:
+                plot.enableAutoRange()
+        else:
+            end = max(10, data[-1, 0]) if data.size else 10
+            self.plots[0].setXRange(end - 10, end, padding=0)
+
+
 class ChannelStick(QtWidgets.QWidget):
     """Read-only XY display of two raw channels."""
 

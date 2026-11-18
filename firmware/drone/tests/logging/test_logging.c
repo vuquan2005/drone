@@ -204,6 +204,11 @@ static void enabled_tests(void) {
     assert(app_telemetry_write_rate(NULL) == BSP_RTT_INVALID_ARGUMENT);
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
     assert(app_telemetry_write_rate(&rate) == BSP_RTT_FULL);
+    bsp_rtt_init();
+    const float q[4] = {0.8f, 0.6f, 0.0f, 0.0f};
+    assert(app_telemetry_write_attitude(q, 123456U) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 36U);
+    check_fixture(output, 36U, ATTITUDE_FIXTURE_PATH);
     app_log_init(NULL);
     assert(app_log_write(1U, "imu", "no clock") == BSP_RTT_NOT_INITIALIZED);
 }

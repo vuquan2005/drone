@@ -77,6 +77,7 @@ target_sources(
     ${CMAKE_PROJECT_NAME}
     PRIVATE Control/Src/mixer.c
             Control/Src/rate_controller.c
+            Control/Src/mahony.c
             BSP/Src/bsp_board.c
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c

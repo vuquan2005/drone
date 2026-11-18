@@ -86,7 +86,9 @@ RATE_FIELDS = (
     *(f"motor_{i}_thrust_norm" for i in range(1, 5)),
     *(f"residual_{axis}" for axis in ("roll", "pitch", "yaw")),
 )
-KNOWN_SIZES = {2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size, 5: RATE.size}
+ATTITUDE = struct.Struct("<II4f")
+ATTITUDE_COLUMNS = ("segment", "sequence", "t_sample_us", "qw", "qx", "qy", "qz")
+KNOWN_SIZES = {2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size, 5: RATE.size, 6: ATTITUDE.size}
 MAX_PAYLOAD = 256
 
 

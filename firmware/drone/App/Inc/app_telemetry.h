@@ -72,6 +72,14 @@ app_telemetry_write_receiver(const app_receiver_sample_t *sample,
  * Sequence counts attempts, timestamp is the last consumed IMU read time (us).
  * Layout and units: protocol/telemetry.md. */
 bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate);
+/** @brief Send one RTT DATA snapshot of a fresh FRD-to-NED quaternion.
+ * @param q Readable unit quaternion in w,x,y,z order.
+ * @param t_sample_us MCU timestamp of the estimate, modulo 2^32.
+ * @return RTT write result. Foreground only, nonblocking.
+ */
+bsp_rtt_result_t app_telemetry_write_attitude(const float q[4],
+                                              uint32_t t_sample_us);
+
 #define APP_TELEMETRY_RATE(rate) ((void)app_telemetry_write_rate(rate))
 #define APP_TELEMETRY_RECEIVER(sample, ms)                                     \
     ((void)app_telemetry_write_receiver(sample, ms))

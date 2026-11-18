@@ -5,13 +5,14 @@ import csv
 from pathlib import Path
 import struct
 
-from records import IMU_RAW, RATE, RC, RTT_STATS
+from records import ATTITUDE, ATTITUDE_COLUMNS, IMU_RAW, RATE, RC, RTT_STATS
 from session_writer import IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS, STATS_COLUMNS
 from telemetry import TelemetryState
 
 SCHEMAS = (
     ("imu_raw", IMU_RAW_COLUMNS, IMU_RAW, 4),
     ("rate", ("segment", *RATE_FIELDS), RATE, 5),
+    ("attitude", ATTITUDE_COLUMNS, ATTITUDE, 6),
     ("rc", RC_COLUMNS, RC, 3),
     ("rtt_stats", STATS_COLUMNS, RTT_STATS, 2),
 )
@@ -47,7 +48,11 @@ def read_session(directory):
                         if segment < 1:
                             raise ValueError("invalid segment")
                         values = [
-                            float(value) if kind == 5 and i >= 4 else int(value)
+                            (
+                                float(value)
+                                if (kind == 5 and i >= 4) or (kind == 6 and i >= 2)
+                                else int(value)
+                            )
                             for i, value in enumerate(row[1:])
                         ]
                         payload = wire.pack(*values)
@@ -68,6 +73,8 @@ def read_session(directory):
                                 raise ValueError("nonmonotonic stream within segment")
                             elapsed += dt
                             gap = ds > 1
+                        if kind == 6 and state.attitude_points.maxlen is not None:
+                            state.attitude_points = deque(state.attitude_points)
                         # Rate CSV has MCU timestamps, unlike the live host-time plot.
                         if state.feed((1, kind, payload), elapsed / 1e6) is None:
                             raise ValueError("invalid telemetry payload")

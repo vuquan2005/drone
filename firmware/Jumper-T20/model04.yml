@@ -203,20 +203,8 @@ expoData:
 flightModeData:
   0:
     trim:
-      0:
-        value: 0
-        mode: 0
-      2:
-        value: 0
-        mode: 0
-      3:
-        value: 0
-        mode: 0
-      4:
-        value: 0
-        mode: 0
       7:
-        value: 0
+        value: 6
         mode: 0
     name: ""
     swtch: "NONE"
@@ -275,18 +263,6 @@ moduleData:
         crsfArmingMode: 0
         crsfArmingTrigger: "NONE"
         spare3: 0
-  1:
-    type: TYPE_CROSSFIRE
-    subType: 0
-    channelsStart: 0
-    channelsCount: 16
-    failsafeMode: NOT_SET
-    mod:
-      crsf:
-        telemetryBaudrate: 0
-        crsfArmingMode: 0
-        crsfArmingTrigger: "NONE"
-        spare3: 0
 inputNames:
   0:
     val: "Ail"
@@ -297,6 +273,289 @@ inputNames:
   3:
     val: "Rud"
 potsWarnEnabled: 0
+telemetrySensors:
+  0:
+    id1:
+      id: 20
+    id2:
+      instance: 3
+    label: "RSNR"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 17
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  1:
+    id1:
+      id: 20
+    id2:
+      instance: 4
+    label: "ANT"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 0
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  2:
+    id1:
+      id: 20
+    id2:
+      instance: 5
+    label: "RFMD"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 0
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  3:
+    id1:
+      id: 20
+    id2:
+      instance: 6
+    label: "TPWR"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 16
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  4:
+    id1:
+      id: 20
+    id2:
+      instance: 7
+    label: "TRSS"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 17
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  5:
+    id1:
+      id: 20
+    id2:
+      instance: 8
+    label: "TQly"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 13
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  6:
+    id1:
+      id: 20
+    id2:
+      instance: 9
+    label: "TSNR"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 17
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  7:
+    id1:
+      id: 20
+    id2:
+      instance: 0
+    label: "1RSS"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 17
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  8:
+    id1:
+      id: 20
+    id2:
+      instance: 1
+    label: "2RSS"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 17
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  9:
+    id1:
+      id: 20
+    id2:
+      instance: 2
+    label: "RQly"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 13
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  10:
+    id1:
+      id: 33
+    id2:
+      instance: 0
+    label: "FM"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 42
+    prec: 0
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      param: 0
+  11:
+    id1:
+      id: 30
+    id2:
+      instance: 0
+    label: "Ptch"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 21
+    prec: 2
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  12:
+    id1:
+      id: 30
+    id2:
+      instance: 1
+    label: "Roll"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 21
+    prec: 2
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  13:
+    id1:
+      id: 30
+    id2:
+      instance: 2
+    label: "Yaw"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 21
+    prec: 2
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+screens:
+  0:
+    type: VALUES
+    u:
+      lines:
+        0:
+        2:
+          sources:
+            0:
+              val: tele(11)
+            1:
+              val: tele(12)
+        3:
+          sources:
+            0:
+              val: tele(13)
+            1:
+              val: tele(10)
 view: 0
 modelRegistrationID: "498252Q-"
 functionSwitchConfig: 2730

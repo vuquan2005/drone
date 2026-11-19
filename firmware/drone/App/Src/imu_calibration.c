@@ -20,7 +20,7 @@ static app_imu_t imu;
 static app_imu_calibration_t calibration;
 static gyro_bias_window_t gyro_window;
 static accel_calibration_t accel_session;
-static enum { IMU_CAL_IDLE, IMU_CAL_GYRO, IMU_CAL_ACCEL } phase;
+static imu_calibration_state_t state;
 static uint32_t phase_start_ms;
 static uint32_t first_us;
 static uint32_t last_us;
@@ -30,9 +30,10 @@ void imu_calibration_init(void) {
     accel_session = (accel_calibration_t){0};
     calibration = (app_imu_calibration_t){0};
     const bsp_imu_result_t status = app_imu_init(&imu, bsp_board_imu_config());
-    phase = status == BSP_IMU_OK ? IMU_CAL_GYRO : IMU_CAL_IDLE;
+    state = status == BSP_IMU_OK ? IMU_CALIBRATION_GYRO
+                                 : IMU_CALIBRATION_INIT_FAILED;
     phase_start_ms = HAL_GetTick();
-    if (phase == IMU_CAL_GYRO) {
+    if (state == IMU_CALIBRATION_GYRO) {
         APP_LOG_INFO("imu_calib", "gyro: keep the frame stationary");
     } else {
         APP_LOG_ERROR("imu_calib", "IMU init failed status=%d driver=%d",
@@ -60,7 +61,7 @@ static void process_gyro(const app_imu_sample_t *sample) {
         APP_LOG_WARN("imu_calib", "gyro window rejected, collecting again");
         return;
     }
-    phase = IMU_CAL_ACCEL;
+    state = IMU_CALIBRATION_ACCEL;
     phase_start_ms = HAL_GetTick();
     APP_LOG_INFO("imu_calib", "gyro bias urad/s=%ld,%ld,%ld samples=%lu",
                  (long)(calibration.gyro_bias_radps[0] * 1e6f),
@@ -112,37 +113,40 @@ static void process_accel(const app_imu_sample_t *sample) {
     if (accel_session.captured_faces != ACCEL_CAL_ALL_FACES) {
         return;
     }
-    phase = IMU_CAL_IDLE;
     calibration.accel_valid = accel_calibration_result(
         &accel_session, calibration.accel_bias_mps2, calibration.accel_scale);
     if (!calibration.accel_valid) {
+        state = IMU_CALIBRATION_INVALID_ACCEL;
         APP_LOG_ERROR("imu_calib",
                       "accel coefficients out of range; reset to retry");
     } else if (imu_calibration_save(imu.sensor.device.chip_id, &calibration)) {
+        state = IMU_CALIBRATION_DONE;
         APP_LOG_INFO("imu_calib",
                      "saved gyro and accel calibration; reset to use");
     } else {
+        state = IMU_CALIBRATION_SAVE_FAILED;
         APP_LOG_ERROR("imu_calib", "flash save failed");
     }
 }
 
 void imu_calibration_process(const app_command_t *command) {
-    if (phase == IMU_CAL_IDLE) {
+    if (state != IMU_CALIBRATION_GYRO && state != IMU_CALIBRATION_ACCEL) {
         return;
     }
     const uint32_t elapsed_ms = HAL_GetTick() - phase_start_ms;
     /* Give the receiver time to recover after blocking IMU initialization. */
-    if (phase == IMU_CAL_GYRO && elapsed_ms < IMU_CAL_SETTLE_MS) {
+    if (state == IMU_CALIBRATION_GYRO && elapsed_ms < IMU_CAL_SETTLE_MS) {
         return;
     }
     const bool rc_valid = command != NULL && command->valid;
     if (!rc_valid || !command->imu_calibration_requested ||
         command->arm_requested || command->throttle < 0 ||
         command->throttle > APP_ARM_THROTTLE_MAX) {
-        phase = IMU_CAL_IDLE;
         if (!rc_valid) {
+            state = IMU_CALIBRATION_RC_LOST;
             APP_LOG_WARN("imu_calib", "cancelled: RC unavailable");
         } else {
+            state = IMU_CALIBRATION_CANCELLED;
             APP_LOG_WARN(
                 "imu_calib", "cancelled: requested=%u arm=%u throttle_q15=%ld",
                 (unsigned)command->imu_calibration_requested,
@@ -150,12 +154,13 @@ void imu_calibration_process(const app_command_t *command) {
         }
         return;
     }
-    const uint32_t timeout_ms =
-        phase == IMU_CAL_GYRO ? GYRO_CAL_TIMEOUT_MS : ACCEL_CAL_TIMEOUT_MS;
+    const uint32_t timeout_ms = state == IMU_CALIBRATION_GYRO
+                                    ? GYRO_CAL_TIMEOUT_MS
+                                    : ACCEL_CAL_TIMEOUT_MS;
     if (elapsed_ms >= timeout_ms) {
         APP_LOG_ERROR("imu_calib", "%s calibration timed out",
-                      phase == IMU_CAL_GYRO ? "gyro" : "accel");
-        phase = IMU_CAL_IDLE;
+                      state == IMU_CALIBRATION_GYRO ? "gyro" : "accel");
+        state = IMU_CALIBRATION_TIMEOUT;
         return;
     }
     const bsp_imu_result_t status = app_imu_poll(&imu);
@@ -163,16 +168,21 @@ void imu_calibration_process(const app_command_t *command) {
         return;
     }
     if (status != BSP_IMU_OK) {
-        phase = IMU_CAL_IDLE;
+        state = IMU_CALIBRATION_READ_FAILED;
         APP_LOG_ERROR("imu_calib", "IMU read failed status=%d driver=%d",
                       (int)status, (int)imu.sensor.driver_error);
         return;
     }
 
     APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
-    if (phase == IMU_CAL_GYRO) {
+    if (state == IMU_CALIBRATION_GYRO) {
         process_gyro(&imu.sample);
     } else {
         process_accel(&imu.sample);
     }
+}
+
+imu_calibration_status_t imu_calibration_get_status(void) {
+    return (imu_calibration_status_t){
+        .state = state, .captured_faces = accel_session.captured_faces};
 }

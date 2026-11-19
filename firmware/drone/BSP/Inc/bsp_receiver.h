@@ -25,4 +25,13 @@ bool bsp_receiver_init(void);
  * Nonblocking, foreground only. Also retries failed receive requests. */
 bsp_receiver_result_t bsp_receiver_read(uint8_t *byte, uint32_t *timestamp_ms);
 
+/** @brief Copy a frame into the USART1 TX buffer and start interrupt-driven
+ * transmission alongside RX DMA.
+ * @param frame Readable bytes for this call only. Must be non-NULL.
+ * @param length Frame size in bytes, from 1 to 64.
+ * @return True if TX started. Invalid input, busy TX or a pending UART error
+ * returns false without queuing a frame. Call after init, serialized in
+ * foreground only. Does not wait for transmission. */
+bool bsp_receiver_try_send(const uint8_t *frame, uint8_t length);
+
 #endif

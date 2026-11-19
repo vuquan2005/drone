@@ -65,18 +65,20 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 
 1. Tháo cánh và đặt khung đứng yên. Trên tay điều khiển, để SA ở OFF, ga ở
    mức thấp nhất, SB ở HIGH và SC ở giữa. Giữ các vị trí này khi reset bo.
-2. Dùng build có RTT và `DRONE_LOG_LEVEL=INFO` để xem log `imu_calib`. Sau
-   1 giây chờ IMU và RC, giữ khung đứng yên cho đến khi firmware thu đủ ít nhất
-   1.140 mẫu liên tiếp trong cửa sổ 3 giây ở ODR 400 Hz.
-3. Khi RTT báo `accel: expose each face`, xoay khung qua sáu mặt theo thứ tự
-   tùy ý. Với mỗi mặt, đặt trục cần đo gần phương thẳng đứng và giữ yên cho
-   tới khi RTT báo `captured`. Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây.
+2. Khi T20 hiện `IMU GYRO` trên ô `FM`, giữ khung đứng yên. Sau 1 giây chờ
+   IMU và RC, firmware cần ít nhất 1.140 mẫu liên tiếp trong cửa sổ 3 giây
+   ở ODR 400 Hz. Build có RTT và `DRONE_LOG_LEVEL=INFO` còn ghi log `imu_calib`.
+3. Khi `FM` hiện dạng `X+ 0/6`, firmware đã chuyển sang đo accel. Nhãn gợi ý
+   một mặt còn thiếu và cho biết số mặt đã nhận. Dùng bảng bên dưới để đặt
+   khung và giữ yên đến khi số đếm tăng. Có thể xoay qua sáu mặt theo thứ tự
+   tùy ý. Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây.
    Firmware nhận mặt khi véc-tơ gia tốc lệch khoảng 10° trở xuống so với một
    trục, xác định chiều theo dấu và kiểm tra gyro cùng độ dao động của accel.
    RTT báo các mặt còn thiếu. Mặt đã nhận được tính một lần. Giữ nguyên công
    tắc và ga khi xoay khung.
-4. Khi RTT báo `saved gyro and accel calibration`, trả SB và SD về LOW rồi
-   reset để vào `FLIGHT`. Log `imu` báo đã nạp hệ số gyro và accel từ flash.
+4. Khi `FM` hiện `IMU DONE`, firmware đã lưu hệ số gyro và accel vào flash.
+   Trả SB và SD về LOW rồi reset để vào `FLIGHT`. Log `imu` báo đã nạp hệ số
+   gyro và accel từ flash.
    Có thể kiểm tra gyro đã bù trong tab **Rate · FRD** khi khung đứng yên.
 
 | Mặt đo | Cách đặt khung FRD         |
@@ -87,6 +89,16 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 | `Y-`   | Cạnh phải hướng xuống      |
 | `Z+`   | Khung lật úp               |
 | `Z-`   | Khung nằm ngang đúng chiều |
+
+| Nhãn FM    | Lý do dừng hiệu chuẩn                                     |
+| ---------- | --------------------------------------------------------- |
+| `IMU RC`   | Mất lệnh RC hợp lệ.                                       |
+| `IMU STOP` | Đổi tổ hợp công tắc, bật arm hoặc ga ngoài miền cho phép. |
+| `IMU INIT` | Khởi tạo IMU thất bại.                                    |
+| `IMU READ` | Đọc IMU thất bại.                                         |
+| `IMU TIME` | Hết thời gian đo gyro hoặc accel.                         |
+| `ACC ERR`  | Hệ số accel ngoài giới hạn.                               |
+| `SAVE ERR` | Lưu hệ số vào flash thất bại.                             |
 
 Chuyển động hoặc khoảng cách giữa hai mẫu vượt 20 ms làm thu lại cửa sổ
 đang đo. Sau giây chờ đầu tiên, mất RC, đổi tổ hợp công tắc, bật arm hoặc
@@ -109,6 +121,7 @@ cube programmer -c port=SWD freq=1000 reset=SWrst -w build/Debug/drone.elf -v -r
 ```
 
 `IMU_CALIB` giữ PWM tắt đến reset, kể cả khi hiệu chuẩn hoàn tất hoặc lỗi.
+Kết quả cuối trên `FM` cũng giữ đến reset.
 Cần đặt khung cố định trong suốt cửa sổ đo vì IMU sáu trục có thể nhầm chuyển
 động yaw rất chậm với bias.
 
@@ -141,12 +154,40 @@ sequence 8258 đến 10277. Đổi số đếm sang FRD và rad/s theo
 Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến. Tab IMU của RTT hiển
 thị giá trị đổi đơn vị từ số đếm đó.
 
-USART1 nhận CRSF qua DMA; nối TX receiver vào PA10 và chung GND. `connected`
-chỉ phản ánh frame RC hợp lệ trong 100 ms gần nhất, không đánh giá chất lượng
-RF. Command dùng CH1–CH4 cho roll/pitch/throttle/yaw, CH5 arm, CH6 mode,
+USART1 nhận CRSF qua DMA. Nối TX receiver vào PA10, RX receiver vào PA9 và
+chung GND. `connected` phản ánh frame RC hợp lệ trong 100 ms gần nhất.
+Command dùng CH1–CH4 cho roll/pitch/throttle/yaw, CH5 arm, CH6 mode,
 CH7 calib và CH8 telemetry. Endpoint và chiều stick cần xác nhận trên radio và
 board; hợp đồng giải mã nằm trong [app_command.h](App/Inc/app_command.h).
 Cần đo timing receiver trên board, đặc biệt khi đọc SPI gặp lỗi.
+
+Runtime gửi trạng thái qua CRSF Flight Mode (`0x21`) mỗi 500 ms. Trên Jumper
+T20, đặt `Telem Ratio` của ELRS thành `Std` và dùng **Telemetry → Discover New**
+trong EdgeTX để tìm cảm biến `FM`. Trong FLIGHT, `FM` hiển thị `DISARMED`,
+`ARMED` hoặc nguyên nhân failsafe mà App ghi nhận:
+
+| Nhãn       | Ý nghĩa                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| `IMU INIT` | Khởi tạo IMU thất bại. Kết quả khởi tạo giữ đến reset.           |
+| `FS IMU`   | IMU đã khởi tạo nhưng chưa có mẫu mới, mẫu quá cũ hoặc đọc lỗi.  |
+| `FS RC`    | Lệnh RC hết hạn hoặc không hợp lệ.                               |
+| `FS PWM`   | Khởi tạo hoặc cập nhật PWM thất bại.                             |
+| `FS CTRL`  | Bộ điều khiển chưa sẵn sàng hoặc tính toán thất bại.             |
+| `FAILSAFE` | Lý do bảo vệ chưa có nhãn riêng, như yêu cầu calib trong FLIGHT. |
+
+Ở các mode khác, nhãn gồm `WAIT RC` lúc chờ chọn mode, `ESC READY`, `ESC MAX`,
+`ESC MIN`, `ESC DONE`, `ESC ABORT` hoặc `ESC PWM ERR` trong ESC_CALIB,
+và `FLASH N/A` khi chọn xuất flash. `ESC DONE` xác nhận trình tự xung đã kết thúc.
+`FM` hoạt động độc lập với RTT và công tắc SD. Khi EdgeTX báo mất telemetry,
+giá trị `FM` có thể là nhãn cũ.
+
+Trong FLIGHT, Runtime gửi CRSF Attitude (`0x1E`) tối đa 5 Hz khi ước lượng
+Mahony còn mới (tuổi mẫu tối đa 20 ms), ưu tiên khung `FM` khi đến lịch.
+Dùng **Telemetry → Discover New** trên T20 rồi chọn `Roll`, `Ptch` và `Yaw`
+trong **Display → Nums**. EdgeTX hiển thị các góc theo radian. Roll dương khi
+bên phải hạ xuống, pitch dương khi mũi ngẩng lên. Yaw là góc tương đối với
+hướng lúc Mahony khởi tạo. Thử nghiêng drone trên bàn khi đã tháo cánh để
+đối chiếu chiều và đơn vị.
 
 ## PWM ESC
 

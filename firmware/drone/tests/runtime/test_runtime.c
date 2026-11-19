@@ -1,3 +1,4 @@
+#include "accel_calibration.h"
 #include "app.h"
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
@@ -5,9 +6,11 @@
 #include "runtime.h"
 #include <assert.h>
 #include <stddef.h>
+#include <string.h>
 
+static uint32_t tick = 1000U;
 uint32_t HAL_GetTick(void) {
-    return 1000U;
+    return tick;
 }
 static app_receiver_sample_t input;
 static bool available;
@@ -17,6 +20,14 @@ static unsigned inits, polls, starts, processes, stops, calib_inits,
     calib_polls;
 static unsigned imu_calib_inits, imu_calib_polls;
 static app_command_t imu_calib_command;
+static imu_calibration_status_t imu_calib_status;
+static app_status_t flight_status;
+static esc_calibration_state_t calib_state;
+static unsigned status_attempts;
+static char status_label[CRSF_FLIGHT_MODE_TEXT_MAX + 1U];
+static bool status_tx_ready;
+static bool attitude_fresh;
+static unsigned attitude_reads, attitude_attempts;
 void esc_calibration_init(void) {
     calib_inits++;
 }
@@ -31,6 +42,14 @@ void imu_calibration_process(const app_command_t *command) {
     assert(command != NULL);
     imu_calib_polls++;
     imu_calib_command = *command;
+}
+imu_calibration_status_t imu_calibration_get_status(void) {
+    assert(imu_calib_inits == 1 && imu_calib_polls != 0);
+    return imu_calib_status;
+}
+esc_calibration_state_t esc_calibration_get_state(void) {
+    assert(calib_inits == 1 && calib_polls != 0);
+    return calib_state;
 }
 
 void app_receiver_init(void) {
@@ -53,6 +72,21 @@ bool app_receiver_update_sample(app_receiver_sample_t *sample,
     }
     return true;
 }
+bool app_receiver_send_flight_mode(const char *label) {
+    assert(label != NULL);
+    status_attempts++;
+    if (!status_tx_ready)
+        return false;
+    assert(strlen(label) < sizeof(status_label));
+    strcpy(status_label, label);
+    return true;
+}
+bool app_receiver_send_attitude(const float body_to_ned[4]) {
+    assert(body_to_ned[0] == 1.0f && body_to_ned[1] == 0.0f &&
+           body_to_ned[2] == 0.0f && body_to_ned[3] == 0.0f);
+    attitude_attempts++;
+    return true;
+}
 void bsp_motor_pwm_stop(void) {
     stops++;
 }
@@ -67,6 +101,25 @@ void app_process(const app_command_t *command) {
     assert(command->valid == (available && input.connected));
     if (command->valid)
         assert(command->throttle == 0);
+    else {
+        flight_status.arm_state = APP_FAILSAFE;
+        flight_status.safety_reason = APP_SAFETY_RC;
+    }
+}
+bool app_get_status(app_status_t *status) {
+    assert(status != NULL && starts == 1 && processes != 0);
+    *status = flight_status;
+    return true;
+}
+
+bool app_get_attitude(float body_to_ned[4]) {
+    assert(body_to_ned != NULL && starts == 1 && processes != 0);
+    attitude_reads++;
+    if (!attitude_fresh)
+        return false;
+    const float level[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    memcpy(body_to_ned, level, sizeof(level));
+    return true;
 }
 
 static void reset(void) {
@@ -81,10 +134,174 @@ static void reset(void) {
     disconnect_during_init = false;
     inits = polls = starts = processes = stops = calib_inits = calib_polls = 0;
     imu_calib_inits = imu_calib_polls = 0;
+    imu_calib_status =
+        (imu_calibration_status_t){.state = IMU_CALIBRATION_GYRO};
+    flight_status =
+        (app_status_t){.imu_initialized = true, .arm_state = APP_DISARMED};
+    calib_state = ESC_CALIBRATION_READY;
+    status_attempts = 0;
+    status_label[0] = '\0';
+    status_tx_ready = true;
+    attitude_fresh = false;
+    attitude_reads = attitude_attempts = 0;
     runtime_init();
     assert(inits == 1 && stops == 1 && starts == 0);
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
     assert(!runtime_mode_supported());
+}
+
+static void expect_next_status(const char *expected) {
+    const unsigned previous_attempts = status_attempts;
+    tick += 500U;
+    runtime_process();
+    assert(status_attempts == previous_attempts + 1U);
+    assert(strcmp(status_label, expected) == 0);
+}
+
+static void test_crsf_status(void) {
+    tick = UINT32_MAX - 249U;
+    reset();
+    input.connected = false;
+    tick += 499U;
+    runtime_process();
+    assert(status_attempts == 0);
+    tick++;
+    runtime_process();
+    assert(status_attempts == 1 && strcmp(status_label, "WAIT RC") == 0);
+    input.connected = true;
+    runtime_process();
+    expect_next_status("DISARMED");
+    flight_status.arm_state = APP_ARMED;
+    expect_next_status("ARMED");
+
+    status_tx_ready = false;
+    tick += 500U;
+    runtime_process();
+    assert(status_attempts == 4);
+    status_tx_ready = true;
+    runtime_process();
+    assert(status_attempts == 4);
+    input.connected = false;
+    expect_next_status("FS RC");
+
+    input.connected = true;
+    flight_status.safety_reason = APP_SAFETY_IMU;
+    expect_next_status("FS IMU");
+    flight_status.imu_initialized = false;
+    expect_next_status("IMU INIT");
+    flight_status.safety_reason = APP_SAFETY_PWM;
+    expect_next_status("FS PWM");
+    flight_status.imu_initialized = true;
+    flight_status.safety_reason = APP_SAFETY_CONTROL;
+    expect_next_status("FS CTRL");
+    flight_status.safety_reason = APP_SAFETY_CALIBRATION;
+    expect_next_status("FAILSAFE");
+    flight_status.arm_state = APP_DISARMED;
+    expect_next_status("DISARMED");
+
+    reset();
+    input.channels[6] = 1811;
+    runtime_process();
+    expect_next_status("ESC READY");
+    calib_state = ESC_CALIBRATION_MAX;
+    expect_next_status("ESC MAX");
+    calib_state = ESC_CALIBRATION_MIN;
+    expect_next_status("ESC MIN");
+    calib_state = ESC_CALIBRATION_DONE;
+    expect_next_status("ESC DONE");
+    calib_state = ESC_CALIBRATION_ABORT_MIN;
+    expect_next_status("ESC ABORT");
+    calib_state = ESC_CALIBRATION_PWM_ERROR;
+    expect_next_status("ESC PWM ERR");
+
+    reset();
+    input.channels[7] = 1811;
+    runtime_process();
+    expect_next_status("FLASH N/A");
+}
+
+static void test_crsf_imu_calibration(void) {
+    reset();
+    input.channels[5] = 992;
+    input.channels[6] = 1811;
+    attitude_fresh = true;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_IMU_CALIB);
+    expect_next_status("IMU GYRO");
+
+    imu_calib_status.state = IMU_CALIBRATION_ACCEL;
+    expect_next_status("X+ 0/6");
+    imu_calib_status.captured_faces = 1U << ACCEL_CAL_X_NEG;
+    expect_next_status("X+ 1/6");
+    imu_calib_status.captured_faces |=
+        (1U << ACCEL_CAL_X_POS) | (1U << ACCEL_CAL_Y_POS);
+    expect_next_status("Y- 3/6");
+    imu_calib_status.captured_faces =
+        ACCEL_CAL_ALL_FACES & ~(1U << ACCEL_CAL_Z_NEG);
+    expect_next_status("Z- 5/6");
+
+    const struct {
+        imu_calibration_state_t state;
+        const char *label;
+    } results[] = {
+        {IMU_CALIBRATION_DONE, "IMU DONE"},
+        {IMU_CALIBRATION_RC_LOST, "IMU RC"},
+        {IMU_CALIBRATION_CANCELLED, "IMU STOP"},
+        {IMU_CALIBRATION_INIT_FAILED, "IMU INIT"},
+        {IMU_CALIBRATION_READ_FAILED, "IMU READ"},
+        {IMU_CALIBRATION_TIMEOUT, "IMU TIME"},
+        {IMU_CALIBRATION_INVALID_ACCEL, "ACC ERR"},
+        {IMU_CALIBRATION_SAVE_FAILED, "SAVE ERR"},
+    };
+    for (size_t i = 0; i < sizeof(results) / sizeof(results[0]); ++i) {
+        imu_calib_status.state = results[i].state;
+        expect_next_status(results[i].label);
+    }
+    assert(stops == 1 && starts == 0 && attitude_reads == 0U);
+}
+
+static void test_crsf_attitude(void) {
+    tick = UINT32_MAX - 249U;
+    reset();
+    attitude_fresh = true;
+    runtime_process();
+    tick += 199U;
+    runtime_process();
+    assert(attitude_reads == 0U);
+    tick++;
+    runtime_process();
+    assert(attitude_reads == 1U && attitude_attempts == 1U);
+
+    tick += 299U;
+    runtime_process(); /* t=499 ms, reserve the UART for FM. */
+    assert(attitude_reads == 1U && status_attempts == 0U);
+    tick++;
+    runtime_process(); /* t=500 ms, both frames are due. */
+    tick++;
+    runtime_process();
+    assert(attitude_reads == 1U && status_attempts == 1U);
+    tick++;
+    runtime_process();
+    assert(attitude_reads == 2U && attitude_attempts == 2U);
+
+    attitude_fresh = false;
+    tick += 200U;
+    runtime_process();
+    assert(attitude_reads == 3U && attitude_attempts == 2U);
+    attitude_fresh = true;
+    runtime_process();
+    assert(attitude_reads == 3U);
+    tick += 200U;
+    runtime_process();
+    assert(attitude_reads == 4U && attitude_attempts == 3U);
+
+    reset();
+    attitude_fresh = true;
+    input.channels[6] = 1811;
+    runtime_process();
+    tick += 250U;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_ESC_CALIB && attitude_reads == 0U);
 }
 
 int main(void) {
@@ -214,5 +431,8 @@ int main(void) {
     publish_update = false;
     runtime_process();
     assert(runtime_get_command(&command) && !command.valid);
+    test_crsf_status();
+    test_crsf_imu_calibration();
+    test_crsf_attitude();
     return 0;
 }

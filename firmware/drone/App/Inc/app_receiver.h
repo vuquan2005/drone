@@ -41,4 +41,17 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample);
 bool app_receiver_update_sample(app_receiver_sample_t *sample,
                                 uint32_t *sequence);
 
+/** Try to publish a printable ASCII Flight Mode label (1 to 13 characters).
+ * Returns true if transmission started. A busy UART or invalid label returns
+ * false without queuing data. The label is read during the call only.
+ * Nonblocking, serialized foreground only, after app_receiver_init(). */
+bool app_receiver_send_flight_mode(const char *label);
+
+/** Try to publish a CRSF Attitude frame for a fresh body FRD-to-NED unit
+ * quaternion (w,x,y,z). The quaternion is read during the call only.
+ * Returns true if transmission started. Invalid input or a busy UART
+ * returns false without queuing data. Nonblocking, serialized foreground
+ * only, after app_receiver_init(). */
+bool app_receiver_send_attitude(const float body_to_ned[4]);
+
 #endif

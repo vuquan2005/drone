@@ -1,5 +1,6 @@
 #include "bsp_receiver.h"
 #include "main.h"
+#include <string.h>
 
 /* Board mapping: keep in sync with drone.ioc and CubeMX IRQ handlers.
  * Pin labels RECEIVER_TX/RX describe the STM32 side of the connection.
@@ -14,6 +15,7 @@ extern UART_HandleTypeDef RECEIVER_UART_HANDLE;
 
 #define RX_CAPACITY 256U
 #define DMA_CAPACITY 64U
+#define TX_CAPACITY 64U
 
 typedef struct {
     uint32_t timestamp_ms;
@@ -27,6 +29,7 @@ static volatile bool discontinuity;
 static volatile bool retry_rx;
 static uint8_t dma_buffer[DMA_CAPACITY];
 static uint16_t dma_position;
+static uint8_t tx_buffer[TX_CAPACITY];
 
 static void start_rx(void) {
     dma_position = 0;
@@ -74,6 +77,25 @@ bsp_receiver_result_t bsp_receiver_read(uint8_t *byte, uint32_t *timestamp_ms) {
     }
     __set_PRIMASK(primask);
     return result;
+}
+
+bool bsp_receiver_try_send(const uint8_t *frame, uint8_t length) {
+    if (frame == NULL || length == 0U || length > sizeof(tx_buffer))
+        return false;
+
+    UART_HandleTypeDef *uart = &RECEIVER_UART_HANDLE;
+    const uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    bool started = false;
+    /* HAL_UART_GetState also includes RX DMA state. HAL_UART_Transmit_IT
+     * clears ErrorCode, so let a pending RX error finish before starting TX. */
+    if (uart->gState == HAL_UART_STATE_READY &&
+        uart->ErrorCode == HAL_UART_ERROR_NONE) {
+        memcpy(tx_buffer, frame, length);
+        started = HAL_UART_Transmit_IT(uart, tx_buffer, length) == HAL_OK;
+    }
+    __set_PRIMASK(primask);
+    return started;
 }
 
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {

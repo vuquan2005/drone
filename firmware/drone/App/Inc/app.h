@@ -11,9 +11,11 @@
 
 /** Flight health snapshot; readiness alone does not grant motor permission. */
 typedef struct {
+    bool imu_initialized; /**< Result of the IMU initialization in app_init. */
     bool imu_ready;   /**< A successful IMU read is no older than 20000 us. */
     bool motor_ready; /**< PWM initialized and no output failure latched. */
     app_arm_state_t arm_state;
+    app_safety_reason_t safety_reason; /**< Stored reason for APP_FAILSAFE. */
 } app_status_t;
 
 /** Initialize flight state, rate control, PWM and IMU; starts DISARMED.
@@ -36,7 +38,8 @@ void app_process(const app_command_t *command);
 /** Copy flight health; false only for NULL output. Requires app_init.
  * No I/O except reading the MCU clock for IMU age. Serialized foreground only.
  * IMU readiness is false until the first successful read and after read errors
- * or timeout. Motor readiness does not imply ARMED or a valid mixer result.
+ * or timeout. The initialization result stays fixed until the next app_init.
+ * Motor readiness does not imply ARMED or a valid mixer result.
  */
 bool app_get_status(app_status_t *status);
 

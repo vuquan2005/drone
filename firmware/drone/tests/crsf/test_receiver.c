@@ -3,9 +3,10 @@
 #include "main.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 static DMA_HandleTypeDef dma;
-UART_HandleTypeDef huart1 = {.hdmarx = &dma};
+UART_HandleTypeDef huart1 = {.hdmarx = &dma, .gState = HAL_UART_STATE_READY};
 static uint16_t rx_length;
 static uint16_t rx_position;
 static uint8_t *rx_target;
@@ -13,6 +14,9 @@ static uint32_t tick;
 static uint32_t mask;
 static HAL_StatusTypeDef next_result;
 static unsigned aborts;
+static unsigned tx_starts;
+static const uint8_t *tx_source;
+static uint16_t tx_length;
 // TODO: Add a frame with distinct channel values through the full receiver
 // path; reversing App channel order still passes with all channels at 992.
 static const uint8_t frame[] = {0xc8, 0x18, 0x16, 0xe0, 0x03, 0x1f, 0xf8,
@@ -55,6 +59,16 @@ HAL_StatusTypeDef HAL_UART_AbortReceive(UART_HandleTypeDef *uart) {
     aborts++;
     return HAL_OK;
 }
+HAL_StatusTypeDef HAL_UART_Transmit_IT(UART_HandleTypeDef *uart,
+                                       const uint8_t *data, uint16_t length) {
+    assert(uart == &huart1 && uart->gState == HAL_UART_STATE_READY &&
+           mask == 1U);
+    tx_starts++;
+    tx_source = data;
+    tx_length = length;
+    uart->gState = HAL_UART_STATE_BUSY_TX;
+    return HAL_OK;
+}
 static void send(uint8_t byte) {
     assert(rx_target);
     rx_target[rx_position++] = byte;
@@ -71,6 +85,43 @@ static void send_frame(void) {
         send(frame[i]);
     HAL_UARTEx_RxEventCallback(&huart1, rx_position);
 }
+
+static void test_transmit(void) {
+    static const uint8_t armed[] = {0xc8, 0x08, 0x21, 'A',  'R',
+                                    'M',  'E',  'D',  0x00, 0xeb};
+    const float level[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    const uint8_t attitude[] = {0xc8, 0x08, 0x1e, 0x00, 0x00,
+                                0x00, 0x00, 0x00, 0x00, 0x30};
+    assert(!app_receiver_send_flight_mode(""));
+    assert(app_receiver_send_flight_mode("ARMED"));
+    assert(tx_starts == 1 && tx_length == sizeof(armed) && mask == 0);
+    assert(!app_receiver_send_flight_mode("FAILSAFE"));
+    assert(!app_receiver_send_attitude(level));
+    assert(tx_starts == 1 && memcmp(tx_source, armed, sizeof(armed)) == 0);
+
+    app_receiver_sample_t sample;
+    send_frame();
+    assert(app_receiver_get_sample(&sample) && sample.connected);
+    HAL_UART_ErrorCallback(&huart1);
+    assert(!app_receiver_send_flight_mode("FAILSAFE"));
+    assert(memcmp(tx_source, armed, sizeof(armed)) == 0);
+    assert(app_receiver_get_sample(&sample) && !sample.connected);
+
+    huart1.gState = HAL_UART_STATE_READY;
+    huart1.ErrorCode = 8U;
+    assert(!app_receiver_send_flight_mode("FAILSAFE"));
+    assert(tx_starts == 1 && huart1.ErrorCode == 8U && mask == 0);
+    HAL_UART_ErrorCallback(&huart1);
+    assert(app_receiver_send_flight_mode("FAILSAFE"));
+    assert(tx_starts == 2);
+
+    huart1.gState = HAL_UART_STATE_READY;
+    assert(app_receiver_send_attitude(level));
+    assert(tx_starts == 3 && tx_length == sizeof(attitude));
+    assert(!app_receiver_send_flight_mode("DISARMED"));
+    assert(memcmp(tx_source, attitude, sizeof(attitude)) == 0);
+}
+
 int main(void) {
     app_receiver_sample_t sample;
     app_receiver_init();
@@ -171,5 +222,6 @@ int main(void) {
     assert(!app_receiver_update_sample(&sample, &sequence));
     send_frame();
     assert(app_receiver_update_sample(&sample, &sequence) && sample.connected);
+    test_transmit();
     puts("Receiver tests passed");
 }

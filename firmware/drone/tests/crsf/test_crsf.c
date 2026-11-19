@@ -1,6 +1,7 @@
 #include "crsf.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 /* Known CRSF frame: 16 packed channels, each at raw center 992. */
 static const uint8_t frame[] = {0xc8, 0x18, 0x16, 0xe0, 0x03, 0x1f, 0xf8,
@@ -8,7 +9,30 @@ static const uint8_t frame[] = {0xc8, 0x18, 0x16, 0xe0, 0x03, 0x1f, 0xf8,
                                 0xe0, 0x03, 0x1f, 0xf8, 0xc0, 0x07, 0x3e,
                                 0xf0, 0x81, 0x0f, 0x7c, 0xad};
 
+static void test_flight_mode(void) {
+    static const uint8_t armed[] = {0xc8, 0x08, 0x21, 'A',  'R',
+                                    'M',  'E',  'D',  0x00, 0xeb};
+    static const uint8_t longest[] = {0xc8, 0x10, 0x21, 'F', 'L',  'I',
+                                      'G',  'H',  'T',  ' ', 'D',  'I',
+                                      'S',  'A',  'R',  'M', 0x00, 0x5d};
+    uint8_t tx[CRSF_FLIGHT_MODE_FRAME_MAX];
+    assert(crsf_encode_flight_mode("ARMED", tx, sizeof(armed)) ==
+           sizeof(armed));
+    assert(memcmp(tx, armed, sizeof(armed)) == 0);
+    assert(crsf_encode_flight_mode("FLIGHT DISARM", tx, sizeof(tx)) ==
+           sizeof(tx));
+    assert(memcmp(tx, longest, sizeof(longest)) == 0);
+    assert(crsf_encode_flight_mode("ARMED", tx, sizeof(armed) - 1U) == 0U);
+    assert(crsf_encode_flight_mode("FLIGHT DISARMS", tx, sizeof(tx)) == 0U);
+    assert(crsf_encode_flight_mode("ARMED\n", tx, sizeof(tx)) == 0U);
+    assert(crsf_encode_flight_mode("", tx, sizeof(tx)) == 0U);
+    assert(crsf_encode_flight_mode(NULL, tx, sizeof(tx)) == 0U);
+    assert(crsf_encode_flight_mode("ARMED", NULL, sizeof(tx)) == 0U);
+    assert(memcmp(tx, longest, sizeof(longest)) == 0);
+}
+
 int main(void) {
+    test_flight_mode();
     crsf_t decoder;
     crsf_init(&decoder);
     for (unsigned i = 0; i < sizeof(frame); i++) {

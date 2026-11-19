@@ -141,12 +141,21 @@ sequence 8258 đến 10277. Đổi số đếm sang FRD và rad/s theo
 Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến. Tab IMU của RTT hiển
 thị giá trị đổi đơn vị từ số đếm đó.
 
-USART1 nhận CRSF qua DMA; nối TX receiver vào PA10 và chung GND. `connected`
-chỉ phản ánh frame RC hợp lệ trong 100 ms gần nhất, không đánh giá chất lượng
-RF. Command dùng CH1–CH4 cho roll/pitch/throttle/yaw, CH5 arm, CH6 mode,
+USART1 nhận CRSF qua DMA. Nối TX receiver vào PA10, RX receiver vào PA9 và
+chung GND. `connected` phản ánh frame RC hợp lệ trong 100 ms gần nhất.
+Command dùng CH1–CH4 cho roll/pitch/throttle/yaw, CH5 arm, CH6 mode,
 CH7 calib và CH8 telemetry. Endpoint và chiều stick cần xác nhận trên radio và
 board; hợp đồng giải mã nằm trong [app_command.h](App/Inc/app_command.h).
 Cần đo timing receiver trên board, đặc biệt khi đọc SPI gặp lỗi.
+
+Runtime gửi trạng thái qua CRSF Flight Mode (`0x21`) mỗi 500 ms. Trên Jumper
+T20, đặt `Telem Ratio` của ELRS thành `Std` và dùng **Telemetry → Discover New**
+trong EdgeTX để tìm cảm biến `FM`. Nhãn gồm `WAIT RC` lúc chờ chọn mode khi
+khởi động, `DISARMED`, `ARMED` và `FAILSAFE` trong FLIGHT, `ESC READY`,
+`ESC MAX`, `ESC MIN`, `ESC DONE`, `ESC ABORT` hoặc `ESC PWM ERR` trong
+ESC_CALIB, và `FLASH N/A` khi chọn xuất flash. `ESC DONE` xác nhận trình tự
+xung đã kết thúc. `FM` hoạt động độc lập với RTT và công tắc SD. Khi EdgeTX
+báo mất telemetry, giá trị `FM` có thể là nhãn cũ.
 
 ## PWM ESC
 

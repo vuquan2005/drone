@@ -99,6 +99,10 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
 }
 void app_receiver_init(void) {}
 void app_receiver_poll(void) {}
+bool app_receiver_send_flight_mode(const char *label) {
+    assert(label != NULL);
+    return false;
+}
 static bool receiver_test_enabled;
 static bool receiver_connected = true;
 static uint16_t receiver_roll = 172U;

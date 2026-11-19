@@ -28,10 +28,12 @@ void runtime_init(void);
  * After boot selection, CH6/SC remains the flight-mode request in FLIGHT.
  * CH8/SD retains its telemetry request meaning after FLIGHT is selected.
  * Selection latches until reset. ESC_CALIB initializes its own PWM session;
- * IMU_CALIB keeps PWM off and FLASH_EXPORT remains a placeholder. Flight App
- * initialization only occurs in FLIGHT. RC telemetry runs during
- * boot selection. IMU_CALIB waits for a new RC frame after initializing its
- * sensor. FLIGHT processing starts on the poll after flight initialization.
+ * IMU_CALIB keeps PWM off and waits for a new RC frame after initializing its
+ * sensor. FLASH_EXPORT remains a placeholder. Flight App initialization only
+ * occurs in FLIGHT. RTT receiver telemetry
+ * runs during boot selection. CRSF status is offered to UART every 500 ms
+ * across runtime modes, including boot selection. FLIGHT init may block on
+ * IMU SPI; flight processing starts on the next poll with a fresh RC snapshot.
  */
 void runtime_process(void);
 

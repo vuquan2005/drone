@@ -9,10 +9,13 @@
 #include "main.h"
 #include <stddef.h>
 
+#define CRSF_STATUS_PERIOD_MS 500U
+
 static runtime_mode_t mode;
 static app_command_t command;
 static app_receiver_sample_t receiver_sample;
 static uint32_t receiver_sequence;
+static uint32_t last_crsf_status_ms;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_receiver_ms;
 #endif
@@ -28,8 +31,9 @@ void runtime_init(void) {
     app_telemetry_init();
     app_log_init(HAL_GetTick);
     app_receiver_init();
+    last_crsf_status_ms = HAL_GetTick();
 #if DRONE_RTT && DRONE_TELEMETRY
-    last_receiver_ms = HAL_GetTick();
+    last_receiver_ms = last_crsf_status_ms;
 #endif
     APP_LOG_DEBUG("runtime", "waiting for boot mode selection");
 }
@@ -70,6 +74,45 @@ static runtime_mode_t select_mode(void) {
     return RUNTIME_FLIGHT;
 }
 
+static const char *crsf_status_label(void) {
+    switch (mode) {
+    case RUNTIME_BOOT_SELECT:
+        return "WAIT RC";
+    case RUNTIME_FLIGHT:
+        switch (app_get_arm_state()) {
+        case APP_DISARMED:
+            return "DISARMED";
+        case APP_ARMED:
+            return "ARMED";
+        case APP_FAILSAFE:
+            return "FAILSAFE";
+        }
+        break;
+    case RUNTIME_ESC_CALIB:
+        switch (esc_calibration_get_state()) {
+        case ESC_CALIBRATION_IDLE:
+        case ESC_CALIBRATION_READY:
+            return "ESC READY";
+        case ESC_CALIBRATION_MAX:
+            return "ESC MAX";
+        case ESC_CALIBRATION_MIN:
+            return "ESC MIN";
+        case ESC_CALIBRATION_DONE:
+            return "ESC DONE";
+        case ESC_CALIBRATION_ABORT_MIN:
+            return "ESC ABORT";
+        case ESC_CALIBRATION_PWM_ERROR:
+            return "ESC PWM ERR";
+        }
+        break;
+    case RUNTIME_FLASH_EXPORT:
+        return "FLASH N/A";
+    case RUNTIME_IMU_CALIB:
+        return "IMU CAL";
+    }
+    return NULL;
+}
+
 void runtime_process(void) {
     if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
         (void)app_command_decode(&receiver_sample, &command);
@@ -95,17 +138,21 @@ void runtime_process(void) {
                          mode_names[mode], (unsigned)runtime_mode_supported());
 #endif
         if (mode == RUNTIME_FLIGHT) {
+            /* Initialization can block; poll fresh RC before dispatch. */
             app_init();
-        } else if (mode == RUNTIME_ESC_CALIB) {
+            return;
+        }
+        if (mode == RUNTIME_ESC_CALIB) {
             esc_calibration_init();
-        } else if (mode == RUNTIME_IMU_CALIB) {
+            return;
+        }
+        if (mode == RUNTIME_IMU_CALIB) {
             imu_calibration_init();
             /* The sensor init can outlast the RC snapshot. Require a frame
              * decoded by a later poll before qualifying calibration. */
             command = (app_command_t){0};
+            return;
         }
-        /* Initialization can block: never forward the pre-init RC snapshot. */
-        return;
     }
     switch (mode) {
     case RUNTIME_FLIGHT:
@@ -121,5 +168,11 @@ void runtime_process(void) {
         break;
     case RUNTIME_BOOT_SELECT:
         break;
+    }
+    const uint32_t status_now_ms = HAL_GetTick();
+    if ((uint32_t)(status_now_ms - last_crsf_status_ms) >=
+        CRSF_STATUS_PERIOD_MS) {
+        last_crsf_status_ms = status_now_ms;
+        (void)app_receiver_send_flight_mode(crsf_status_label());
     }
 }

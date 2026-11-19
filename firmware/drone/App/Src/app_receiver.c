@@ -68,3 +68,9 @@ bool app_receiver_update_sample(app_receiver_sample_t *sample,
     *sequence = frame_sequence;
     return true;
 }
+
+bool app_receiver_send_flight_mode(const char *label) {
+    uint8_t frame[CRSF_FLIGHT_MODE_FRAME_MAX];
+    const uint8_t length = crsf_encode_flight_mode(label, frame, sizeof(frame));
+    return length != 0U && bsp_receiver_try_send(frame, length);
+}

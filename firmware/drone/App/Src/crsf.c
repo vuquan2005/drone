@@ -4,6 +4,7 @@
 
 #define CRSF_ADDRESS_FLIGHT_CONTROLLER 0xC8U
 #define CRSF_TYPE_RC_CHANNELS_PACKED 0x16U
+#define CRSF_TYPE_FLIGHT_MODE 0x21U
 #define CRSF_RC_FRAME_LENGTH 24U
 
 void crsf_init(crsf_t *decoder) {
@@ -24,6 +25,28 @@ static uint8_t crc8(const uint8_t *data, uint8_t length) {
         }
     }
     return crc;
+}
+
+uint8_t crsf_encode_flight_mode(const char *label, uint8_t *frame,
+                                size_t capacity) {
+    if (label == NULL || frame == NULL)
+        return 0;
+    uint8_t length = 0;
+    while (length < CRSF_FLIGHT_MODE_TEXT_MAX && label[length] != '\0') {
+        const uint8_t byte = (uint8_t)label[length];
+        if (byte < 0x20U || byte > 0x7eU)
+            return 0;
+        length++;
+    }
+    if (length == 0U || label[length] != '\0' || capacity < length + 5U)
+        return 0;
+
+    frame[0] = CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    frame[1] = (uint8_t)(length + 3U);
+    frame[2] = CRSF_TYPE_FLIGHT_MODE;
+    memcpy(&frame[3], label, length + 1U);
+    frame[length + 4U] = crc8(&frame[2], (uint8_t)(length + 2U));
+    return (uint8_t)(length + 5U);
 }
 
 bool crsf_feed(crsf_t *decoder, uint8_t byte, uint32_t now_ms) {

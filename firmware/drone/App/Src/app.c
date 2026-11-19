@@ -22,6 +22,7 @@ static uint32_t attitude_time_us;
 static bool attitude_valid;
 static app_command_t command;
 static app_rate_t rate;
+static bool imu_initialized;
 static bool imu_available;
 static bool pwm_ready;
 static bool rate_failed;
@@ -80,7 +81,7 @@ static void init_motor(void) {
 }
 
 static void init_imu(void) {
-    app_imu_init(&imu, bsp_board_imu_config());
+    imu_initialized = app_imu_init(&imu, bsp_board_imu_config()) == BSP_IMU_OK;
 #if defined(DRONE_IMU_BMI160)
     /* Body FRD mean from the last 5 s of telemetry_20261119_023330. */
     imu.calibration = (app_imu_calibration_t){
@@ -302,9 +303,11 @@ static inline void process_periodic_telemetry(void) {}
 bool app_get_status(app_status_t *status) {
     if (status == NULL)
         return false;
-    *status = (app_status_t){.imu_ready = imu_healthy(),
+    *status = (app_status_t){.imu_initialized = imu_initialized,
+                             .imu_ready = imu_healthy(),
                              .motor_ready = pwm_ready,
-                             .arm_state = safety.state};
+                             .arm_state = safety.state,
+                             .safety_reason = safety.reason};
     return true;
 }
 

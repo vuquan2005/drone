@@ -19,7 +19,7 @@ static unsigned inits, polls, starts, processes, stops, calib_inits,
     calib_polls;
 static unsigned imu_calib_inits, imu_calib_polls;
 static app_command_t imu_calib_command;
-static app_arm_state_t arm_state;
+static app_status_t flight_status;
 static esc_calibration_state_t calib_state;
 static unsigned status_attempts;
 static const char *status_label;
@@ -86,12 +86,15 @@ void app_process(const app_command_t *command) {
     assert(command->valid == (available && input.connected));
     if (command->valid)
         assert(command->throttle == 0);
-    else
-        arm_state = APP_FAILSAFE;
+    else {
+        flight_status.arm_state = APP_FAILSAFE;
+        flight_status.safety_reason = APP_SAFETY_RC;
+    }
 }
-app_arm_state_t app_get_arm_state(void) {
-    assert(starts == 1 && processes != 0);
-    return arm_state;
+bool app_get_status(app_status_t *status) {
+    assert(status != NULL && starts == 1 && processes != 0);
+    *status = flight_status;
+    return true;
 }
 
 static void reset(void) {
@@ -106,7 +109,8 @@ static void reset(void) {
     disconnect_during_init = false;
     inits = polls = starts = processes = stops = calib_inits = calib_polls = 0;
     imu_calib_inits = imu_calib_polls = 0;
-    arm_state = APP_DISARMED;
+    flight_status =
+        (app_status_t){.imu_initialized = true, .arm_state = APP_DISARMED};
     calib_state = ESC_CALIBRATION_READY;
     status_attempts = 0;
     status_label = NULL;
@@ -138,7 +142,7 @@ static void test_crsf_status(void) {
     input.connected = true;
     runtime_process();
     expect_next_status("DISARMED");
-    arm_state = APP_ARMED;
+    flight_status.arm_state = APP_ARMED;
     expect_next_status("ARMED");
 
     status_tx_ready = false;
@@ -149,7 +153,22 @@ static void test_crsf_status(void) {
     runtime_process();
     assert(status_attempts == 4);
     input.connected = false;
+    expect_next_status("FS RC");
+
+    input.connected = true;
+    flight_status.safety_reason = APP_SAFETY_IMU;
+    expect_next_status("FS IMU");
+    flight_status.imu_initialized = false;
+    expect_next_status("IMU INIT");
+    flight_status.safety_reason = APP_SAFETY_PWM;
+    expect_next_status("FS PWM");
+    flight_status.imu_initialized = true;
+    flight_status.safety_reason = APP_SAFETY_CONTROL;
+    expect_next_status("FS CTRL");
+    flight_status.safety_reason = APP_SAFETY_CALIBRATION;
     expect_next_status("FAILSAFE");
+    flight_status.arm_state = APP_DISARMED;
+    expect_next_status("DISARMED");
 
     reset();
     input.channels[6] = 1811;

@@ -74,20 +74,37 @@ static runtime_mode_t select_mode(void) {
     return RUNTIME_FLIGHT;
 }
 
+static const char *crsf_flight_status_label(void) {
+    app_status_t status;
+    (void)app_get_status(&status);
+    switch (status.arm_state) {
+    case APP_DISARMED:
+        return "DISARMED";
+    case APP_ARMED:
+        return "ARMED";
+    case APP_FAILSAFE:
+        switch (status.safety_reason) {
+        case APP_SAFETY_IMU:
+            return status.imu_initialized ? "FS IMU" : "IMU INIT";
+        case APP_SAFETY_RC:
+            return "FS RC";
+        case APP_SAFETY_PWM:
+            return "FS PWM";
+        case APP_SAFETY_CONTROL:
+            return "FS CTRL";
+        default:
+            return "FAILSAFE";
+        }
+    }
+    return "FAILSAFE";
+}
+
 static const char *crsf_status_label(void) {
     switch (mode) {
     case RUNTIME_BOOT_SELECT:
         return "WAIT RC";
     case RUNTIME_FLIGHT:
-        switch (app_get_arm_state()) {
-        case APP_DISARMED:
-            return "DISARMED";
-        case APP_ARMED:
-            return "ARMED";
-        case APP_FAILSAFE:
-            return "FAILSAFE";
-        }
-        break;
+        return crsf_flight_status_label();
     case RUNTIME_ESC_CALIB:
         switch (esc_calibration_get_state()) {
         case ESC_CALIBRATION_IDLE:

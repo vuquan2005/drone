@@ -150,12 +150,23 @@ Cần đo timing receiver trên board, đặc biệt khi đọc SPI gặp lỗi.
 
 Runtime gửi trạng thái qua CRSF Flight Mode (`0x21`) mỗi 500 ms. Trên Jumper
 T20, đặt `Telem Ratio` của ELRS thành `Std` và dùng **Telemetry → Discover New**
-trong EdgeTX để tìm cảm biến `FM`. Nhãn gồm `WAIT RC` lúc chờ chọn mode khi
-khởi động, `DISARMED`, `ARMED` và `FAILSAFE` trong FLIGHT, `ESC READY`,
-`ESC MAX`, `ESC MIN`, `ESC DONE`, `ESC ABORT` hoặc `ESC PWM ERR` trong
-ESC_CALIB, và `FLASH N/A` khi chọn xuất flash. `ESC DONE` xác nhận trình tự
-xung đã kết thúc. `FM` hoạt động độc lập với RTT và công tắc SD. Khi EdgeTX
-báo mất telemetry, giá trị `FM` có thể là nhãn cũ.
+trong EdgeTX để tìm cảm biến `FM`. Trong FLIGHT, `FM` hiển thị `DISARMED`,
+`ARMED` hoặc nguyên nhân failsafe mà App ghi nhận:
+
+| Nhãn       | Ý nghĩa                                                          |
+| ---------- | ---------------------------------------------------------------- |
+| `IMU INIT` | Khởi tạo IMU thất bại. Kết quả khởi tạo giữ đến reset.           |
+| `FS IMU`   | IMU đã khởi tạo nhưng chưa có mẫu mới, mẫu quá cũ hoặc đọc lỗi.  |
+| `FS RC`    | Lệnh RC hết hạn hoặc không hợp lệ.                               |
+| `FS PWM`   | Khởi tạo hoặc cập nhật PWM thất bại.                             |
+| `FS CTRL`  | Bộ điều khiển chưa sẵn sàng hoặc tính toán thất bại.             |
+| `FAILSAFE` | Lý do bảo vệ chưa có nhãn riêng, như yêu cầu calib trong FLIGHT. |
+
+Ở các mode khác, nhãn gồm `WAIT RC` lúc chờ chọn mode, `ESC READY`, `ESC MAX`,
+`ESC MIN`, `ESC DONE`, `ESC ABORT` hoặc `ESC PWM ERR` trong ESC_CALIB,
+và `FLASH N/A` khi chọn xuất flash. `ESC DONE` xác nhận trình tự xung đã kết thúc.
+`FM` hoạt động độc lập với RTT và công tắc SD. Khi EdgeTX báo mất telemetry,
+giá trị `FM` có thể là nhãn cũ.
 
 ## PWM ESC
 

@@ -15,6 +15,7 @@
 #include <string.h>
 
 static bsp_imu_result_t status = BSP_IMU_NO_DATA;
+static bsp_imu_result_t imu_init_status = BSP_IMU_OK;
 static uint32_t tick = 1000U;
 static unsigned pwm_starts;
 static uint16_t motor_pulse[4];
@@ -22,6 +23,7 @@ static bool pwm_write_ok = true;
 static unsigned pwm_stops;
 static float gyro_roll_radps;
 static const app_imu_calibration_t *stored_calibration;
+static const char *flight_mode_label;
 
 bool imu_calibration_load(uint8_t chip_id, app_imu_calibration_t *calibration) {
     assert(chip_id == 0x24U);
@@ -65,11 +67,14 @@ const bsp_imu_config_t *bsp_board_imu_config(void) {
 bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config) {
     assert(config->timeout_ms == 100U);
     memset(imu, 0, sizeof(*imu));
-    imu->status = BSP_IMU_OK;
+    imu->status = imu_init_status;
+    imu->sensor.initialized = imu_init_status == BSP_IMU_OK;
     imu->sensor.device.chip_id = 0x24;
-    return BSP_IMU_OK;
+    return imu->status;
 }
 bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
+    if (!imu->sensor.initialized)
+        return imu->status;
     imu->status = status;
     if (status == BSP_IMU_DRIVER_ERROR) {
         imu->read_error_count++;
@@ -101,7 +106,8 @@ void app_receiver_init(void) {}
 void app_receiver_poll(void) {}
 bool app_receiver_send_flight_mode(const char *label) {
     assert(label != NULL);
-    return false;
+    flight_mode_label = label;
+    return true;
 }
 static bool receiver_test_enabled;
 static bool receiver_connected = true;
@@ -167,7 +173,7 @@ int main(void) {
     app_status_t health;
     assert(!app_get_status(NULL));
     assert(app_get_status(&health) && !health.imu_ready && health.motor_ready);
-    assert(health.arm_state == APP_DISARMED);
+    assert(health.imu_initialized && health.arm_state == APP_DISARMED);
     char output[512];
     drain(0U, output);
     assert(strstr(output, "[1000][I][pwm] initialized\n") != NULL);
@@ -412,7 +418,9 @@ int main(void) {
     status = BSP_IMU_NO_DATA;
     tick += 21;
     process_app();
-    assert(app_get_arm_state() == APP_FAILSAFE);
+    assert(app_get_status(&health) && health.arm_state == APP_FAILSAFE);
+    assert(health.imu_initialized && !health.imu_ready &&
+           health.safety_reason == APP_SAFETY_IMU);
     drain(0U, output);
     assert(strstr(output, "[W][arm] failsafe reason=imu_unhealthy\n") != NULL);
     for (unsigned i = 0; i < 4; ++i)
@@ -438,7 +446,8 @@ int main(void) {
     status = BSP_IMU_OK;
     tick++;
     process_app();
-    assert(app_get_arm_state() == APP_FAILSAFE);
+    assert(app_get_status(&health) && health.arm_state == APP_FAILSAFE);
+    assert(health.safety_reason == APP_SAFETY_RC);
     receiver_switches[0] = 172;
     process_app();
     receiver_switches[0] = 1811;
@@ -459,6 +468,7 @@ int main(void) {
     process_app();
     assert(app_get_arm_state() == APP_FAILSAFE && pwm_stops == 1);
     assert(app_get_status(&health) && !health.motor_ready && !health.imu_ready);
+    assert(health.safety_reason == APP_SAFETY_PWM);
     /* Runtime owns shared transport, decodes RC and emits raw RC telemetry. */
     receiver_connected = false;
     receiver_throttle = receiver_switches[0] = 1811;
@@ -499,6 +509,19 @@ int main(void) {
     assert(get_u32(output + 16U) == tick - 10U);
     app_process(NULL);
     assert(app_get_arm_state() == APP_FAILSAFE);
+
+    imu_init_status = BSP_IMU_DRIVER_ERROR;
+    receiver_switches[0] = 172;
+    flight_mode_label = NULL;
+    runtime_init();
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_FLIGHT);
+    tick += 500U;
+    runtime_process();
+    assert(app_get_status(&health) && health.arm_state == APP_FAILSAFE);
+    assert(!health.imu_initialized && !health.imu_ready &&
+           health.safety_reason == APP_SAFETY_IMU);
+    assert(flight_mode_label && strcmp(flight_mode_label, "IMU INIT") == 0);
     puts("App log/trace integration tests passed");
     return 0;
 }

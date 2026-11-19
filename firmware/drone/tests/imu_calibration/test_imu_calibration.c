@@ -1,5 +1,6 @@
 #include "app_crc32.h"
 #include "app_safety.h"
+#include "app_telemetry.h"
 #include "bsp_board.h"
 #include "bsp_imu_flash.h"
 #include "imu_calibration.h"
@@ -29,6 +30,7 @@ static bsp_imu_result_t poll_status;
 static float gyro_x_radps;
 static float accel_mps2[3];
 static bool accel_vibrating;
+static uint32_t imu_frames;
 
 bool bsp_imu_flash_read(unsigned slot, void *data, size_t size) {
     assert(slot < BSP_IMU_FLASH_SLOT_COUNT && size <= sizeof(pages[slot]));
@@ -67,7 +69,10 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     assert(imu->calibration.gyro_bias_radps[0] == 0.0f);
     assert(!imu->calibration.accel_valid);
     if (poll_status == BSP_IMU_OK) {
+        ++imu->sample_count;
         imu->sample.t_read_us = UINT32_MAX - 2000000U + elapsed_us;
+        imu->sample.accel_raw[0] = -2345;
+        imu->sample.gyro_raw[2] = 19;
         memcpy(imu->sample.accel_mps2, accel_mps2, sizeof(accel_mps2));
         if (accel_vibrating) {
             imu->sample.accel_mps2[0] +=
@@ -78,6 +83,14 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         imu->sample.gyro_radps[2] = 0.005f;
     }
     return poll_status;
+}
+
+bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
+                                         uint32_t sequence) {
+    assert(sequence == ++imu_frames);
+    assert(sample->t_read_us == UINT32_MAX - 2000000U + elapsed_us);
+    assert(sample->accel_raw[0] == -2345 && sample->gyro_raw[2] == 19);
+    return BSP_RTT_FULL;
 }
 
 static void expect_calibration(uint8_t chip_id,
@@ -154,6 +167,7 @@ static void set_face(unsigned axis, int sign) {
 static app_command_t start_session(void) {
     elapsed_us = 0U;
     writes = 0U;
+    imu_frames = 0U;
     gyro_x_radps = initial.gyro_bias_radps[0];
     set_face(2U, -1);
     accel_vibrating = false;
@@ -190,6 +204,7 @@ static void test_combined_calibration(void) {
     run_for(&disconnected, 100000U, 2500U);
     run_for(&command, 2700000U, 2500U);
     assert(writes == 0U);
+    assert(imu_frames == 800U);
     gyro_x_radps = 0.2f;
     run_for(&command, 500000U, 2500U);
     gyro_x_radps = initial.gyro_bias_radps[0];
@@ -205,7 +220,9 @@ static void test_combined_calibration(void) {
 
     accel_mps2[0] = accel_mps2[2] = 6.93f; /* Between two faces. */
     accel_mps2[1] = 0.0f;
+    const uint32_t frames_before_tilt = imu_frames;
     run_for(&command, 1200000U, 2500U);
+    assert(imu_frames == frames_before_tilt + 480U);
 
     set_face(1U, -1);
     run_for(&command, 1200000U, 2500U);
@@ -227,8 +244,10 @@ static void test_combined_calibration(void) {
     run_for(&command, 1200000U, 2500U);
     assert(writes == 1U);
     expect_calibration(0xD1U, &initial);
+    const uint32_t frames_before_idle = imu_frames;
     run_for(&command, 1200000U, 2500U);
     assert(writes == 1U);
+    assert(imu_frames == frames_before_idle);
 }
 
 static void test_rejected_sessions(void) {

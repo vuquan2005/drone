@@ -16,5 +16,6 @@ target_include_directories(
     PRIVATE ../imu/mocks ../logging/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/BSP/Inc
             ${FIRMWARE_ROOT}/Control/Inc ${FIRMWARE_ROOT}/Drivers/RTT)
 target_compile_options(imu_calibration_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+target_compile_definitions(imu_calibration_tests PRIVATE DRONE_RTT=1 DRONE_TELEMETRY=1)
 target_link_libraries(imu_calibration_tests PRIVATE m)
 add_test(NAME imu_calibration_tests COMMAND imu_calibration_tests)

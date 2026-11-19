@@ -94,6 +94,11 @@ ga trên 2% sẽ hủy phiên. Bước gyro có 20 giây tính từ lúc khởi 
 Bước accel có 120 giây sau khi đo xong gyro. Firmware ghi một lần sau khi đủ
 sáu mặt và giữ bộ hệ số cũ nếu hủy hoặc hết hạn giữa chừng.
 
+Khi đang thu mẫu trong `IMU_CALIB`, RTT kênh 1 gửi cùng gói IMU raw như trong
+`FLIGHT`, kể cả lúc khung đang xoay hoặc đặt lệch. Xem tab **IMU** hoặc ghi
+`imu_raw_*.csv` để kiểm tra dấu và độ lớn từng trục. Tab **IMU** hiển thị số
+đo raw đã đổi sang FRD và đơn vị SI.
+
 Để build và nạp bản Debug có RTT và chọn mode, chạy từ gốc repo:
 
 ```sh

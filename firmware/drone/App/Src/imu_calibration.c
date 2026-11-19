@@ -2,6 +2,7 @@
 #include "accel_calibration.h"
 #include "app_log.h"
 #include "app_safety.h"
+#include "app_telemetry.h"
 #include "bsp_board.h"
 #include "gyro_bias.h"
 #include "imu_calibration_store.h"
@@ -168,6 +169,7 @@ void imu_calibration_process(const app_command_t *command) {
         return;
     }
 
+    APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
     if (phase == IMU_CAL_GYRO) {
         process_gyro(&imu.sample);
     } else {

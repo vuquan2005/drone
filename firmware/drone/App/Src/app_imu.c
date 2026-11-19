@@ -48,7 +48,12 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         /* Board mounting: reverse X/Z to obtain body FRD.
          * Apply the sign after conversion so INT16_MIN cannot overflow. */
         const float sign = axis == 1U ? 1.0f : -1.0f;
-        imu->sample.accel_mps2[axis] = raw.accel[axis] * accel_scale * sign;
+        float accel_mps2 = raw.accel[axis] * accel_scale * sign;
+        if (imu->calibration.accel_valid) {
+            accel_mps2 = imu->calibration.accel_scale[axis] *
+                         (accel_mps2 - imu->calibration.accel_bias_mps2[axis]);
+        }
+        imu->sample.accel_mps2[axis] = accel_mps2;
         imu->sample.gyro_radps[axis] = raw.gyro[axis] * gyro_scale * sign -
                                        imu->calibration.gyro_bias_radps[axis];
     }

@@ -9,14 +9,16 @@ Gain và ánh xạ thrust → ESC hiện dành cho thử trên bộ gá, chưa h
 
 Luồng gọi hiện tại: `Core/main` → `runtime` → chế độ trong `App` → `BSP` → driver.
 `main()` khởi tạo HAL, clock, ngoại vi rồi gọi `runtime_init()`; vòng lặp gọi
-`runtime_process()`. Runtime sở hữu receiver và chọn mode một lần sau reset: SB HIGH ưu tiên ESC_CALIB,
-SD STREAM chọn FLASH_EXPORT, còn lại FLIGHT;
-SC dành cho chế độ bay, SD dành cho yêu cầu tắt/ghi/stream telemetry theo
-`firmware/Jumper-T20/README.md`; không dùng SC để chọn xuất flash.
-chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime poll receiver mỗi lượt, chỉ giải mã command khi frame mới hoặc kết nối
+`runtime_process()`. Runtime sở hữu receiver và chọn mode một lần sau reset.
+SB HIGH cùng SC MIDDLE chọn IMU_CALIB, các vị trí SC còn lại với SB HIGH chọn
+ESC_CALIB. Khi SB không HIGH, SD STREAM chọn FLASH_EXPORT và các vị trí SD
+còn lại chọn FLIGHT. Trong FLIGHT, SC dành cho chế độ bay.
+Chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime poll receiver mỗi lượt, chỉ giải mã command khi frame mới hoặc kết nối
 thay đổi, sở hữu
 RTT/log/telemetry chung và lịch telemetry RC. ESC_CALIB khởi tạo module
-`esc_calibration` riêng, sở hữu PWM; hoàn tất/lỗi khóa đến reset. App không tự poll/giải mã receiver;
+`esc_calibration` riêng, sở hữu PWM. IMU_CALIB đo bias gyro, hiệu chuẩn accel
+sáu mặt và lưu chung bộ hệ số vào hai trang flash dành riêng, giữ PWM tắt.
+Cả hai mode giữ đến reset. App không tự poll/giải mã receiver;
 `app_get_status()` cung cấp health riêng với mode.
 
 | Thành phần                     | Trách nhiệm                                                              |

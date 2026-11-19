@@ -14,12 +14,14 @@ Hai tệp YAML ghi phiên bản `2.11.0`:
 | CH4  | Yaw                        | Rud   |
 | CH5  | ARM                        | SA    |
 | CH6  | Mode - chế độ bay          | SC    |
-| CH7  | Calib - ESC                | SB    |
+| CH7  | Calib - ESC hoặc IMU       | SB    |
 | CH8  | Telem - ghi/xuất telemetry | SD    |
 
-SB dùng yêu cầu hiệu chuẩn ESC. SD chọn một trong ba trạng thái: tắt,
-xuất telemetry hoặc ghi telemetry; không xuất và ghi đồng thời.
-Ánh xạ vị trí công tắc sang từng trạng thái cần được quy định trong firmware nhận.
+Khi khởi động, SB HIGH cùng SC ở giữa chọn hiệu chuẩn IMU. Với SB HIGH và
+SC ở hai vị trí còn lại, firmware chọn hiệu chuẩn ESC. Khi SB ở LOW, SD
+HIGH yêu cầu chế độ xuất telemetry lúc khởi động. Trong chế độ bay, SC là
+yêu cầu chế độ bay và SD chọn tắt, ghi hoặc xuất telemetry theo
+[bảng chọn chế độ của firmware](../drone/README.md#chọn-chế-độ-sau-reset).
 
 Các mixer dùng trọng số 100%, offset 0. Cả hai mục module trong model
 đều đặt `TYPE_CROSSFIRE`, 16 kênh, `failsafeMode: NOT_SET`.

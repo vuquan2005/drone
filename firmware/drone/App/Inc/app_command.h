@@ -37,6 +37,7 @@ typedef struct {
                                        position-to-controller mapping pending. */
     bool esc_calibration_requested; /**< CH7 HIGH level, not an edge or
                                        permission. */
+    bool imu_calibration_requested; /**< CH7 HIGH with CH6 MIDDLE. */
     app_command_telemetry_mode_t
         telemetry_mode;     /**< CH8 LOW/MIDDLE/HIGH = OFF/RECORD/STREAM. */
     uint32_t last_frame_ms; /**< Receiver HAL tick; wraps modulo 2^32. */
@@ -48,7 +49,8 @@ typedef struct {
  * Assumes nominal endpoints 172/992/1811; clips extended travel within the
  * CRSF 11-bit range. Values >2047 in any used channel invalidate the command.
  * Switch LOW/HIGH start at the midpoints between MIN/CENTER/MAX; arm is true
- * only in HIGH. CH7 HIGH requests ESC calibration; CH8 LOW/MIDDLE/HIGH
+ * only in HIGH. CH7 HIGH sets the ESC request; CH7 HIGH with CH6 MIDDLE also
+ * sets the IMU request, which takes priority at boot. CH8 LOW/MIDDLE/HIGH
  * requests telemetry OFF/RECORD/STREAM. No calibration or telemetry action is
  * performed. No switch hysteresis, arming latch, expo or rate limit.
  * Caller must supply a freshly obtained receiver snapshot each foreground

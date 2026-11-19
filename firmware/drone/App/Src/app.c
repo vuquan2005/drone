@@ -7,6 +7,7 @@
 #include "app_telemetry.h"
 #include "bsp_board.h"
 #include "bsp_time.h"
+#include "imu_calibration_store.h"
 #include "mahony.h"
 #include "main.h"
 #include <stddef.h>
@@ -86,6 +87,17 @@ static void init_imu(void) {
         .gyro_bias_radps = {-0.001541997f, -0.004106014f, -0.005377476f}};
 #endif
     log_imu_init();
+    if (imu.status != BSP_IMU_OK) {
+        return;
+    }
+    if (imu_calibration_load(imu.sensor.device.chip_id, &imu.calibration)) {
+        APP_LOG_INFO("imu", "gyro bias loaded from flash");
+        if (imu.calibration.accel_valid) {
+            APP_LOG_INFO("imu", "accel calibration loaded from flash");
+        }
+    } else {
+        APP_LOG_INFO("imu", "using default gyro bias");
+    }
 }
 
 #if DRONE_RTT && DRONE_TELEMETRY

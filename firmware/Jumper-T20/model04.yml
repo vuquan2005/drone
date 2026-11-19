@@ -481,14 +481,79 @@ telemetrySensors:
     onlyPositive: 0
     cfg:
       param: 0
+  11:
+    id1:
+      id: 30
+    id2:
+      instance: 0
+    label: "Ptch"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 21
+    prec: 2
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  12:
+    id1:
+      id: 30
+    id2:
+      instance: 1
+    label: "Roll"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 21
+    prec: 2
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
+  13:
+    id1:
+      id: 30
+    id2:
+      instance: 2
+    label: "Yaw"
+    subId: 0
+    type: TYPE_CUSTOM
+    unit: 21
+    prec: 2
+    autoOffset: 0
+    filter: 0
+    logs: 1
+    persistent: 0
+    onlyPositive: 0
+    cfg:
+      custom:
+        ratio: 0
+        offset: 0
 screens:
   0:
     type: VALUES
     u:
       lines:
         0:
+        2:
+          sources:
+            0:
+              val: tele(11)
+            1:
+              val: tele(12)
         3:
           sources:
+            0:
+              val: tele(13)
             1:
               val: tele(10)
 view: 0

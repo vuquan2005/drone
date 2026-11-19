@@ -89,10 +89,14 @@ static void send_frame(void) {
 static void test_transmit(void) {
     static const uint8_t armed[] = {0xc8, 0x08, 0x21, 'A',  'R',
                                     'M',  'E',  'D',  0x00, 0xeb};
+    const float level[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    const uint8_t attitude[] = {0xc8, 0x08, 0x1e, 0x00, 0x00,
+                                0x00, 0x00, 0x00, 0x00, 0x30};
     assert(!app_receiver_send_flight_mode(""));
     assert(app_receiver_send_flight_mode("ARMED"));
     assert(tx_starts == 1 && tx_length == sizeof(armed) && mask == 0);
     assert(!app_receiver_send_flight_mode("FAILSAFE"));
+    assert(!app_receiver_send_attitude(level));
     assert(tx_starts == 1 && memcmp(tx_source, armed, sizeof(armed)) == 0);
 
     app_receiver_sample_t sample;
@@ -110,6 +114,12 @@ static void test_transmit(void) {
     HAL_UART_ErrorCallback(&huart1);
     assert(app_receiver_send_flight_mode("FAILSAFE"));
     assert(tx_starts == 2);
+
+    huart1.gState = HAL_UART_STATE_READY;
+    assert(app_receiver_send_attitude(level));
+    assert(tx_starts == 3 && tx_length == sizeof(attitude));
+    assert(!app_receiver_send_flight_mode("DISARMED"));
+    assert(memcmp(tx_source, attitude, sizeof(attitude)) == 0);
 }
 
 int main(void) {

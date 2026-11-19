@@ -47,4 +47,11 @@ bool app_receiver_update_sample(app_receiver_sample_t *sample,
  * Nonblocking, serialized foreground only, after app_receiver_init(). */
 bool app_receiver_send_flight_mode(const char *label);
 
+/** Try to publish a CRSF Attitude frame for a fresh body FRD-to-NED unit
+ * quaternion (w,x,y,z). The quaternion is read during the call only.
+ * Returns true if transmission started. Invalid input or a busy UART
+ * returns false without queuing data. Nonblocking, serialized foreground
+ * only, after app_receiver_init(). */
+bool app_receiver_send_attitude(const float body_to_ned[4]);
+
 #endif

@@ -12,5 +12,6 @@ foreach(target crsf_tests receiver_tests)
     target_include_directories(${target} PRIVATE mocks ${FIRMWARE_ROOT}/App/Inc
                                                  ${FIRMWARE_ROOT}/BSP/Inc)
     target_compile_options(${target} PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    target_link_libraries(${target} PRIVATE m)
     add_test(NAME ${target} COMMAND ${target})
 endforeach()

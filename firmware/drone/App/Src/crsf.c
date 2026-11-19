@@ -1,9 +1,11 @@
 #include "crsf.h"
 
+#include <math.h>
 #include <string.h>
 
 #define CRSF_ADDRESS_FLIGHT_CONTROLLER 0xC8U
 #define CRSF_TYPE_RC_CHANNELS_PACKED 0x16U
+#define CRSF_TYPE_ATTITUDE 0x1EU
 #define CRSF_TYPE_FLIGHT_MODE 0x21U
 #define CRSF_RC_FRAME_LENGTH 24U
 
@@ -47,6 +49,52 @@ uint8_t crsf_encode_flight_mode(const char *label, uint8_t *frame,
     memcpy(&frame[3], label, length + 1U);
     frame[length + 4U] = crc8(&frame[2], (uint8_t)(length + 2U));
     return (uint8_t)(length + 5U);
+}
+
+static void put_angle_rad(uint8_t *out, float angle_rad) {
+    const uint16_t bits = (uint16_t)(int16_t)lroundf(angle_rad * 10000.0f);
+    out[0] = (uint8_t)(bits >> 8U);
+    out[1] = (uint8_t)bits;
+}
+
+uint8_t crsf_encode_attitude(const float body_to_ned[4], uint8_t *frame,
+                             size_t capacity) {
+    if (body_to_ned == NULL || frame == NULL ||
+        capacity < CRSF_ATTITUDE_FRAME_SIZE)
+        return 0;
+
+    const float w = body_to_ned[0];
+    const float x = body_to_ned[1];
+    const float y = body_to_ned[2];
+    const float z = body_to_ned[3];
+    const float ww = w * w, xx = x * x, yy = y * y, zz = z * z;
+    const float norm_sq = ww + xx + yy + zz;
+    if (!isfinite(norm_sq) || norm_sq <= 0.0f)
+        return 0;
+
+    /* ZYX angles from the body-to-NED rotation matrix. At vertical pitch,
+     * roll and yaw share one degree of freedom. Use zero roll. */
+    const float r00 = (ww + xx) - (yy + zz);
+    const float r10 = 2.0f * (x * y + w * z);
+    const float horizontal = hypotf(r00, r10);
+    const float pitch_rad = atan2f(2.0f * (w * y - x * z), horizontal);
+    float roll_rad = 0.0f;
+    float yaw_rad;
+    if (horizontal > 0.0f) {
+        roll_rad = atan2f(2.0f * (w * x + y * z), (ww + zz) - (xx + yy));
+        yaw_rad = atan2f(r10, r00);
+    } else {
+        yaw_rad = atan2f(2.0f * (w * z - x * y), (ww + yy) - (xx + zz));
+    }
+
+    frame[0] = CRSF_ADDRESS_FLIGHT_CONTROLLER;
+    frame[1] = CRSF_ATTITUDE_FRAME_SIZE - 2U;
+    frame[2] = CRSF_TYPE_ATTITUDE;
+    put_angle_rad(&frame[3], pitch_rad);
+    put_angle_rad(&frame[5], roll_rad);
+    put_angle_rad(&frame[7], yaw_rad);
+    frame[9] = crc8(&frame[2], CRSF_ATTITUDE_FRAME_SIZE - 3U);
+    return CRSF_ATTITUDE_FRAME_SIZE;
 }
 
 bool crsf_feed(crsf_t *decoder, uint8_t byte, uint32_t now_ms) {

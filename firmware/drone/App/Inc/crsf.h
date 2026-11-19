@@ -10,6 +10,7 @@
 #define CRSF_FRAME_TIMEOUT_MS 3U
 #define CRSF_FLIGHT_MODE_TEXT_MAX 13U
 #define CRSF_FLIGHT_MODE_FRAME_MAX (CRSF_FLIGHT_MODE_TEXT_MAX + 5U)
+#define CRSF_ATTITUDE_FRAME_SIZE 10U
 
 /** Stream decoder. Own and access from a single execution context. */
 typedef struct {
@@ -41,5 +42,17 @@ void crsf_reset_stream(crsf_t *decoder);
  * capacity. Leaves the destination unchanged on failure. No I/O. */
 uint8_t crsf_encode_flight_mode(const char *label, uint8_t *frame,
                                 size_t capacity);
+
+/** Encode a CRSF Attitude (0x1E) broadcast frame with pitch, roll and yaw in
+ * signed, big-endian units of 100 microradians.
+ * @param body_to_ned Readable unit quaternion (w,x,y,z) rotating body FRD to
+ * NED. Angles use ZYX Euler rotation and inherit the quaternion's heading.
+ * @param frame Destination buffer, which must not overlap body_to_ned.
+ * @param capacity Writable bytes in frame.
+ * @return Frame size, or zero for a NULL pointer, insufficient capacity or a
+ * zero/non-finite quaternion norm. Leaves the destination unchanged on
+ * failure. No I/O. */
+uint8_t crsf_encode_attitude(const float body_to_ned[4], uint8_t *frame,
+                             size_t capacity);
 
 #endif

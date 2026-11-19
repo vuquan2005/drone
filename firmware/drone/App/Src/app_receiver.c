@@ -74,3 +74,10 @@ bool app_receiver_send_flight_mode(const char *label) {
     const uint8_t length = crsf_encode_flight_mode(label, frame, sizeof(frame));
     return length != 0U && bsp_receiver_try_send(frame, length);
 }
+
+bool app_receiver_send_attitude(const float body_to_ned[4]) {
+    uint8_t frame[CRSF_ATTITUDE_FRAME_SIZE];
+    const uint8_t length =
+        crsf_encode_attitude(body_to_ned, frame, sizeof(frame));
+    return length != 0U && bsp_receiver_try_send(frame, length);
+}

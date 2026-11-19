@@ -24,6 +24,7 @@ static unsigned pwm_stops;
 static float gyro_roll_radps;
 static const app_imu_calibration_t *stored_calibration;
 static const char *flight_mode_label;
+static unsigned attitude_transmissions;
 
 bool imu_calibration_load(uint8_t chip_id, app_imu_calibration_t *calibration) {
     assert(chip_id == 0x24U);
@@ -107,6 +108,11 @@ void app_receiver_poll(void) {}
 bool app_receiver_send_flight_mode(const char *label) {
     assert(label != NULL);
     flight_mode_label = label;
+    return true;
+}
+bool app_receiver_send_attitude(const float body_to_ned[4]) {
+    assert(body_to_ned != NULL);
+    attitude_transmissions++;
     return true;
 }
 static bool receiver_test_enabled;
@@ -507,6 +513,14 @@ int main(void) {
     assert(drain(1U, output) >= 60U && (uint8_t)output[5] == 3U);
     assert(get_u32(output + 12U) == tick);
     assert(get_u32(output + 16U) == tick - 10U);
+
+    tick += 100U;
+    runtime_process();
+    assert(attitude_transmissions == 1U);
+    status = BSP_IMU_NO_DATA;
+    tick += 200U;
+    runtime_process();
+    assert(attitude_transmissions == 1U);
     app_process(NULL);
     assert(app_get_arm_state() == APP_FAILSAFE);
 

@@ -32,8 +32,9 @@ void runtime_init(void);
  * sensor. FLASH_EXPORT remains a placeholder. Flight App initialization only
  * occurs in FLIGHT. RTT receiver telemetry
  * runs during boot selection. CRSF status is offered to UART every 500 ms
- * across runtime modes, including boot selection. FLIGHT init may block on
- * IMU SPI; flight processing starts on the next poll with a fresh RC snapshot.
+ * across runtime modes, including boot selection. In FLIGHT, fresh attitude
+ * is offered no more than once per 200 ms, with priority for status. FLIGHT
+ * init may block on IMU SPI; processing starts on the next poll with fresh RC.
  */
 void runtime_process(void);
 

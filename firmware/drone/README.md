@@ -168,6 +168,14 @@ và `FLASH N/A` khi chọn xuất flash. `ESC DONE` xác nhận trình tự xung
 `FM` hoạt động độc lập với RTT và công tắc SD. Khi EdgeTX báo mất telemetry,
 giá trị `FM` có thể là nhãn cũ.
 
+Trong FLIGHT, Runtime gửi CRSF Attitude (`0x1E`) tối đa 5 Hz khi ước lượng
+Mahony còn mới (tuổi mẫu tối đa 20 ms), ưu tiên khung `FM` khi đến lịch.
+Dùng **Telemetry → Discover New** trên T20 rồi chọn `Roll`, `Ptch` và `Yaw`
+trong **Display → Nums**. EdgeTX hiển thị các góc theo radian. Roll dương khi
+bên phải hạ xuống, pitch dương khi mũi ngẩng lên. Yaw là góc tương đối với
+hướng lúc Mahony khởi tạo. Thử nghiêng drone trên bàn khi đã tháo cánh để
+đối chiếu chiều và đơn vị.
+
 ## PWM ESC
 
 TIM4 phát PWM 400 Hz với tick 1 µs. Theo mixer Quad X, nhìn từ trên:

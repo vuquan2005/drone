@@ -24,6 +24,8 @@ static esc_calibration_state_t calib_state;
 static unsigned status_attempts;
 static const char *status_label;
 static bool status_tx_ready;
+static bool attitude_fresh;
+static unsigned attitude_reads, attitude_attempts;
 void esc_calibration_init(void) {
     calib_inits++;
 }
@@ -72,6 +74,12 @@ bool app_receiver_send_flight_mode(const char *label) {
     status_label = label;
     return true;
 }
+bool app_receiver_send_attitude(const float body_to_ned[4]) {
+    assert(body_to_ned[0] == 1.0f && body_to_ned[1] == 0.0f &&
+           body_to_ned[2] == 0.0f && body_to_ned[3] == 0.0f);
+    attitude_attempts++;
+    return true;
+}
 void bsp_motor_pwm_stop(void) {
     stops++;
 }
@@ -97,6 +105,16 @@ bool app_get_status(app_status_t *status) {
     return true;
 }
 
+bool app_get_attitude(float body_to_ned[4]) {
+    assert(body_to_ned != NULL && starts == 1 && processes != 0);
+    attitude_reads++;
+    if (!attitude_fresh)
+        return false;
+    const float level[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    memcpy(body_to_ned, level, sizeof(level));
+    return true;
+}
+
 static void reset(void) {
     input = (app_receiver_sample_t){0};
     for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; i++)
@@ -115,6 +133,8 @@ static void reset(void) {
     status_attempts = 0;
     status_label = NULL;
     status_tx_ready = true;
+    attitude_fresh = false;
+    attitude_reads = attitude_attempts = 0;
     runtime_init();
     assert(inits == 1 && stops == 1 && starts == 0);
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
@@ -189,6 +209,50 @@ static void test_crsf_status(void) {
     input.channels[7] = 1811;
     runtime_process();
     expect_next_status("FLASH N/A");
+}
+
+static void test_crsf_attitude(void) {
+    tick = UINT32_MAX - 249U;
+    reset();
+    attitude_fresh = true;
+    runtime_process();
+    tick += 199U;
+    runtime_process();
+    assert(attitude_reads == 0U);
+    tick++;
+    runtime_process();
+    assert(attitude_reads == 1U && attitude_attempts == 1U);
+
+    tick += 299U;
+    runtime_process(); /* t=499 ms, reserve the UART for FM. */
+    assert(attitude_reads == 1U && status_attempts == 0U);
+    tick++;
+    runtime_process(); /* t=500 ms, both frames are due. */
+    tick++;
+    runtime_process();
+    assert(attitude_reads == 1U && status_attempts == 1U);
+    tick++;
+    runtime_process();
+    assert(attitude_reads == 2U && attitude_attempts == 2U);
+
+    attitude_fresh = false;
+    tick += 200U;
+    runtime_process();
+    assert(attitude_reads == 3U && attitude_attempts == 2U);
+    attitude_fresh = true;
+    runtime_process();
+    assert(attitude_reads == 3U);
+    tick += 200U;
+    runtime_process();
+    assert(attitude_reads == 4U && attitude_attempts == 3U);
+
+    reset();
+    attitude_fresh = true;
+    input.channels[6] = 1811;
+    runtime_process();
+    tick += 250U;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_ESC_CALIB && attitude_reads == 0U);
 }
 
 int main(void) {
@@ -319,5 +383,6 @@ int main(void) {
     runtime_process();
     assert(runtime_get_command(&command) && !command.valid);
     test_crsf_status();
+    test_crsf_attitude();
     return 0;
 }

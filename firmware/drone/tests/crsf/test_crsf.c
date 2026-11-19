@@ -1,5 +1,6 @@
 #include "crsf.h"
 #include <assert.h>
+#include <math.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -31,8 +32,39 @@ static void test_flight_mode(void) {
     assert(memcmp(tx, longest, sizeof(longest)) == 0);
 }
 
+static void test_attitude(void) {
+    /* ZYX angles in radians: roll +0.4, pitch -0.3, yaw +1.1. */
+    const float q[4] = {0.8106307378f, 0.2440210441f, -0.0221842719f,
+                        0.5318264708f};
+    const uint8_t mixed[] = {0xc8, 0x08, 0x1e, 0xf4, 0x48,
+                             0x0f, 0xa0, 0x2a, 0xf8, 0x8c};
+    uint8_t tx[CRSF_ATTITUDE_FRAME_SIZE];
+    assert(crsf_encode_attitude(q, tx, sizeof(tx)) == sizeof(mixed));
+    assert(memcmp(tx, mixed, sizeof(mixed)) == 0);
+    const float opposite[4] = {-q[0], -q[1], -q[2], -q[3]};
+    assert(crsf_encode_attitude(opposite, tx, sizeof(tx)) == sizeof(mixed));
+    assert(memcmp(tx, mixed, sizeof(mixed)) == 0);
+
+    /* Vertical pitch with +90 degrees yaw and zero roll. */
+    const float vertical[4] = {0.5f, -0.5f, 0.5f, 0.5f};
+    const uint8_t at_vertical[] = {0xc8, 0x08, 0x1e, 0x3d, 0x5c,
+                                   0x00, 0x00, 0x3d, 0x5c, 0x96};
+    assert(crsf_encode_attitude(vertical, tx, sizeof(tx)) == sizeof(tx));
+    assert(memcmp(tx, at_vertical, sizeof(tx)) == 0);
+
+    const float invalid[4] = {1.0f, NAN, 0.0f, 0.0f};
+    const float zero[4] = {0};
+    assert(crsf_encode_attitude(invalid, tx, sizeof(tx)) == 0U);
+    assert(crsf_encode_attitude(zero, tx, sizeof(tx)) == 0U);
+    assert(crsf_encode_attitude(q, tx, sizeof(tx) - 1U) == 0U);
+    assert(crsf_encode_attitude(NULL, tx, sizeof(tx)) == 0U);
+    assert(crsf_encode_attitude(q, NULL, sizeof(tx)) == 0U);
+    assert(memcmp(tx, at_vertical, sizeof(tx)) == 0);
+}
+
 int main(void) {
     test_flight_mode();
+    test_attitude();
     crsf_t decoder;
     crsf_init(&decoder);
     for (unsigned i = 0; i < sizeof(frame); i++) {

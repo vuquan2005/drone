@@ -10,12 +10,15 @@
 #include <stddef.h>
 
 #define CRSF_STATUS_PERIOD_MS 500U
+#define CRSF_ATTITUDE_PERIOD_MS 200U
+#define CRSF_TX_GUARD_MS 2U
 
 static runtime_mode_t mode;
 static app_command_t command;
 static app_receiver_sample_t receiver_sample;
 static uint32_t receiver_sequence;
 static uint32_t last_crsf_status_ms;
+static uint32_t last_crsf_attitude_ms;
 #if DRONE_RTT && DRONE_TELEMETRY
 static uint32_t last_receiver_ms;
 #endif
@@ -32,6 +35,7 @@ void runtime_init(void) {
     app_log_init(HAL_GetTick);
     app_receiver_init();
     last_crsf_status_ms = HAL_GetTick();
+    last_crsf_attitude_ms = last_crsf_status_ms;
 #if DRONE_RTT && DRONE_TELEMETRY
     last_receiver_ms = last_crsf_status_ms;
 #endif
@@ -130,6 +134,28 @@ static const char *crsf_status_label(void) {
     return NULL;
 }
 
+static void process_crsf_telemetry(uint32_t now_ms) {
+    const uint32_t status_age_ms = now_ms - last_crsf_status_ms;
+    if (status_age_ms >= CRSF_STATUS_PERIOD_MS) {
+        last_crsf_status_ms = now_ms;
+        (void)app_receiver_send_flight_mode(crsf_status_label());
+        return;
+    }
+
+    /* The UART has one TX buffer. Leave room on both sides of FM for an
+     * interrupt-driven frame to complete (<0.5 ms on the wire at 420 kbaud). */
+    if (mode != RUNTIME_FLIGHT ||
+        now_ms - last_crsf_attitude_ms < CRSF_ATTITUDE_PERIOD_MS ||
+        status_age_ms < CRSF_TX_GUARD_MS ||
+        status_age_ms > CRSF_STATUS_PERIOD_MS - CRSF_TX_GUARD_MS)
+        return;
+
+    last_crsf_attitude_ms = now_ms;
+    float body_to_ned[4];
+    if (app_get_attitude(body_to_ned))
+        (void)app_receiver_send_attitude(body_to_ned);
+}
+
 void runtime_process(void) {
     if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
         (void)app_command_decode(&receiver_sample, &command);
@@ -186,10 +212,5 @@ void runtime_process(void) {
     case RUNTIME_BOOT_SELECT:
         break;
     }
-    const uint32_t status_now_ms = HAL_GetTick();
-    if ((uint32_t)(status_now_ms - last_crsf_status_ms) >=
-        CRSF_STATUS_PERIOD_MS) {
-        last_crsf_status_ms = status_now_ms;
-        (void)app_receiver_send_flight_mode(crsf_status_label());
-    }
+    process_crsf_telemetry(HAL_GetTick());
 }

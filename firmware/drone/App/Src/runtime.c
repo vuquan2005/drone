@@ -1,4 +1,5 @@
 #include "runtime.h"
+#include "accel_calibration.h"
 #include "app.h"
 #include "app_log.h"
 #include "app_receiver.h"
@@ -103,7 +104,52 @@ static const char *crsf_flight_status_label(void) {
     return "FAILSAFE";
 }
 
-static const char *crsf_status_label(void) {
+static const char *crsf_imu_calibration_label(char *progress) {
+    const imu_calibration_status_t status = imu_calibration_get_status();
+    switch (status.state) {
+    case IMU_CALIBRATION_IDLE:
+        return "IMU CAL";
+    case IMU_CALIBRATION_GYRO:
+        return "IMU GYRO";
+    case IMU_CALIBRATION_ACCEL: {
+        unsigned count = 0U;
+        unsigned next_face = ACCEL_CAL_NO_FACE;
+        for (unsigned face = 0U; face < ACCEL_CAL_NO_FACE; face++) {
+            if ((status.captured_faces & (1U << face)) != 0U) {
+                count++;
+            } else if (next_face == ACCEL_CAL_NO_FACE) {
+                next_face = face;
+            }
+        }
+        if (next_face == ACCEL_CAL_NO_FACE)
+            return "ACC 6/6";
+        /* The face enum lists the positive and negative faces of each axis. */
+        progress[0] = "XYZ"[next_face / 2U];
+        progress[1] = next_face % 2U == 0U ? '+' : '-';
+        progress[3] = (char)('0' + count);
+        return progress;
+    }
+    case IMU_CALIBRATION_DONE:
+        return "IMU DONE";
+    case IMU_CALIBRATION_RC_LOST:
+        return "IMU RC";
+    case IMU_CALIBRATION_CANCELLED:
+        return "IMU STOP";
+    case IMU_CALIBRATION_INIT_FAILED:
+        return "IMU INIT";
+    case IMU_CALIBRATION_READ_FAILED:
+        return "IMU READ";
+    case IMU_CALIBRATION_TIMEOUT:
+        return "IMU TIME";
+    case IMU_CALIBRATION_INVALID_ACCEL:
+        return "ACC ERR";
+    case IMU_CALIBRATION_SAVE_FAILED:
+        return "SAVE ERR";
+    }
+    return NULL;
+}
+
+static const char *crsf_status_label(char *imu_progress) {
     switch (mode) {
     case RUNTIME_BOOT_SELECT:
         return "WAIT RC";
@@ -129,7 +175,7 @@ static const char *crsf_status_label(void) {
     case RUNTIME_FLASH_EXPORT:
         return "FLASH N/A";
     case RUNTIME_IMU_CALIB:
-        return "IMU CAL";
+        return crsf_imu_calibration_label(imu_progress);
     }
     return NULL;
 }
@@ -138,7 +184,8 @@ static void process_crsf_telemetry(uint32_t now_ms) {
     const uint32_t status_age_ms = now_ms - last_crsf_status_ms;
     if (status_age_ms >= CRSF_STATUS_PERIOD_MS) {
         last_crsf_status_ms = now_ms;
-        (void)app_receiver_send_flight_mode(crsf_status_label());
+        char imu_progress[] = "X+ 0/6";
+        (void)app_receiver_send_flight_mode(crsf_status_label(imu_progress));
         return;
     }
 

@@ -41,6 +41,10 @@ void imu_calibration_process(const app_command_t *command) {
     (void)command;
     assert(false);
 }
+imu_calibration_status_t imu_calibration_get_status(void) {
+    assert(false);
+    return (imu_calibration_status_t){0};
+}
 uint32_t bsp_time_now_us(void) {
     return tick * 1000U + 123U;
 }

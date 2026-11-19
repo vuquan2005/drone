@@ -27,6 +27,7 @@ static bool finalized[BSP_IMU_FLASH_SLOT_COUNT];
 static bool interrupt_save;
 static unsigned writes;
 static uint32_t elapsed_us;
+static bsp_imu_result_t init_status = BSP_IMU_OK;
 static bsp_imu_result_t poll_status;
 static float gyro_x_radps;
 static float accel_mps2[3];
@@ -63,7 +64,7 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config) {
     assert(config == NULL);
     *imu = (app_imu_t){0};
     imu->sensor.device.chip_id = 0xD1U;
-    return BSP_IMU_OK;
+    return init_status;
 }
 
 bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
@@ -197,6 +198,8 @@ static void present_all_faces(const app_command_t *command) {
 
 static void test_combined_calibration(void) {
     const app_command_t command = start_session();
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_GYRO);
+    assert(imu_calibration_get_status().captured_faces == 0U);
     /* The session qualifies RC after settling, including a transient dropout.
      */
     const app_command_t disconnected = {0};
@@ -213,6 +216,9 @@ static void test_combined_calibration(void) {
     assert(writes == 0U);
     run_for(&command, 3000000U, 2500U);
     assert(writes == 0U); /* Gyro and Z- are ready. */
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_ACCEL);
+    assert(imu_calibration_get_status().captured_faces ==
+           (1U << ACCEL_CAL_Z_NEG));
 
     set_face(0U, 1);
     gyro_x_radps = 0.05f;
@@ -236,6 +242,8 @@ static void test_combined_calibration(void) {
     set_face(1U, 1);
     run_for(&command, 1200000U, 2500U);
     assert(writes == 0U);
+    assert(imu_calibration_get_status().captured_faces ==
+           (ACCEL_CAL_ALL_FACES & ~(1U << ACCEL_CAL_X_POS)));
 
     set_face(0U, 1);
     accel_vibrating = true;
@@ -249,6 +257,8 @@ static void test_combined_calibration(void) {
     run_for(&command, 1200000U, 2500U);
     assert(writes == 1U);
     assert(imu_frames == frames_before_idle);
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_DONE);
+    assert(imu_calibration_get_status().captured_faces == ACCEL_CAL_ALL_FACES);
 }
 
 static void test_face_angle_limit(void) {
@@ -271,10 +281,18 @@ static void test_face_angle_limit(void) {
 }
 
 static void test_rejected_sessions(void) {
+    init_status = BSP_IMU_DRIVER_ERROR;
     app_command_t command = start_session();
+    init_status = BSP_IMU_OK;
+    run_for(&command, 5000000U, 2500U);
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_INIT_FAILED);
+    assert(writes == 0U && imu_frames == 0U);
+
+    command = start_session();
     run_for(NULL, 1002500U, 2500U);
     run_for(&command, 5000000U, 2500U);
     assert(writes == 0U);
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_RC_LOST);
 
     command = start_session();
     run_for(&command, 1500000U, 2500U);
@@ -289,11 +307,13 @@ static void test_rejected_sessions(void) {
     command.throttle = 0;
     run_for(&command, 5000000U, 2500U);
     assert(writes == 0U);
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_CANCELLED);
 
     command = start_session();
     run_for(&command, 21000000U, 5000U);
     run_for(&command, 5000000U, 2500U);
     assert(writes == 0U);
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_TIMEOUT);
 
     command = start_session();
     for (; elapsed_us < 21000000U; elapsed_us += 2500U) {
@@ -309,6 +329,7 @@ static void test_rejected_sessions(void) {
     poll_status = BSP_IMU_OK;
     run_for(&command, 5000000U, 2500U);
     assert(writes == 0U);
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_READ_FAILED);
 
     command = start_session();
     run_for(&command, 6000000U, 2500U); /* Gyro and Z- collected. */
@@ -322,6 +343,30 @@ static void test_rejected_sessions(void) {
     run_for(&command, 125000000U, 2500U);
     present_all_faces(&command);
     assert(writes == 0U);
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_TIMEOUT);
+    expect_calibration(0xD1U, &initial);
+}
+
+static void test_calibration_result_failures(void) {
+    const app_command_t out_of_range = start_session();
+    run_for(&out_of_range, 4500000U, 2500U);
+    for (unsigned axis = 0U; axis < 3U; ++axis) {
+        memset(accel_mps2, 0, sizeof(accel_mps2));
+        accel_mps2[axis] = 0.86f * 9.80665f;
+        run_for(&out_of_range, 1200000U, 2500U);
+        accel_mps2[axis] = -accel_mps2[axis];
+        run_for(&out_of_range, 1200000U, 2500U);
+    }
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_INVALID_ACCEL);
+    assert(writes == 0U);
+
+    const app_command_t save_failed = start_session();
+    run_for(&save_failed, 6000000U, 2500U);
+    interrupt_save = true;
+    present_all_faces(&save_failed);
+    interrupt_save = false;
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_SAVE_FAILED);
+    assert(writes == 1U);
     expect_calibration(0xD1U, &initial);
 }
 
@@ -330,5 +375,6 @@ int main(void) {
     test_combined_calibration();
     test_face_angle_limit();
     test_rejected_sessions();
+    test_calibration_result_failures();
     return 0;
 }

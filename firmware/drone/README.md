@@ -65,18 +65,20 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 
 1. Tháo cánh và đặt khung đứng yên. Trên tay điều khiển, để SA ở OFF, ga ở
    mức thấp nhất, SB ở HIGH và SC ở giữa. Giữ các vị trí này khi reset bo.
-2. Dùng build có RTT và `DRONE_LOG_LEVEL=INFO` để xem log `imu_calib`. Sau
-   1 giây chờ IMU và RC, giữ khung đứng yên cho đến khi firmware thu đủ ít nhất
-   1.140 mẫu liên tiếp trong cửa sổ 3 giây ở ODR 400 Hz.
-3. Khi RTT báo `accel: expose each face`, xoay khung qua sáu mặt theo thứ tự
-   tùy ý. Với mỗi mặt, đặt trục cần đo gần phương thẳng đứng và giữ yên cho
-   tới khi RTT báo `captured`. Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây.
+2. Khi T20 hiện `IMU GYRO` trên ô `FM`, giữ khung đứng yên. Sau 1 giây chờ
+   IMU và RC, firmware cần ít nhất 1.140 mẫu liên tiếp trong cửa sổ 3 giây
+   ở ODR 400 Hz. Build có RTT và `DRONE_LOG_LEVEL=INFO` còn ghi log `imu_calib`.
+3. Khi `FM` hiện dạng `X+ 0/6`, firmware đã chuyển sang đo accel. Nhãn gợi ý
+   một mặt còn thiếu và cho biết số mặt đã nhận. Dùng bảng bên dưới để đặt
+   khung và giữ yên đến khi số đếm tăng. Có thể xoay qua sáu mặt theo thứ tự
+   tùy ý. Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây.
    Firmware nhận mặt khi véc-tơ gia tốc lệch khoảng 10° trở xuống so với một
    trục, xác định chiều theo dấu và kiểm tra gyro cùng độ dao động của accel.
    RTT báo các mặt còn thiếu. Mặt đã nhận được tính một lần. Giữ nguyên công
    tắc và ga khi xoay khung.
-4. Khi RTT báo `saved gyro and accel calibration`, trả SB và SD về LOW rồi
-   reset để vào `FLIGHT`. Log `imu` báo đã nạp hệ số gyro và accel từ flash.
+4. Khi `FM` hiện `IMU DONE`, firmware đã lưu hệ số gyro và accel vào flash.
+   Trả SB và SD về LOW rồi reset để vào `FLIGHT`. Log `imu` báo đã nạp hệ số
+   gyro và accel từ flash.
    Có thể kiểm tra gyro đã bù trong tab **Rate · FRD** khi khung đứng yên.
 
 | Mặt đo | Cách đặt khung FRD         |
@@ -87,6 +89,16 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 | `Y-`   | Cạnh phải hướng xuống      |
 | `Z+`   | Khung lật úp               |
 | `Z-`   | Khung nằm ngang đúng chiều |
+
+| Nhãn FM    | Lý do dừng hiệu chuẩn                                     |
+| ---------- | --------------------------------------------------------- |
+| `IMU RC`   | Mất lệnh RC hợp lệ.                                       |
+| `IMU STOP` | Đổi tổ hợp công tắc, bật arm hoặc ga ngoài miền cho phép. |
+| `IMU INIT` | Khởi tạo IMU thất bại.                                    |
+| `IMU READ` | Đọc IMU thất bại.                                         |
+| `IMU TIME` | Hết thời gian đo gyro hoặc accel.                         |
+| `ACC ERR`  | Hệ số accel ngoài giới hạn.                               |
+| `SAVE ERR` | Lưu hệ số vào flash thất bại.                             |
 
 Chuyển động hoặc khoảng cách giữa hai mẫu vượt 20 ms làm thu lại cửa sổ
 đang đo. Sau giây chờ đầu tiên, mất RC, đổi tổ hợp công tắc, bật arm hoặc
@@ -109,6 +121,7 @@ cube programmer -c port=SWD freq=1000 reset=SWrst -w build/Debug/drone.elf -v -r
 ```
 
 `IMU_CALIB` giữ PWM tắt đến reset, kể cả khi hiệu chuẩn hoàn tất hoặc lỗi.
+Kết quả cuối trên `FM` cũng giữ đến reset.
 Cần đặt khung cố định trong suốt cửa sổ đo vì IMU sáu trục có thể nhầm chuyển
 động yaw rất chậm với bias.
 

@@ -1,0 +1,212 @@
+% !TEX root = ../../main.tex
+\section{Phần cứng bay và nguồn}
+\label{sec:design-hardware}
+
+Phần cứng bay và nguồn gồm khung F450, pin LiPo 3S, mạch hạ áp LM2596 cùng bốn tổ hợp ESC--động cơ--cánh quạt. Nhóm này đảm nhiệm liên kết cơ khí, cấp năng lượng và tạo lực đẩy.
+
+\subsection{Bộ khung F450}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=0 40bp 0 40bp,clip,height=4.0cm]{figures/ch03/f450-frame.png}
+	\caption{Bộ khung F450 với hai tấm trung tâm và bốn tay đòn.}
+	\label{fig:hardware-f450-frame}
+\end{figure}
+
+Bộ khung F450 trong \fref{fig:hardware-f450-frame} gồm hai tấm trung tâm và bốn tay đòn, được bố trí theo cấu hình chữ X~\cite{djiF450Manual}. Động cơ lắp tại đầu các tay đòn; pin, bo điều khiển và các module được bố trí quanh vùng trung tâm.
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số cơ bản của bộ khung F450.}
+	\label{tab:hardware-frame-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Loại khung & F450, quadrotor cấu hình chữ X \\
+		\hline
+		Kết cấu chính & Hai tấm trung tâm và bốn tay đòn \\
+		\hline
+		Đường chéo hai trục động cơ & 450 mm \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+\clearpage
+\subsection{Pin LiPo 3S 5200 mAh}
+
+Pin LiPo là nguồn năng lượng chính cho các ESC và nhánh cấp nguồn điện tử.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=0 60bp 0 65bp,clip,width=0.60\linewidth]{figures/ch03/lipo-3s-5200mah.png}
+	\caption{Pin LiPo 3S1P dung lượng 5200 mAh.}
+	\label{fig:hardware-lipo-battery}
+\end{figure}
+
+Pin trong \fref{fig:hardware-lipo-battery} có cấu hình 3S1P, gồm ba cell nối tiếp trong một nhánh.
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số của pin LiPo.}
+	\label{tab:hardware-battery-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Loại pin & Lithium polymer (LiPo) \\
+		\hline
+		Cấu hình cell & 3S1P \\
+		\hline
+		Điện áp danh định & 11,1 V \\
+		\hline
+		Dung lượng & 5200 mAh (5,2 Ah) \\
+		\hline
+		Năng lượng danh định & 57,72 Wh \\
+		\hline
+		Hệ số xả & 90C \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Điện áp pin thay đổi theo mức nạp và tải. Hệ số 90C là thông tin ghi nhãn, chưa phân biệt mức xả liên tục và ngắn hạn; khả năng cấp dòng thực tế phụ thuộc đặc tính của pin và điều kiện sử dụng.
+
+\clearpage
+\subsection{Mạch hạ áp LM2596}
+
+Mạch hạ áp LM2596 biến đổi điện áp từ pin thành mức nguồn thấp hơn để cấp cho khối điều khiển.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=0 55bp 0 58bp,clip,width=0.55\linewidth]{figures/ch03/lm2596-buck-converter.png}
+	\caption{Mạch hạ áp điều chỉnh dùng IC LM2596S-ADJ.}
+	\label{fig:hardware-lm2596-module}
+\end{figure}
+
+Module trong \fref{fig:hardware-lm2596-module} gồm IC LM2596S-ADJ, cuộn cảm, diode, tụ lọc và biến trở điều chỉnh điện áp đầu ra. Trong phương án cấp nguồn, đầu ra của mạch được đặt ở 5 V để cấp cho bo điều khiển; tầng nguồn trên bo tạo mức 3,3 V cho các khối logic tương ứng.
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số IC LM2596 và mức nguồn lựa chọn~\cite{tiLm2596}.}
+	\label{tab:hardware-buck-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Nguyên lý biến đổi & Hạ áp chuyển mạch (buck) \\
+		\hline
+		Dải điện áp đầu vào của IC & 4,5--40 V \\
+		\hline
+		Tần số chuyển mạch của IC & 150 kHz \\
+		\hline
+		Dòng đầu ra của IC & Đến 3 A theo điều kiện thiết kế của nhà sản xuất \\
+		\hline
+		Nguồn sử dụng trong đề tài & Đầu vào từ pin LiPo 3S; đầu ra đặt 5 V \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Các giới hạn điện áp và dòng nêu trên là thông số của IC. Khả năng làm việc liên tục của module còn phụ thuộc tụ điện, cuộn cảm, diode và điều kiện tản nhiệt.
+
+\clearpage
+\subsection{Bộ điều tốc ESC 30 A}
+
+Hệ thống sử dụng bốn ESC, mỗi ESC điều khiển một động cơ không chổi than. ESC nhận nguồn một chiều từ pin và chuyển mạch ba pha để cấp điện cho động cơ, đồng thời tiếp nhận lệnh PWM từ vi điều khiển.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.43\linewidth]{figures/ch03/esc-30a.png}
+	\caption{Bộ điều tốc ESC ghi nhãn 30 A.}
+	\label{fig:hardware-esc-30a}
+\end{figure}
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số nhận dạng và cấu hình sử dụng ESC.}
+	\label{tab:hardware-esc-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Dòng điện ESC & 30 A \\
+		\hline
+		Số lượng & 4 ESC \\
+		\hline
+		Loại động cơ điều khiển & Động cơ không chổi than ba pha \\
+		\hline
+		Tín hiệu điều khiển & PWM từ vi điều khiển \\
+		\hline
+		Nguồn cấp trong đề tài & Pin LiPo 3S \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Giá trị 30 A trong \tref{tab:hardware-esc-specifications} được lấy từ nhãn ESC; dòng cho phép liên tục và dải xung điều khiển phụ thuộc phiên bản ESC và điều kiện làm việc của thiết bị.
+
+\clearpage
+\subsection{Động cơ không chổi than A2212/10T 1400KV}
+
+Bốn động cơ A2212/10T 1400KV được bố trí tại đầu các tay đòn, mỗi động cơ dẫn động một cánh quạt. Động cơ nhận điện ba pha từ ESC để tạo mômen quay.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.43\linewidth]{figures/ch03/a2212-1400kv-motor.png}
+	\caption{Động cơ không chổi than A2212/10T 1400KV.}
+	\label{fig:hardware-a2212-motor}
+\end{figure}
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số nhận dạng và cấu hình sử dụng động cơ.}
+	\label{tab:hardware-motor-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Mã ghi trên động cơ & A2212/10T \\
+		\hline
+		Loại động cơ & Không chổi than, ba pha \\
+		\hline
+		Hằng số tốc độ $K_V$ & 1400 vòng/phút/V \\
+		\hline
+		Số lượng & 4 động cơ \\
+		\hline
+		Cấu hình ghép trong đề tài & Mỗi động cơ ghép một ESC 30 A và một cánh quạt 9 inch \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Hằng số $K_V$ trong \tref{tab:hardware-motor-specifications} biểu thị quan hệ xấp xỉ giữa tốc độ không tải và điện áp cấp. Khi lắp cánh quạt, tốc độ, lực đẩy và dòng điện còn phụ thuộc tải khí động và điện áp nguồn; do đó, $K_V$ không trực tiếp biểu thị công suất hoặc lực nâng của động cơ.
+
+\clearpage
+\subsection{Cánh quạt 9 inch}
+
+Cánh quạt chuyển mômen quay của động cơ thành lực đẩy. Hệ thống sử dụng bốn cánh quạt hai lá, đường kính 9 inch, gồm hai cánh quay thuận chiều kim đồng hồ (CW) và hai cánh quay ngược chiều kim đồng hồ (CCW), xét từ phía trên. Các cánh được lắp phù hợp với chiều quay của từng động cơ để cùng tạo lực đẩy hướng lên.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=220bp 0 220bp 0,clip,height=5.2cm]{figures/ch03/propeller-9inch.png}
+	\caption{Cặp cánh quạt hai lá minh họa cho cấu hình cánh 9 inch.}
+	\label{fig:hardware-propeller}
+\end{figure}
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số cơ bản của cánh quạt trong đề tài.}
+	\label{tab:hardware-propeller-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Đường kính lựa chọn & 9 inch, tương đương 228,6 mm \\
+		\hline
+		Số lá trên mỗi cánh quạt & 2 \\
+		\hline
+		Số lượng & 4 cánh quạt \\
+		\hline
+		Phân loại chiều quay & 2 CW và 2 CCW, xét từ phía trên \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Bước cánh hình học biểu thị quãng tiến lý thuyết theo phương trục của cánh quạt trong một vòng quay khi không có trượt~\cite{faaPropellerHandbook}. Bên cạnh đường kính và bước cánh, vật liệu chế tạo ảnh hưởng đến khối lượng, độ bền và độ cứng của cánh quạt. Độ cứng phù hợp giúp hạn chế biến dạng và kiểm soát đáp ứng rung khi cánh quay~\cite{apcPropellerMaterials}. Vì vậy, việc lựa chọn cánh quạt cần xét đồng thời đặc tính khí động và cơ học, bảo đảm phù hợp với động cơ và điều kiện vận hành.

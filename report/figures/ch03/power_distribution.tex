@@ -1,0 +1,26 @@
+\begin{tikzpicture}[
+		x=1cm,y=1cm,>=latex,line width=0.8pt,
+		font=\fontsize{11}{13}\selectfont,
+		block/.style={draw,fill=gray!6,align=center,inner sep=5pt,
+				minimum height=1.2cm},
+		every node/.style={align=center}
+	]
+	\node[block,text width=2.5cm] (battery) at (0,0)
+	{Pin LiPo 3S\\5200 mAh};
+	\node[block,text width=2.6cm] (esc) at (4.6,0)
+	{Phân phối nguồn\\Bốn ESC};
+	\node[block,text width=2.7cm] (motors) at (10.4,0)
+	{Bốn động cơ\\A2212};
+	\node[block,text width=2.6cm] (buck) at (4.6,-2.6)
+	{LM2596\\Đầu ra 5 V};
+	\node[block,text width=3.5cm] (logic) at (10.4,-2.6)
+	{Bo STM32, cảm biến\\và bộ thu theo điện áp module};
+
+	\draw[->] (battery.east) -- (esc.west);
+	\fill (2.2,0) circle (1.4pt);
+	\draw[->] (2.2,0) |- (buck.west);
+	\draw[->] (esc.east) -- node[above] {Công suất ba pha} (motors.west);
+	\draw[->] (buck.east) -- node[above] {Nhánh điện tử} (logic.west);
+	\node[align=center] at (5.8,-4.0)
+	{Các khối dùng chung GND tham chiếu; dòng công suất đi nhánh riêng.};
+\end{tikzpicture}

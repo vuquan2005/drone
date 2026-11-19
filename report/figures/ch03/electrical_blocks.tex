@@ -1,0 +1,21 @@
+% Functional connections summarized from the three electrical block schematics.
+\begin{tikzpicture}[
+		x=1cm,y=1cm,>=latex,line width=0.8pt,
+		font=\fontsize{11}{13}\selectfont,
+		block/.style={draw,fill=gray!6,align=center,inner sep=6pt,
+				minimum height=1.45cm},
+		every node/.style={align=center}
+	]
+	\node[block,text width=5.0cm] (power) at (6.25,2.3)
+	{\textbf{Khối nguồn}\\Pin LiPo 3S, LM2596};
+	\node[block,text width=4.8cm] (control) at (2.6,0)
+	{\textbf{Khối điều khiển}\\STM32F103VET6, BMI160\\Bộ thu ELRS};
+	\node[block,text width=4.6cm] (actuators) at (10.0,0)
+	{\textbf{Khối cơ cấu chấp hành}\\Bốn ESC, động cơ\\và cánh quạt};
+
+	\draw[->] (power.west) -| node[pos=0.7,left] {5 V} (control.north);
+	\draw[->] (power.east) -| node[pos=0.7,right] {Nguồn pin 3S} (actuators.north);
+	\draw[->,dashed] (control.east) -- node[above] {PWM} (actuators.west);
+	\node[font=\fontsize{10}{12}\selectfont] at (6.25,-1.65)
+	{Đường liền: cấp nguồn; đường nét đứt: tín hiệu điều khiển.\\Ba khối dùng chung GND.};
+\end{tikzpicture}

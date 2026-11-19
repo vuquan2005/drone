@@ -8,7 +8,8 @@ include(${FIRMWARE_ROOT}/cmake/imu.cmake)
 add_executable(
     imu_calibration_tests
     test_imu_calibration.c ${FIRMWARE_ROOT}/App/Src/imu_calibration.c
-    ${FIRMWARE_ROOT}/App/Src/imu_calibration_store.c ${FIRMWARE_ROOT}/Control/Src/gyro_bias.c)
+    ${FIRMWARE_ROOT}/App/Src/imu_calibration_store.c ${FIRMWARE_ROOT}/Control/Src/gyro_bias.c
+    ${FIRMWARE_ROOT}/Control/Src/accel_calibration.c)
 drone_imu_headers(imu_calibration_tests ${DRONE_IMU})
 target_include_directories(
     imu_calibration_tests

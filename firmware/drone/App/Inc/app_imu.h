@@ -22,7 +22,8 @@ typedef struct {
         accel_raw[3]; /**< Original sensor XYZ counts, before body mapping. */
     int16_t
         gyro_raw[3]; /**< Original sensor XYZ counts, before body mapping. */
-    float accel_mps2[3]; /**< Acceleration in m/s^2. */
+    float
+        accel_mps2[3]; /**< Specific force in m/s^2, corrected if calibrated. */
     float gyro_radps[3]; /**< Bias-corrected angular velocity in rad/s. */
     uint32_t sensor_time_ticks; /**< Raw wrapping 24-bit sensor clock, not MCU
                                    time. */
@@ -34,6 +35,9 @@ typedef struct {
 /** @brief Calibration parameters applied in body FRD. */
 typedef struct {
     float gyro_bias_radps[3]; /**< Finite bias to subtract, in rad/s. */
+    float accel_bias_mps2[3]; /**< Finite bias to subtract, in m/s^2. */
+    float accel_scale[3];     /**< Positive scale applied after bias removal. */
+    bool accel_valid;         /**< Apply accel bias and scale when true. */
 } app_imu_calibration_t;
 
 /**
@@ -62,7 +66,7 @@ typedef struct {
  * @return Result of bsp_imu_init, or BSP_IMU_INVALID_ARGUMENT for NULL imu.
  * @note Blocking foreground API. Reinitialization using &imu->sensor.config is
  * supported; previous samples, counters and calibration are discarded even if
- * init fails. The initial gyro offsets are zero.
+ * init fails. Initial gyro offsets are zero and accel correction is disabled.
  */
 bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config);
 /**
@@ -75,7 +79,8 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config);
  * preserves sample; read_error_count increments only on a driver read error.
  * @note Blocking foreground API; no ISR or concurrent access. Does not schedule
  * polling, estimate bias, check sample age or retry initialization. Applies the
- * configured gyro bias after mapping to body FRD and preserves the raw counts.
+ * configured gyro bias and valid accel correction in body FRD while preserving
+ * the raw counts.
  */
 bsp_imu_result_t app_imu_poll(app_imu_t *imu);
 

@@ -77,8 +77,16 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     imu->sample_valid = status == BSP_IMU_OK;
     if (imu->sample_valid) {
         if (stored_calibration != NULL) {
-            assert(memcmp(&imu->calibration, stored_calibration,
-                          sizeof(imu->calibration)) == 0);
+            assert(imu->calibration.accel_valid ==
+                   stored_calibration->accel_valid);
+            for (unsigned axis = 0U; axis < 3U; ++axis) {
+                assert(imu->calibration.gyro_bias_radps[axis] ==
+                       stored_calibration->gyro_bias_radps[axis]);
+                assert(imu->calibration.accel_bias_mps2[axis] ==
+                       stored_calibration->accel_bias_mps2[axis]);
+                assert(imu->calibration.accel_scale[axis] ==
+                       stored_calibration->accel_scale[axis]);
+            }
         }
         imu->sample_count++;
         imu->sample.gyro_radps[0] = gyro_roll_radps;
@@ -451,9 +459,13 @@ int main(void) {
     receiver_connected = false;
     receiver_throttle = receiver_switches[0] = 1811;
     receiver_switches[1] = receiver_switches[2] = receiver_switches[3] = 172;
-    static const app_imu_calibration_t flash_bias = {
-        .gyro_bias_radps = {0.01f, -0.02f, 0.03f}};
-    stored_calibration = &flash_bias;
+    static const app_imu_calibration_t flash_calibration = {
+        .gyro_bias_radps = {0.01f, -0.02f, 0.03f},
+        .accel_bias_mps2 = {0.1f, 0.2f, -0.1f},
+        .accel_scale = {1.01f, 1.02f, 0.98f},
+        .accel_valid = true,
+    };
+    stored_calibration = &flash_calibration;
     runtime_init();
     tick += 50U;
     runtime_process();
@@ -467,6 +479,8 @@ int main(void) {
     assert(strstr(output, "[I][runtime] selected mode=flight supported=1\n") !=
            NULL);
     assert(strstr(output, "[I][imu] gyro bias loaded from flash\n") != NULL);
+    assert(strstr(output, "[I][imu] accel calibration loaded from flash\n") !=
+           NULL);
     assert(app_configure_rate(&rate_config));
     tick += 50U;
     status = BSP_IMU_OK;

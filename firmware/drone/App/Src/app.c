@@ -92,6 +92,9 @@ static void init_imu(void) {
     }
     if (imu_calibration_load(imu.sensor.device.chip_id, &imu.calibration)) {
         APP_LOG_INFO("imu", "gyro bias loaded from flash");
+        if (imu.calibration.accel_valid) {
+            APP_LOG_INFO("imu", "accel calibration loaded from flash");
+        }
     } else {
         APP_LOG_INFO("imu", "using default gyro bias");
     }

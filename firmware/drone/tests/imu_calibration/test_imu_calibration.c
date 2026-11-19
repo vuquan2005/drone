@@ -1,3 +1,4 @@
+#include "app_crc32.h"
 #include "app_safety.h"
 #include "bsp_board.h"
 #include "bsp_imu_flash.h"
@@ -8,9 +9,17 @@
 #include <string.h>
 
 static const app_imu_calibration_t initial = {
-    .gyro_bias_radps = {0.003f, -0.004f, 0.005f}};
+    .gyro_bias_radps = {0.003f, -0.004f, 0.005f},
+    .accel_bias_mps2 = {0.12f, -0.08f, 0.20f},
+    .accel_scale = {1.02f, 0.98f, 1.01f},
+    .accel_valid = true,
+};
 static const app_imu_calibration_t replacement = {
-    .gyro_bias_radps = {-0.002f, 0.003f, -0.004f}};
+    .gyro_bias_radps = {-0.002f, 0.003f, -0.004f},
+    .accel_bias_mps2 = {-0.12f, 0.2f, 0.1f},
+    .accel_scale = {0.99f, 1.01f, 1.04f},
+    .accel_valid = true,
+};
 static uint8_t pages[BSP_IMU_FLASH_SLOT_COUNT][64];
 static bool finalized[BSP_IMU_FLASH_SLOT_COUNT];
 static bool interrupt_save;
@@ -18,7 +27,8 @@ static unsigned writes;
 static uint32_t elapsed_us;
 static bsp_imu_result_t poll_status;
 static float gyro_x_radps;
-static float accel_z_mps2;
+static float accel_mps2[3];
+static bool accel_vibrating;
 
 bool bsp_imu_flash_read(unsigned slot, void *data, size_t size) {
     assert(slot < BSP_IMU_FLASH_SLOT_COUNT && size <= sizeof(pages[slot]));
@@ -32,6 +42,7 @@ bool bsp_imu_flash_read(unsigned slot, void *data, size_t size) {
 bool bsp_imu_flash_write(unsigned slot, const void *data, size_t size) {
     assert(slot < BSP_IMU_FLASH_SLOT_COUNT && size <= sizeof(pages[slot]));
     ++writes;
+    memset(pages[slot], 0xFF, sizeof(pages[slot]));
     memcpy(pages[slot], data, interrupt_save ? size / 2U : size);
     finalized[slot] = !interrupt_save;
     return finalized[slot];
@@ -54,9 +65,14 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config) {
 
 bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     assert(imu->calibration.gyro_bias_radps[0] == 0.0f);
+    assert(!imu->calibration.accel_valid);
     if (poll_status == BSP_IMU_OK) {
         imu->sample.t_read_us = UINT32_MAX - 2000000U + elapsed_us;
-        imu->sample.accel_mps2[2] = accel_z_mps2;
+        memcpy(imu->sample.accel_mps2, accel_mps2, sizeof(accel_mps2));
+        if (accel_vibrating) {
+            imu->sample.accel_mps2[0] +=
+                elapsed_us % 5000U == 0U ? 0.1f : -0.1f;
+        }
         imu->sample.gyro_radps[0] = gyro_x_radps;
         imu->sample.gyro_radps[1] = -0.004f;
         imu->sample.gyro_radps[2] = 0.005f;
@@ -64,43 +80,83 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     return poll_status;
 }
 
-static void expect_bias(uint8_t chip_id,
-                        const app_imu_calibration_t *expected) {
+static void expect_calibration(uint8_t chip_id,
+                               const app_imu_calibration_t *expected) {
     app_imu_calibration_t actual = {0};
     assert(imu_calibration_load(chip_id, &actual));
+    assert(actual.accel_valid == expected->accel_valid);
     for (unsigned axis = 0U; axis < 3U; ++axis) {
         assert(fabsf(actual.gyro_bias_radps[axis] -
                      expected->gyro_bias_radps[axis]) < 1e-7f);
+        if (actual.accel_valid) {
+            assert(fabsf(actual.accel_bias_mps2[axis] -
+                         expected->accel_bias_mps2[axis]) < 1e-5f);
+            assert(fabsf(actual.accel_scale[axis] -
+                         expected->accel_scale[axis]) < 1e-5f);
+        }
     }
+}
+
+static void seed_legacy_page(void) {
+    struct {
+        uint32_t sequence;
+        uint16_t version;
+        uint8_t chip_id;
+        uint8_t axis_map;
+        uint16_t gyro_range_dps;
+        uint16_t reserved;
+        float bias_radps[3];
+        uint32_t crc;
+    } record = {1U, 1U, 0xD1U, 2U, 2000U, 0U, {0.003f, -0.004f, 0.005f}, 0U};
+    assert(sizeof(record) == 28U);
+    record.crc = app_crc32(&record, 24U);
+    memset(pages[0], 0xFF, sizeof(pages[0]));
+    memcpy(pages[0], &record, sizeof(record));
+    finalized[0] = true;
 }
 
 static void test_flash_recovery(void) {
     app_imu_calibration_t missing = initial;
     assert(!imu_calibration_load(0xD1U, &missing));
     assert(missing.gyro_bias_radps[0] == initial.gyro_bias_radps[0]);
-    const app_imu_calibration_t invalid = {
-        .gyro_bias_radps = {NAN, 0.0f, 0.0f}};
+    app_imu_calibration_t invalid = initial;
+    invalid.gyro_bias_radps[0] = NAN;
     assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
-    assert(imu_calibration_save(0xD1U, &initial));
+    invalid = initial;
+    invalid.accel_scale[0] = 0.0f;
+    assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
+    seed_legacy_page();
+    app_imu_calibration_t legacy = initial;
+    legacy.accel_valid = false;
+    expect_calibration(0xD1U, &legacy);
+    app_imu_calibration_t loaded = initial;
+    assert(imu_calibration_load(0xD1U, &loaded) && !loaded.accel_valid);
+
     assert(imu_calibration_save(0x24U, &replacement));
-    expect_bias(0xD1U, &initial);
-    expect_bias(0x24U, &replacement);
+    expect_calibration(0xD1U, &legacy);
+    expect_calibration(0x24U, &replacement);
 
     interrupt_save = true;
     assert(!imu_calibration_save(0xD1U, &replacement));
-    expect_bias(0xD1U, &initial);
+    expect_calibration(0xD1U, &legacy);
     interrupt_save = false;
     assert(imu_calibration_save(0xD1U, &replacement));
-    expect_bias(0xD1U, &replacement);
-    pages[1][0] ^= 1U;
-    expect_bias(0xD1U, &initial);
+    expect_calibration(0xD1U, &replacement);
+    pages[1][28] ^= 1U;
+    expect_calibration(0xD1U, &legacy);
+}
+
+static void set_face(unsigned axis, int sign) {
+    memcpy(accel_mps2, initial.accel_bias_mps2, sizeof(accel_mps2));
+    accel_mps2[axis] += (float)sign * 9.80665f / initial.accel_scale[axis];
 }
 
 static app_command_t start_session(void) {
     elapsed_us = 0U;
     writes = 0U;
     gyro_x_radps = initial.gyro_bias_radps[0];
-    accel_z_mps2 = -9.80665f;
+    set_face(2U, -1);
+    accel_vibrating = false;
     poll_status = BSP_IMU_OK;
     imu_calibration_init();
     return (app_command_t){.valid = true, .imu_calibration_requested = true};
@@ -115,7 +171,16 @@ static void run_for(const app_command_t *command, uint32_t duration_us,
     }
 }
 
-static void test_stationary_window(void) {
+static void present_all_faces(const app_command_t *command) {
+    for (unsigned axis = 0U; axis < 3U; ++axis) {
+        set_face(axis, 1);
+        run_for(command, 1200000U, 2500U);
+        set_face(axis, -1);
+        run_for(command, 1200000U, 2500U);
+    }
+}
+
+static void test_combined_calibration(void) {
     const app_command_t command = start_session();
     /* The session qualifies RC after settling, including a transient dropout.
      */
@@ -131,8 +196,39 @@ static void test_stationary_window(void) {
     run_for(&command, 2000000U, 2500U);
     assert(writes == 0U);
     run_for(&command, 3000000U, 2500U);
+    assert(writes == 0U); /* Gyro and Z- are ready. */
+
+    set_face(0U, 1);
+    gyro_x_radps = 0.05f;
+    run_for(&command, 1200000U, 2500U); /* Turning while aligned with X+. */
+    gyro_x_radps = initial.gyro_bias_radps[0];
+
+    accel_mps2[0] = accel_mps2[2] = 6.93f; /* Between two faces. */
+    accel_mps2[1] = 0.0f;
+    run_for(&command, 1200000U, 2500U);
+
+    set_face(1U, -1);
+    run_for(&command, 1200000U, 2500U);
+    set_face(2U, 1);
+    run_for(&command, 1200000U, 2500U);
+    set_face(0U, -1);
+    run_for(&command, 1200000U, 2500U);
+    set_face(2U, -1); /* Repeated face must not advance the count. */
+    run_for(&command, 1200000U, 2500U);
+    set_face(1U, 1);
+    run_for(&command, 1200000U, 2500U);
+    assert(writes == 0U);
+
+    set_face(0U, 1);
+    accel_vibrating = true;
+    run_for(&command, 1002500U, 2500U);
+    assert(writes == 0U);
+    accel_vibrating = false;
+    run_for(&command, 1200000U, 2500U);
     assert(writes == 1U);
-    expect_bias(0xD1U, &initial);
+    expect_calibration(0xD1U, &initial);
+    run_for(&command, 1200000U, 2500U);
+    assert(writes == 1U);
 }
 
 static void test_rejected_sessions(void) {
@@ -174,12 +270,25 @@ static void test_rejected_sessions(void) {
     poll_status = BSP_IMU_OK;
     run_for(&command, 5000000U, 2500U);
     assert(writes == 0U);
-    expect_bias(0xD1U, &initial);
+
+    command = start_session();
+    run_for(&command, 6000000U, 2500U); /* Gyro and Z- collected. */
+    command.imu_calibration_requested = false;
+    imu_calibration_process(&command);
+    command.imu_calibration_requested = true;
+    present_all_faces(&command);
+    assert(writes == 0U);
+
+    command = start_session();
+    run_for(&command, 125000000U, 2500U);
+    present_all_faces(&command);
+    assert(writes == 0U);
+    expect_calibration(0xD1U, &initial);
 }
 
 int main(void) {
     test_flash_recovery();
-    test_stationary_window();
+    test_combined_calibration();
     test_rejected_sessions();
     return 0;
 }

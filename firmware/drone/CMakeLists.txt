@@ -83,6 +83,7 @@ target_sources(
             Control/Src/rate_controller.c
             Control/Src/mahony.c
             Control/Src/gyro_bias.c
+            Control/Src/accel_calibration.c
             BSP/Src/bsp_board.c
             BSP/Src/bsp_imu_flash.c
             BSP/Src/bsp_time.c

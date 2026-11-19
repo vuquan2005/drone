@@ -16,8 +16,9 @@ còn lại chọn FLIGHT. Trong FLIGHT, SC dành cho chế độ bay.
 Chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime poll receiver mỗi lượt, chỉ giải mã command khi frame mới hoặc kết nối
 thay đổi, sở hữu
 RTT/log/telemetry chung và lịch telemetry RC. ESC_CALIB khởi tạo module
-`esc_calibration` riêng, sở hữu PWM. IMU_CALIB đo bias gyro và lưu vào hai trang
-flash dành riêng, giữ PWM tắt. Cả hai mode giữ đến reset. App không tự poll/giải mã receiver;
+`esc_calibration` riêng, sở hữu PWM. IMU_CALIB đo bias gyro, hiệu chuẩn accel
+sáu mặt và lưu chung bộ hệ số vào hai trang flash dành riêng, giữ PWM tắt.
+Cả hai mode giữ đến reset. App không tự poll/giải mã receiver;
 `app_get_status()` cung cấp health riêng với mode.
 
 | Thành phần                     | Trách nhiệm                                                              |

@@ -32,12 +32,12 @@ hợp lệ. Frame RC hợp lệ đầu tiên xác định chế độ theo bản
 reset tiếp theo. Trong FLIGHT, hệ thống phải khỏe và firmware phải thấy
 CH5/SA OFF trước khi chấp nhận lần gạt SA ON với ga ≤2%.
 
-| CH7/SB     | CH6/SC        | CH8/SD                         | Chế độ                                     |
-| ---------- | ------------- | ------------------------------ | ------------------------------------------ |
-| HIGH       | MIDDLE        | Bất kỳ                         | `IMU_CALIB`, hiệu chuẩn bias gyro, PWM tắt |
-| HIGH       | LOW hoặc HIGH | Bất kỳ                         | `ESC_CALIB`, hiệu chuẩn ESC                |
-| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, chờ triển khai, PWM tắt    |
-| Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                   |
+| CH7/SB     | CH6/SC        | CH8/SD                         | Chế độ                                  |
+| ---------- | ------------- | ------------------------------ | --------------------------------------- |
+| HIGH       | MIDDLE        | Bất kỳ                         | `IMU_CALIB`, hiệu chuẩn gyro và accel   |
+| HIGH       | LOW hoặc HIGH | Bất kỳ                         | `ESC_CALIB`, hiệu chuẩn ESC             |
+| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, chờ triển khai, PWM tắt |
+| Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                |
 
 Preset Debug mặc định bật `DRONE_DEBUG_FORCE_FLIGHT`, bỏ qua bước chọn trên;
 Release mặc định tắt tùy chọn này. Để thử chọn mode hoặc hiệu chuẩn bằng
@@ -61,19 +61,38 @@ tắt output. Các thời gian thử nằm trong `App/Inc/esc_calibration.h`. Ti
 phát xung nếu CPU bị kẹt, nên timeout phần mềm không bảo vệ trường hợp đó.
 Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 
-## Hiệu chuẩn bias gyro
+## Hiệu chuẩn gyro và accelerometer
 
 1. Tháo cánh và đặt khung đứng yên. Trên tay điều khiển, để SA ở OFF, ga ở
    mức thấp nhất, SB ở HIGH và SC ở giữa. Giữ các vị trí này khi reset bo.
 2. Dùng build có RTT và `DRONE_LOG_LEVEL=INFO` để xem log `imu_calib`. Sau
-   1 giây chờ cảm biến và frame RC mới, firmware tìm một cửa sổ liên tục 3 giây với ít nhất
-   1.140 mẫu mới ở ODR 400 Hz. Chuyển động hoặc khoảng cách giữa hai mẫu vượt
-   20 ms sẽ làm thu lại cửa sổ. Từ lúc hết 1 giây chờ, RC mất kết nối, tổ hợp
-   công tắc sai, arm bật hoặc ga trên 2% đều sẽ hủy phiên.
-   Phiên hết hạn sau 20 giây tính từ lúc khởi tạo IMU xong.
-3. Khi RTT báo `saved bias`, trả SB và SD về LOW rồi reset để vào FLIGHT. Log `imu`
-   báo `gyro bias loaded from flash`. Có thể kiểm tra gyro đã bù trong tab
-   **Rate · FRD** khi snapshot hợp lệ và khung đứng yên.
+   1 giây chờ IMU và RC, giữ khung đứng yên cho đến khi firmware thu đủ ít nhất
+   1.140 mẫu liên tiếp trong cửa sổ 3 giây ở ODR 400 Hz.
+3. Khi RTT báo `accel: expose each face`, xoay khung qua sáu mặt theo thứ tự
+   tùy ý. Với mỗi mặt, đặt trục cần đo gần phương thẳng đứng và giữ yên cho
+   tới khi RTT báo `captured`. Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây.
+   Firmware nhận mặt khi véc-tơ gia tốc lệch khoảng 8° trở xuống so với một
+   trục, xác định chiều theo dấu và kiểm tra gyro cùng độ dao động của accel.
+   RTT báo các mặt còn thiếu. Mặt đã nhận được tính một lần. Giữ nguyên công
+   tắc và ga khi xoay khung.
+4. Khi RTT báo `saved gyro and accel calibration`, trả SB và SD về LOW rồi
+   reset để vào `FLIGHT`. Log `imu` báo đã nạp hệ số gyro và accel từ flash.
+   Có thể kiểm tra gyro đã bù trong tab **Rate · FRD** khi khung đứng yên.
+
+| Mặt đo | Cách đặt khung FRD         |
+| ------ | -------------------------- |
+| `X+`   | Mũi hướng lên              |
+| `X-`   | Mũi hướng xuống            |
+| `Y+`   | Cạnh phải hướng lên        |
+| `Y-`   | Cạnh phải hướng xuống      |
+| `Z+`   | Khung lật úp               |
+| `Z-`   | Khung nằm ngang đúng chiều |
+
+Chuyển động hoặc khoảng cách giữa hai mẫu vượt 20 ms làm thu lại cửa sổ
+đang đo. Sau giây chờ đầu tiên, mất RC, đổi tổ hợp công tắc, bật arm hoặc
+ga trên 2% sẽ hủy phiên. Bước gyro có 20 giây tính từ lúc khởi tạo IMU xong.
+Bước accel có 120 giây sau khi đo xong gyro. Firmware ghi một lần sau khi đủ
+sáu mặt và giữ bộ hệ số cũ nếu hủy hoặc hết hạn giữa chừng.
 
 Để build và nạp bản Debug có RTT và chọn mode, chạy từ gốc repo:
 
@@ -88,8 +107,10 @@ cube programmer -c port=SWD freq=1000 reset=SWrst -w build/Debug/drone.elf -v -r
 Cần đặt khung cố định trong suốt cửa sổ đo vì IMU sáu trục có thể nhầm chuyển
 động yaw rất chậm với bias.
 
-Firmware dành hai trang flash cuối (`0x0807F000` đến `0x0807FFFF`) cho bias.
-Mỗi bản ghi có mã IMU, mã ánh xạ trục, dải gyro, phiên bản, số thứ tự và CRC.
+Firmware dành hai trang flash cuối (`0x0807F000` đến `0x0807FFFF`) cho hiệu
+chuẩn IMU. Bản v2 dài 52 byte, gồm mã IMU, ánh xạ trục, dải đo, phiên bản,
+số thứ tự, ba bias gyro, ba bias accel, ba hệ số tỉ lệ accel và CRC.
+`FLIGHT` vẫn đọc được bản v1 chỉ có bias gyro.
 Firmware ghi trang còn lại, đọc kiểm tra rồi đánh dấu hoàn tất. Nếu việc ghi
 bị gián đoạn, bản hợp lệ trước đó vẫn có thể được nạp. Khi nạp firmware, dùng
 quy trình chỉ xóa các trang của ảnh chương trình để giữ hệ số. Lệnh
@@ -104,14 +125,16 @@ thành công và tràn uint32 sau khoảng 71,6 phút. Xem API trong
 [app_imu.h](App/Inc/app_imu.h) và driver [BMI160](Drivers/BMI160/README.md),
 [BMI270](Drivers/BMI270/README.md).
 
-Trong FLIGHT, App nạp bản bias tương thích mới nhất trong flash và trừ bias
-trước Mahony và PID tốc độ góc. Khi flash chưa có bản phù hợp, BMI160 dùng
+Trong FLIGHT, App nạp bản hiệu chuẩn tương thích mới nhất trong flash. App
+trừ bias gyro trước Mahony và PID tốc độ góc. Với bản v2, App trừ bias accel
+rồi nhân hệ số tỉ lệ từng trục trước Mahony. Khi flash chưa có bản phù hợp, BMI160 dùng
 `[-0.001541997, -0.004106014, -0.005377476]` rad/s theo thứ tự XYZ trong FRD
 và BMI270 dùng bias bằng 0. Bộ mặc định BMI160 là trung bình của 2.020 mẫu trong 5 giây
 cuối phiên `telemetry_20261119_023330` tại `experiments/raw/telemetry/`, từ
 sequence 8258 đến 10277. Đổi số đếm sang FRD và rad/s theo
 [định dạng telemetry](../../protocol/telemetry.md) trước khi lấy trung bình.
-Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến.
+Bản ghi IMU raw giữ nguyên số đếm theo trục cảm biến. Tab IMU của RTT hiển
+thị giá trị đổi đơn vị từ số đếm đó.
 
 USART1 nhận CRSF qua DMA; nối TX receiver vào PA10 và chung GND. `connected`
 chỉ phản ánh frame RC hợp lệ trong 100 ms gần nhất, không đánh giá chất lượng

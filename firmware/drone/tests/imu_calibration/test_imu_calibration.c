@@ -1,3 +1,4 @@
+#include "accel_calibration.h"
 #include "app_crc32.h"
 #include "app_safety.h"
 #include "app_telemetry.h"
@@ -250,6 +251,25 @@ static void test_combined_calibration(void) {
     assert(imu_frames == frames_before_idle);
 }
 
+static void test_face_angle_limit(void) {
+    accel_calibration_t state = {0};
+    const float gyro_radps[3] = {0.0f, 0.0f, 0.0f};
+    const float tilted_mps2[3] = {0.0f, -2.0f, -9.65f};
+    const float near_z_mps2[3] = {0.0f, -1.4f, -9.65f};
+    for (uint32_t sample = 0U; sample <= 400U; ++sample) {
+        assert(accel_calibration_push(&state, tilted_mps2, gyro_radps,
+                                      sample * 2500U,
+                                      380U) == ACCEL_CAL_NO_FACE);
+    }
+    for (uint32_t sample = 0U; sample <= 400U; ++sample) {
+        const accel_cal_face_t expected =
+            sample == 400U ? ACCEL_CAL_Z_NEG : ACCEL_CAL_NO_FACE;
+        assert(accel_calibration_push(&state, near_z_mps2, gyro_radps,
+                                      (401U + sample) * 2500U,
+                                      380U) == expected);
+    }
+}
+
 static void test_rejected_sessions(void) {
     app_command_t command = start_session();
     run_for(NULL, 1002500U, 2500U);
@@ -308,6 +328,7 @@ static void test_rejected_sessions(void) {
 int main(void) {
     test_flash_recovery();
     test_combined_calibration();
+    test_face_angle_limit();
     test_rejected_sessions();
     return 0;
 }

@@ -5,7 +5,7 @@
 #define GRAVITY_MPS2 9.80665f
 #define ACCEL_MIN_MPS2 (0.85f * GRAVITY_MPS2)
 #define ACCEL_MAX_MPS2 (1.15f * GRAVITY_MPS2)
-#define FACE_MIN_COS 0.99f /* About 8 degrees from the body axis. */
+#define FACE_MIN_COS 0.98480775f /* 10 degrees from the body axis. */
 #define MAX_GYRO_RADPS 0.025f
 #define MAX_ACCEL_DELTA_MPS2 0.25f
 #define MAX_ACCEL_STDDEV_MPS2 0.08f

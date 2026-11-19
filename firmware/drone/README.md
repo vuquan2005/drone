@@ -71,7 +71,7 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 3. Khi RTT báo `accel: expose each face`, xoay khung qua sáu mặt theo thứ tự
    tùy ý. Với mỗi mặt, đặt trục cần đo gần phương thẳng đứng và giữ yên cho
    tới khi RTT báo `captured`. Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây.
-   Firmware nhận mặt khi véc-tơ gia tốc lệch khoảng 8° trở xuống so với một
+   Firmware nhận mặt khi véc-tơ gia tốc lệch khoảng 10° trở xuống so với một
    trục, xác định chiều theo dấu và kiểm tra gyro cùng độ dao động của accel.
    RTT báo các mặt còn thiếu. Mặt đã nhận được tính một lần. Giữ nguyên công
    tắc và ga khi xoay khung.

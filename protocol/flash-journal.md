@@ -32,9 +32,28 @@ BEGIN hợp lệ mở phiên tương ứng. Phiên thiếu END hợp lệ đư�
 gián đoạn. Khi bỏ một trang hỏng giữa phiên, vẫn giữ các trang hợp lệ
 phía sau có cùng ID phiên. Sau reset, lần ghi tiếp theo tạo phiên mới.
 
-Mỗi lần mở cần còn đủ ba trang cho BEGIN, ít nhất một DATA và END.
-Journal luôn dành một trang cho END. Một trang DATA được đóng khi đầy,
+Mỗi lần mở cần còn ít nhất bốn trang cho BEGIN, một DATA chứa cấu hình,
+một DATA chứa telemetry và END. Journal luôn dành một trang cho END. Một trang DATA được đóng khi đầy,
 khi frame kế tiếp không vừa, khi đã chờ 100 ms hoặc khi đóng phiên. Bên
 gọi giữ frame chưa được nhận để thử lại khi trạng thái trở về OPEN.
 Khi SPI, timeout hoặc xác minh flash lỗi, journal báo FAULT đến lần
 khởi động lại. Các trang trước đó vẫn có thể phục hồi bằng quét.
+
+## Ghi trong chế độ bay
+
+`DRONE_ENABLE_FLASH_RECORD` mặc định bật cho firmware và hoạt động cả khi
+`DRONE_ENABLE_RTT` tắt. Trong `RUNTIME_FLIGHT`, SD MIDDLE mở phiên sau
+khi quét và xác minh BEGIN. Rời RECORD thì ngừng nhận frame mới, xả FIFO
+RAM rồi ghi END. Khi mất RC, logger giữ yêu cầu ghi hợp lệ gần nhất.
+
+Đầu mỗi phiên, logger lưu frame cấu hình type 10 với ID yêu cầu bằng 0,
+rồi ghi IMU raw gộp, RC gọn, rate, attitude và attitude control. IMU raw
+type 9 giữ tất cả mẫu đọc thành công ở ODR 800 Hz, tối đa tám mẫu mỗi
+frame. Nhóm đang dở được tách theo ranh giới phiên để giữ mẫu đầu và cuối
+đúng phiên. RTT live tiếp tục dùng lịch phát hiện có và thống kê RTT vẫn
+đi riêng qua RTT.
+
+Bộ đếm trong END tính theo frame. Số frame đã ghi bao gồm frame cấu hình.
+Số frame bỏ gồm các frame không vừa FIFO và các frame còn trong FIFO hoặc
+batch IMU khi hết chỗ ghi DATA. Có thể đối chiếu sequence trong type 9 để
+đếm số mẫu IMU bị mất giữa các nhóm đã lưu.

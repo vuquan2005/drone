@@ -12,7 +12,6 @@ enum {
     ATTITUDE_CONTROL_COMPACT_FRAME_BYTES = 62U,
     ATTITUDE_CONTROL_AGE_MASK = 0x7FFFU,
     ATTITUDE_CONTROL_VALID_BIT = 0x8000U,
-    CONFIG_FRAME_BYTES = 8U + 4U + APP_CONFIG_PAYLOAD_BYTES + 4U,
     GET_CONFIG = 'C',
     IMU_BATCH_CAPACITY = 8U,
     IMU_BATCH_MAX_AGE_US = 10000U,
@@ -36,6 +35,7 @@ static struct {
     uint32_t last_sensor_ticks;
     uint32_t last_sequence;
     uint8_t count;
+    bool recording;
 } imu_batch;
 
 static uint32_t stats_sequence;
@@ -44,15 +44,19 @@ static uint32_t rate_sequence;
 static uint32_t attitude_sequence;
 static uint32_t attitude_control_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
+#if APP_TELEMETRY_RTT_ENABLED
 static uint32_t config_request_id;
 static unsigned config_request_bytes;
+#endif
 
 void app_telemetry_init(void) {
     receiver_sequence = rate_sequence = attitude_sequence = 0U;
     attitude_control_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
     imu_batch.count = 0U;
+#if APP_TELEMETRY_RTT_ENABLED
     config_request_bytes = 0U;
+#endif
 }
 
 static bsp_rtt_result_t track_stats(bsp_rtt_result_t result) {
@@ -76,6 +80,42 @@ static void put_u16(uint8_t *out, uint16_t value) {
     }
 }
 
+typedef struct {
+    bsp_rtt_result_t rtt;
+    bool flash;
+} frame_destinations_t;
+
+static bsp_rtt_result_t prepare_rtt(size_t size) {
+#if APP_TELEMETRY_RTT_ENABLED
+    return bsp_rtt_prepare_write(BSP_RTT_DATA, size);
+#else
+    (void)size;
+    return BSP_RTT_DISABLED;
+#endif
+}
+
+static frame_destinations_t prepare_frame(size_t size, bool record) {
+    const bsp_rtt_result_t rtt = prepare_rtt(size);
+#if DRONE_FLASH_RECORD
+    return (frame_destinations_t){rtt,
+                                  record && app_flash_recorder_prepare(size)};
+#else
+    (void)record;
+    return (frame_destinations_t){rtt, false};
+#endif
+}
+
+static bsp_rtt_result_t publish(frame_destinations_t dest, const uint8_t *frame,
+                                size_t size) {
+#if DRONE_FLASH_RECORD
+    if (dest.flash)
+        app_flash_recorder_enqueue(frame, size);
+#endif
+    return dest.rtt == BSP_RTT_OK ? bsp_rtt_write(BSP_RTT_DATA, frame, size)
+                                  : dest.rtt;
+}
+
+#if APP_TELEMETRY_RTT_ENABLED
 bool app_telemetry_poll_config_request(uint32_t *id) {
     uint8_t byte;
     for (unsigned i = 0U; i < 15U && bsp_rtt_read_control(&byte, 1U); ++i) {
@@ -97,18 +137,26 @@ bool app_telemetry_poll_config_request(uint32_t *id) {
     return false;
 }
 
-bsp_rtt_result_t app_telemetry_write_config(uint32_t id,
-                                            const app_config_t *config) {
-    const bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, CONFIG_FRAME_BYTES);
-    if (ready != BSP_RTT_OK)
-        return ready;
-    uint8_t frame[CONFIG_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 10U};
-    put_u16(frame + 6U, CONFIG_FRAME_BYTES - 12U);
+#endif
+
+void app_telemetry_encode_config(uint8_t frame[APP_TELEMETRY_CONFIG_BYTES],
+                                 uint32_t id, const app_config_t *config) {
+    static const uint8_t header[] = {'D', 'R', 'T', '!', 1U, 10U};
+    memcpy(frame, header, sizeof(header));
+    put_u16(frame + 6U, APP_TELEMETRY_CONFIG_BYTES - 12U);
     put_u32(frame + 8U, id);
     app_config_encode(frame + 12U, config);
-    const size_t crc_offset = CONFIG_FRAME_BYTES - 4U;
+    const size_t crc_offset = APP_TELEMETRY_CONFIG_BYTES - 4U;
     put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
+}
+
+bsp_rtt_result_t app_telemetry_write_config(uint32_t id,
+                                            const app_config_t *config) {
+    const bsp_rtt_result_t ready = prepare_rtt(APP_TELEMETRY_CONFIG_BYTES);
+    if (ready != BSP_RTT_OK)
+        return ready;
+    uint8_t frame[APP_TELEMETRY_CONFIG_BYTES];
+    app_telemetry_encode_config(frame, id, config);
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }
 
@@ -116,15 +164,17 @@ static void flush_imu_batch(void) {
     const size_t crc_offset =
         IMU_NEXT_SAMPLE_OFFSET + (imu_batch.count - 1U) * IMU_NEXT_SAMPLE_BYTES;
     const size_t frame_bytes = crc_offset + 4U;
-    bsp_rtt_result_t result = bsp_rtt_prepare_write(BSP_RTT_DATA, frame_bytes);
-    if (result == BSP_RTT_OK) {
+    const frame_destinations_t dest =
+        prepare_frame(frame_bytes, imu_batch.recording);
+    bsp_rtt_result_t result = dest.rtt;
+    if (dest.rtt == BSP_RTT_OK || dest.flash) {
         static const uint8_t header[] = {'D', 'R', 'T', '!', 1U, 9U};
         uint8_t *frame = imu_batch.frame;
         memcpy(frame, header, sizeof(header));
         put_u16(frame + 6U, (uint16_t)(crc_offset - 8U));
         frame[19U] = imu_batch.count;
         put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
-        result = bsp_rtt_write(BSP_RTT_DATA, frame, frame_bytes);
+        result = publish(dest, frame, frame_bytes);
     }
     if (result == BSP_RTT_FULL) {
         imu_full++;
@@ -140,12 +190,19 @@ void app_telemetry_queue_imu(const app_imu_sample_t *sample,
         imu_rejected++;
         return;
     }
+    bool recording = false;
+#if DRONE_FLASH_RECORD
+    recording = app_flash_recorder_accepting();
+#endif
+    if (!APP_TELEMETRY_RTT_ENABLED && !recording)
+        return;
     const uint32_t read_delta_us = sample->t_read_us - imu_batch.last_read_us;
     const uint32_t sensor_delta_ticks =
         (sample->sensor_time_ticks - imu_batch.last_sensor_ticks) &
         IMU_SENSOR_TICK_MASK;
     if (imu_batch.count != 0U &&
-        (sequence != imu_batch.last_sequence + 1U ||
+        (recording != imu_batch.recording ||
+         sequence != imu_batch.last_sequence + 1U ||
          read_delta_us > UINT16_MAX || sensor_delta_ticks > UINT8_MAX ||
          sample->t_read_us - imu_batch.first_read_us >= IMU_BATCH_MAX_AGE_US)) {
         flush_imu_batch();
@@ -159,6 +216,7 @@ void app_telemetry_queue_imu(const app_imu_sample_t *sample,
         put_u16(frame + 16U, (uint16_t)sample->sensor_time_ticks);
         frame[18U] = (uint8_t)(sample->sensor_time_ticks >> 16U);
         imu_batch.first_read_us = sample->t_read_us;
+        imu_batch.recording = recording;
         axes = frame + IMU_FIRST_AXES_OFFSET;
     } else {
         uint8_t *record = imu_batch.frame + IMU_NEXT_SAMPLE_OFFSET +
@@ -186,12 +244,16 @@ void app_telemetry_process_imu(void) {
     }
 }
 
+void app_telemetry_flush_recording_imu(void) {
+    if (imu_batch.count != 0U && imu_batch.recording)
+        flush_imu_batch();
+}
+
 bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
                                            uint32_t imu_samples,
                                            uint32_t imu_read_errors) {
     const uint32_t sequence = ++stats_sequence;
-    bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, STATS_FRAME_BYTES);
+    bsp_rtt_result_t ready = prepare_rtt(STATS_FRAME_BYTES);
     if (ready != BSP_RTT_OK) {
         return track_stats(ready);
     }
@@ -241,11 +303,9 @@ app_telemetry_write_receiver(const app_receiver_sample_t *sample,
             flags |= 2U << 5U;
         }
     }
-    bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, RC_FRAME_BYTES);
-    if (ready != BSP_RTT_OK) {
-        return ready;
-    }
+    const frame_destinations_t dest = prepare_frame(RC_FRAME_BYTES, true);
+    if (dest.rtt != BSP_RTT_OK && !dest.flash)
+        return dest.rtt;
     uint8_t frame[RC_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 8U, 21U, 0U};
     put_u32(frame + 8U, sequence);
     put_u32(frame + 12U, uptime_ms);
@@ -255,7 +315,7 @@ app_telemetry_write_receiver(const app_receiver_sample_t *sample,
     }
     frame[28U] = flags;
     put_u32(frame + 29U, app_crc32(frame, 29U));
-    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
+    return publish(dest, frame, sizeof(frame));
 }
 
 static void put_float(uint8_t *out, float value) {
@@ -282,10 +342,9 @@ bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate) {
         }
     }
 
-    const bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, RATE_FRAME_BYTES);
-    if (ready != BSP_RTT_OK)
-        return ready;
+    const frame_destinations_t dest = prepare_frame(RATE_FRAME_BYTES, true);
+    if (dest.rtt != BSP_RTT_OK && !dest.flash)
+        return dest.rtt;
     uint8_t frame[RATE_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 11U, 54U, 0U};
     put_u32(frame + 8U, sequence);
     put_u32(frame + 12U, rate->previous_us);
@@ -301,7 +360,7 @@ bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate) {
     }
     const size_t crc_offset = sizeof(frame) - 4U;
     put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
-    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
+    return publish(dest, frame, sizeof(frame));
 }
 
 bsp_rtt_result_t app_telemetry_write_attitude(const float q[4],
@@ -310,16 +369,15 @@ bsp_rtt_result_t app_telemetry_write_attitude(const float q[4],
     if (q == NULL)
         return BSP_RTT_INVALID_ARGUMENT;
     uint8_t frame[36] = {'D', 'R', 'T', '!', 1U, 6U, 24U, 0U};
-    const bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, sizeof(frame));
-    if (ready != BSP_RTT_OK)
-        return ready;
+    const frame_destinations_t dest = prepare_frame(sizeof(frame), true);
+    if (dest.rtt != BSP_RTT_OK && !dest.flash)
+        return dest.rtt;
     put_u32(frame + 8, sequence);
     put_u32(frame + 12, t_sample_us);
     for (unsigned i = 0; i < 4; ++i)
         put_float(frame + 16 + 4 * i, q[i]);
     put_u32(frame + 32, app_crc32(frame, 32));
-    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
+    return publish(dest, frame, sizeof(frame));
 }
 
 bsp_rtt_result_t app_telemetry_write_attitude_control(
@@ -331,10 +389,9 @@ bsp_rtt_result_t app_telemetry_write_attitude_control(
     const bool compact = age_us <= ATTITUDE_CONTROL_AGE_MASK;
     const size_t frame_bytes = compact ? ATTITUDE_CONTROL_COMPACT_FRAME_BYTES
                                        : ATTITUDE_CONTROL_FRAME_BYTES;
-    const bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, frame_bytes);
-    if (ready != BSP_RTT_OK)
-        return ready;
+    const frame_destinations_t dest = prepare_frame(frame_bytes, true);
+    if (dest.rtt != BSP_RTT_OK && !dest.flash)
+        return dest.rtt;
     uint8_t frame[ATTITUDE_CONTROL_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U};
     frame[5] = compact ? 12U : 7U;
     put_u16(frame + 6U, (uint16_t)(frame_bytes - 12U));
@@ -363,5 +420,5 @@ bsp_rtt_result_t app_telemetry_write_attitude_control(
     }
     const size_t crc_offset = frame_bytes - 4U;
     put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
-    return bsp_rtt_write(BSP_RTT_DATA, frame, frame_bytes);
+    return publish(dest, frame, frame_bytes);
 }

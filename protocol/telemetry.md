@@ -8,14 +8,14 @@ CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                                                                                       |
-| ------ | ------- | -------------- | ------------------------------------------------------------------------------------------------------------- |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                  |
-| 4      | 1       | version        | `1`                                                                                                           |
-| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw, `5` rate, `6` tư thế, `7` vòng attitude, `8` RC gọn |
-| 6      | 2       | payload_length | uint16. Độ dài theo type 2–8 lần lượt là 40, 48, 32, 80, 24, 56, 21 byte                                      |
-| 8      | N       | payload        | Theo version và type                                                                                          |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                  |
+| Offset | Số byte | Trường         | Quy ước                                                                                                                           |
+| ------ | ------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                      |
+| 4      | 1       | version        | `1`                                                                                                                               |
+| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate, `6` tư thế, `7` vòng attitude, `8` RC gọn, `9` IMU raw gộp |
+| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu.                                  |
+| 8      | N       | payload        | Theo version và type                                                                                                              |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                      |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -37,9 +37,9 @@ CRC hợp lệ được bỏ qua và đếm unknown; viewer không đọc `imu_*
 Các log gốc được giữ nguyên; có thể dùng phiên bản công cụ trước thay đổi này
 nếu cần xem lại dữ liệu lịch sử.
 
-## IMU raw v1, type 4
+## IMU raw cũ v1, type 4
 
-Payload 32 byte, frame 44 byte. Đây là số đếm IMU nguyên gốc, chưa đổi đơn
+Viewer đọc type 4 từ firmware cũ. Payload 32 byte, frame 44 byte. Đây là số đếm IMU nguyên gốc, chưa đổi đơn
 vị, hiệu chuẩn, lọc hoặc ánh xạ hệ trục. Offset tính từ đầu payload:
 
 | Offset | Kiểu     | Trường                 | Ý nghĩa                                                          |
@@ -63,8 +63,8 @@ phải cập nhật các hằng BSP tương ứng.
 
 Bên nhận đổi `accel = raw * accel_range_g * 9.80665 / 32768` (m/s²),
 `gyro = raw * gyro_range_dps * pi / (180 * 32768)` (rad/s), rồi áp dụng
-ánh xạ tương ứng cho cả hai vector. Firmware hiện gửi `axis_map=2`, đổi
-sensor → thân FRD bằng `[-X, +Y, -Z]`. FRD có X tiến, Y phải, Z xuống.
+ánh xạ tương ứng cho cả hai vector. Với `axis_map=2`, viewer đổi sensor →
+thân FRD bằng `[-X, +Y, -Z]`. FRD có X tiến, Y phải, Z xuống.
 Viewer luôn hiển thị type 4 theo FRD: map 2 dùng `[-X, +Y, -Z]`; map 1 cũ
 được đổi tiếp từ FLU sang FRD, tương đương `[+X, +Y, +Z]` từ sensor.
 Giữ nguyên nghĩa map 1 để đọc log cũ; không áp cách gá mới cho log cũ.
@@ -84,29 +84,55 @@ Sequence tăng kể cả khi frame bị RTT từ chối. Counter chỉ đếm l�
 bao gồm mẫu bị từ chối trước khi encode, và không đo số mẫu bị ghi đè trước
 khi MCU đọc. Khi thiếu chỗ, writer bỏ nguyên frame mới và tăng counter đầy CH1.
 
-Mặc định ghi mỗi lần đọc thành công. `DRONE_IMU_TELEMETRY_DIVISOR=N` chọn
-mẫu đầu tiên, rồi một mẫu sau mỗi `N` lần đọc thành công trong FLIGHT.
-Sequence vẫn liên tiếp nếu RTT nhận đủ các mẫu đã chọn, nên viewer phân biệt
-gap với giảm mẫu chủ động. Timestamp và ODR của cảm biến giữ nguyên. Khi MCU
-đọc đủ 800 mẫu/s, `N=1` tương ứng 35.200 B/s, còn `N=4` tương ứng 8.800 B/s.
+## IMU raw gộp v1, type 9
+
+Firmware gửi 1–8 mẫu thô mỗi frame trong FLIGHT và IMU_CALIB. Với `n` mẫu,
+payload có `9 + 15 × n` byte, toàn frame có `21 + 15 × n` byte. Frame đủ 8
+mẫu dài 141 byte, tương ứng 14.100 B/s khi MCU đọc đủ 800 mẫu/s.
+
+| Offset payload | Kiểu     | Trường            | Ý nghĩa                             |
+| -------------: | -------- | ----------------- | ----------------------------------- |
+|              0 | uint32   | sequence          | Số thứ tự mẫu đầu                   |
+|              4 | uint32   | t_read_us         | Uptime MCU khi đọc xong mẫu đầu, µs |
+|              8 | uint24   | sensor_time_ticks | Clock cảm biến của mẫu đầu          |
+|             11 | uint8    | sample_count      | Số mẫu trong nhóm, 1–8              |
+|             12 | int16[6] | axes              | Accel XYZ rồi gyro XYZ của mẫu đầu  |
+
+Mỗi mẫu tiếp theo chiếm 15 byte từ offset payload `24 + 15 × i`, với `i = 0`
+cho mẫu thứ hai. `uint16` đầu là độ chênh `t_read_us` theo µs, `uint8` sau là
+độ chênh `sensor_time_ticks` theo tick, đều so với mẫu liền trước. Sáu `int16`
+cuối là accel XYZ rồi gyro XYZ. Viewer tăng `sequence` mỗi mẫu, cộng delta và
+lấy modulo 2^32 cho `sequence` và `t_read_us`, modulo 2^24 cho clock cảm biến.
+
+Type 9 quy định accel ±16 g, gyro ±2000 °/s, ODR accel và gyro 800 Hz và
+`axis_map=2` (sensor → FRD `[-X, +Y, -Z]`). Firmware kiểm tra các hằng cấu
+hình lúc build. Viewer dùng các giá trị cố định để đổi đơn vị và điền cùng
+schema `imu_raw_*.csv` của type 4, mỗi mẫu một dòng.
+
+Firmware đưa mỗi lần đọc thành công vào nhóm. Sequence đếm cả các mẫu bị RTT
+bỏ. Firmware gửi nhóm khi đủ 8 mẫu hoặc khi foreground thấy mẫu đầu đã chờ ít
+nhất 10 ms. Nếu sequence gián đoạn, delta MCU vượt `uint16` hoặc delta cảm biến
+vượt 255 tick, firmware gửi nhóm hiện tại và dùng mẫu mới làm mốc tuyệt đối.
+Mỗi lần buffer đầy bỏ nguyên nhóm và tăng `imu_tx_full` một lần. Khoảng trống
+sequence phía host tính theo số mẫu.
 
 ## RTT statistics v1, type 2
 
 Payload 40 byte, frame 52 byte. Tất cả trường uint32 little-endian, offset từ
 đầu payload; các counter tràn modulo 2^32 và reset khi `app_init()`:
 
-| Offset | Trường            | Ý nghĩa                                                                     |
-| ------ | ----------------- | --------------------------------------------------------------------------- |
-| 0      | sequence          | Số lần thử gửi thống kê, đầu tiên = 1; tăng dù frame bị bỏ                  |
-| 4      | uptime_ms         | Uptime MCU lúc chụp thống kê, ms, không phải timestamp IMU                  |
-| 8      | imu_samples       | Tổng số lần đọc IMU thành công, kể cả mẫu bỏ qua khi giảm tốc độ ghi RTT    |
-| 12     | imu_read_errors   | Tổng lỗi đọc driver IMU; không đếm NO_DATA hoặc lỗi init                    |
-| 16     | rtt_log_full      | Bản ghi CH0 bị BSP bỏ vì đầy                                                |
-| 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU, stats và RC                            |
-| 24     | imu_tx_full       | Chỉ frame IMU bị bỏ vì đầy                                                  |
-| 28     | stats_tx_full     | Chỉ frame thống kê bị bỏ vì đầy                                             |
-| 32     | imu_tx_rejected   | IMU bị từ chối vì nguyên nhân khác FULL (kể cả dữ liệu encode không hợp lệ) |
-| 36     | stats_tx_rejected | Stats bị từ chối vì nguyên nhân khác FULL                                   |
+| Offset | Trường            | Ý nghĩa                                                                    |
+| ------ | ----------------- | -------------------------------------------------------------------------- |
+| 0      | sequence          | Số lần thử gửi thống kê, đầu tiên = 1; tăng dù frame bị bỏ                 |
+| 4      | uptime_ms         | Uptime MCU lúc chụp thống kê, ms, không phải timestamp IMU                 |
+| 8      | imu_samples       | Tổng số lần đọc IMU thành công                                             |
+| 12     | imu_read_errors   | Tổng lỗi đọc driver IMU; không đếm NO_DATA hoặc lỗi init                   |
+| 16     | rtt_log_full      | Bản ghi CH0 bị BSP bỏ vì đầy                                               |
+| 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU, stats và RC                           |
+| 24     | imu_tx_full       | Số frame IMU bị bỏ vì đầy. Type 9 chứa tối đa 8 mẫu mỗi frame              |
+| 28     | stats_tx_full     | Chỉ frame thống kê bị bỏ vì đầy                                            |
+| 32     | imu_tx_rejected   | Số frame IMU bị từ chối vì nguyên nhân khác FULL, cộng số mẫu không hợp lệ |
+| 36     | stats_tx_rejected | Stats bị từ chối vì nguyên nhân khác FULL                                  |
 
 App thử gửi mỗi khoảng 1000 ms trong foreground, kể cả khi IMU lỗi hoặc
 NO_DATA; không retry/gửi bù. Lịch dùng hiệu uint32 qua tick wrap; poll bị
@@ -178,9 +204,9 @@ log. CSV `receiver_compact_*.csv` giữ nguyên bốn kênh raw và byte `flags`
 
 ## Mã nguồn và kiểm thử
 
-- Encoder: `firmware/drone/App/Src/app_telemetry.c`; API `app_telemetry_write_imu()`, compile option `DRONE_ENABLE_TELEMETRY`.
+- Encoder `firmware/drone/App/Src/app_telemetry.c`, API `app_telemetry_queue_imu()` và `app_telemetry_process_imu()`, tùy chọn `DRONE_ENABLE_TELEMETRY`.
 - Framing và decoder: `tools/rtt/records.py`; không phụ thuộc UI.
-- Fixture chung: [IMU raw gá cũ](fixtures/imu_raw_v1.hex), [IMU raw FRD 400 Hz](fixtures/imu_raw_frd_v1.hex), [IMU raw FRD 800 Hz](fixtures/imu_raw_frd_800hz_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
+- Fixture chung [IMU raw gộp](fixtures/imu_batch_v1.hex), [IMU raw gá cũ](fixtures/imu_raw_v1.hex), [IMU raw FRD 400 Hz](fixtures/imu_raw_frd_v1.hex), [IMU raw FRD 800 Hz](fixtures/imu_raw_frd_800hz_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
   Test C so output byte-for-byte; Python kiểm tra framing, CRC và giá trị
   trường theo cùng fixture.
 

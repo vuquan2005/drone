@@ -252,8 +252,12 @@ class Viewer(QtWidgets.QMainWindow):
             return
         kind, values = record
         if self.recording:
-            self.writer.submit(kind, (self.telemetry.segment, *values))
-        if kind == "imu_raw" or self.telemetry.segment != segment:
+            if kind == "imu_batch":
+                for sample in values:
+                    self.writer.submit("imu_raw", (self.telemetry.segment, *sample))
+            else:
+                self.writer.submit(kind, (self.telemetry.segment, *values))
+        if kind in ("imu_raw", "imu_batch") or self.telemetry.segment != segment:
             self.dirty = True
 
     def on_raw(self, data):

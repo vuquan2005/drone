@@ -56,8 +56,9 @@ Mặc định mỗi phiên được lưu riêng trong `experiments/raw/telemetry
 ignore), gồm `imu_raw_*.csv`, `receiver_compact_*.csv` (RC mới), `rc_*.csv` (RC cũ),
 `rate_*.csv`, `rtt_stats_*.csv`,
 `attitude_*.csv`, `attitude_control_*.csv`, `events_*.log` và `data_*.hex` nếu bật
-raw. IMU CSV giữ counts gốc cùng range,
-ODR và mã ánh xạ trục; raw hex giữ byte DATA trước decode. Log được ghi kể cả
+raw. Viewer đọc cả type 4 và type 9. IMU CSV giữ một dòng mỗi mẫu, gồm
+counts gốc, timestamp, range, ODR và mã ánh xạ trục. Với type 9, viewer điền
+cấu hình cố định theo đặc tả. Raw hex giữ byte DATA trước decode. Log được ghi kể cả
 khi bị filter trên UI. Queue ghi đầy hoặc lỗi ghi có thể làm phiên thiếu dữ
 liệu; kiểm tra writer drops và trạng thái recording trước khi phân tích.
 
@@ -73,9 +74,8 @@ Segment tăng khi DATA nối lại hoặc nghi reset; không so gap qua ranh gi�
 Thiếu boot ID nên không phải mọi reset đều được phát hiện. Trong cùng segment,
 hiệu `t_read_us` modulo 2^32 giữa sequence liên tiếp cho biết khoảng cách đọc
 MCU, không trực tiếp đo jitter lấy mẫu cảm biến. Tách gap khỏi thống kê và
-đối chiếu `imu_tx_full` cùng writer drops. Nếu build chọn giảm tốc độ ghi
-raw IMU, timestamp giữa hai frame phản ánh khoảng cách giữa các mẫu được
-chọn. Chi tiết frame, đơn vị, ánh xạ trục
+đối chiếu `imu_tx_full` cùng writer drops. Với type 9, mỗi lần RTT bỏ một
+frame có thể làm thiếu tối đa 8 mẫu. Chi tiết frame, đơn vị, ánh xạ trục
 và counter nằm trong [đặc tả telemetry](../../protocol/telemetry.md).
 
 Viewer không hỗ trợ telemetry IMU type 1 hoặc CSV `IMU1` cũ; dùng phiên bản

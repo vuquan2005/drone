@@ -99,12 +99,11 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
     return poll_status;
 }
 
-bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
-                                         uint32_t sequence) {
+void app_telemetry_queue_imu(const app_imu_sample_t *sample,
+                             uint32_t sequence) {
     assert(sequence == ++imu_frames);
     assert(sample->t_read_us == UINT32_MAX - 2000000U + elapsed_us);
     assert(sample->accel_raw[0] == -2345 && sample->gyro_raw[2] == 19);
-    return BSP_RTT_FULL;
 }
 
 static void expect_calibration(uint8_t chip_id,

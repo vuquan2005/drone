@@ -224,10 +224,11 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
                            .throttle = NORM_Q15_ONE / 2};
     char trace[512];
     app_process(&pilot);
-    assert(drain(1U, trace) == 112U); /* IMU then attitude control. */
-    assert((uint8_t)trace[49] == 7U && get_u32(trace + 52U) == 1U);
-    assert(get_u32(trace + 56U) == bsp_time_now_us());
-    assert(get_u32(trace + 60U) == bsp_time_now_us());
+    assert(drain(1U, trace) ==
+           68U); /* Only attitude control until the batch fills. */
+    assert((uint8_t)trace[5] == 7U && get_u32(trace + 8U) == 1U);
+    assert(get_u32(trace + 12U) == bsp_time_now_us());
+    assert(get_u32(trace + 16U) == bsp_time_now_us());
     mixer_result_t result;
     pilot.roll = NORM_Q15_ONE;
     pilot.pitch = -NORM_Q15_ONE;
@@ -235,22 +236,22 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     for (unsigned sample = 0U; sample < 7U; ++sample) {
         advance_time_us(IMU_SAMPLE_PERIOD_US);
         app_process(&pilot);
-        assert(drain(1U, trace) == 44U);
+        assert(drain(1U, trace) == (sample == 6U ? 141U : 0U));
         assert(app_get_rate_result(&result));
         assert(result.achieved.roll == 0 && result.achieved.pitch == 0);
         assert(result.achieved.yaw > 3200 && result.achieved.yaw < 3350);
     }
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
-    assert(drain(1U, trace) == 112U);
-    assert((uint8_t)trace[49] == 7U && get_u32(trace + 52U) == 2U);
+    assert(drain(1U, trace) == 68U);
+    assert((uint8_t)trace[5] == 7U && get_u32(trace + 8U) == 2U);
     assert(app_get_rate_result(&result));
     assert(result.achieved.roll > 5000 && result.achieved.roll < 6000);
     assert(result.achieved.pitch < -5000 && result.achieved.pitch > -6000);
     pilot.mode = APP_COMMAND_SWITCH_LOW;
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
-    assert(drain(1U, trace) == 44U);
+    assert(drain(1U, trace) == 0U);
     assert(app_get_rate_result(&result) && result.achieved.roll > 6500);
     pilot.mode = APP_COMMAND_SWITCH_HIGH;
     pilot.roll = pilot.pitch = 0;
@@ -365,19 +366,23 @@ int main(void) {
     drain(0U, output);
     assert(strstr(output, "[1001][I][imu] read recovered\n") != NULL);
     assert(app_get_status(&health) && health.imu_ready);
-    assert(drain(1U, output) == 44U);
-    assert(memcmp(output, "DRT!\x01\x04\x20\x00", 8U) == 0);
-    assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
-    assert(get_u32(output + 16) == 256U);
-    assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0x08U);
+    assert(drain(1U, output) == 0U);
     tick++;
     process_app();
     assert(drain(0U, output) == 0U);
-    assert(drain(1U, output) == 44U);
-    assert(get_u32(output + 8) == 2U && get_u32(output + 12) == 1002123U);
+    assert(drain(1U, output) == 0U);
     status = BSP_IMU_NO_DATA;
     process_app();
     assert(drain(1U, output) == 0U && pwm_starts == 1U);
+    tick += 9U;
+    app_telemetry_process_imu();
+    assert(drain(1U, output) == 51U);
+    assert(memcmp(output, "DRT!\x01\x09\x27\x00", 8U) == 0);
+    assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
+    assert(get_u32(output + 16) == (2U << 24U) + 256U);
+    assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0x08U);
+    assert(memcmp(output + 32U, "\xe8\x03\x00", 3U) ==
+           0); /* 1 ms later, same sensor clock. */
     tick = 1999U;
     process_app();
     assert(drain(1U, output) == 0U);
@@ -691,7 +696,12 @@ int main(void) {
     assert(get_u32(output + 12U) == tick);
     assert(get_u32(output + 16U) == tick - 10U);
 
-    tick += 100U;
+    status = BSP_IMU_NO_DATA;
+    tick += 10U;
+    runtime_process();
+    assert(drain(1U, output) == 36U && (uint8_t)output[5] == 9U);
+    status = BSP_IMU_OK;
+    tick += 90U;
     runtime_process();
     assert(attitude_transmissions == 1U);
     status = BSP_IMU_NO_DATA;

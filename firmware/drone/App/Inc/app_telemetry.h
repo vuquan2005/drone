@@ -15,39 +15,31 @@
 
 #define APP_TELEMETRY_ENABLED (DRONE_RTT && DRONE_TELEMETRY)
 
-#ifndef DRONE_IMU_TELEMETRY_DIVISOR
-#define DRONE_IMU_TELEMETRY_DIVISOR 1U
-#endif
-
 #if APP_TELEMETRY_ENABLED
-/** @brief Reset telemetry attempt sequence and result counters; foreground
- * only. Call after bsp_rtt_init. Does not initialize or clear the RTT
- * transport.
+/** @brief Reset telemetry counters and discard the pending IMU batch.
+ * Foreground only, after bsp_rtt_init. Leaves the RTT buffers alone.
  */
 void app_telemetry_init(void);
 
-/** @brief Enqueue one 44-byte binary raw IMU frame v1 type 4 using timestamps
- * already stored in sample.
- * @param sample Non-NULL sample produced by app_imu_poll; reads raw fields
- * only.
- * @param sequence Counter of successful reads selected for sending, including
- * records RTT rejects.
- * @return RTT result; NULL or invalid sensor time returns INVALID_ARGUMENT.
- * Preserves sample, sequence and
- * timestamps on failure.
- * @note Foreground-only. Schema: protocol/telemetry.md (little-endian, CRC32).
- * Fields: sequence, t_read_us, sensor_time_ticks, original int16 sensor XYZ
- * counts, ranges, ODRs and body mapping. A BSP preflight checks
- * space before encoding/CRC; FULL skips the frame and counts one drop. The
- * final write still checks capacity. Entire frame is queued in one BSP call.
- * No SI conversion, rounding or body mapping is applied to counts on the wire.
- * Metadata describes the fixed BSP configuration and FRD mapping [-X, +Y, -Z]
- * (axis_map=2). Caller sends once per successful sample; no decimation, retry
- * or timestamp generation here. All counters/times retain their original
- * wrapping widths.
+/** @brief Copy a raw IMU sample into the type 9 RTT batch.
+ * @param sample Non-NULL successful BSP read, valid for this call. Only raw
+ * axes and timestamps are used. A NULL or out-of-range sensor clock is counted
+ * as a rejection.
+ * @param sequence Wrapping count of successful IMU reads, including samples
+ * rejected or dropped by telemetry.
+ * @note Nonblocking, serialized foreground only after app_telemetry_init().
+ * Sends a batch at eight samples or closes it at a gap, an unrepresentable
+ * delta, or an age of 10 ms. A failed write discards the complete batch.
+ * Call app_telemetry_process_imu() periodically to send expired partial
+ * batches.
  */
-bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
-                                         uint32_t sequence);
+void app_telemetry_queue_imu(const app_imu_sample_t *sample, uint32_t sequence);
+
+/** Check for a pending IMU batch at least 10 ms old and try to send it.
+ * Call every foreground runtime iteration, including without a fresh sample.
+ * Nonblocking and serialized with other telemetry calls.
+ */
+void app_telemetry_process_imu(void);
 /** @brief Enqueue one cumulative RTT/IMU statistics snapshot (type 2).
  * @param uptime_ms MCU time captured by caller, wrapping uint32 milliseconds.
  * @param imu_samples Successful IMU read count since App init.
@@ -109,29 +101,14 @@ typedef struct {
 bsp_rtt_result_t app_telemetry_write_attitude_control(
     const app_attitude_control_sample_t *sample);
 
-/* The IMU polling paths run in every build. Periodic telemetry already runs
- * in telemetry-only blocks and can call the writers directly. */
-#define APP_TELEMETRY_IMU(sample, sequence)                                    \
-    ((void)app_telemetry_write_imu(sample, sequence))
-#if DRONE_IMU_TELEMETRY_DIVISOR > 1
-/** @brief Offer a successful FLIGHT read to the RTT IMU stream.
- * Call once per successful read in foreground after telemetry init. The caller
- * supplies the 1-based wrapping read count. Selects the first read and then
- * every DRONE_IMU_TELEMETRY_DIVISOR reads. A selected non-NULL sample is read
- * during the call. Skipped reads do not consume a telemetry sequence number.
- */
-void app_telemetry_publish_flight_imu(const app_imu_sample_t *sample,
-                                      uint32_t sample_count);
-#define APP_TELEMETRY_FLIGHT_IMU(sample, sample_count)                         \
-    app_telemetry_publish_flight_imu(sample, sample_count)
-#else
-#define APP_TELEMETRY_FLIGHT_IMU(sample, sample_count)                         \
-    APP_TELEMETRY_IMU(sample, sample_count)
-#endif
 #else
 static inline void app_telemetry_init(void) {}
-#define APP_TELEMETRY_IMU(...) ((void)0)
-#define APP_TELEMETRY_FLIGHT_IMU(...) ((void)0)
+static inline void app_telemetry_queue_imu(const app_imu_sample_t *sample,
+                                           uint32_t sequence) {
+    (void)sample;
+    (void)sequence;
+}
+static inline void app_telemetry_process_imu(void) {}
 #endif
 
 #endif

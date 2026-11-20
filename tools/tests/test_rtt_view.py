@@ -327,11 +327,11 @@ class ViewerTests(unittest.TestCase):
             viewer.return_live()
             self.assertIsNone(viewer.saved_session)
             self.assertFalse(viewer.data_stream.paused)
-            # Raw frames update the plot in SI/FRD and record original counts.
+            # Batched samples update the plot in SI/FRD and each get a CSV row.
             viewer.toggle_recording()
             raw_fixture = bytes.fromhex(
                 (
-                    Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_raw_v1.hex"
+                    Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_batch_v1.hex"
                 ).read_text()
             )
             from records import Frames
@@ -341,12 +341,21 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(viewer.dirty)
             viewer.refresh()
             _, y = viewer.imu_panel.curves[0][0].getData()
-            self.assertAlmostEqual(y[-1], -16 * 9.80665)
+            self.assertAlmostEqual(y[-1], 118 * 16 * 9.80665 / 32768)
             viewer.toggle_recording()
             until(lambda: viewer.writer.done.is_set())
             with next(viewer.writer.directory.glob("imu_raw_*.csv")).open(newline="") as file:
                 raw_rows = list(csv.reader(file))
-            self.assertEqual(raw_rows[1][4:10], ["-32768", "-1", "32767", "1", "-32768", "32767"])
+            self.assertEqual(len(raw_rows), 3)
+            self.assertEqual(
+                raw_rows[1][1:10],
+                ["1000", "1000000", "1193046", "-120", "35", "2048", "10", "-20", "30"],
+            )
+            self.assertEqual(
+                raw_rows[2][1:10],
+                ["1001", "1001250", "1193078", "-118", "37", "2050", "11", "-18", "31"],
+            )
+            self.assertEqual(raw_rows[2][10:], ["16", "2", "2000", "800", "800"])
             viewer.log_panel.level.setCurrentText("All")
             viewer.refresh()
             image_path = os.environ.get("RTT_TEST_SCREENSHOT")
@@ -354,7 +363,7 @@ class ViewerTests(unittest.TestCase):
                 viewer.findChild(QtWidgets.QTabWidget).setCurrentIndex(1)
                 app.processEvents()
                 viewer.grab().save(image_path)
-            # The raw fixture reset the IMU stream and cleared the stats baseline.
+            # The IMU fixture reset the stream and cleared the stats baseline.
             viewer.on_data((1, 2, struct.pack("<10I", 100, 10000, *([0] * 8))))
             old_segment = viewer.telemetry.segment
             viewer.on_data((1, 2, struct.pack("<10I", 1, 100, *([0] * 8))))

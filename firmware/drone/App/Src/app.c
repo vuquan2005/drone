@@ -228,7 +228,6 @@ static void process_imu(void) {
     if (status == BSP_IMU_OK) {
         imu_available = true;
         update_attitude(&imu.sample);
-        APP_TELEMETRY_FLIGHT_IMU(&imu.sample, imu.sample_count);
     }
 }
 
@@ -528,5 +527,9 @@ void app_process(const app_command_t *input) {
     process_imu();
     process_rate();
     process_motor();
+#if APP_TELEMETRY_ENABLED
+    if (imu.sample_valid)
+        app_telemetry_queue_imu(&imu.sample, imu.sample_count);
+#endif
     process_diagnostics();
 }

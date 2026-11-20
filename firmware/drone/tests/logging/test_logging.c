@@ -1,5 +1,6 @@
 #include "app_log.h"
 #include "app_telemetry.h"
+#include "bsp_time.h"
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
@@ -14,6 +15,15 @@ static uint32_t clock_ms(void) {
 
 #if DRONE_RTT
 #include "SEGGER_RTT.h"
+static uint32_t telemetry_us;
+uint32_t bsp_time_now_us(void) {
+    return telemetry_us;
+}
+
+static void expire_imu_batch(uint32_t first_read_us) {
+    telemetry_us = first_read_us + 10000U;
+    app_telemetry_process_imu();
+}
 static unsigned drain(unsigned channel, char *output, unsigned capacity) {
     SEGGER_RTT_BUFFER_UP *ring = &_SEGGER_RTT.aUp[channel];
     unsigned count = 0;
@@ -101,90 +111,89 @@ static void enabled_tests(void) {
     assert(result == BSP_RTT_FULL &&
            bsp_rtt_get_dropped_full(BSP_RTT_LOG) == 1U);
 
-    app_imu_sample_t sample = {.t_read_us = 123456U,
+    app_imu_sample_t sample = {.t_read_us = 1000000U,
                                .sensor_time_ticks = 0x123456U,
-                               .accel_raw = {INT16_MIN, -1, INT16_MAX},
-                               .gyro_raw = {1, INT16_MIN, INT16_MAX},
-                               .accel_mps2 = {1.25f, -2.5f, 9.80665f},
-                               .gyro_radps = {1.0f, -2.0f, 3.0f}};
-    app_imu_sample_t original = sample;
-    before = clock_calls;
-    assert(app_telemetry_write_imu(NULL, 17U) == BSP_RTT_INVALID_ARGUMENT);
-    assert(app_telemetry_write_imu(&sample, 17U) == BSP_RTT_OK);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
-    check_fixture(output, 44U, TELEMETRY_FIXTURE_PATH);
-    assert(clock_calls == before &&
-           memcmp(&sample, &original, sizeof(sample)) == 0);
+                               .accel_raw = {-120, 35, 2048},
+                               .gyro_raw = {10, -20, 30},
+                               .accel_mps2 = {NAN, INFINITY, -INFINITY}};
+    app_telemetry_queue_imu(&sample, 1000U);
+    sample = (app_imu_sample_t){.t_read_us = 1001250U,
+                                .sensor_time_ticks = 0x123476U,
+                                .accel_raw = {-118, 37, 2050},
+                                .gyro_raw = {11, -18, 31}};
+    app_telemetry_queue_imu(&sample, 1001U);
+    telemetry_us = 1009999U;
+    app_telemetry_process_imu();
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U);
+    expire_imu_batch(1000000U);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 51U);
+    check_fixture(output, 51U, IMU_BATCH_FIXTURE_PATH);
+
+    const uint32_t first_read_us = UINT32_MAX - 500U;
+    for (uint32_t i = 0U; i < 8U; ++i) {
+        sample.t_read_us = first_read_us + 1250U * i;
+        sample.sensor_time_ticks = (0xfffff0U + 32U * i) & 0xffffffU;
+        sample.accel_raw[0] = INT16_MIN;
+        sample.gyro_raw[2] = INT16_MAX;
+        app_telemetry_queue_imu(&sample, UINT32_MAX - 1U + i);
+    }
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 141U);
+    assert(memcmp(output, "DRT!\x01\x09\x81\x00", 8U) == 0);
+    assert(get_u32(output + 8U) == UINT32_MAX - 1U);
+    assert(get_u32(output + 12U) == first_read_us);
+    assert((uint8_t)output[19U] == 8U);
+    assert(memcmp(output + 32U, "\xe2\x04\x20", 3U) == 0);
+    assert((uint8_t)output[20U] == 0U && (uint8_t)output[21U] == 0x80U);
+    assert((uint8_t)output[30U] == 0xffU && (uint8_t)output[31U] == 0x7fU);
+
+    app_telemetry_queue_imu(&sample, 17U);
+    sample.t_read_us += 1U;
+    app_telemetry_queue_imu(&sample, 19U); /* Gap closes the first batch. */
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 36U);
+    assert(get_u32(output + 8U) == 17U);
+    sample.t_read_us += 1U;
+    sample.sensor_time_ticks += UINT8_MAX;
+    app_telemetry_queue_imu(&sample, 20U);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U);
+    sample.t_read_us += 1U;
+    sample.sensor_time_ticks += UINT8_MAX + 1U;
+    app_telemetry_queue_imu(
+        &sample, 21U); /* Delta 256 needs a new base before the deadline. */
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 51U);
+    assert(get_u32(output + 8U) == 19U);
+    assert((uint8_t)output[34U] == UINT8_MAX);
+    expire_imu_batch(sample.t_read_us);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 36U);
+    assert(get_u32(output + 8U) == 21U);
+
     char fill[4095];
     memset(fill, 'x', sizeof(fill));
-    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
-    sample.sensor_time_ticks = 0x1000000U;
-    assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_INVALID_ARGUMENT);
-    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 0U);
-    sample = original;
-    assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_FULL);
-    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
-    assert(memcmp(&sample, &original, sizeof(sample)) == 0);
-    drain(BSP_RTT_DATA, output, sizeof(output));
-    assert(app_telemetry_write_imu(&sample, 19U) == BSP_RTT_OK);
-    drain(BSP_RTT_DATA, output, sizeof(output));
-    assert(memcmp(output, "DRT!\x01\x04\x20\x00", 8U) == 0);
-    assert((uint8_t)output[8] == 19U);
-    const float invalid_values[] = {NAN, INFINITY, -INFINITY, 3e10f, -3e10f};
-    for (unsigned i = 0; i < sizeof(invalid_values) / sizeof(invalid_values[0]);
-         ++i) {
-        sample.accel_mps2[0] = invalid_values[i];
-        /* Raw telemetry is independent of the SI processing path. */
-        assert(app_telemetry_write_imu(&sample, 17U) == BSP_RTT_OK);
-        assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
-        check_fixture(output, 44U, TELEMETRY_FIXTURE_PATH);
-    }
-    sample = original;
-    sample.sensor_time_ticks = 0x1000000U;
-    assert(app_telemetry_write_imu(&sample, 20U) == BSP_RTT_INVALID_ARGUMENT);
-    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
     bsp_rtt_init();
     app_telemetry_init();
     assert(app_telemetry_write_stats(1234U, 17U, 3U) == BSP_RTT_OK);
     assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 52U);
     check_fixture(output, 52U, RTT_STATS_FIXTURE_PATH);
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
-    sample = original;
-    assert(app_telemetry_write_imu(&sample, 18U) == BSP_RTT_FULL);
-    assert(app_telemetry_write_stats(2234U, 18U, 3U) == BSP_RTT_FULL);
+    for (uint32_t i = 0U; i < 8U; ++i) {
+        sample.t_read_us += 1250U;
+        app_telemetry_queue_imu(&sample, 18U + i);
+    }
+    assert(app_telemetry_write_stats(2234U, 25U, 3U) == BSP_RTT_FULL);
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 2U);
     drain(BSP_RTT_DATA, output, sizeof(output));
-    assert(app_telemetry_write_imu(NULL, 19U) == BSP_RTT_INVALID_ARGUMENT);
-    assert(app_telemetry_write_stats(3234U, 19U, 3U) == BSP_RTT_OK);
+    expire_imu_batch(sample.t_read_us);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U); /* No retry. */
+    const uint32_t sensor_ticks = sample.sensor_time_ticks;
+    sample.sensor_time_ticks = 0x1000000U;
+    app_telemetry_queue_imu(&sample, 26U);
+    sample.sensor_time_ticks = sensor_ticks;
+    assert(app_telemetry_write_stats(3234U, 26U, 3U) == BSP_RTT_OK);
     assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 52U);
     assert(get_u32(output + 8U) == 3U);  /* Stats attempt 2 was dropped. */
     assert(get_u32(output + 28U) == 2U); /* All DATA frames dropped-full. */
-    assert(get_u32(output + 32U) == 1U); /* IMU full only. */
+    assert(get_u32(output + 32U) == 1U); /* One full IMU batch. */
     assert(get_u32(output + 36U) == 1U); /* Stats full only. */
     assert(get_u32(output + 40U) == 1U); /* Invalid IMU, not a full drop. */
-#if DRONE_IMU_TELEMETRY_DIVISOR == 4
-    bsp_rtt_init();
-    app_telemetry_init();
-    APP_TELEMETRY_FLIGHT_IMU(&sample, 1U);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
-    assert(get_u32(output + 8U) == 1U);
-    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
-    for (uint32_t read = 2U; read < 5U; ++read)
-        APP_TELEMETRY_FLIGHT_IMU(&sample, read);
-    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 0U);
-    APP_TELEMETRY_FLIGHT_IMU(&sample, 5U);
-    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
-    drain(BSP_RTT_DATA, output, sizeof(output));
-    APP_TELEMETRY_FLIGHT_IMU(&sample, 9U);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
-    assert(get_u32(output + 8U) == 3U);
-    assert(get_u32(output + 12U) == sample.t_read_us);
-    APP_TELEMETRY_FLIGHT_IMU(&sample, 0U);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U);
-    APP_TELEMETRY_FLIGHT_IMU(&sample, 1U);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
-    assert(get_u32(output + 8U) == 4U);
-#endif
     bsp_rtt_init();
     app_telemetry_init();
     app_receiver_sample_t rc = {
@@ -274,7 +283,8 @@ int main(void) {
     APP_LOG_WARN("imu", "%d", ++effects);
     APP_LOG_INFO("imu", "%d", ++effects);
     APP_LOG_DEBUG("imu", "%d", ++effects);
-    APP_TELEMETRY_IMU(NULL, ++effects);
+    app_telemetry_queue_imu(NULL, 0U);
+    app_telemetry_process_imu();
     assert(effects == 0 && clock_calls == 0U);
 #endif
     puts("logging tests passed");

@@ -6,7 +6,6 @@ import math
 from records import (
     ATTITUDE,
     ATTITUDE_CONTROL,
-    IMU_RAW,
     ImuSeries,
     RC,
     RC_COMPACT,
@@ -26,9 +25,10 @@ def attitude_degrees(q):
 
 
 class TelemetryState:
-    """Track mixed streams; feed returns (CSV kind, values) only for accepted frames.
+    """Track mixed streams and return accepted records for display and capture.
 
     The caller supplies host monotonic seconds for freshness and receive rate.
+    An IMU batch returns ("imu_batch", samples) with one raw CSV row per sample.
     Reconnects and suspected MCU resets start a new segment while preserving
     cumulative host counters. Snapshot counters and plots reset together.
     """
@@ -233,7 +233,8 @@ class TelemetryState:
             self.stats_received += 1
             return "stats", values
         resets = self.series.resets
-        if self.series.feed(line):
+        samples = self.series.feed_samples(line)
+        if samples:
             if self.series.resets != resets:
                 self.latest_rate = self.rate_received_at = self.rate_last = None
                 self.rate_points.clear()
@@ -242,5 +243,5 @@ class TelemetryState:
                 self.latest_rc = self.rc_last = self.rc_received_at = None
                 self.segment += 1
                 self.latest_stats = self.stats_last = self.stats_received_at = None
-            self.arrivals.append(received_at)
-            return "imu_raw", IMU_RAW.unpack(line[2])
+            self.arrivals.extend([received_at] * len(samples))
+            return ("imu_batch", samples) if line[1] == 9 else ("imu_raw", samples[0])

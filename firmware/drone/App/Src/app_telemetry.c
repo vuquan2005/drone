@@ -1,9 +1,35 @@
 #include "app_telemetry.h"
 #include "app_command.h"
 #include "app_crc32.h"
+#include "bsp_time.h"
 #include <string.h>
 
-enum { IMU_FRAME_BYTES = 44U, STATS_FRAME_BYTES = 52U, RC_FRAME_BYTES = 33U };
+enum {
+    STATS_FRAME_BYTES = 52U,
+    RC_FRAME_BYTES = 33U,
+    IMU_BATCH_CAPACITY = 8U,
+    IMU_BATCH_MAX_AGE_US = 10000U,
+    IMU_FIRST_AXES_OFFSET = 20U,
+    IMU_NEXT_SAMPLE_OFFSET = 32U,
+    IMU_NEXT_SAMPLE_BYTES = 15U,
+    IMU_MAX_FRAME_BYTES = IMU_NEXT_SAMPLE_OFFSET +
+                          (IMU_BATCH_CAPACITY - 1U) * IMU_NEXT_SAMPLE_BYTES +
+                          4U,
+    IMU_SENSOR_TICK_MASK = 0xFFFFFFU,
+};
+
+_Static_assert(BSP_IMU_ACCEL_RANGE_G == 16 && BSP_IMU_GYRO_RANGE_DPS == 2000 &&
+                   APP_IMU_AXIS_MAP_ID == 2 && BSP_IMU_ODR_HZ == 800,
+               "RTT IMU type 9 requires the fixed sensor configuration");
+
+static struct {
+    uint8_t frame[IMU_MAX_FRAME_BYTES];
+    uint32_t first_read_us;
+    uint32_t last_read_us;
+    uint32_t last_sensor_ticks;
+    uint32_t last_sequence;
+    uint8_t count;
+} imu_batch;
 
 static uint32_t stats_sequence;
 static uint32_t receiver_sequence;
@@ -11,26 +37,12 @@ static uint32_t rate_sequence;
 static uint32_t attitude_sequence;
 static uint32_t attitude_control_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
-#if DRONE_IMU_TELEMETRY_DIVISOR > 1
-static uint32_t flight_imu_sequence;
-#endif
 
 void app_telemetry_init(void) {
     receiver_sequence = rate_sequence = attitude_sequence = 0U;
     attitude_control_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
-#if DRONE_IMU_TELEMETRY_DIVISOR > 1
-    flight_imu_sequence = 0U;
-#endif
-}
-
-static bsp_rtt_result_t track_imu(bsp_rtt_result_t result) {
-    if (result == BSP_RTT_FULL) {
-        imu_full++;
-    } else if (result != BSP_RTT_OK) {
-        imu_rejected++;
-    }
-    return result;
+    imu_batch.count = 0U;
 }
 
 static bsp_rtt_result_t track_stats(bsp_rtt_result_t result) {
@@ -54,43 +66,79 @@ static void put_u16(uint8_t *out, uint16_t value) {
     }
 }
 
-bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
-                                         uint32_t sequence) {
-    if (sample == NULL || sample->sensor_time_ticks > 0xFFFFFFU) {
-        return track_imu(BSP_RTT_INVALID_ARGUMENT);
+static void flush_imu_batch(void) {
+    const size_t crc_offset =
+        IMU_NEXT_SAMPLE_OFFSET + (imu_batch.count - 1U) * IMU_NEXT_SAMPLE_BYTES;
+    const size_t frame_bytes = crc_offset + 4U;
+    bsp_rtt_result_t result = bsp_rtt_prepare_write(BSP_RTT_DATA, frame_bytes);
+    if (result == BSP_RTT_OK) {
+        static const uint8_t header[] = {'D', 'R', 'T', '!', 1U, 9U};
+        uint8_t *frame = imu_batch.frame;
+        memcpy(frame, header, sizeof(header));
+        put_u16(frame + 6U, (uint16_t)(crc_offset - 8U));
+        frame[19U] = imu_batch.count;
+        put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
+        result = bsp_rtt_write(BSP_RTT_DATA, frame, frame_bytes);
     }
-    bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, IMU_FRAME_BYTES);
-    if (ready != BSP_RTT_OK) {
-        return track_imu(ready);
+    if (result == BSP_RTT_FULL) {
+        imu_full++;
+    } else if (result != BSP_RTT_OK) {
+        imu_rejected++;
     }
-    /* protocol/telemetry.md: explicit fields, never a native struct dump. */
-    uint8_t frame[IMU_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 4U, 32U, 0U};
-    put_u32(frame + 8U, sequence);
-    put_u32(frame + 12U, sample->t_read_us);
-    put_u32(frame + 16U, sample->sensor_time_ticks);
-    for (unsigned axis = 0; axis < 3U; ++axis) {
-        put_u16(frame + 20U + 2U * axis, (uint16_t)sample->accel_raw[axis]);
-        put_u16(frame + 26U + 2U * axis, (uint16_t)sample->gyro_raw[axis]);
-    }
-    frame[32U] = (uint8_t)BSP_IMU_ACCEL_RANGE_G;
-    frame[33U] = APP_IMU_AXIS_MAP_ID;
-    put_u16(frame + 34U, (uint16_t)BSP_IMU_GYRO_RANGE_DPS);
-    put_u16(frame + 36U, BSP_IMU_ODR_HZ);
-    put_u16(frame + 38U, BSP_IMU_ODR_HZ);
-    put_u32(frame + 40U, app_crc32(frame, 40U));
-    return track_imu(bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame)));
+    imu_batch.count = 0U;
 }
 
-#if DRONE_IMU_TELEMETRY_DIVISOR > 1
-void app_telemetry_publish_flight_imu(const app_imu_sample_t *sample,
-                                      uint32_t sample_count) {
-    // A power-of-two divisor preserves the cadence across sample counter wrap.
-    if ((sample_count - 1U) % DRONE_IMU_TELEMETRY_DIVISOR == 0U) {
-        (void)app_telemetry_write_imu(sample, ++flight_imu_sequence);
+void app_telemetry_queue_imu(const app_imu_sample_t *sample,
+                             uint32_t sequence) {
+    if (sample == NULL || sample->sensor_time_ticks > IMU_SENSOR_TICK_MASK) {
+        imu_rejected++;
+        return;
+    }
+    const uint32_t read_delta_us = sample->t_read_us - imu_batch.last_read_us;
+    const uint32_t sensor_delta_ticks =
+        (sample->sensor_time_ticks - imu_batch.last_sensor_ticks) &
+        IMU_SENSOR_TICK_MASK;
+    if (imu_batch.count != 0U &&
+        (sequence != imu_batch.last_sequence + 1U ||
+         read_delta_us > UINT16_MAX || sensor_delta_ticks > UINT8_MAX ||
+         sample->t_read_us - imu_batch.first_read_us >= IMU_BATCH_MAX_AGE_US)) {
+        flush_imu_batch();
+    }
+
+    uint8_t *axes;
+    if (imu_batch.count == 0U) {
+        uint8_t *frame = imu_batch.frame;
+        put_u32(frame + 8U, sequence);
+        put_u32(frame + 12U, sample->t_read_us);
+        put_u16(frame + 16U, (uint16_t)sample->sensor_time_ticks);
+        frame[18U] = (uint8_t)(sample->sensor_time_ticks >> 16U);
+        imu_batch.first_read_us = sample->t_read_us;
+        axes = frame + IMU_FIRST_AXES_OFFSET;
+    } else {
+        uint8_t *record = imu_batch.frame + IMU_NEXT_SAMPLE_OFFSET +
+                          (imu_batch.count - 1U) * IMU_NEXT_SAMPLE_BYTES;
+        put_u16(record, (uint16_t)read_delta_us);
+        record[2U] = (uint8_t)sensor_delta_ticks;
+        axes = record + 3U;
+    }
+    for (unsigned axis = 0; axis < 3U; ++axis) {
+        put_u16(axes + 2U * axis, (uint16_t)sample->accel_raw[axis]);
+        put_u16(axes + 6U + 2U * axis, (uint16_t)sample->gyro_raw[axis]);
+    }
+    imu_batch.last_read_us = sample->t_read_us;
+    imu_batch.last_sensor_ticks = sample->sensor_time_ticks;
+    imu_batch.last_sequence = sequence;
+    if (++imu_batch.count == IMU_BATCH_CAPACITY) {
+        flush_imu_batch();
     }
 }
-#endif
+
+void app_telemetry_process_imu(void) {
+    if (imu_batch.count != 0U &&
+        bsp_time_now_us() - imu_batch.first_read_us >= IMU_BATCH_MAX_AGE_US) {
+        flush_imu_batch();
+    }
+}
 
 bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
                                            uint32_t imu_samples,

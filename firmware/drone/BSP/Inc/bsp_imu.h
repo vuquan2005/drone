@@ -51,10 +51,10 @@ typedef struct {
 #define BSP_IMU_ODR_HZ 800U
 /** @brief Positive accelerometer full-scale range in g, used for SI conversion.
  */
-#define BSP_IMU_ACCEL_RANGE_G 16.0f
+#define BSP_IMU_ACCEL_RANGE_G 16U
 /** @brief Positive gyroscope full-scale range in degrees/s, used for SI
  * conversion. */
-#define BSP_IMU_GYRO_RANGE_DPS 2000.0f
+#define BSP_IMU_GYRO_RANGE_DPS 2000U
 
 /** @brief Describe the selected backend's requested power and filter modes.
  * @return Static text with sensor model and modes, valid for the life of the

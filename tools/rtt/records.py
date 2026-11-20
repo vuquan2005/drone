@@ -38,6 +38,10 @@ class Lines:
 MAGIC = b"DRT!"
 HEADER = struct.Struct("<4sBBH")
 IMU_RAW = struct.Struct("<III6hBBHHH")
+IMU_BATCH_FIRST = struct.Struct("<II3sB6h")
+IMU_BATCH_NEXT = struct.Struct("<HB6h")
+IMU_BATCH_CAPACITY = 8
+IMU_BATCH_CONFIG = (16, 2, 2000, 800, 800)
 IMU_RAW_FIELDS = (
     "sequence",
     "t_read_us",
@@ -131,6 +135,9 @@ KNOWN_SIZES = {
     8: RC_COMPACT.size,
 }
 MAX_PAYLOAD = 256
+IMU_BATCH_SIZES = {
+    IMU_BATCH_FIRST.size + i * IMU_BATCH_NEXT.size for i in range(IMU_BATCH_CAPACITY)
+}
 
 
 class Frames:
@@ -153,7 +160,11 @@ class Frames:
                 return
             _, version, kind, length = HEADER.unpack_from(self.pending)
             if length > MAX_PAYLOAD or (
-                version == 1 and kind in KNOWN_SIZES and length != KNOWN_SIZES[kind]
+                version == 1
+                and (
+                    (kind in KNOWN_SIZES and length != KNOWN_SIZES[kind])
+                    or (kind == 9 and length not in IMU_BATCH_SIZES)
+                )
             ):
                 self.errors += 1
                 del self.pending[0]
@@ -169,6 +180,24 @@ class Frames:
             payload = bytes(self.pending[HEADER.size : size - 4])
             del self.pending[:size]
             yield version, kind, payload
+
+
+def imu_batch_samples(payload):
+    """Return type 9 samples in the legacy raw CSV field order."""
+    if len(payload) not in IMU_BATCH_SIZES:
+        return ()
+    seq, stamp, sensor_bytes, count, *axes = IMU_BATCH_FIRST.unpack_from(payload)
+    tail = payload[IMU_BATCH_FIRST.size :]
+    if count != 1 + len(tail) // IMU_BATCH_NEXT.size:
+        return ()
+    sensor = int.from_bytes(sensor_bytes, "little")
+    samples = [(seq, stamp, sensor, *axes, *IMU_BATCH_CONFIG)]
+    for read_delta, sensor_delta, *axes in IMU_BATCH_NEXT.iter_unpack(tail):
+        seq = (seq + 1) % 2**32
+        stamp = (stamp + read_delta) % 2**32
+        sensor = (sensor + sensor_delta) % 2**24
+        samples.append((seq, stamp, sensor, *axes, *IMU_BATCH_CONFIG))
+    return tuple(samples)
 
 
 class ImuSeries:
@@ -187,14 +216,30 @@ class ImuSeries:
         self.points.clear()
 
     def feed(self, frame):
+        return bool(self.feed_samples(frame))
+
+    def feed_samples(self, frame):
+        """Accept an IMU frame and return the samples accepted for recording."""
         version, kind, payload = frame
-        if version != 1 or kind != 4:
+        if version != 1 or kind not in (4, 9):
             self.unknown += 1
-            return False
-        if len(payload) != IMU_RAW.size:
+            return ()
+        if kind == 9:
+            samples = imu_batch_samples(payload)
+        elif len(payload) == IMU_RAW.size:
+            samples = (IMU_RAW.unpack(payload),)
+        else:
+            samples = ()
+        if not samples or self.last == samples[-1][:2]:
             self.invalid += 1
-            return False
-        values = IMU_RAW.unpack(payload)
+            return ()
+        if not self._append_sample(samples[0]):
+            return ()
+        for sample in samples[1:]:
+            self._append_sample(sample)
+        return samples
+
+    def _append_sample(self, values):
         seq, stamp, sensor = values[:3]
         if sensor >= 2**24:
             self.invalid += 1

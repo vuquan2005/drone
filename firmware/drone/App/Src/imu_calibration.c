@@ -193,7 +193,7 @@ void imu_calibration_process(const app_command_t *command) {
         return;
     }
 
-    APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
+    app_telemetry_queue_imu(&imu.sample, imu.sample_count);
     if (state == IMU_CALIBRATION_GYRO) {
         process_gyro(&imu.sample);
     } else {

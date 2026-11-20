@@ -29,15 +29,16 @@ int main(void) {
     rc.channels[6] = 992;
     rc.channels[7] = 1811;
     assert(app_command_decode(&rc, &c));
-    assert(c.roll == -NORM_Q15_ONE && c.pitch == NORM_Q15_ONE);
+    assert(c.roll == -NORM_Q15_ONE && c.pitch == -NORM_Q15_ONE);
     assert(c.yaw == NORM_Q15_ONE && c.throttle == 0 && c.arm_requested);
     assert(c.mode == APP_COMMAND_SWITCH_LOW && !c.esc_calibration_requested);
     assert(c.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM);
     norm_q15_t previous_stick = -NORM_Q15_ONE, previous_throttle = 0;
     for (unsigned raw = 0; raw <= 2047; ++raw) {
-        rc.channels[0] = rc.channels[2] = (uint16_t)raw;
+        rc.channels[0] = rc.channels[1] = rc.channels[2] = (uint16_t)raw;
         assert(app_command_decode(&rc, &c));
         assert(c.roll >= previous_stick && c.roll <= NORM_Q15_ONE);
+        assert(c.pitch == -c.roll);
         assert(c.throttle >= previous_throttle && c.throttle <= NORM_Q15_ONE);
         if (raw <= 172)
             assert(c.roll == -NORM_Q15_ONE && c.throttle == 0);

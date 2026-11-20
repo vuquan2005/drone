@@ -14,12 +14,13 @@ int main(void) {
     for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; ++i)
         rc.channels[i] = 992;
     rc.channels[0] = 1811;
+    rc.channels[1] = 1811;
     app_command_t command;
     assert(app_command_decode(&rc, &command));
-    float gyro[3] = {1.75f, 0.25f, -0.125f};
+    float gyro[3] = {1.75f, -1.75f, -0.125f};
     assert(!app_rate_step(&state, &command, gyro, 0));
     assert(app_rate_configure(&state, &config));
-    /* Wrapped timestamps and direct FRD signs, with decoded full roll. */
+    /* Wrapped timestamps with full right roll and forward pitch sticks. */
     assert(!app_rate_step(&state, &command, gyro, UINT32_MAX - 499U));
     assert(app_rate_step(&state, &command, gyro, 500));
     assert(abs(state.mixer.achieved.roll - NORM_Q15_ONE / 4) <= 2);
@@ -28,7 +29,8 @@ int main(void) {
     assert(state.valid);
     assert(state.dt_us == 1000);
     assert(state.setpoint_radps[0] == 2.0f);
-    assert(state.gyro_frd_radps[1] == 0.25f);
+    assert(state.setpoint_radps[1] == -2.0f);
+    assert(state.gyro_frd_radps[1] == -1.75f);
     assert(state.output[0] == 0.25f);
     assert(!app_rate_step(&state, &command, gyro, 20501));
     assert(!state.have_time && !state.valid && state.mixer.motor[0] == 0);

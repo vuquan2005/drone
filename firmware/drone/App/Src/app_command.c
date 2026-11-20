@@ -51,7 +51,7 @@ bool app_command_decode(const app_receiver_sample_t *sample,
         }
     }
     command->roll = stick(sample->channels[0]);
-    command->pitch = stick(sample->channels[1]);
+    command->pitch = -stick(sample->channels[1]);
     command->yaw = stick(sample->channels[3]);
     const int32_t span = APP_COMMAND_RC_MAX - APP_COMMAND_RC_MIN;
     command->throttle =

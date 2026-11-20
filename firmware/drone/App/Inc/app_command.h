@@ -24,8 +24,8 @@ typedef enum {
 } app_command_telemetry_mode_t;
 
 /** Jumper T20 model04 mapping, dimensionless Q15 (ONE=32768).
- * Positive axes follow increasing radio channel values; verify radio direction
- * against body FRD before flight. No sensor-axis conversion belongs here.
+ * Roll and yaw increase with CH1 and CH4. CH2 increases when the pitch stick
+ * moves forward, so it maps to negative FRD pitch (nose down).
  * valid is RC validity only, not permission to run motors. Invalid commands
  * have every field zeroed: mode LOW, telemetry OFF and requests false. */
 typedef struct {

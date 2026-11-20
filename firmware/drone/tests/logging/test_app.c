@@ -13,6 +13,7 @@
 #include <assert.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define IMU_SAMPLE_PERIOD_US (1000000U / BSP_IMU_ODR_HZ)
@@ -27,6 +28,8 @@ static uint16_t motor_pulse[4];
 static bool pwm_write_ok = true;
 static unsigned pwm_stops;
 static float gyro_roll_radps;
+static float gyro_pitch_radps;
+static float gyro_yaw_radps;
 static float accel_mps2[3] = {0.0f, 0.0f, -9.80665f};
 static const app_imu_calibration_t *stored_calibration;
 static const char *flight_mode_label;
@@ -111,6 +114,8 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         }
         imu->sample_count++;
         imu->sample.gyro_radps[0] = gyro_roll_radps;
+        imu->sample.gyro_radps[1] = gyro_pitch_radps;
+        imu->sample.gyro_radps[2] = gyro_yaw_radps;
         imu->sample.t_read_us = bsp_time_now_us();
         imu->sample.sensor_time_ticks = 256U;
         memcpy(imu->sample.accel_mps2, accel_mps2, sizeof(accel_mps2));
@@ -194,6 +199,41 @@ static void advance_time_us(uint32_t duration_us) {
     sub_tick_us += duration_us;
     tick += sub_tick_us / 1000U;
     sub_tick_us %= 1000U;
+}
+
+static void test_rate_notch(app_rate_config_t config) {
+    init_app();
+    status = BSP_IMU_OK;
+    config.period_us = 2000U;
+    assert(app_configure_rate(&config));
+    const app_command_t pilot = {.valid = true, .throttle = NORM_Q15_ONE / 2};
+    mixer_result_t result;
+    char trace[512];
+    for (unsigned sample = 0U; sample < BSP_IMU_ODR_HZ; ++sample) {
+        const float tone = sinf(2.0f * 3.14159265358979323846f * 117.0f *
+                                sample / BSP_IMU_ODR_HZ);
+        gyro_roll_radps = 0.25f + tone;
+        gyro_pitch_radps = -0.5f * tone;
+        gyro_yaw_radps = tone;
+        app_process(&pilot);
+        drain(1U, trace);
+        if (sample >= BSP_IMU_ODR_HZ / 2U && sample % 2U == 0U) {
+            assert(app_get_rate_result(&result));
+            assert(abs(result.achieved.roll + 819) <= 8);
+            assert(abs(result.achieved.pitch) <= 8);
+            assert(fabsf(result.achieved.yaw / (float)NORM_Q15_ONE +
+                         0.1f * gyro_yaw_radps) < 0.0005f);
+        }
+        advance_time_us(IMU_SAMPLE_PERIOD_US);
+    }
+
+    /* A skipped sample re-primes the notch from the latest measurement. */
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
+    gyro_roll_radps = 1.0f;
+    gyro_pitch_radps = gyro_yaw_radps = 0.0f;
+    app_process(&pilot);
+    assert(app_get_rate_result(&result));
+    assert(abs(result.achieved.roll + 3277) <= 8);
 }
 
 static void test_attitude_control(const app_rate_config_t *rate_config) {
@@ -507,7 +547,7 @@ int main(void) {
     gyro_roll_radps = 1.0f;
     process_app();
     assert(app_get_rate_result(&preview));
-    assert(preview.achieved.roll > 3200 && preview.achieved.roll < 3350);
+    assert(preview.achieved.roll > 3200 && preview.achieved.roll < 4100);
     const norm_q15_t held_roll = preview.achieved.roll;
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     gyro_roll_radps = 0;
@@ -731,6 +771,7 @@ int main(void) {
     assert(flight_mode_label && strcmp(flight_mode_label, "IMU INIT") == 0);
 
     test_attitude_control(&rate_config);
+    test_rate_notch(rate_config);
     puts("App log/trace integration tests passed");
     return 0;
 }

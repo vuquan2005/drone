@@ -210,6 +210,11 @@ lần cập nhật attitude và nhận lệnh yaw trực tiếp. Lịch rate gi�
 tối thiểu 2 ms giữa các mẫu đã dùng, tương ứng 400 Hz khi IMU ra mẫu đều ở
 800 Hz.
 
+Nhánh gyro của vòng rate dùng notch bậc hai, tâm 117 Hz và Q = 5, cho roll và
+pitch theo hệ FRD. App cập nhật notch trên từng mẫu IMU 800 Hz sau khi trừ
+bias, trước khi vòng rate chọn mẫu sử dụng. Bộ lọc lấy mẫu hiện tại làm trạng
+thái ban đầu khi IMU vừa có dữ liệu hoặc khoảng cách đọc vượt 1.875 µs.
+
 Chế độ attitude vào failsafe nếu quaternion mất hiệu lực hoặc cũ hơn 20 ms.
 Khôi phục tư thế hợp lệ rồi đưa SA về OFF trước khi arm lại. Gain, tần số thực
 tế và đáp ứng cần kiểm chứng trên board/bộ gá.

@@ -83,6 +83,7 @@ target_sources(
             Control/Src/mixer.c
             Control/Src/rate_controller.c
             Control/Src/mahony.c
+            Control/Src/notch_filter.c
             Control/Src/gyro_bias.c
             Control/Src/accel_calibration.c
             BSP/Src/bsp_board.c

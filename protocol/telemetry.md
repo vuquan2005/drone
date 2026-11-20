@@ -268,13 +268,14 @@ frame 92 byte. Số nguyên và IEEE-754 binary32 đều little-endian.
 | 8              | uint32     | dt giữa hai mẫu controller tiêu thụ, µs                         |
 | 12             | uint32     | Flags: bit 0 configured, bit 1 valid; bit còn lại bằng 0        |
 | 16             | float32[3] | Setpoint roll/pitch/yaw body FRD, rad/s                         |
-| 28             | float32[3] | Gyro roll/pitch/yaw body FRD, rad/s                             |
+| 28             | float32[3] | Gyro roll/pitch/yaw body FRD dùng trong vòng rate, rad/s        |
 | 40             | float32[3] | Output PID chuẩn hóa, [-1,1]                                    |
 | 52             | float32[4] | M1–M4 lực đẩy chuẩn hóa, [0,1]                                  |
 | 68             | float32[3] | Residual requested-minus-achieved roll/pitch/yaw                |
 
-Giữa các bước rate, snapshot giữ kết quả trước đó. Khi reset do RC/IMU lỗi,
-động học, timestamp và output bằng 0, valid tắt nhưng configured giữ nguyên.
+Gyro roll/pitch đã qua notch. Giữa các bước rate, snapshot giữ kết quả trước
+đó. Khi reset do RC/IMU lỗi, động học, timestamp và output bằng 0, valid tắt
+nhưng configured giữ nguyên.
 Timestamp có thể lùi về 0 khi reset: host chỉ dùng sequence để nhận diện
 bản tin trùng/lùi. Tuổi snapshot trên GUI tính theo thời gian host nhận;
 không thay thế kiểm tra độ mới IMU trong firmware. Các lần mất bản tin thuộc

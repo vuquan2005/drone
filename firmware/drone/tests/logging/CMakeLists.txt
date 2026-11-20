@@ -39,6 +39,7 @@ set(APP_LOGGING_SOURCES
     ${FIRMWARE_ROOT}/Control/Src/attitude_controller.c
     ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
     ${FIRMWARE_ROOT}/Control/Src/mahony.c
+    ${FIRMWARE_ROOT}/Control/Src/notch_filter.c
     ${FIRMWARE_ROOT}/Control/Src/mixer.c
     ${FIRMWARE_ROOT}/App/Src/runtime.c
     ${FIRMWARE_ROOT}/App/Src/esc_calibration.c

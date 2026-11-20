@@ -11,6 +11,7 @@
 #include "imu_calibration_store.h"
 #include "mahony.h"
 #include "main.h"
+#include "notch_filter.h"
 #include <stddef.h>
 
 #define IMU_TIMEOUT_US 20000U
@@ -22,6 +23,10 @@
 #define ATTITUDE_MAX_ANGLE_RAD (25.0f * 0.01745329252f)
 #define GRAVITY_MIN_MPS2 7.85f
 #define GRAVITY_MAX_MPS2 11.77f
+
+#define RATE_GYRO_NOTCH_HZ 117.0f
+#define RATE_GYRO_NOTCH_Q 5.0f
+#define RATE_GYRO_NOTCH_MAX_GAP_US (1500000U / BSP_IMU_ODR_HZ)
 
 _Static_assert(BSP_IMU_ODR_HZ >= MAHONY_HZ && BSP_IMU_ODR_HZ % MAHONY_HZ == 0U,
                "Mahony updates require an integer IMU decimation factor");
@@ -47,6 +52,9 @@ static struct {
 } tilt_target;
 static app_command_t command;
 static app_rate_t rate;
+static notch_filter_coefficients_t rate_gyro_notch;
+static notch_filter_state_t rate_gyro_notch_state[2];
+static float rate_gyro_radps[3];
 static bool imu_initialized;
 static bool imu_calibration_from_flash;
 static bool imu_available;
@@ -218,6 +226,7 @@ static void update_attitude(const app_imu_sample_t *sample) {
 }
 
 static void process_imu(void) {
+    const uint32_t previous_us = imu.sample.t_read_us;
     const bsp_imu_result_t status = app_imu_poll(&imu);
     log_imu_transition(status);
     if (imu_failed(status)) {
@@ -225,6 +234,18 @@ static void process_imu(void) {
         attitude.valid = false;
     }
     if (status == BSP_IMU_OK) {
+        const bool reset_notch =
+            !imu_available ||
+            imu.sample.t_read_us - previous_us > RATE_GYRO_NOTCH_MAX_GAP_US;
+        /* The notch advances at IMU ODR, including samples skipped by PID. */
+        for (unsigned axis = 0U; axis < 2U; ++axis) {
+            if (reset_notch)
+                rate_gyro_notch_state[axis] = (notch_filter_state_t){0};
+            rate_gyro_radps[axis] = notch_filter_step(
+                &rate_gyro_notch, &rate_gyro_notch_state[axis],
+                imu.sample.gyro_radps[axis]);
+        }
+        rate_gyro_radps[2] = imu.sample.gyro_radps[2];
         imu_available = true;
         update_attitude(&imu.sample);
     }
@@ -307,7 +328,7 @@ static void process_rate(void) {
     const bool had_time = rate.have_time;
     const bool calculated = app_rate_step_with_tilt(
         &rate, &command, use_attitude ? tilt_target.result.rate_radps : NULL,
-        imu.sample.gyro_radps, imu.sample.t_read_us);
+        rate_gyro_radps, imu.sample.t_read_us);
     rate_failed = !calculated && (had_time || !rate.have_time);
 }
 
@@ -457,6 +478,8 @@ void app_init(void) {
     tilt_target.have_update = false;
     command = (app_command_t){0};
     rate = (app_rate_t){0};
+    rate_gyro_notch = notch_filter_design(BSP_IMU_ODR_HZ, RATE_GYRO_NOTCH_HZ,
+                                          RATE_GYRO_NOTCH_Q);
     imu_available = false;
     pwm_ready = false;
     safety = (app_safety_t){0};

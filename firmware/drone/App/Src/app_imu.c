@@ -1,4 +1,5 @@
 #include "app_imu.h"
+#include "app_log.h"
 #include "bsp_time.h"
 #include <string.h>
 
@@ -12,6 +13,14 @@ bsp_imu_result_t app_imu_init(app_imu_t *imu, const bsp_imu_config_t *config) {
     }
     memset(imu, 0, sizeof(*imu));
     imu->status = bsp_imu_init(&imu->sensor, config == NULL ? NULL : &bus);
+    if (imu->status == BSP_IMU_OK) {
+        APP_LOG_INFO("imu",
+                     "configured source=requested %s odr_hz=%u "
+                     "accel_range_g=%u gyro_range_dps=%u",
+                     bsp_imu_startup_mode(), BSP_IMU_ODR_HZ,
+                     (unsigned)BSP_IMU_ACCEL_RANGE_G,
+                     (unsigned)BSP_IMU_GYRO_RANGE_DPS);
+    }
     return imu->status;
 }
 

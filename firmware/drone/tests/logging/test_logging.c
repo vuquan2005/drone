@@ -243,14 +243,11 @@ int main(void) {
     app_log_init(clock_ms);
     app_telemetry_init();
     assert(bsp_rtt_prepare_write(BSP_RTT_DATA, 48U) == BSP_RTT_DISABLED);
-    APP_TELEMETRY_STATS(++effects, ++effects, ++effects);
     APP_LOG_ERROR("imu", "%d", ++effects);
     APP_LOG_WARN("imu", "%d", ++effects);
     APP_LOG_INFO("imu", "%d", ++effects);
     APP_LOG_DEBUG("imu", "%d", ++effects);
     APP_TELEMETRY_IMU(NULL, ++effects);
-    APP_TELEMETRY_RECEIVER(NULL, ++effects);
-    APP_TELEMETRY_RATE(++effects);
     assert(effects == 0 && clock_calls == 0U);
 #endif
     puts("logging tests passed");

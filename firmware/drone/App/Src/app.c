@@ -11,6 +11,7 @@
 #include "imu_calibration_store.h"
 #include "mahony.h"
 #include "main.h"
+#include <math.h>
 #include <stddef.h>
 
 #define IMU_TIMEOUT_US 20000U
@@ -50,13 +51,15 @@ static bool imu_available;
 static bool pwm_ready;
 static bool rate_failed;
 static app_safety_t safety;
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_WARN
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
 static bool last_arm_requested;
-#endif
-#if DRONE_RTT && DRONE_TELEMETRY
-static uint32_t last_stats_ms;
-static uint32_t last_control_ms;
 static bool attitude_reported;
+#endif
+#if APP_TELEMETRY_ENABLED || APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
+static uint32_t last_control_ms;
+#endif
+#if APP_TELEMETRY_ENABLED
+static uint32_t last_stats_ms;
 static app_attitude_control_sample_t attitude_control_sample;
 static bool attitude_control_pending;
 #endif
@@ -65,7 +68,7 @@ static bool imu_failed(bsp_imu_result_t status) {
     return status != BSP_IMU_OK && status != BSP_IMU_NO_DATA;
 }
 
-#if DRONE_RTT && DRONE_LOG_LEVEL > APP_LOG_LEVEL_OFF
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_ERROR)
 static bsp_imu_result_t last_imu_status;
 
 static void log_imu_transition(bsp_imu_result_t status) {
@@ -116,26 +119,35 @@ static void init_imu(void) {
     if (imu.status != BSP_IMU_OK) {
         return;
     }
-    if (imu_calibration_load(imu.sensor.device.chip_id, &imu.calibration)) {
-        APP_LOG_INFO("imu", "gyro bias loaded from flash");
-        if (imu.calibration.accel_valid) {
-            APP_LOG_INFO("imu", "accel calibration loaded from flash");
-        }
-    } else {
-        APP_LOG_INFO("imu", "using default gyro bias");
+    const bool from_flash =
+        imu_calibration_load(imu.sensor.device.chip_id, &imu.calibration);
+    (void)from_flash;
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
+    const app_imu_calibration_t *cal = &imu.calibration;
+    APP_LOG_INFO("imu",
+                 "calibration_applied source=%s frame=FRD "
+                 "gyro_bias_uradps=%ld,%ld,%ld accel_enabled=%u",
+                 from_flash ? "flash" : "default",
+                 lroundf(cal->gyro_bias_radps[0] * 1e6f),
+                 lroundf(cal->gyro_bias_radps[1] * 1e6f),
+                 lroundf(cal->gyro_bias_radps[2] * 1e6f),
+                 (unsigned)cal->accel_valid);
+    if (cal->accel_valid) {
+        const float (*m)[3] = cal->accel_matrix;
+        APP_LOG_INFO(
+            "imu",
+            "accel_correction frame=FRD bias_umps2=%ld,%ld,%ld "
+            "matrix_row_major_x1e6=%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld",
+            lroundf(cal->accel_bias_mps2[0] * 1e6f),
+            lroundf(cal->accel_bias_mps2[1] * 1e6f),
+            lroundf(cal->accel_bias_mps2[2] * 1e6f), lroundf(m[0][0] * 1e6f),
+            lroundf(m[0][1] * 1e6f), lroundf(m[0][2] * 1e6f),
+            lroundf(m[1][0] * 1e6f), lroundf(m[1][1] * 1e6f),
+            lroundf(m[1][2] * 1e6f), lroundf(m[2][0] * 1e6f),
+            lroundf(m[2][1] * 1e6f), lroundf(m[2][2] * 1e6f));
     }
-}
-
-#if DRONE_RTT && DRONE_TELEMETRY
-static void init_telemetry_schedule(void) {
-    last_stats_ms = HAL_GetTick();
-    last_control_ms = last_stats_ms;
-    attitude_reported = false;
-    attitude_control_pending = false;
-}
-#else
-static inline void init_telemetry_schedule(void) {}
 #endif
+}
 
 bool app_configure_rate(const app_rate_config_t *config) {
     /* Reconfiguration revokes motor permission immediately. */
@@ -241,7 +253,7 @@ static bool process_tilt_target(void) {
         const float angle_per_q15 = ATTITUDE_MAX_ANGLE_RAD / NORM_Q15_ONE;
         const float roll_rad = command.roll * angle_per_q15;
         const float pitch_rad = command.pitch * angle_per_q15;
-#if DRONE_RTT && DRONE_TELEMETRY
+#if APP_TELEMETRY_ENABLED
         const uint32_t t_control_us = bsp_time_now_us();
 #endif
         tilt_target.valid =
@@ -249,7 +261,7 @@ static bool process_tilt_target(void) {
                                      ATTITUDE_KP_PER_S, &tilt_target.result);
         tilt_target.attitude_updates = attitude.updates;
         tilt_target.have_update = true;
-#if DRONE_RTT && DRONE_TELEMETRY
+#if APP_TELEMETRY_ENABLED
         const float *q = attitude.filter.q;
         const attitude_control_result_t *result = &tilt_target.result;
         attitude_control_sample = (app_attitude_control_sample_t){
@@ -301,7 +313,7 @@ static void process_rate(void) {
     rate_failed = !calculated && (had_time || !rate.have_time);
 }
 
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_WARN
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
 static void log_arm_result(app_arm_state_t previous, app_safety_reason_t reason,
                            bool pwm_failed) {
     static const char *const reason_names[] = {
@@ -373,38 +385,51 @@ static void process_motor(void) {
     log_arm_result(previous, reason, pwm_failed);
 }
 
-#if DRONE_RTT && DRONE_TELEMETRY
-static void process_periodic_telemetry(void) {
+#if APP_TELEMETRY_ENABLED || APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
+static void process_diagnostics(void) {
+#if APP_TELEMETRY_ENABLED
     if (attitude_control_pending) {
         /* Encode after the motor update to keep RTT off the output path. */
         attitude_control_pending = false;
         (void)app_telemetry_write_attitude_control(&attitude_control_sample);
     }
+#endif
     const uint32_t now = HAL_GetTick();
     if ((uint32_t)(now - last_control_ms) >= 50U) {
         last_control_ms = now;
+#if APP_TELEMETRY_ENABLED
         if (rate.configured)
-            APP_TELEMETRY_RATE(&rate);
-        float q[4];
-        const bool fresh = app_get_attitude(q);
+            (void)app_telemetry_write_rate(&rate);
+#endif
+        const bool fresh = attitude_is_fresh();
+#if APP_TELEMETRY_ENABLED
         if (fresh) {
-            (void)app_telemetry_write_attitude(q, attitude.estimate_us);
+            (void)app_telemetry_write_attitude(attitude.filter.q,
+                                               attitude.estimate_us);
         }
+#endif
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
         if (fresh != attitude_reported) {
             if (fresh)
-                APP_LOG_INFO("attitude", "Mahony estimate ready");
+                APP_LOG_INFO("attitude",
+                             "estimate_state filter=mahony state=ready");
             else
-                APP_LOG_WARN("attitude", "Mahony estimate unavailable");
+                APP_LOG_WARN("attitude",
+                             "estimate_state filter=mahony state=unavailable");
             attitude_reported = fresh;
         }
+#endif
     }
+#if APP_TELEMETRY_ENABLED
     if ((uint32_t)(now - last_stats_ms) >= 1000U) {
         last_stats_ms = now;
-        APP_TELEMETRY_STATS(now, imu.sample_count, imu.read_error_count);
+        (void)app_telemetry_write_stats(now, imu.sample_count,
+                                        imu.read_error_count);
     }
+#endif
 }
 #else
-static inline void process_periodic_telemetry(void) {}
+static inline void process_diagnostics(void) {}
 #endif
 
 bool app_get_status(app_status_t *status) {
@@ -437,8 +462,9 @@ void app_init(void) {
     imu_available = false;
     pwm_ready = false;
     safety = (app_safety_t){0};
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_WARN
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
     last_arm_requested = false;
+    attitude_reported = false;
 #endif
 #if DRONE_RATE_CONTROL
     /* Bench gains only; motor permission is owned by the arm/failsafe state.
@@ -449,15 +475,50 @@ void app_init(void) {
                  {.kp = 0.1f, .output_limit = 1.0f}},
         .max_rate_radps = {2.0f, 2.0f, 2.0f},
         .period_us = 2000U};
-    const bool rate_ready = app_configure_rate(&rate_config);
-    (void)rate_ready;
-    APP_LOG_DEBUG("rate",
-                  "configured=%u period_us=2000 P=0.1 I=0 D=0 max_radps=2",
-                  (unsigned)rate_ready);
+    if (app_configure_rate(&rate_config)) {
+        APP_LOG_INFO("rate", "configured min_period_us=%lu frame=FRD",
+                     (unsigned long)rate.config.period_us);
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
+        static const char *const axis_names[] = {"roll", "pitch", "yaw"};
+        for (unsigned i = 0U; i < RATE_AXIS_COUNT; ++i) {
+            const rate_axis_config_t *axis = &rate.config.axis[i];
+            APP_LOG_INFO(
+                "rate",
+                "axis_config axis=%s kp_s_per_rad_x1e6=%ld "
+                "ki_per_rad_x1e6=%ld kd_s2_per_rad_x1e6=%ld "
+                "integral_limit_ppm=%ld "
+                "output_limit_ppm=%ld d_filter_tau_us=%ld max_rate_uradps=%ld",
+                axis_names[i], lroundf(axis->kp * 1e6f),
+                lroundf(axis->ki * 1e6f), lroundf(axis->kd * 1e6f),
+                lroundf(axis->integral_limit * 1e6f),
+                lroundf(axis->output_limit * 1e6f),
+                lroundf(axis->d_filter_tau_s * 1e6f),
+                lroundf(rate.config.max_rate_radps[i] * 1e6f));
+        }
 #endif
+    } else {
+        APP_LOG_ERROR("rate", "configuration_failed");
+    }
+#endif
+    APP_LOG_INFO("attitude",
+                 "filter_config name=mahony nominal_hz=%u "
+                 "kp_per_s_x1e6=%ld ki_per_s2_x1e6=%ld",
+                 MAHONY_HZ, lroundf(MAHONY_KP_PER_S * 1e6f),
+                 lroundf(MAHONY_KI_PER_S2 * 1e6f));
+    APP_LOG_INFO("attitude",
+                 "controller_config nominal_hz=%u kp_per_s_x1e6=%ld "
+                 "max_tilt_urad=%ld",
+                 ATTITUDE_CONTROL_HZ, lroundf(ATTITUDE_KP_PER_S * 1e6f),
+                 lroundf(ATTITUDE_MAX_ANGLE_RAD * 1e6f));
     init_motor();
     init_imu();
-    init_telemetry_schedule();
+#if APP_TELEMETRY_ENABLED || APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
+    last_control_ms = HAL_GetTick();
+#endif
+#if APP_TELEMETRY_ENABLED
+    last_stats_ms = last_control_ms;
+    attitude_control_pending = false;
+#endif
 }
 
 void app_process(const app_command_t *input) {
@@ -467,5 +528,5 @@ void app_process(const app_command_t *input) {
     process_imu();
     process_rate();
     process_motor();
-    process_periodic_telemetry();
+    process_diagnostics();
 }

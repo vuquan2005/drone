@@ -120,10 +120,8 @@ if(DRONE_ENABLE_RTT)
     endif()
     if(DRONE_ENABLE_TELEMETRY)
         target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_telemetry.c)
+        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_TELEMETRY=1)
     endif()
-endif()
-if(DRONE_ENABLE_RTT AND DRONE_ENABLE_TELEMETRY)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_TELEMETRY=1)
 endif()
 
 # Add user project symbols (macros) when needed:

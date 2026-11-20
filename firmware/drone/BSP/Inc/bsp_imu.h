@@ -56,6 +56,12 @@ typedef struct {
  * conversion. */
 #define BSP_IMU_GYRO_RANGE_DPS 2000.0f
 
+/** @brief Describe the selected backend's requested power and filter modes.
+ * @return Static text with sensor model and modes, valid for the life of the
+ * firmware. Does not access the IMU or verify its registers.
+ */
+const char *bsp_imu_startup_mode(void);
+
 /** @brief Signed raw XYZ samples in sensor-package axes; no calibration. */
 typedef struct {
     int16_t accel[3];

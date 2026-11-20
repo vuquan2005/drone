@@ -16,6 +16,7 @@
 #include <string.h>
 
 #define IMU_SAMPLE_PERIOD_US (1000000U / BSP_IMU_ODR_HZ)
+#define TEST_OUTPUT_SIZE 2048U
 
 static bsp_imu_result_t status = BSP_IMU_NO_DATA;
 static bsp_imu_result_t imu_init_status = BSP_IMU_OK;
@@ -173,7 +174,7 @@ static void process_app(void) {
 static unsigned drain(unsigned channel, char *output) {
     SEGGER_RTT_BUFFER_UP *ring = &_SEGGER_RTT.aUp[channel];
     unsigned count = 0;
-    while (ring->RdOff != ring->WrOff && count < 511U) {
+    while (ring->RdOff != ring->WrOff && count < TEST_OUTPUT_SIZE - 1U) {
         output[count++] = ring->pBuffer[ring->RdOff];
         ring->RdOff = (ring->RdOff + 1U) % ring->SizeOfBuffer;
     }
@@ -304,14 +305,50 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
 
 int main(void) {
     init_app();
+    char output[TEST_OUTPUT_SIZE];
+    if (!APP_TELEMETRY_ENABLED) {
+        drain(0U, output);
+        assert(strstr(output,
+                      "[I][rate] configured min_period_us=2000 frame=FRD\n") !=
+               NULL);
+        assert(
+            strstr(output, "axis_config axis=roll kp_s_per_rad_x1e6=100000 ") !=
+            NULL);
+        assert(strstr(output, "d_filter_tau_us=0 max_rate_uradps=2000000\n") !=
+               NULL);
+        tick += 50U;
+        status = BSP_IMU_OK;
+        process_app();
+        drain(0U, output);
+        assert(
+            strstr(
+                output,
+                "[I][attitude] estimate_state filter=mahony state=ready\n") !=
+            NULL);
+        tick += 50U;
+        status = BSP_IMU_NO_DATA;
+        process_app();
+        drain(0U, output);
+        assert(strstr(output, "[W][attitude] estimate_state filter=mahony "
+                              "state=unavailable\n") != NULL);
+        assert(drain(1U, output) == 0U);
+        return 0;
+    }
     app_status_t health;
     assert(!app_get_status(NULL));
     assert(app_get_status(&health) && !health.imu_ready && health.motor_ready);
     assert(health.imu_initialized && health.arm_state == APP_DISARMED);
-    char output[512];
     drain(0U, output);
     assert(strstr(output, "[1000][I][pwm] initialized\n") != NULL);
     assert(strstr(output, "[1000][I][imu] initialized id=0x24\n") != NULL);
+    assert(strstr(output, "[I][attitude] filter_config name=mahony "
+                          "nominal_hz=200 kp_per_s_x1e6=2000000 "
+                          "ki_per_s2_x1e6=0\n") != NULL);
+    assert(strstr(output,
+                  "[I][attitude] controller_config nominal_hz=100 "
+                  "kp_per_s_x1e6=4000000 max_tilt_urad=436332\n") != NULL);
+    assert(strstr(output, "calibration_applied source=default frame=FRD ") !=
+           NULL);
     process_app();
     assert(drain(0U, output) == 0U && drain(1U, output) == 0U);
     status = BSP_IMU_DRIVER_ERROR;
@@ -359,7 +396,7 @@ int main(void) {
         process_app();
     }
     assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
-    /* Drain all bytes (the small output buffer can only hold 511 at a time). */
+    /* The data ring may hold more than the output buffer. */
     while (drain(1U, output) != 0U) {
     }
     tick = 4000U;
@@ -621,7 +658,9 @@ int main(void) {
     tick += 50U;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
-    assert(drain(0U, output) == 0U);
+    drain(0U, output);
+    assert(strstr(output, "[I][runtime] boot_select state=waiting_for_rc\n") !=
+           NULL);
     assert(drain(1U, output) == 60U); /* RC visible before mode selection. */
     receiver_connected = true;
     runtime_process();
@@ -629,9 +668,15 @@ int main(void) {
     drain(0U, output);
     assert(strstr(output, "[I][runtime] selected mode=flight supported=1\n") !=
            NULL);
-    assert(strstr(output, "[I][imu] gyro bias loaded from flash\n") != NULL);
-    assert(strstr(output, "[I][imu] accel calibration loaded from flash\n") !=
+    assert(strstr(output,
+                  "[I][imu] calibration_applied source=flash frame=FRD ") !=
            NULL);
+    assert(strstr(output, "accel_enabled=1\n") != NULL);
+    assert(strstr(output, "gyro_bias_uradps=10000,-20000,30000 ") != NULL);
+    assert(strstr(output, "[I][imu] accel_correction frame=FRD "
+                          "bias_umps2=100000,200000,-100000 "
+                          "matrix_row_major_x1e6=1010000,-30000,0,0,1020000,"
+                          "20000,40000,0,980000\n") != NULL);
     assert(app_configure_rate(&rate_config));
     tick += 50U;
     status = BSP_IMU_OK;

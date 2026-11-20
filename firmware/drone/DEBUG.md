@@ -49,6 +49,12 @@ mới bị bỏ. API chỉ dùng trong foreground; xem [bsp_rtt.h](BSP/Inc/bsp_r
 [app_log.h](App/Inc/app_log.h) và [đặc tả telemetry](../../protocol/telemetry.md).
 Timestamp IMU là thời điểm MCU đọc, không phải thời điểm cảm biến lấy mẫu.
 
+Mức `INFO` ghi trạng thái chọn mode, cấu hình IMU do driver yêu cầu, hệ số
+hiệu chuẩn được áp dụng và cấu hình các vòng điều khiển. Các trường có hậu tố
+`_x1e6` lưu giá trị đã nhân một triệu, ví dụ `kp_s_per_rad_x1e6=100000` là
+`0,1 s/rad`. Để giữ các dòng đầu phiên trong `events_*.log`, bật
+**Start recording** trước khi reset board.
+
 Live Watch có thể đọc biến global/static, ví dụ `'app.c'::imu.sample_count`;
 các trường không được chụp đồng thời. `dropped_full` trong `bsp_rtt.c` đếm
 bản ghi bị bỏ do buffer đầy, không đo mẫu cảm biến bị bỏ lỡ hoặc mất trên host.
@@ -62,8 +68,8 @@ chu kỳ rate 2000 µs là cấu hình thử bộ gá, chưa tune để bay. Rat
 IMU mới nhất; chưa có lọc chống alias khi giảm tốc độ mẫu. Cần đo I/O, timing,
 đáp ứng và hiệu chuẩn trước khi dùng cánh.
 
-1. Build/nạp Debug, mở RTT và kiểm tra log `rate` báo `configured=1`. Bật
-   radio/receiver, mở tab **Rate · FRD**; kiểm tra RC và IMU hợp lệ.
+1. Build/nạp Debug, mở RTT và kiểm tra log `rate` có `configured` và các dòng
+   `axis_config`. Bật radio/receiver, mở tab **Rate · FRD** và kiểm tra RC, IMU.
 2. Đưa từng cần roll/pitch/yaw qua hai đầu: setpoint tương ứng khoảng
    ±2 rad/s. Đặt cần giữa và xoay khung: gyro FRD dương phải tạo PID âm trên
    cùng trục. Bias có thể còn do chưa hiệu chuẩn.

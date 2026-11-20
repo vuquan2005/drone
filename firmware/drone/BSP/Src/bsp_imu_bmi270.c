@@ -4,6 +4,11 @@
 #define IMU_TRANSFER_BYTES 32U
 #define IMU_SPI_READ_BYTES (IMU_TRANSFER_BYTES + 1U)
 
+const char *bsp_imu_startup_mode(void) {
+    return "model=BMI270 adv_power_save=off accel_filter=normal_avg4 "
+           "gyro_filter=normal filter_perf=performance gyro_noise=performance";
+}
+
 static BMI2_INTF_RETURN_TYPE spi_read(uint8_t reg, uint8_t *data,
                                       uint32_t length, void *context) {
     bsp_imu_t *imu = context;

@@ -20,7 +20,7 @@ static app_receiver_sample_t receiver_sample;
 static uint32_t receiver_sequence;
 static uint32_t last_crsf_status_ms;
 static uint32_t last_crsf_attitude_ms;
-#if DRONE_RTT && DRONE_TELEMETRY
+#if APP_TELEMETRY_ENABLED
 static uint32_t last_receiver_ms;
 #endif
 
@@ -37,10 +37,10 @@ void runtime_init(void) {
     app_receiver_init();
     last_crsf_status_ms = HAL_GetTick();
     last_crsf_attitude_ms = last_crsf_status_ms;
-#if DRONE_RTT && DRONE_TELEMETRY
+#if APP_TELEMETRY_ENABLED
     last_receiver_ms = last_crsf_status_ms;
 #endif
-    APP_LOG_DEBUG("runtime", "waiting for boot mode selection");
+    APP_LOG_INFO("runtime", "boot_select state=waiting_for_rc");
 }
 
 bool runtime_mode_supported(void) {
@@ -208,16 +208,16 @@ void runtime_process(void) {
     if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
         (void)app_command_decode(&receiver_sample, &command);
     }
-#if DRONE_RTT && DRONE_TELEMETRY
+#if APP_TELEMETRY_ENABLED
     const uint32_t now = HAL_GetTick();
     if ((uint32_t)(now - last_receiver_ms) >= 50U) {
         last_receiver_ms = now;
-        APP_TELEMETRY_RECEIVER(&receiver_sample, now);
+        (void)app_telemetry_write_receiver(&receiver_sample, now);
     }
 #endif
     if (mode == RUNTIME_BOOT_SELECT) {
         mode = select_mode();
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_INFO
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
         static const char *const mode_names[] = {
             [RUNTIME_FLIGHT] = "flight",
             [RUNTIME_ESC_CALIB] = "esc_calib",

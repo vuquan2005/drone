@@ -13,7 +13,9 @@
 #define DRONE_TELEMETRY 0
 #endif
 
-#if DRONE_RTT && DRONE_TELEMETRY
+#define APP_TELEMETRY_ENABLED (DRONE_RTT && DRONE_TELEMETRY)
+
+#if APP_TELEMETRY_ENABLED
 /** @brief Reset telemetry attempt sequence and result counters; foreground
  * only. Call after bsp_rtt_init. Does not initialize or clear the RTT
  * transport.
@@ -101,18 +103,12 @@ typedef struct {
 bsp_rtt_result_t app_telemetry_write_attitude_control(
     const app_attitude_control_sample_t *sample);
 
-#define APP_TELEMETRY_RATE(rate) ((void)app_telemetry_write_rate(rate))
-#define APP_TELEMETRY_RECEIVER(sample, ms)                                     \
-    ((void)app_telemetry_write_receiver(sample, ms))
-#define APP_TELEMETRY_STATS(ms, samples, errors)                               \
-    ((void)app_telemetry_write_stats(ms, samples, errors))
+/* The IMU polling paths run in every build. Periodic telemetry already runs
+ * in telemetry-only blocks and can call the writers directly. */
 #define APP_TELEMETRY_IMU(sample, sequence)                                    \
     ((void)app_telemetry_write_imu(sample, sequence))
 #else
 static inline void app_telemetry_init(void) {}
-#define APP_TELEMETRY_RATE(...) ((void)0)
-#define APP_TELEMETRY_RECEIVER(...) ((void)0)
-#define APP_TELEMETRY_STATS(...) ((void)0)
 #define APP_TELEMETRY_IMU(...) ((void)0)
 #endif
 

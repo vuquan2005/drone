@@ -71,15 +71,20 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 3. Khi `FM` hiện dạng `X+ 0/6`, firmware đã chuyển sang đo accel. Nhãn gợi ý
    một mặt còn thiếu và cho biết số mặt đã nhận. Dùng bảng bên dưới để đặt
    khung và giữ yên đến khi số đếm tăng. Có thể xoay qua sáu mặt theo thứ tự
-   tùy ý. Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây.
-   Firmware nhận mặt khi véc-tơ gia tốc lệch khoảng 10° trở xuống so với một
-   trục, xác định chiều theo dấu và kiểm tra gyro cùng độ dao động của accel.
+   tùy ý. Dùng mặt chuẩn hoặc bộ gá để đặt mỗi trục FRD thẳng đứng đúng chiều.
+   Độ nghiêng của khung lúc đo sẽ ảnh hưởng trực tiếp đến hệ số lệch chéo trục.
+   Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây. Firmware dùng ngưỡng khoảng
+   10° để nhận diện mặt và kiểm tra gyro cùng độ dao động của accel.
    RTT báo các mặt còn thiếu. Mặt đã nhận được tính một lần. Giữ nguyên công
    tắc và ga khi xoay khung.
 4. Khi `FM` hiện `IMU DONE`, firmware đã lưu hệ số gyro và accel vào flash.
    Trả SB và SD về LOW rồi reset để vào `FLIGHT`. Log `imu` báo đã nạp hệ số
    gyro và accel từ flash.
    Có thể kiểm tra gyro đã bù trong tab **Rate · FRD** khi khung đứng yên.
+
+Firmware chỉ đọc bản ghi hiệu chuẩn v3. Nếu đang dùng bản ghi v1 hoặc v2,
+chạy lại `IMU_CALIB` sau khi cập nhật để lưu bias gyro và ma trận hiệu chỉnh
+accel từ quy trình sáu mặt.
 
 | Mặt đo | Cách đặt khung FRD         |
 | ------ | -------------------------- |
@@ -97,7 +102,7 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 | `IMU INIT` | Khởi tạo IMU thất bại.                                    |
 | `IMU READ` | Đọc IMU thất bại.                                         |
 | `IMU TIME` | Hết thời gian đo gyro hoặc accel.                         |
-| `ACC ERR`  | Hệ số accel ngoài giới hạn.                               |
+| `ACC ERR`  | Dữ liệu mặt đo hoặc hệ số accel ngoài giới hạn.           |
 | `SAVE ERR` | Lưu hệ số vào flash thất bại.                             |
 
 Chuyển động hoặc khoảng cách giữa hai mẫu vượt 20 ms làm thu lại cửa sổ

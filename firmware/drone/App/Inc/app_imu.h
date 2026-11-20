@@ -36,8 +36,9 @@ typedef struct {
 typedef struct {
     float gyro_bias_radps[3]; /**< Finite bias to subtract, in rad/s. */
     float accel_bias_mps2[3]; /**< Finite bias to subtract, in m/s^2. */
-    float accel_scale[3];     /**< Positive scale applied after bias removal. */
-    bool accel_valid;         /**< Apply accel bias and scale when true. */
+    float accel_matrix[3][3]; /**< Dimensionless correction after bias removal.
+                                   Rows are outputs, columns are inputs. */
+    bool accel_valid;         /**< Apply accel bias and matrix when true. */
 } app_imu_calibration_t;
 
 /**

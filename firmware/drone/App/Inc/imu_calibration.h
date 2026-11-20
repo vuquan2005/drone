@@ -29,7 +29,8 @@ typedef struct {
  */
 void imu_calibration_init(void);
 
-/** Collect gyro bias and six accel faces, then save the coefficients together.
+/** Measure gyro bias, fit accelerometer correction from six aligned faces,
+ * then save both together.
  * Pass the current RC command, or NULL when RC is unavailable. Checks RC and
  * starts sampling after the initial settle period. The session ends on success,
  * failure or cancellation. PWM stays off until reset. Serialized foreground

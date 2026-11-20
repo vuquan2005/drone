@@ -10,19 +10,29 @@
 #include <math.h>
 #include <string.h>
 
+/* Rows of the sensor response to ideal FRD specific force. */
+static const float accel_response[3][3] = {
+    {1.02f, 0.04f, -0.03f},
+    {-0.05f, 0.98f, 0.02f},
+    {0.03f, -0.04f, 1.01f},
+};
 static const app_imu_calibration_t initial = {
     .gyro_bias_radps = {0.003f, -0.004f, 0.005f},
     .accel_bias_mps2 = {0.12f, -0.08f, 0.20f},
-    .accel_scale = {1.02f, 0.98f, 1.01f},
+    .accel_matrix = {{0.977619173f, -0.038686323f, 0.029804259f},
+                     {0.050430385f, 1.017588460f, -0.018652334f},
+                     {-0.027040950f, 0.041449632f, 0.988475029f}},
     .accel_valid = true,
 };
 static const app_imu_calibration_t replacement = {
     .gyro_bias_radps = {-0.002f, 0.003f, -0.004f},
     .accel_bias_mps2 = {-0.12f, 0.2f, 0.1f},
-    .accel_scale = {0.99f, 1.01f, 1.04f},
+    .accel_matrix = {{0.99f, -0.03f, 0.0f},
+                     {0.02f, 1.01f, 0.04f},
+                     {0.0f, -0.02f, 1.04f}},
     .accel_valid = true,
 };
-static uint8_t pages[BSP_IMU_FLASH_SLOT_COUNT][64];
+static uint8_t pages[BSP_IMU_FLASH_SLOT_COUNT][128];
 static bool finalized[BSP_IMU_FLASH_SLOT_COUNT];
 static bool interrupt_save;
 static unsigned writes;
@@ -99,20 +109,28 @@ static void expect_calibration(uint8_t chip_id,
                                const app_imu_calibration_t *expected) {
     app_imu_calibration_t actual = {0};
     assert(imu_calibration_load(chip_id, &actual));
-    assert(actual.accel_valid == expected->accel_valid);
+    assert(actual.accel_valid);
     for (unsigned axis = 0U; axis < 3U; ++axis) {
         assert(fabsf(actual.gyro_bias_radps[axis] -
                      expected->gyro_bias_radps[axis]) < 1e-7f);
-        if (actual.accel_valid) {
-            assert(fabsf(actual.accel_bias_mps2[axis] -
-                         expected->accel_bias_mps2[axis]) < 1e-5f);
-            assert(fabsf(actual.accel_scale[axis] -
-                         expected->accel_scale[axis]) < 1e-5f);
+        assert(fabsf(actual.accel_bias_mps2[axis] -
+                     expected->accel_bias_mps2[axis]) < 1e-5f);
+        for (unsigned input = 0U; input < 3U; ++input) {
+            assert(fabsf(actual.accel_matrix[axis][input] -
+                         expected->accel_matrix[axis][input]) < 1e-5f);
         }
     }
 }
 
-static void seed_legacy_page(void) {
+static void expect_no_calibration(uint8_t chip_id) {
+    app_imu_calibration_t calibration = initial;
+    unsigned char before[sizeof(calibration)];
+    memcpy(before, &calibration, sizeof(before));
+    assert(!imu_calibration_load(chip_id, &calibration));
+    assert(memcmp(&calibration, before, sizeof(before)) == 0);
+}
+
+static void seed_v1_page(void) {
     struct {
         uint32_t sequence;
         uint16_t version;
@@ -130,40 +148,74 @@ static void seed_legacy_page(void) {
     finalized[0] = true;
 }
 
+static void seed_v2_page(void) {
+    struct {
+        uint32_t sequence;
+        uint16_t version;
+        uint8_t chip_id;
+        uint8_t axis_map;
+        uint16_t gyro_range_dps;
+        uint16_t accel_range_g;
+        float gyro_bias_radps[3];
+        float accel_bias_mps2[3];
+        float accel_scale[3];
+        uint32_t crc;
+    } record = {2U,
+                2U,
+                0xD1U,
+                2U,
+                2000U,
+                16U,
+                {-0.001f, 0.002f, -0.003f},
+                {0.15f, -0.2f, 0.07f},
+                {0.96f, 1.04f, 1.02f},
+                0U};
+    assert(sizeof(record) == 52U);
+    record.crc = app_crc32(&record, 48U);
+    memset(pages[1], 0xFF, sizeof(pages[1]));
+    memcpy(pages[1], &record, sizeof(record));
+    finalized[1] = true;
+}
+
 static void test_flash_recovery(void) {
-    app_imu_calibration_t missing = initial;
-    assert(!imu_calibration_load(0xD1U, &missing));
-    assert(missing.gyro_bias_radps[0] == initial.gyro_bias_radps[0]);
+    expect_no_calibration(0xD1U);
     app_imu_calibration_t invalid = initial;
     invalid.gyro_bias_radps[0] = NAN;
     assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
     invalid = initial;
-    invalid.accel_scale[0] = 0.0f;
+    invalid.accel_matrix[0][0] = 0.0f;
     assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
-    seed_legacy_page();
-    app_imu_calibration_t legacy = initial;
-    legacy.accel_valid = false;
-    expect_calibration(0xD1U, &legacy);
-    app_imu_calibration_t loaded = initial;
-    assert(imu_calibration_load(0xD1U, &loaded) && !loaded.accel_valid);
+    invalid = initial;
+    invalid.accel_matrix[1][2] = NAN;
+    assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
+    invalid.accel_matrix[1][2] = 0.5f;
+    assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
+    seed_v1_page();
+    expect_no_calibration(0xD1U);
+    seed_v2_page();
+    expect_no_calibration(0xD1U);
 
+    assert(imu_calibration_save(0xD1U, &initial));
+    expect_calibration(0xD1U, &initial);
     assert(imu_calibration_save(0x24U, &replacement));
-    expect_calibration(0xD1U, &legacy);
+    expect_calibration(0xD1U, &initial);
     expect_calibration(0x24U, &replacement);
 
     interrupt_save = true;
     assert(!imu_calibration_save(0xD1U, &replacement));
-    expect_calibration(0xD1U, &legacy);
+    expect_calibration(0xD1U, &initial);
     interrupt_save = false;
     assert(imu_calibration_save(0xD1U, &replacement));
     expect_calibration(0xD1U, &replacement);
-    pages[1][28] ^= 1U;
-    expect_calibration(0xD1U, &legacy);
+    pages[1][56] ^= 1U; /* Within the v3 matrix. */
+    expect_calibration(0xD1U, &initial);
 }
 
 static void set_face(unsigned axis, int sign) {
-    memcpy(accel_mps2, initial.accel_bias_mps2, sizeof(accel_mps2));
-    accel_mps2[axis] += (float)sign * 9.80665f / initial.accel_scale[axis];
+    for (unsigned row = 0U; row < 3U; ++row) {
+        accel_mps2[row] = initial.accel_bias_mps2[row] +
+                          (float)sign * 9.80665f * accel_response[row][axis];
+    }
 }
 
 static app_command_t start_session(void) {
@@ -357,6 +409,15 @@ static void test_calibration_result_failures(void) {
         accel_mps2[axis] = -accel_mps2[axis];
         run_for(&out_of_range, 1200000U, 2500U);
     }
+    assert(imu_calibration_get_status().state == IMU_CALIBRATION_INVALID_ACCEL);
+    assert(writes == 0U);
+
+    const app_command_t inconsistent = start_session();
+    run_for(&inconsistent, 6000000U, 2500U);
+    set_face(0U, 1);
+    accel_mps2[1] += 0.9f; /* Tilting one face shifts its pair midpoint. */
+    run_for(&inconsistent, 1200000U, 2500U);
+    present_all_faces(&inconsistent);
     assert(imu_calibration_get_status().state == IMU_CALIBRATION_INVALID_ACCEL);
     assert(writes == 0U);
 

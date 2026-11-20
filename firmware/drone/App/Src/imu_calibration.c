@@ -69,7 +69,7 @@ static void process_gyro(const app_imu_sample_t *sample) {
                  (long)(calibration.gyro_bias_radps[2] * 1e6f),
                  (unsigned long)gyro_window.samples);
     APP_LOG_INFO("imu_calib",
-                 "accel: expose each face; remaining X+ X- Y+ Y- Z+ Z-");
+                 "accel: level each face; remaining X+ X- Y+ Y- Z+ Z-");
 }
 
 #if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_INFO
@@ -114,11 +114,11 @@ static void process_accel(const app_imu_sample_t *sample) {
         return;
     }
     calibration.accel_valid = accel_calibration_result(
-        &accel_session, calibration.accel_bias_mps2, calibration.accel_scale);
+        &accel_session, calibration.accel_bias_mps2, calibration.accel_matrix);
     if (!calibration.accel_valid) {
         state = IMU_CALIBRATION_INVALID_ACCEL;
         APP_LOG_ERROR("imu_calib",
-                      "accel coefficients out of range; reset to retry");
+                      "invalid accel fit; check face alignment and reset");
     } else if (imu_calibration_save(imu.sensor.device.chip_id, &calibration)) {
         state = IMU_CALIBRATION_DONE;
         APP_LOG_INFO("imu_calib",

@@ -70,7 +70,7 @@ void app_flash_journal_process(uint32_t now_ms);
  * meaningful in FAULT. */
 app_flash_journal_status_t app_flash_journal_status(void);
 
-/** @brief Schedule a BEGIN page if READY.
+/** @brief Schedule a BEGIN page if READY, with at least two DATA pages free.
  * @param now_ms Session start uptime.
  * @return True if accepted. Wait for OPEN before submitting frames. */
 bool app_flash_journal_begin(uint32_t now_ms);
@@ -84,9 +84,10 @@ bool app_flash_journal_begin(uint32_t now_ms);
  * when OPEN. The caller accounts for frames it chooses to discard. */
 bool app_flash_journal_append(const void *frame, size_t size, uint32_t now_ms);
 
-/** @brief Count one discarded frame while a session accepts data.
- * @note Ignored once closing has started. Counter saturates at UINT32_MAX. */
-void app_flash_journal_note_drop(void);
+/** @brief Account for discarded frames in this session.
+ * @param count Number of dropped frames. The counter saturates at UINT32_MAX.
+ * @note Also accepts frames stranded by FULL until the END transfer starts. */
+void app_flash_journal_note_drops(uint32_t count);
 
 /** @brief Stop accepting frames and schedule flushing and END.
  * @param now_ms Uptime when close was requested.

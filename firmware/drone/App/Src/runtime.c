@@ -22,6 +22,8 @@ static uint32_t last_crsf_status_ms;
 static uint32_t last_crsf_attitude_ms;
 #if APP_TELEMETRY_ENABLED
 static uint32_t last_receiver_ms;
+#endif
+#if APP_TELEMETRY_RTT_ENABLED
 static uint32_t last_config_poll_ms;
 #endif
 
@@ -40,6 +42,8 @@ void runtime_init(void) {
     last_crsf_attitude_ms = last_crsf_status_ms;
 #if APP_TELEMETRY_ENABLED
     last_receiver_ms = last_crsf_status_ms;
+#endif
+#if APP_TELEMETRY_RTT_ENABLED
     last_config_poll_ms = last_crsf_status_ms;
 #endif
     APP_LOG_INFO("runtime", "boot_select state=waiting_for_rc");
@@ -207,7 +211,7 @@ static void process_crsf_telemetry(uint32_t now_ms) {
         (void)app_receiver_send_attitude(body_to_ned);
 }
 
-#if APP_TELEMETRY_ENABLED
+#if APP_TELEMETRY_RTT_ENABLED
 static void process_config_requests(uint32_t now_ms) {
     if (mode == RUNTIME_BOOT_SELECT || now_ms - last_config_poll_ms < 20U)
         return;
@@ -240,6 +244,15 @@ void runtime_process(void) {
     if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
         (void)app_command_decode(&receiver_sample, &command);
     }
+#if DRONE_FLASH_RECORD
+    if (mode == RUNTIME_FLIGHT) {
+        const bool requested =
+            command.telemetry_mode == APP_COMMAND_TELEMETRY_RECORD;
+        if (command.valid && !requested)
+            app_telemetry_flush_recording_imu();
+        app_flash_recorder_update(command.valid, requested, HAL_GetTick());
+    }
+#endif
 #if APP_TELEMETRY_ENABLED
     const uint32_t now = HAL_GetTick();
     if ((uint32_t)(now - last_receiver_ms) >= 50U) {
@@ -262,6 +275,9 @@ void runtime_process(void) {
         if (mode == RUNTIME_FLIGHT) {
             /* Initialization can block; poll fresh RC before dispatch. */
             app_init();
+#if DRONE_FLASH_RECORD
+            app_flash_recorder_init(HAL_GetTick());
+#endif
             return;
         }
         if (mode == RUNTIME_ESC_CALIB) {
@@ -292,7 +308,11 @@ void runtime_process(void) {
         break;
     }
     app_telemetry_process_imu();
-#if APP_TELEMETRY_ENABLED
+#if DRONE_FLASH_RECORD
+    if (mode == RUNTIME_FLIGHT)
+        app_flash_recorder_process(HAL_GetTick(), app_get_config);
+#endif
+#if APP_TELEMETRY_RTT_ENABLED
     process_config_requests(now);
 #endif
     process_crsf_telemetry(HAL_GetTick());

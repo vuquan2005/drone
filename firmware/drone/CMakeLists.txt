@@ -50,6 +50,8 @@ option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry ove
 
 option(DRONE_DEBUG_FORCE_FLIGHT "Enter FLIGHT without waiting for RC boot selection" OFF)
 
+option(DRONE_ENABLE_FLASH_RECORD "Record flight telemetry to external SPI flash" ON)
+
 option(DRONE_FLASH_BOARD_SMOKE "Run only the SWD SPI flash board check" OFF)
 
 option(DRONE_ENABLE_RATE_CONTROL "Configure rate controller with initial bench gains" ON)
@@ -130,9 +132,16 @@ if(DRONE_ENABLE_RTT)
         target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_log.c)
     endif()
     if(DRONE_ENABLE_TELEMETRY)
-        target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_telemetry.c)
         target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_TELEMETRY=1)
     endif()
+endif()
+
+if(DRONE_ENABLE_FLASH_RECORD)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_flash_recorder.c)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_FLASH_RECORD=1)
+endif()
+if(DRONE_ENABLE_FLASH_RECORD OR (DRONE_ENABLE_RTT AND DRONE_ENABLE_TELEMETRY))
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_telemetry.c)
 endif()
 
 # Add user project symbols (macros) when needed:

@@ -151,7 +151,7 @@ static void mark_interrupted(void) {
 }
 
 static void idle_after_session(void) {
-    journal.status.state = PAGE_COUNT - journal.status.next_page < 3U
+    journal.status.state = PAGE_COUNT - journal.status.next_page < 4U
                                ? APP_FLASH_JOURNAL_FULL
                                : APP_FLASH_JOURNAL_READY;
 }
@@ -346,9 +346,12 @@ static bool accepting(void) {
             journal.status.state == APP_FLASH_JOURNAL_WRITING);
 }
 
-void app_flash_journal_note_drop(void) {
-    if (accepting() && journal.dropped_frames != UINT32_MAX) {
-        ++journal.dropped_frames;
+void app_flash_journal_note_drops(uint32_t count) {
+    if (accepting() || (journal.status.state == APP_FLASH_JOURNAL_CLOSING &&
+                        journal.end_reason == APP_FLASH_JOURNAL_FILLED &&
+                        !journal.transfer_pending)) {
+        const uint32_t room = UINT32_MAX - journal.dropped_frames;
+        journal.dropped_frames += count < room ? count : room;
     }
 }
 

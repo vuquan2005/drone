@@ -1,4 +1,5 @@
 #include "app_flash_journal.h"
+#include "app_telemetry.h"
 #include <assert.h>
 #include <string.h>
 
@@ -157,7 +158,7 @@ static void test_append_and_flush(void) {
     ++now_ms;
     process();
     assert(state() == APP_FLASH_JOURNAL_WRITING);
-    app_flash_journal_note_drop();
+    app_flash_journal_note_drops(1U);
     assert(app_flash_journal_close(now_ms));
     assert(!app_flash_journal_close(now_ms));
     until(APP_FLASH_JOURNAL_READY);
@@ -228,18 +229,20 @@ static void test_recovery(void) {
 
 static void test_full(void) {
     clean_chip();
-    storage[PAGE_COUNT - 4][0] = 0;
+    storage[PAGE_COUNT - 5][0] = 0;
     reboot();
     until(APP_FLASH_JOURNAL_READY);
     assert(app_flash_journal_begin(now_ms));
     until(APP_FLASH_JOURNAL_OPEN);
     assert(app_flash_journal_append(large_frame, sizeof(large_frame), now_ms));
+    until(APP_FLASH_JOURNAL_OPEN);
+    assert(app_flash_journal_append(large_frame, sizeof(large_frame), now_ms));
     until(APP_FLASH_JOURNAL_FULL);
-    assert(programs == 3 && !app_flash_journal_begin(now_ms));
+    assert(programs == 4 && !app_flash_journal_begin(now_ms));
     const app_flash_journal_page_t end =
         decode(PAGE_COUNT - 1, APP_FLASH_JOURNAL_END);
     assert(end.end_reason == APP_FLASH_JOURNAL_FILLED &&
-           end.written_frames == 1);
+           end.written_frames == 2);
     reboot();
     until(APP_FLASH_JOURNAL_FULL);
     assert(app_flash_journal_status().next_page == PAGE_COUNT);
@@ -262,10 +265,158 @@ static void test_fault(void) {
     assert(programs == 0);
 }
 
+#if DRONE_RTT
+static bool rtt_full;
+static uint8_t rtt_imu[141];
+static unsigned rtt_writes;
+
+bsp_rtt_result_t bsp_rtt_prepare_write(bsp_rtt_channel_t channel, size_t size) {
+    assert(channel == BSP_RTT_DATA && size <= sizeof(rtt_imu));
+    return rtt_full ? BSP_RTT_FULL : BSP_RTT_OK;
+}
+
+bsp_rtt_result_t bsp_rtt_write(bsp_rtt_channel_t channel, const void *data,
+                               size_t size) {
+    assert(channel == BSP_RTT_DATA && size <= sizeof(rtt_imu));
+    assert(!rtt_full);
+    memcpy(rtt_imu, data, size);
+    ++rtt_writes;
+    return BSP_RTT_OK;
+}
+
+uint32_t bsp_rtt_get_dropped_full(bsp_rtt_channel_t channel) {
+    (void)channel;
+    return 0;
+}
+
+size_t bsp_rtt_read_control(void *data, size_t size) {
+    (void)data;
+    (void)size;
+    return 0;
+}
+#endif
+
+uint32_t bsp_time_now_us(void) {
+    return now_ms * 1000U;
+}
+
+static app_config_t flight_config(void) {
+    return (app_config_t){.mode = APP_CONFIG_FLIGHT, .mahony_hz = 200U};
+}
+
+static void recorder_until(app_flash_journal_state_t target) {
+    uint32_t budget = 2 * PAGE_COUNT + 200;
+    while (state() != target) {
+        assert(budget-- != 0U);
+        app_flash_recorder_process(now_ms, flight_config);
+    }
+}
+
+static void recorder_start(void) {
+    app_telemetry_init();
+    app_flash_recorder_init(now_ms);
+    app_flash_recorder_update(true, true, now_ms);
+    now_ms += 6;
+    recorder_until(APP_FLASH_JOURNAL_OPEN);
+}
+
+static void queue_samples(uint32_t first, uint32_t count) {
+    for (uint32_t sequence = first; sequence < first + count; ++sequence) {
+        const app_imu_sample_t sample = {
+            .t_read_us = sequence * 1250U,
+            .sensor_time_ticks = sequence * 32U,
+            .accel_raw = {(int16_t)sequence},
+        };
+        app_telemetry_queue_imu(&sample, sequence);
+    }
+}
+
+static const uint8_t *data_payload(uint32_t index, uint16_t size) {
+    assert(decode(index, APP_FLASH_JOURNAL_DATA).payload_size == size);
+    return storage[index] + APP_FLASH_JOURNAL_HEADER_BYTES;
+}
+
+static void test_recorder_fifo_and_sinks(void) {
+    clean_chip();
+    recorder_start();
+#if DRONE_RTT
+    rtt_full = false;
+#endif
+    queue_samples(1, 8);
+#if DRONE_RTT
+    assert(rtt_writes == 1U);
+    uint8_t first_frame[141];
+    memcpy(first_frame, rtt_imu, sizeof(first_frame));
+    rtt_full = true;
+#endif
+
+    app_flash_recorder_update(false, false, 90U);
+    queue_samples(9, 96); /* 12 more batches, one over the FIFO budget. */
+#if DRONE_RTT
+    rtt_full = false;
+#endif
+    queue_samples(105, 8); /* Flash FIFO full, RTT still receives the batch. */
+#if DRONE_RTT
+    assert(rtt_writes == 2U && rtt_imu[8] == 105U);
+#endif
+    app_flash_recorder_update(true, false, 141U);
+    now_ms = 142U;
+    app_flash_recorder_update(true, true, now_ms);
+    assert(!app_flash_recorder_prepare(141U));
+    recorder_until(APP_FLASH_JOURNAL_READY);
+
+    const uint8_t *config = data_payload(1, 220);
+    assert(config[5] == 10U && config[8] == 0U &&
+           config[13] == APP_CONFIG_FLIGHT);
+    const uint8_t *first = data_payload(2, 141);
+    assert(first[5] == 9U && first[8] == 1U && first[19] == 8U);
+#if DRONE_RTT
+    assert(memcmp(first, first_frame, sizeof(first_frame)) == 0);
+#endif
+    for (uint32_t i = 1; i < 12; ++i) {
+        const uint8_t *batch = data_payload(i + 2, 141);
+        assert(batch[5] == 9U && batch[8] == 1U + i * 8U && batch[19] == 8U);
+    }
+    const app_flash_journal_page_t end = decode(14, APP_FLASH_JOURNAL_END);
+    assert(end.written_frames == 13 && end.dropped_frames == 2);
+    assert(end.uptime_ms == 141 && end.end_reason == APP_FLASH_JOURNAL_STOPPED);
+
+    /* A partial RTT-only batch predates the next session. */
+    queue_samples(113, 2);
+    recorder_until(APP_FLASH_JOURNAL_OPEN);
+    assert(decode(15, APP_FLASH_JOURNAL_BEGIN).session_id == 15);
+    queue_samples(115, 3);
+    app_telemetry_flush_recording_imu();
+    now_ms = 150U;
+    app_flash_recorder_update(true, false, now_ms);
+    queue_samples(118, 1);
+    recorder_until(APP_FLASH_JOURNAL_READY);
+    assert(data_payload(16, 220)[5] == 10U);
+    const uint8_t *last = data_payload(17, 66);
+    assert(last[5] == 9U && last[8] == 115U && last[19] == 3U);
+    assert(decode(18, APP_FLASH_JOURNAL_END).written_frames == 2);
+}
+
+static void test_recorder_full(void) {
+    clean_chip();
+    storage[PAGE_COUNT - 5][0] = 0;
+    recorder_start();
+    queue_samples(1, 18); /* Two batches plus one partial. */
+    recorder_until(APP_FLASH_JOURNAL_FULL);
+    assert(data_payload(PAGE_COUNT - 3, 220)[5] == 10U);
+    assert(data_payload(PAGE_COUNT - 2, 141)[8] == 1U);
+    const app_flash_journal_page_t end =
+        decode(PAGE_COUNT - 1, APP_FLASH_JOURNAL_END);
+    assert(end.written_frames == 2 && end.dropped_frames == 2);
+    assert(end.end_reason == APP_FLASH_JOURNAL_FILLED);
+}
+
 int main(void) {
     test_append_and_flush();
     test_recovery();
     test_full();
     test_fault();
+    test_recorder_fifo_and_sinks();
+    test_recorder_full();
     return 0;
 }

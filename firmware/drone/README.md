@@ -1,8 +1,8 @@
 # Firmware drone
 
-Firmware đọc BMI160/BMI270 qua SPI, nhận 16 kênh CRSF, tính rate PID và mixer
-Quad X, rồi xuất PWM đến ESC. Gain và ánh xạ thrust hiện dành cho bộ gá, chưa
-hiệu chuẩn bay. Xem [build và nạp](../README.md),
+Firmware đọc BMI160/BMI270 qua SPI, nhận 16 kênh CRSF, điều khiển attitude/rate
+qua mixer Quad X và xuất PWM đến ESC. Gain và ánh xạ thrust hiện dành cho bộ
+gá, chưa hiệu chuẩn bay. Xem [build và nạp](../README.md),
 [debug và thử nghiệm](DEBUG.md) và [kiến trúc](ARCHITECTURE.md).
 
 `Core/main` khởi tạo ngoại vi rồi gọi `runtime`; runtime quản lý receiver,
@@ -42,8 +42,8 @@ CH5/SA OFF trước khi chấp nhận lần gạt SA ON với ga ≤2%.
 Preset Debug mặc định bật `DRONE_DEBUG_FORCE_FLIGHT`, bỏ qua bước chọn trên;
 Release mặc định tắt tùy chọn này. Để thử chọn mode hoặc hiệu chuẩn bằng
 Debug, tắt tùy chọn trong cấu hình build. Xem
-[cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. CH6/SC chưa chọn
-thuật toán bay; trong FLIGHT, SB HIGH chặn motor, không chuyển sang calib.
+[cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong FLIGHT, SC
+chọn bộ điều khiển và SB HIGH kích hoạt failsafe.
 Các yêu cầu ghi/xuất telemetry qua SD chưa được thực thi trong FLIGHT.
 
 ## Hiệu chuẩn ESC
@@ -193,6 +193,25 @@ trong **Display → Nums**. EdgeTX hiển thị các góc theo radian. Roll dư�
 bên phải hạ xuống, pitch dương khi mũi ngẩng lên. Yaw là góc tương đối với
 hướng lúc Mahony khởi tạo. Thử nghiêng drone trên bàn khi đã tháo cánh để
 đối chiếu chiều và đơn vị.
+
+## Điều khiển tư thế
+
+| CH6/SC      | Roll và pitch                                      | Yaw             |
+| ----------- | -------------------------------------------------- | --------------- |
+| LOW         | Cần điều khiển đặt tốc độ góc thân trực tiếp       | Tốc độ góc thân |
+| MIDDLE/HIGH | Cần điều khiển đặt góc trong ±25°, giữa cần đặt 0° | Tốc độ góc thân |
+
+Mahony chạy danh định 200 Hz. Mỗi lần cập nhật dùng gyro trung bình theo
+thời gian của hai khoảng mẫu liên tiếp, cùng accel mới nhất nếu độ lớn mẫu
+trong khoảng 0,8–1,2 g. `dt` lấy từ chênh lệch timestamp đọc trên MCU. Vòng
+attitude chạy danh định 100 Hz, dùng sai số độ nghiêng để tạo tốc độ góc
+quanh X/Y thân với gain P ban đầu 4 s⁻¹. Vòng rate giữ setpoint X/Y giữa hai
+lần cập nhật attitude và nhận lệnh yaw trực tiếp. Lịch rate giữ khoảng cách
+tối thiểu 2 ms giữa các mẫu đã dùng, tương ứng khoảng 400 Hz theo ODR IMU.
+
+Chế độ attitude vào failsafe nếu quaternion mất hiệu lực hoặc cũ hơn 20 ms.
+Khôi phục tư thế hợp lệ rồi đưa SA về OFF trước khi arm lại. Gain, tần số thực
+tế và đáp ứng cần kiểm chứng trên board/bộ gá.
 
 ## PWM ESC
 

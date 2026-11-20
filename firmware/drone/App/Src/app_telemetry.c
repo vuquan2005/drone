@@ -8,10 +8,12 @@ static uint32_t stats_sequence;
 static uint32_t receiver_sequence;
 static uint32_t rate_sequence;
 static uint32_t attitude_sequence;
+static uint32_t attitude_control_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
 
 void app_telemetry_init(void) {
     receiver_sequence = rate_sequence = attitude_sequence = 0U;
+    attitude_control_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
 }
 
@@ -177,5 +179,32 @@ bsp_rtt_result_t app_telemetry_write_attitude(const float q[4],
     for (unsigned i = 0; i < 4; ++i)
         put_float(frame + 16 + 4 * i, q[i]);
     put_u32(frame + 32, app_crc32(frame, 32));
+    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
+}
+
+bsp_rtt_result_t app_telemetry_write_attitude_control(
+    const app_attitude_control_sample_t *sample) {
+    const uint32_t sequence = ++attitude_control_sequence;
+    if (sample == NULL)
+        return BSP_RTT_INVALID_ARGUMENT;
+    uint8_t frame[68] = {'D', 'R', 'T', '!', 1U, 7U, 56U, 0U};
+    const bsp_rtt_result_t ready =
+        bsp_rtt_prepare_write(BSP_RTT_DATA, sizeof(frame));
+    if (ready != BSP_RTT_OK)
+        return ready;
+    put_u32(frame + 8, sequence);
+    put_u32(frame + 12, sample->t_control_us);
+    put_u32(frame + 16, sample->t_estimate_us);
+    put_u32(frame + 20, sample->valid ? 1U : 0U);
+    for (unsigned i = 0; i < 4U; ++i)
+        put_float(frame + 24 + 4 * i, sample->body_to_ned[i]);
+    for (unsigned i = 0; i < 2U; ++i) {
+        put_float(frame + 40 + 4 * i, sample->target_rad[i]);
+        put_float(frame + 48 + 4 * i,
+                  sample->valid ? sample->tilt_error[i] : 0.0f);
+        put_float(frame + 56 + 4 * i,
+                  sample->valid ? sample->rate_radps[i] : 0.0f);
+    }
+    put_u32(frame + 64, app_crc32(frame, 64));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }

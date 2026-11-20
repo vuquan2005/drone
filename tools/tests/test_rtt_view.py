@@ -258,6 +258,20 @@ class ViewerTests(unittest.TestCase):
             invalid_before = viewer.telemetry.series.invalid
             viewer.on_data((1, 3, struct.pack("<4I16H", 3, 1384, 1224, 2, *([0] * 16))))
             self.assertEqual(viewer.telemetry.series.invalid, invalid_before + 1)
+            control_frame = bytes.fromhex(
+                (
+                    Path(__file__).resolve().parents[2]
+                    / "protocol/fixtures/attitude_control_v1.hex"
+                ).read_text()
+            )
+            peers[-1].write(control_frame)
+            until(lambda: viewer.telemetry.latest_attitude_control is not None)
+            viewer.tabs.setCurrentWidget(viewer.attitude_control_panel)
+            self.assertIn("Live · valid", viewer.attitude_control_panel.status.text())
+            self.assertAlmostEqual(
+                viewer.attitude_control_panel.curves[0].getData()[1][-1], math.degrees(0.25)
+            )
+            self.assertEqual(viewer.attitude_control_panel.curves[6].getData()[1][-1], 0.5)
             peers[0].write(b"[3][I][imu] filtered but saved\n")
             until(lambda: len(viewer.log_panel.logs) == 3)
             self.assertNotIn("filtered but saved", viewer.log_panel.log_view.toPlainText())
@@ -293,6 +307,8 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(viewer.log_stream.paused)
             self.assertIn("Saved session:", viewer.statusBar().currentMessage())
             viewer.segment_box.setCurrentIndex(viewer.segment_box.count() - 1)
+            self.assertIn("Saved · valid", viewer.attitude_control_panel.status.text())
+            self.assertEqual(viewer.attitude_control_panel.curves[6].getData()[1][-1], 0.5)
             self.assertGreater(len(viewer.imu_panel.curves[0][0].getData()[0]), 0)
             viewer.return_live()
             self.assertIsNone(viewer.saved_session)

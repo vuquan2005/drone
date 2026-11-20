@@ -52,4 +52,14 @@ bool app_rate_step(app_rate_t *state, const app_command_t *command,
                    const float gyro_frd_radps[RATE_AXIS_COUNT],
                    uint32_t time_us);
 
+/** Consume an IMU sample as in app_rate_step. A non-NULL tilt_rate_radps
+ * supplies body X and Y rate targets in rad/s from the attitude controller.
+ * Targets must be finite and are clamped to the configured rate limits.
+ * NULL selects direct roll/pitch stick mapping. Yaw always uses the stick.
+ * The target array must contain two elements and be distinct from state. */
+bool app_rate_step_with_tilt(app_rate_t *state, const app_command_t *command,
+                             const float tilt_rate_radps[2],
+                             const float gyro_frd_radps[RATE_AXIS_COUNT],
+                             uint32_t time_us);
+
 #endif

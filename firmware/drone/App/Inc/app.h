@@ -18,7 +18,8 @@ typedef struct {
     app_safety_reason_t safety_reason; /**< Stored reason for APP_FAILSAFE. */
 } app_status_t;
 
-/** Initialize flight state, rate control, PWM and IMU; starts DISARMED.
+/** Initialize flight state, attitude and rate control, PWM and IMU; starts
+ * DISARMED.
  * Requires initialized board peripherals and shared logging/telemetry services
  * (normally runtime_init). Foreground only; IMU initialization may block.
  * Call once on entry to FLIGHT. Failed IMU init is not retried automatically.
@@ -43,7 +44,7 @@ void app_process(const app_command_t *command);
  */
 bool app_get_status(app_status_t *status);
 
-/** @brief Copy the latest fresh attitude estimate from the foreground context.
+/** @brief Copy the latest Mahony estimate if it is at most 20 ms old.
  * @param body_to_ned Writable quaternion (w,x,y,z), body FRD to NED with
  * arbitrary initial heading.
  * @return True on success. On failure the output is unchanged.

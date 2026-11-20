@@ -80,6 +80,27 @@ bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate);
 bsp_rtt_result_t app_telemetry_write_attitude(const float q[4],
                                               uint32_t t_sample_us);
 
+/** One attitude-controller evaluation and the estimate it used. */
+typedef struct {
+    uint32_t t_control_us; /**< MCU time at evaluation start, modulo 2^32. */
+    uint32_t
+        t_estimate_us; /**< MCU IMU read time of the quaternion, modulo 2^32. */
+    float body_to_ned[4]; /**< Unit quaternion in w,x,y,z order. */
+    float target_rad[2];  /**< Desired Euler roll and pitch in radians. */
+    float
+        tilt_error[2]; /**< Twice the body X/Y tilt-error quaternion vector. */
+    float rate_radps[2]; /**< Requested body X/Y rates before rate limits. */
+    bool valid;          /**< Error and rate fields are valid. */
+} app_attitude_control_sample_t;
+
+/** @brief Send one attitude-controller sample over RTT DATA.
+ * @param sample Readable sample for the duration of the call. NULL is invalid.
+ * @return RTT result. Invalid evaluations encode zero error and rate fields.
+ * @note Nonblocking foreground only. Sequence counts attempted writes.
+ */
+bsp_rtt_result_t app_telemetry_write_attitude_control(
+    const app_attitude_control_sample_t *sample);
+
 #define APP_TELEMETRY_RATE(rate) ((void)app_telemetry_write_rate(rate))
 #define APP_TELEMETRY_RECEIVER(sample, ms)                                     \
     ((void)app_telemetry_write_receiver(sample, ms))

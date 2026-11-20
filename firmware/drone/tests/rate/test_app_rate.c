@@ -60,6 +60,17 @@ int main(void) {
     assert(integral > 0);
     assert(app_rate_step(&state, &command, gyro, 2000));
     assert(state.controller.integral[0] == integral);
+    app_rate_reset(&state);
+    const float tilt[2] = {3.0f, -0.75f};
+    assert(!app_rate_step_with_tilt(&state, &command, tilt, gyro, 0));
+    assert(app_rate_step_with_tilt(&state, &command, tilt, gyro, 1000));
+    assert(state.setpoint_radps[0] == 2.0f);
+    assert(state.setpoint_radps[1] == -0.75f);
+    assert(state.setpoint_radps[2] == 2.0f);
+    const float invalid_tilt[2] = {0.0f, NAN};
+    assert(
+        !app_rate_step_with_tilt(&state, &command, invalid_tilt, gyro, 2000));
+    assert(!state.have_time && !state.valid);
     config.period_us = 0;
     assert(!app_rate_configure(&state, &config));
     config.period_us = 20001;

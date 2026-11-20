@@ -37,6 +37,11 @@ class SessionWriterTests(unittest.TestCase):
             kind, attitude = TelemetryState().feed(frame, 0)
             self.assertEqual(kind, "attitude")
             self.assertTrue(writer.submit(kind, (2, *attitude)))
+            control_fixture = fixture.with_name("attitude_control_v1.hex")
+            (frame,) = Frames().feed(bytes.fromhex(control_fixture.read_text()))
+            kind, control = TelemetryState().feed(frame, 0)
+            self.assertEqual(kind, "attitude_control")
+            self.assertTrue(writer.submit(kind, (2, *control)))
             self.assertTrue(writer.submit("stats", (2, 1, 1234, 17, 3, 0, 225, 224, 1, 0, 0)))
             self.assertTrue(writer.submit("log", b"[1][I][imu] ready\n"))
             self.assertTrue(writer.submit("raw", b"\x00\xff\x10"))
@@ -52,6 +57,7 @@ class SessionWriterTests(unittest.TestCase):
                     f"rc_{stamp}.csv",
                     f"rate_{stamp}.csv",
                     f"attitude_{stamp}.csv",
+                    f"attitude_control_{stamp}.csv",
                     f"events_{stamp}.log",
                     f"data_{stamp}.hex",
                 },
@@ -67,6 +73,8 @@ class SessionWriterTests(unittest.TestCase):
             segments, _ = read_session(writer.directory)
             self.assertEqual(segments[2].latest_attitude, attitude)
             self.assertAlmostEqual(segments[2].attitude_points[-1][1], 73.7398, places=3)
+            self.assertEqual(segments[2].latest_attitude_control, control)
+            self.assertEqual(segments[2].attitude_control_points[-1][-2:], (0.5, -0.25))
             self.assertFalse(list(writer.directory.glob("imu_[0-9]*.csv")))
             self.assertFalse(writer.submit("csv", (1,) * 10))
             self.assertEqual(rows[0], list(IMU_RAW_COLUMNS))
@@ -157,6 +165,7 @@ class SessionWriterTests(unittest.TestCase):
                         "rc": 0,
                         "rate": 0,
                         "attitude": 0,
+                        "attitude_control": 0,
                         "log": 0,
                         "raw": 0,
                     },

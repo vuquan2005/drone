@@ -43,6 +43,14 @@ bool app_rate_configure(app_rate_t *state, const app_rate_config_t *config) {
 bool app_rate_step(app_rate_t *state, const app_command_t *command,
                    const float gyro_frd_radps[RATE_AXIS_COUNT],
                    uint32_t time_us) {
+    return app_rate_step_with_tilt(state, command, NULL, gyro_frd_radps,
+                                   time_us);
+}
+
+bool app_rate_step_with_tilt(app_rate_t *state, const app_command_t *command,
+                             const float tilt_rate_radps[2],
+                             const float gyro_frd_radps[RATE_AXIS_COUNT],
+                             uint32_t time_us) {
     if (state == NULL)
         return false;
     state->valid = false;
@@ -58,8 +66,14 @@ bool app_rate_step(app_rate_t *state, const app_command_t *command,
         if (stick[i] < -NORM_Q15_ONE || stick[i] > NORM_Q15_ONE ||
             !isfinite(gyro_frd_radps[i]))
             goto fail;
-        target[i] =
-            ((float)stick[i] / NORM_Q15_ONE) * state->config.max_rate_radps[i];
+        const float limit = state->config.max_rate_radps[i];
+        if (tilt_rate_radps != NULL && i < 2U) {
+            if (!isfinite(tilt_rate_radps[i]))
+                goto fail;
+            target[i] = fmaxf(-limit, fminf(limit, tilt_rate_radps[i]));
+        } else {
+            target[i] = ((float)stick[i] / NORM_Q15_ONE) * limit;
+        }
         gyro[i] = gyro_frd_radps[i];
     }
     if (!state->have_time) {

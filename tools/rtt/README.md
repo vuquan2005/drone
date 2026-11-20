@@ -35,6 +35,13 @@ và yaw tương đối từ quaternion Mahony (tối đa 20 Hz). Bản ghi
 `attitude_*.csv` lưu quaternion gốc để xem lại. **Diagnostics** hiển thị counter host, MCU
 và lỗi ghi; tốc độ nhận host không phải phép đo chính xác tần số lấy mẫu.
 
+Tab **Attitude Control** hiển thị góc đặt và góc ước lượng roll/pitch, sai số
+nghiêng X/Y trong hệ thân và tốc độ góc lệnh trước giới hạn rate. Với SC
+MIDDLE/HIGH, firmware thử gửi một bản tin cho mỗi lần tính vòng attitude
+(danh định 100 Hz). Đồ thị dùng thời gian MCU, ngắt nét khi thiếu số thứ tự
+hoặc khoảng cách giữa hai bản tin vượt 50 ms. Bản ghi `attitude_control_*.csv` hỗ trợ xem
+lại trong viewer.
+
 Mở **Recording options**, chọn thư mục và **Start recording**; có thể bật
 **Save raw hex**. Hoặc chạy:
 
@@ -45,7 +52,8 @@ make telemetry TELEMETRY_ARGS="--record --output-dir /tmp/drone-sessions"
 
 Mặc định mỗi phiên được lưu riêng trong `experiments/raw/telemetry/` (Git
 ignore), gồm `imu_raw_*.csv`, `rc_*.csv`, `rate_*.csv`, `rtt_stats_*.csv`,
-`events_*.log` và `data_*.hex` nếu bật raw. IMU CSV giữ counts gốc cùng range,
+`attitude_*.csv`, `attitude_control_*.csv`, `events_*.log` và `data_*.hex` nếu bật
+raw. IMU CSV giữ counts gốc cùng range,
 ODR và mã ánh xạ trục; raw hex giữ byte DATA trước decode. Log được ghi kể cả
 khi bị filter trên UI. Queue ghi đầy hoặc lỗi ghi có thể làm phiên thiếu dữ
 liệu; kiểm tra writer drops và trạng thái recording trước khi phân tích.

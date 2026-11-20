@@ -209,6 +209,27 @@ static void enabled_tests(void) {
     assert(app_telemetry_write_attitude(q, 123456U) == BSP_RTT_OK);
     assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 36U);
     check_fixture(output, 36U, ATTITUDE_FIXTURE_PATH);
+    app_attitude_control_sample_t evaluation = {
+        .t_control_us = 123500U,
+        .t_estimate_us = 123456U,
+        .body_to_ned = {1.0f},
+        .target_rad = {0.25f, -0.125f},
+        .tilt_error = {0.125f, -0.0625f},
+        .rate_radps = {0.5f, -0.25f},
+        .valid = true};
+    assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 68U);
+    check_fixture(output, 68U, ATTITUDE_CONTROL_FIXTURE_PATH);
+    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
+    assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_FULL);
+    bsp_rtt_init();
+    evaluation.valid = false;
+    assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 68U);
+    assert(get_u32(output + 8U) == 3U && get_u32(output + 20U) == 0U);
+    for (unsigned offset = 48U; offset < 64U; offset += 4U) {
+        assert(get_u32(output + offset) == 0U);
+    }
     app_log_init(NULL);
     assert(app_log_write(1U, "imu", "no clock") == BSP_RTT_NOT_INITIALIZED);
 }

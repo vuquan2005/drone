@@ -88,7 +88,32 @@ RATE_FIELDS = (
 )
 ATTITUDE = struct.Struct("<II4f")
 ATTITUDE_COLUMNS = ("segment", "sequence", "t_sample_us", "qw", "qx", "qy", "qz")
-KNOWN_SIZES = {2: RTT_STATS.size, 3: RC.size, 4: IMU_RAW.size, 5: RATE.size, 6: ATTITUDE.size}
+ATTITUDE_CONTROL = struct.Struct("<4I10f")
+ATTITUDE_CONTROL_COLUMNS = (
+    "segment",
+    "sequence",
+    "t_control_us",
+    "t_estimate_us",
+    "flags",
+    "qw",
+    "qx",
+    "qy",
+    "qz",
+    "target_roll_rad",
+    "target_pitch_rad",
+    "tilt_error_x",
+    "tilt_error_y",
+    "rate_request_x_radps",
+    "rate_request_y_radps",
+)
+KNOWN_SIZES = {
+    2: RTT_STATS.size,
+    3: RC.size,
+    4: IMU_RAW.size,
+    5: RATE.size,
+    6: ATTITUDE.size,
+    7: ATTITUDE_CONTROL.size,
+}
 MAX_PAYLOAD = 256
 
 

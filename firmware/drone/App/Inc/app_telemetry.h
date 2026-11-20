@@ -15,6 +15,10 @@
 
 #define APP_TELEMETRY_ENABLED (DRONE_RTT && DRONE_TELEMETRY)
 
+#ifndef DRONE_IMU_TELEMETRY_DIVISOR
+#define DRONE_IMU_TELEMETRY_DIVISOR 1U
+#endif
+
 #if APP_TELEMETRY_ENABLED
 /** @brief Reset telemetry attempt sequence and result counters; foreground
  * only. Call after bsp_rtt_init. Does not initialize or clear the RTT
@@ -26,7 +30,8 @@ void app_telemetry_init(void);
  * already stored in sample.
  * @param sample Non-NULL sample produced by app_imu_poll; reads raw fields
  * only.
- * @param sequence Successful-read counter, including records RTT rejects.
+ * @param sequence Counter of successful reads selected for sending, including
+ * records RTT rejects.
  * @return RTT result; NULL or invalid sensor time returns INVALID_ARGUMENT.
  * Preserves sample, sequence and
  * timestamps on failure.
@@ -56,12 +61,13 @@ bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
 bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
                                            uint32_t imu_samples,
                                            uint32_t imu_read_errors);
-/** @brief Send a type 3 RC snapshot from serialized foreground context.
- * @param sample Non-NULL snapshot; channels must fit unsigned 11-bit CRSF.
+/** @brief Send a type 8 RC snapshot from serialized foreground context.
+ * @param sample Non-NULL snapshot; CH1–CH4 must fit unsigned 11-bit CRSF.
+ * CH5–CH8 must also fit when connected and are encoded as switch requests.
  * @param uptime_ms HAL tick captured after obtaining sample, modulo 2^32 ms.
  * @return BSP result; invalid input returns INVALID_ARGUMENT before preflight.
  * Sequence counts attempts since telemetry init, including failures. One write,
- * no retry; disconnected snapshots retain old channels. Not motor failsafe.
+ * no retry; disconnected snapshots retain CH1–CH4 and clear the flags byte.
  */
 bsp_rtt_result_t
 app_telemetry_write_receiver(const app_receiver_sample_t *sample,
@@ -107,9 +113,25 @@ bsp_rtt_result_t app_telemetry_write_attitude_control(
  * in telemetry-only blocks and can call the writers directly. */
 #define APP_TELEMETRY_IMU(sample, sequence)                                    \
     ((void)app_telemetry_write_imu(sample, sequence))
+#if DRONE_IMU_TELEMETRY_DIVISOR > 1
+/** @brief Offer a successful FLIGHT read to the RTT IMU stream.
+ * Call once per successful read in foreground after telemetry init. The caller
+ * supplies the 1-based wrapping read count. Selects the first read and then
+ * every DRONE_IMU_TELEMETRY_DIVISOR reads. A selected non-NULL sample is read
+ * during the call. Skipped reads do not consume a telemetry sequence number.
+ */
+void app_telemetry_publish_flight_imu(const app_imu_sample_t *sample,
+                                      uint32_t sample_count);
+#define APP_TELEMETRY_FLIGHT_IMU(sample, sample_count)                         \
+    app_telemetry_publish_flight_imu(sample, sample_count)
+#else
+#define APP_TELEMETRY_FLIGHT_IMU(sample, sample_count)                         \
+    APP_TELEMETRY_IMU(sample, sample_count)
+#endif
 #else
 static inline void app_telemetry_init(void) {}
 #define APP_TELEMETRY_IMU(...) ((void)0)
+#define APP_TELEMETRY_FLIGHT_IMU(...) ((void)0)
 #endif
 
 #endif

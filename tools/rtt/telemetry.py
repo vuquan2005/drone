@@ -3,7 +3,17 @@
 from collections import deque
 import math
 
-from records import ATTITUDE, ATTITUDE_CONTROL, IMU_RAW, ImuSeries, RC, RTT_STATS, RATE
+from records import (
+    ATTITUDE,
+    ATTITUDE_CONTROL,
+    IMU_RAW,
+    ImuSeries,
+    RC,
+    RC_COMPACT,
+    RcCompact,
+    RTT_STATS,
+    RATE,
+)
 
 
 def attitude_degrees(q):
@@ -95,6 +105,42 @@ class TelemetryState:
         self.attitude_control_received_at = received_at
         return "attitude_control", values
 
+    def feed_rc(self, kind, payload, received_at):
+        compact = kind == 8
+        wire = RC_COMPACT if compact else RC
+        if len(payload) != wire.size:
+            self.series.invalid += 1
+            return
+        values = wire.unpack(payload)
+        if compact:
+            flags = values[-1]
+            channels = values[3:-1]
+            invalid_flags = (
+                flags & 0x80
+                or (flags != 0 and not flags & 1)
+                or ((flags >> 3) & 3) == 3
+                or ((flags >> 5) & 3) == 3
+            )
+        else:
+            channels = values[4:]
+            invalid_flags = values[3] > 1
+        if invalid_flags or any(value > 2047 for value in channels):
+            self.series.invalid += 1
+            return
+        if self.rc_last is not None:
+            ds = (values[0] - self.rc_last[0]) % 2**32
+            dt = (values[1] - self.rc_last[1]) % 2**32
+            if ds >= 2**31 or dt >= 2**31:
+                self.series.resets += 1
+                self.new_connection()
+            elif ds == 0:
+                self.series.invalid += 1
+                return
+        self.rc_last = values[:2]
+        self.latest_rc = RcCompact(*values) if compact else values
+        self.rc_received_at = received_at
+        return ("rc_compact" if compact else "rc"), values
+
     def feed(self, line, received_at):
         if line[:2] == (1, 7):
             return self.feed_attitude_control(line[2], received_at)
@@ -165,27 +211,8 @@ class TelemetryState:
             self.latest_rate = values
             self.rate_received_at = received_at
             return "rate", values
-        if line[0] == 1 and line[1] == 3:
-            if len(line[2]) != RC.size:
-                self.series.invalid += 1
-                return
-            values = RC.unpack(line[2])
-            if values[3] > 1 or any(value > 2047 for value in values[4:]):
-                self.series.invalid += 1
-                return
-            if self.rc_last is not None:
-                ds = (values[0] - self.rc_last[0]) % 2**32
-                dt = (values[1] - self.rc_last[1]) % 2**32
-                if ds >= 2**31 or dt >= 2**31:
-                    self.series.resets += 1
-                    self.new_connection()
-                elif ds == 0:
-                    self.series.invalid += 1
-                    return
-            self.rc_last = values[:2]
-            self.latest_rc = values
-            self.rc_received_at = received_at
-            return "rc", values
+        if line[0] == 1 and line[1] in (3, 8):
+            return self.feed_rc(line[1], line[2], received_at)
         if line[0] == 1 and line[1] == 2:
             if len(line[2]) != RTT_STATS.size:
                 self.series.invalid += 1

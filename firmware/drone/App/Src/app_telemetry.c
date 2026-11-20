@@ -1,8 +1,9 @@
 #include "app_telemetry.h"
+#include "app_command.h"
 #include "app_crc32.h"
 #include <string.h>
 
-enum { IMU_FRAME_BYTES = 44U, STATS_FRAME_BYTES = 52U };
+enum { IMU_FRAME_BYTES = 44U, STATS_FRAME_BYTES = 52U, RC_FRAME_BYTES = 33U };
 
 static uint32_t stats_sequence;
 static uint32_t receiver_sequence;
@@ -10,11 +11,17 @@ static uint32_t rate_sequence;
 static uint32_t attitude_sequence;
 static uint32_t attitude_control_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
+#if DRONE_IMU_TELEMETRY_DIVISOR > 1
+static uint32_t flight_imu_sequence;
+#endif
 
 void app_telemetry_init(void) {
     receiver_sequence = rate_sequence = attitude_sequence = 0U;
     attitude_control_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
+#if DRONE_IMU_TELEMETRY_DIVISOR > 1
+    flight_imu_sequence = 0U;
+#endif
 }
 
 static bsp_rtt_result_t track_imu(bsp_rtt_result_t result) {
@@ -75,6 +82,16 @@ bsp_rtt_result_t app_telemetry_write_imu(const app_imu_sample_t *sample,
     return track_imu(bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame)));
 }
 
+#if DRONE_IMU_TELEMETRY_DIVISOR > 1
+void app_telemetry_publish_flight_imu(const app_imu_sample_t *sample,
+                                      uint32_t sample_count) {
+    // A power-of-two divisor preserves the cadence across sample counter wrap.
+    if ((sample_count - 1U) % DRONE_IMU_TELEMETRY_DIVISOR == 0U) {
+        (void)app_telemetry_write_imu(sample, ++flight_imu_sequence);
+    }
+}
+#endif
+
 bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
                                            uint32_t imu_samples,
                                            uint32_t imu_read_errors) {
@@ -109,25 +126,41 @@ app_telemetry_write_receiver(const app_receiver_sample_t *sample,
     if (sample == NULL) {
         return BSP_RTT_INVALID_ARGUMENT;
     }
-    for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; ++i) {
+    for (unsigned i = 0; i < 4U; ++i) {
         if (sample->channels[i] > 2047U) {
             return BSP_RTT_INVALID_ARGUMENT;
         }
     }
-    bsp_rtt_result_t ready = bsp_rtt_prepare_write(BSP_RTT_DATA, 60U);
+    uint8_t flags = 0U;
+    if (sample->connected) {
+        app_command_t command;
+        if (!app_command_decode(sample, &command)) {
+            return BSP_RTT_INVALID_ARGUMENT;
+        }
+        flags = 1U | (command.arm_requested ? 1U << 1U : 0U) |
+                (command.esc_calibration_requested ? 1U << 2U : 0U) |
+                ((uint8_t)command.mode << 3U);
+        // SD wire codes follow its physical order LOW/MIDDLE/HIGH.
+        if (command.telemetry_mode == APP_COMMAND_TELEMETRY_RECORD) {
+            flags |= 1U << 5U;
+        } else if (command.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM) {
+            flags |= 2U << 5U;
+        }
+    }
+    bsp_rtt_result_t ready =
+        bsp_rtt_prepare_write(BSP_RTT_DATA, RC_FRAME_BYTES);
     if (ready != BSP_RTT_OK) {
         return ready;
     }
-    uint8_t frame[60] = {'D', 'R', 'T', '!', 1U, 3U, 48U, 0U};
+    uint8_t frame[RC_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 8U, 21U, 0U};
     put_u32(frame + 8U, sequence);
     put_u32(frame + 12U, uptime_ms);
     put_u32(frame + 16U, sample->last_frame_ms);
-    put_u32(frame + 20U, sample->connected ? 1U : 0U);
-    for (unsigned i = 0; i < CRSF_CHANNEL_COUNT; ++i) {
-        frame[24U + 2U * i] = (uint8_t)sample->channels[i];
-        frame[25U + 2U * i] = (uint8_t)(sample->channels[i] >> 8U);
+    for (unsigned i = 0; i < 4U; ++i) {
+        put_u16(frame + 20U + 2U * i, sample->channels[i]);
     }
-    put_u32(frame + 56U, app_crc32(frame, 56U));
+    frame[28U] = flags;
+    put_u32(frame + 29U, app_crc32(frame, 29U));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }
 

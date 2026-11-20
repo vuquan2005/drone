@@ -228,7 +228,7 @@ static void process_imu(void) {
     if (status == BSP_IMU_OK) {
         imu_available = true;
         update_attitude(&imu.sample);
-        APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
+        APP_TELEMETRY_FLIGHT_IMU(&imu.sample, imu.sample_count);
     }
 }
 

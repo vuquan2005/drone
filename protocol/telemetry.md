@@ -8,14 +8,14 @@ CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                                                                        |
-| ------ | ------- | -------------- | ---------------------------------------------------------------------------------------------- |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                   |
-| 4      | 1       | version        | `1`                                                                                            |
-| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC, `4` IMU raw, `5` rate, `6` tư thế, `7` vòng attitude |
-| 6      | 2       | payload_length | uint16. Độ dài theo type 2–7 lần lượt là 40, 48, 32, 80, 24, 56 byte                           |
-| 8      | N       | payload        | Theo version và type                                                                           |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                   |
+| Offset | Số byte | Trường         | Quy ước                                                                                                       |
+| ------ | ------- | -------------- | ------------------------------------------------------------------------------------------------------------- |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                  |
+| 4      | 1       | version        | `1`                                                                                                           |
+| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw, `5` rate, `6` tư thế, `7` vòng attitude, `8` RC gọn |
+| 6      | 2       | payload_length | uint16. Độ dài theo type 2–8 lần lượt là 40, 48, 32, 80, 24, 56, 21 byte                                      |
+| 8      | N       | payload        | Theo version và type                                                                                          |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                  |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -44,7 +44,7 @@ vị, hiệu chuẩn, lọc hoặc ánh xạ hệ trục. Offset tính từ đ�
 
 | Offset | Kiểu     | Trường                 | Ý nghĩa                                                          |
 | ------ | -------- | ---------------------- | ---------------------------------------------------------------- |
-| 0      | uint32   | sequence               | Bộ đếm đọc IMU thành công                                        |
+| 0      | uint32   | sequence               | Bộ đếm lần đọc IMU thành công được chọn để ghi RTT               |
 | 4      | uint32   | t_read_us              | Uptime MCU sau đọc BSP, µs; không phải acquisition time          |
 | 8      | uint32   | sensor_time_ticks      | Clock cảm biến 24 bit, 8 bit cao bằng 0                          |
 | 12     | int16[3] | ax_raw, ay_raw, az_raw | Số đếm accel XYZ theo trục cảm biến                              |
@@ -80,10 +80,15 @@ cảm biến acquisition hoặc host nhận. Clock cảm biến không được 
 hoặc đồng bộ với clock MCU.
 
 Sequence và timestamp MCU tràn modulo 2^32; clock cảm biến tràn modulo 2^24.
-Sequence tăng kể cả khi frame bị RTT từ chối, nhưng không đếm mẫu cảm biến
-bị ghi đè trước khi MCU đọc. Một writer foreground, không retry; thiếu chỗ
-thì bỏ nguyên frame mới và tăng counter đầy CH1.
-800 Hz tương ứng 35.200 byte/s, chưa tính stats/RC/log.
+Sequence tăng kể cả khi frame bị RTT từ chối. Counter chỉ đếm lần thử ghi,
+bao gồm mẫu bị từ chối trước khi encode, và không đo số mẫu bị ghi đè trước
+khi MCU đọc. Khi thiếu chỗ, writer bỏ nguyên frame mới và tăng counter đầy CH1.
+
+Mặc định ghi mỗi lần đọc thành công. `DRONE_IMU_TELEMETRY_DIVISOR=N` chọn
+mẫu đầu tiên, rồi một mẫu sau mỗi `N` lần đọc thành công trong FLIGHT.
+Sequence vẫn liên tiếp nếu RTT nhận đủ các mẫu đã chọn, nên viewer phân biệt
+gap với giảm mẫu chủ động. Timestamp và ODR của cảm biến giữ nguyên. Khi MCU
+đọc đủ 800 mẫu/s, `N=1` tương ứng 35.200 B/s, còn `N=4` tương ứng 8.800 B/s.
 
 ## RTT statistics v1, type 2
 
@@ -94,7 +99,7 @@ Payload 40 byte, frame 52 byte. Tất cả trường uint32 little-endian, offse
 | ------ | ----------------- | --------------------------------------------------------------------------- |
 | 0      | sequence          | Số lần thử gửi thống kê, đầu tiên = 1; tăng dù frame bị bỏ                  |
 | 4      | uptime_ms         | Uptime MCU lúc chụp thống kê, ms, không phải timestamp IMU                  |
-| 8      | imu_samples       | Tổng số lần đọc IMU thành công, cũng là sequence IMU mới nhất               |
+| 8      | imu_samples       | Tổng số lần đọc IMU thành công, kể cả mẫu bỏ qua khi giảm tốc độ ghi RTT    |
 | 12     | imu_read_errors   | Tổng lỗi đọc driver IMU; không đếm NO_DATA hoặc lỗi init                    |
 | 16     | rtt_log_full      | Bản ghi CH0 bị BSP bỏ vì đầy                                                |
 | 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU, stats và RC                            |
@@ -115,9 +120,10 @@ làm mất tổng lịch sử. `rtt_data_full` không đồng nghĩa số mẫu 
 mất trên host. Khi chưa có snapshot làm baseline, chưa quy được chính xác
 counter tích lũy vào một khoảng CSV; các frame stats cũng có thể bị mất.
 
-## Receiver v1, type 3
+## Receiver cũ v1, type 3
 
-Payload 48 byte, frame 60 byte. Offset tính từ đầu payload:
+Viewer hỗ trợ bản ghi cũ dạng payload 48 byte, frame 60 byte. Offset tính từ
+đầu payload:
 
 | Offset | Kiểu       | Tên           | Ý nghĩa                                                    |
 | ------ | ---------- | ------------- | ---------------------------------------------------------- |
@@ -127,7 +133,7 @@ Payload 48 byte, frame 60 byte. Offset tính từ đầu payload:
 | 12     | uint32     | connected     | 0 hoặc 1; trạng thái freshness từ receiver                 |
 | 16     | uint16[16] | channels      | CH1–CH16, raw CRSF 11 bit (0–2047)                         |
 
-App thử gửi snapshot mỗi 50 ms (20 Hz, khoảng 1200 byte/s), độc lập IMU;
+Firmware cũ thử gửi mỗi 50 ms (20 Hz, khoảng 1200 B/s), độc lập IMU;
 không retry hoặc gửi bù. Đây là snapshot để quan sát, không ghi mọi frame RC.
 Sequence và timestamp tràn modulo 2^32. `connected` yêu cầu frame hợp lệ
 mới hơn 100 ms, và không có gián đoạn transport chưa phục hồi; không phải
@@ -142,6 +148,33 @@ hoặc TCP DATA ngắt, báo telemetry stale và giữ giá trị cuối để t
 Counter type 2 giữ schema cũ; RC làm tăng tổng `rtt_data_full` khi đầy,
 không tăng `imu_tx_full` hoặc `stats_tx_full`. Gap sequence RC trong CSV
 cho biết snapshot bị thiếu, không đo số frame UART/radio mất.
+
+## Receiver gọn v1, type 8
+
+Payload 21 byte, frame 33 byte. Firmware thử gửi mỗi 50 ms (tối đa 660 B/s).
+Sequence, timestamp và điều kiện `connected` theo quy ước type 3.
+
+| Offset | Kiểu      | Trường          | Ý nghĩa                                                                               |
+| ------ | --------- | --------------- | ------------------------------------------------------------------------------------- |
+| 0      | uint32    | sequence        | Số lần thử gửi RC từ init, đầu = 1                                                    |
+| 4      | uint32    | uptime_ms       | HAL tick khi phát snapshot RC, ms                                                     |
+| 8      | uint32    | last_frame_ms   | HAL tick lúc nhận frame RC hợp lệ gần nhất, ms                                        |
+| 12     | uint16[4] | ch1_raw–ch4_raw | Roll, pitch, throttle, yaw theo cấu hình Jumper T20. Giá trị raw CRSF 11 bit (0–2047) |
+| 20     | uint8     | flags           | Kết nối và trạng thái cần gạt từ bộ giải mã lệnh RC                                   |
+
+| Bit | Ý nghĩa                                 |
+| --- | --------------------------------------- |
+| 0   | `connected`                             |
+| 1   | SA/CH5 HIGH, yêu cầu arm                |
+| 2   | SB/CH7 HIGH, yêu cầu calibration        |
+| 3–4 | SC/CH6: `0` LOW, `1` MIDDLE, `2` HIGH   |
+| 5–6 | SD/CH8: `0` OFF, `1` RECORD, `2` STREAM |
+| 7   | Dự trữ, bằng 0                          |
+
+Khi mất kết nối, firmware gửi `flags=0` và giữ bốn giá trị trục cuối. Khi
+khởi động, các trục bằng 0 cho đến khi nhận RC. Các bit cần gạt ghi yêu cầu
+từ tay điều khiển. Trạng thái arm thực tế và các lần failsafe được ghi qua
+log. CSV `receiver_compact_*.csv` giữ nguyên bốn kênh raw và byte `flags`.
 
 ## Mã nguồn và kiểm thử
 

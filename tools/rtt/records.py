@@ -1,6 +1,7 @@
 """Bounded text/binary framing and IMU session tracking; no GUI dependencies."""
 
 from collections import deque
+from typing import NamedTuple
 import struct
 import zlib
 import math
@@ -74,6 +75,20 @@ RC_FIELDS = (
     "connected",
     *(f"ch{i}_raw" for i in range(1, 17)),
 )
+RC_COMPACT = struct.Struct("<3I4HB")
+
+
+class RcCompact(NamedTuple):
+    sequence: int
+    uptime_ms: int
+    last_frame_ms: int
+    ch1_raw: int
+    ch2_raw: int
+    ch3_raw: int
+    ch4_raw: int
+    flags: int
+
+
 RATE = struct.Struct("<4I16f")
 RATE_FIELDS = (
     "sequence",
@@ -113,6 +128,7 @@ KNOWN_SIZES = {
     5: RATE.size,
     6: ATTITUDE.size,
     7: ATTITUDE_CONTROL.size,
+    8: RC_COMPACT.size,
 }
 MAX_PAYLOAD = 256
 

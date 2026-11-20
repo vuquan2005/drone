@@ -317,7 +317,8 @@ class Viewer(QtWidgets.QMainWindow):
         self.writer_stats.setText(
             f"Queue {w.queue.qsize()} · "
             f"writer drops CSV={drops['imu_raw']} rate={drops['rate']} attitude={drops['attitude']} "
-            f"attitude control={drops['attitude_control']} stats={drops['stats']} RC={drops['rc']} "
+            f"attitude control={drops['attitude_control']} stats={drops['stats']} "
+            f"RC={drops['rc'] + drops['rc_compact']} "
             f"LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:

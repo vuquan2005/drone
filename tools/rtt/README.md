@@ -27,8 +27,10 @@ uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 ## Xem và ghi dữ liệu
 
 Viewer hiển thị log có filter, IMU, receiver và rate/mixer. IMU hiển thị
-m/s² và rad/s trong hệ thân FRD; receiver hiển thị CH1–CH16 dạng raw CRSF
-0–2047. `connected` phản ánh tuổi frame RC hợp lệ, còn `telemetry stale`
+m/s² và rad/s trong hệ thân FRD. Với firmware mới, receiver hiển thị bốn
+trục CH1–CH4 dạng raw CRSF 0–2047 cùng trạng thái cần gạt SA/SB/SC/SD.
+Bản ghi RC cũ vẫn hiển thị đủ CH1–CH16. `connected` phản ánh tuổi frame RC
+hợp lệ, còn `telemetry stale`
 chỉ báo snapshot cũ hoặc TCP DATA ngắt. Tab **Rate · FRD** nhận snapshot
 20 Hz, không phải mọi bước PID. Tab **Attitude** hiển thị mô hình quadrotor với ba trục thân và đồ thị roll, pitch
 và yaw tương đối từ quaternion Mahony (tối đa 20 Hz). Bản ghi
@@ -51,7 +53,8 @@ make telemetry TELEMETRY_ARGS="--record --output-dir /tmp/drone-sessions"
 ```
 
 Mặc định mỗi phiên được lưu riêng trong `experiments/raw/telemetry/` (Git
-ignore), gồm `imu_raw_*.csv`, `rc_*.csv`, `rate_*.csv`, `rtt_stats_*.csv`,
+ignore), gồm `imu_raw_*.csv`, `receiver_compact_*.csv` (RC mới), `rc_*.csv` (RC cũ),
+`rate_*.csv`, `rtt_stats_*.csv`,
 `attitude_*.csv`, `attitude_control_*.csv`, `events_*.log` và `data_*.hex` nếu bật
 raw. IMU CSV giữ counts gốc cùng range,
 ODR và mã ánh xạ trục; raw hex giữ byte DATA trước decode. Log được ghi kể cả
@@ -70,7 +73,9 @@ Segment tăng khi DATA nối lại hoặc nghi reset; không so gap qua ranh gi�
 Thiếu boot ID nên không phải mọi reset đều được phát hiện. Trong cùng segment,
 hiệu `t_read_us` modulo 2^32 giữa sequence liên tiếp cho biết khoảng cách đọc
 MCU, không trực tiếp đo jitter lấy mẫu cảm biến. Tách gap khỏi thống kê và
-đối chiếu `imu_tx_full` cùng writer drops. Chi tiết frame, đơn vị, ánh xạ trục
+đối chiếu `imu_tx_full` cùng writer drops. Nếu build chọn giảm tốc độ ghi
+raw IMU, timestamp giữa hai frame phản ánh khoảng cách giữa các mẫu được
+chọn. Chi tiết frame, đơn vị, ánh xạ trục
 và counter nằm trong [đặc tả telemetry](../../protocol/telemetry.md).
 
 Viewer không hỗ trợ telemetry IMU type 1 hoặc CSV `IMU1` cũ; dùng phiên bản

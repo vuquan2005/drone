@@ -12,12 +12,14 @@ from records import (
     ATTITUDE_CONTROL_COLUMNS,
     RTT_STATS_FIELDS,
     RC_FIELDS,
+    RcCompact,
     IMU_RAW_FIELDS,
     RATE_FIELDS,
 )
 
 STATS_COLUMNS = ("segment", *RTT_STATS_FIELDS)
 RC_COLUMNS = ("segment", *RC_FIELDS)
+RC_COMPACT_COLUMNS = ("segment", *RcCompact._fields)
 IMU_RAW_COLUMNS = ("segment", *IMU_RAW_FIELDS)
 
 
@@ -55,6 +57,9 @@ class SessionWriter:
             self.files["rc"] = (self.directory / f"rc_{stamp}.csv").open(
                 "x", newline="", encoding="utf-8"
             )
+            self.files["rc_compact"] = (self.directory / f"receiver_compact_{stamp}.csv").open(
+                "x", newline="", encoding="utf-8"
+            )
             self.files["rate"] = (self.directory / f"rate_{stamp}.csv").open(
                 "x", newline="", encoding="utf-8"
             )
@@ -67,18 +72,17 @@ class SessionWriter:
             self.files["log"] = (self.directory / f"events_{stamp}.log").open("xb")
             if raw:
                 self.files["raw"] = (self.directory / f"data_{stamp}.hex").open("xb")
-            self.csv_writers = {
-                kind: csv.writer(self.files[kind])
-                for kind in ("imu_raw", "stats", "rc", "rate", "attitude", "attitude_control")
-            }
+            self.csv_writers = {}
             for kind, columns in (
                 ("imu_raw", IMU_RAW_COLUMNS),
                 ("stats", STATS_COLUMNS),
                 ("rc", RC_COLUMNS),
+                ("rc_compact", RC_COMPACT_COLUMNS),
                 ("rate", ("segment", *RATE_FIELDS)),
                 ("attitude", ATTITUDE_COLUMNS),
                 ("attitude_control", ATTITUDE_CONTROL_COLUMNS),
             ):
+                self.csv_writers[kind] = csv.writer(self.files[kind])
                 self.csv_writers[kind].writerow(columns)
                 self.files[kind].flush()
         except OSError:
@@ -91,9 +95,7 @@ class SessionWriter:
         self.error = None
         self.accepted = 0
         self.processed = 0
-        self.dropped = dict.fromkeys(
-            ("imu_raw", "stats", "rc", "rate", "attitude", "attitude_control", "log", "raw"), 0
-        )
+        self.dropped = dict.fromkeys((*self.csv_writers, "log", "raw"), 0)
         self.thread = Thread(target=self._run, name="telemetry-writer", daemon=True)
         self.thread.start()
 

@@ -661,7 +661,7 @@ int main(void) {
     drain(0U, output);
     assert(strstr(output, "[I][runtime] boot_select state=waiting_for_rc\n") !=
            NULL);
-    assert(drain(1U, output) == 60U); /* RC visible before mode selection. */
+    assert(drain(1U, output) == 33U); /* RC visible before mode selection. */
     receiver_connected = true;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT && runtime_mode_supported());
@@ -686,7 +686,8 @@ int main(void) {
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     assert(runtime_get_command(&command) && command.valid);
-    assert(drain(1U, output) >= 60U && (uint8_t)output[5] == 3U);
+    assert(drain(1U, output) >= 33U && (uint8_t)output[5] == 8U);
+    assert((uint8_t)output[28U] == 0x03U);
     assert(get_u32(output + 12U) == tick);
     assert(get_u32(output + 16U) == tick - 10U);
 

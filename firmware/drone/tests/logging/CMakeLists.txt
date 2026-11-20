@@ -20,14 +20,18 @@ foreach(level IN ITEMS 0 3 4)
             ATTITUDE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_v1.hex"
             ATTITUDE_CONTROL_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_control_v1.hex"
             TELEMETRY_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_raw_frd_800hz_v1.hex"
-            RC_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rc_v1.hex"
+            RC_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rc_compact_v1.hex"
             RTT_STATS_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rtt_stats_v1.hex")
     if(level GREATER 0)
         target_sources(
             ${TARGET}
-            PRIVATE ${FIRMWARE_ROOT}/App/Src/app_log.c ${FIRMWARE_ROOT}/App/Src/app_telemetry.c
-                    ${FIRMWARE_ROOT}/BSP/Src/bsp_rtt.c ${FIRMWARE_ROOT}/Drivers/RTT/SEGGER_RTT.c)
+            PRIVATE ${FIRMWARE_ROOT}/App/Src/app_command.c ${FIRMWARE_ROOT}/App/Src/app_log.c
+                    ${FIRMWARE_ROOT}/App/Src/app_telemetry.c ${FIRMWARE_ROOT}/BSP/Src/bsp_rtt.c
+                    ${FIRMWARE_ROOT}/Drivers/RTT/SEGGER_RTT.c)
         target_compile_definitions(${TARGET} PRIVATE DRONE_RTT=1 DRONE_TELEMETRY=1)
+    endif()
+    if(level EQUAL 4)
+        target_compile_definitions(${TARGET} PRIVATE DRONE_IMU_TELEMETRY_DIVISOR=4)
     endif()
     add_test(NAME ${TARGET} COMMAND ${TARGET})
 endforeach()

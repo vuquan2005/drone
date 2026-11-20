@@ -162,29 +162,56 @@ static void enabled_tests(void) {
     assert(get_u32(output + 32U) == 1U); /* IMU full only. */
     assert(get_u32(output + 36U) == 1U); /* Stats full only. */
     assert(get_u32(output + 40U) == 1U); /* Invalid IMU, not a full drop. */
+#if DRONE_IMU_TELEMETRY_DIVISOR == 4
     bsp_rtt_init();
     app_telemetry_init();
-    app_receiver_sample_t rc = {.channels = {172U, 992U, 1811U, 2047U},
-                                .last_frame_ms = 1224U,
-                                .connected = true};
+    APP_TELEMETRY_FLIGHT_IMU(&sample, 1U);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
+    assert(get_u32(output + 8U) == 1U);
+    assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
+    for (uint32_t read = 2U; read < 5U; ++read)
+        APP_TELEMETRY_FLIGHT_IMU(&sample, read);
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 0U);
+    APP_TELEMETRY_FLIGHT_IMU(&sample, 5U);
+    assert(bsp_rtt_get_dropped_full(BSP_RTT_DATA) == 1U);
+    drain(BSP_RTT_DATA, output, sizeof(output));
+    APP_TELEMETRY_FLIGHT_IMU(&sample, 9U);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
+    assert(get_u32(output + 8U) == 3U);
+    assert(get_u32(output + 12U) == sample.t_read_us);
+    APP_TELEMETRY_FLIGHT_IMU(&sample, 0U);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U);
+    APP_TELEMETRY_FLIGHT_IMU(&sample, 1U);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 44U);
+    assert(get_u32(output + 8U) == 4U);
+#endif
+    bsp_rtt_init();
+    app_telemetry_init();
+    app_receiver_sample_t rc = {
+        .channels = {172U, 992U, 1811U, 2047U, 1811U, 992U, 1811U, 1811U},
+        .last_frame_ms = 1224U,
+        .connected = true};
     assert(app_telemetry_write_receiver(&rc, 1234U) == BSP_RTT_OK);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 60U);
-    check_fixture(output, 60U, RC_FIXTURE_PATH);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 33U);
+    check_fixture(output, 33U, RC_FIXTURE_PATH);
     assert(app_telemetry_write_receiver(NULL, 1234U) ==
            BSP_RTT_INVALID_ARGUMENT);
-    rc.channels[15] = 2048U;
+    rc.channels[7] = 2048U;
     assert(app_telemetry_write_receiver(&rc, 1234U) ==
            BSP_RTT_INVALID_ARGUMENT);
-    rc.channels[15] = 0U;
+    rc.channels[7] = 992U;
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
     assert(app_telemetry_write_receiver(&rc, 1234U) == BSP_RTT_FULL);
     drain(BSP_RTT_DATA, output, sizeof(output));
+    assert(app_telemetry_write_receiver(&rc, 1284U) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 33U);
+    assert((uint8_t)output[28U] == 0x2fU); /* SD MIDDLE encodes RECORD. */
     rc.connected = false;
     assert(app_telemetry_write_receiver(&rc, 1334U) == BSP_RTT_OK);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 60U);
-    assert(get_u32(output + 8U) == 5U);
-    assert(get_u32(output + 20U) == 0U);
-    assert((uint8_t)output[24U] == 172U); /* Keep old channels on disconnect. */
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 33U);
+    assert(get_u32(output + 8U) == 6U);
+    assert((uint8_t)output[28U] == 0U);
+    assert((uint8_t)output[20U] == 172U); /* Keep old channels on disconnect. */
     bsp_rtt_init();
     app_telemetry_init();
     app_rate_t rate = {.configured = true,

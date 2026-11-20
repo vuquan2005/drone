@@ -47,6 +47,13 @@ if(DRONE_LOG_LEVEL_VALUE LESS 0)
 endif()
 option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry over RTT"
        ${DRONE_RTT_DEFAULT})
+set(DRONE_IMU_TELEMETRY_DIVISOR
+    1
+    CACHE STRING "Send one raw IMU RTT frame per this many successful FLIGHT reads")
+set_property(CACHE DRONE_IMU_TELEMETRY_DIVISOR PROPERTY STRINGS 1 2 4 8 16)
+if(NOT DRONE_IMU_TELEMETRY_DIVISOR MATCHES "^(1|2|4|8|16)$")
+    message(FATAL_ERROR "DRONE_IMU_TELEMETRY_DIVISOR must be 1, 2, 4, 8 or 16")
+endif()
 
 option(DRONE_DEBUG_FORCE_FLIGHT "Enter FLIGHT without waiting for RC boot selection" OFF)
 
@@ -120,7 +127,9 @@ if(DRONE_ENABLE_RTT)
     endif()
     if(DRONE_ENABLE_TELEMETRY)
         target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_telemetry.c)
-        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_TELEMETRY=1)
+        target_compile_definitions(
+            ${CMAKE_PROJECT_NAME}
+            PRIVATE DRONE_TELEMETRY=1 DRONE_IMU_TELEMETRY_DIVISOR=${DRONE_IMU_TELEMETRY_DIVISOR})
     endif()
 endif()
 

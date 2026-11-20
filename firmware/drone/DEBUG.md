@@ -29,12 +29,13 @@ liệu IMU, kiểm tra log và bảo đảm CPU đã Continue.
 
 ## Cấu hình build
 
-| Tùy chọn                   | Debug mặc định | Release mặc định |
-| -------------------------- | -------------- | ---------------- |
-| `DRONE_ENABLE_RTT`         | ON             | OFF              |
-| `DRONE_ENABLE_TELEMETRY`   | ON             | OFF              |
-| `DRONE_LOG_LEVEL`          | INFO           | OFF              |
-| `DRONE_DEBUG_FORCE_FLIGHT` | ON             | OFF              |
+| Tùy chọn                      | Debug mặc định | Release mặc định |
+| ----------------------------- | -------------- | ---------------- |
+| `DRONE_ENABLE_RTT`            | ON             | OFF              |
+| `DRONE_ENABLE_TELEMETRY`      | ON             | OFF              |
+| `DRONE_IMU_TELEMETRY_DIVISOR` | 1              | 1                |
+| `DRONE_LOG_LEVEL`             | INFO           | OFF              |
+| `DRONE_DEBUG_FORCE_FLIGHT`    | ON             | OFF              |
 
 Telemetry cần RTT. Debug mặc định vào FLIGHT không qua chọn mode bằng RC;
 tắt `DRONE_DEBUG_FORCE_FLIGHT` khi cần thử chọn mode hoặc calib. Dùng
@@ -48,6 +49,13 @@ channel 1 mang telemetry nhị phân. Ghi RTT không chặn: khi buffer đầy b
 mới bị bỏ. API chỉ dùng trong foreground; xem [bsp_rtt.h](BSP/Inc/bsp_rtt.h),
 [app_log.h](App/Inc/app_log.h) và [đặc tả telemetry](../../protocol/telemetry.md).
 Timestamp IMU là thời điểm MCU đọc, không phải thời điểm cảm biến lấy mẫu.
+
+Để giảm lưu lượng raw IMU khi quan sát FLIGHT qua RTT, đặt
+`DRONE_IMU_TELEMETRY_DIVISOR` thành `2`, `4`, `8` hoặc `16` trong cấu hình build.
+Ví dụ `cmake --preset Debug -DDRONE_IMU_TELEMETRY_DIVISOR=4` chạy từ `firmware/drone/`
+cho khoảng 200 frame/s (8.800 B/s) khi MCU đọc đủ 800 mẫu/s. Cấu hình lấy mẫu,
+vòng điều khiển và việc ghi raw trong IMU_CALIB dùng tốc độ đầy đủ. Dùng
+`1` để giữ mọi lần đọc khi cần phân tích tín hiệu tần số cao.
 
 Mức `INFO` ghi trạng thái chọn mode, cấu hình IMU do driver yêu cầu, hệ số
 hiệu chuẩn được áp dụng và cấu hình các vòng điều khiển. Các trường có hậu tố

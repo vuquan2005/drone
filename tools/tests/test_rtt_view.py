@@ -258,6 +258,13 @@ class ViewerTests(unittest.TestCase):
             invalid_before = viewer.telemetry.series.invalid
             viewer.on_data((1, 3, struct.pack("<4I16H", 3, 1384, 1224, 2, *([0] * 16))))
             self.assertEqual(viewer.telemetry.series.invalid, invalid_before + 1)
+            viewer.on_data((1, 8, struct.pack("<3I4HB", 3, 1384, 1374, 172, 992, 1811, 2047, 0x4F)))
+            viewer.refresh()
+            self.assertEqual(viewer.receiver_panel.rc_bars[3].value(), 2047)
+            self.assertTrue(viewer.receiver_panel.rc_bars[4].isHidden())
+            self.assertIn(
+                "SA arm ON · SB HIGH · SC MIDDLE · SD STREAM", viewer.receiver_panel.switches.text()
+            )
             control_frame = bytes.fromhex(
                 (
                     Path(__file__).resolve().parents[2]
@@ -295,6 +302,11 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(len(rc_rows), 3)
             self.assertEqual(rc_rows[1][1:5], ["1", "1234", "1224", "1"])
             self.assertEqual(rc_rows[2][4], "0")
+            with (directory / f"receiver_compact_{stamp}.csv").open(newline="") as file:
+                compact_rows = list(csv.reader(file))
+            self.assertEqual(
+                compact_rows[1][1:], ["3", "1384", "1374", "172", "992", "1811", "2047", "79"]
+            )
             self.assertNotEqual(rows[1][0], rows[3][0])
             self.assertIn("filtered but saved", next(directory.glob("events_*.log")).read_text())
             self.assertGreater(
@@ -307,6 +319,8 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(viewer.log_stream.paused)
             self.assertIn("Saved session:", viewer.statusBar().currentMessage())
             viewer.segment_box.setCurrentIndex(viewer.segment_box.count() - 1)
+            self.assertIn("SD STREAM", viewer.receiver_panel.switches.text())
+            self.assertIn("0.15s", viewer.receiver_panel.replay_position.text())
             self.assertIn("Saved · valid", viewer.attitude_control_panel.status.text())
             self.assertEqual(viewer.attitude_control_panel.curves[6].getData()[1][-1], 0.5)
             self.assertGreater(len(viewer.imu_panel.curves[0][0].getData()[0]), 0)

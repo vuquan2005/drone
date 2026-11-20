@@ -41,6 +41,10 @@ void runtime_init(void) {
     last_receiver_ms = last_crsf_status_ms;
 #endif
     APP_LOG_INFO("runtime", "boot_select state=waiting_for_rc");
+#if APP_TELEMETRY_ENABLED && DRONE_IMU_TELEMETRY_DIVISOR > 1
+    APP_LOG_INFO("rtt", "flight_imu_divisor=%u",
+                 (unsigned)DRONE_IMU_TELEMETRY_DIVISOR);
+#endif
 }
 
 bool runtime_mode_supported(void) {

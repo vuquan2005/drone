@@ -66,14 +66,14 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
 1. Tháo cánh và đặt khung đứng yên. Trên tay điều khiển, để SA ở OFF, ga ở
    mức thấp nhất, SB ở HIGH và SC ở giữa. Giữ các vị trí này khi reset bo.
 2. Khi T20 hiện `IMU GYRO` trên ô `FM`, giữ khung đứng yên. Sau 1 giây chờ
-   IMU và RC, firmware cần ít nhất 1.140 mẫu liên tiếp trong cửa sổ 3 giây
-   ở ODR 400 Hz. Build có RTT và `DRONE_LOG_LEVEL=INFO` còn ghi log `imu_calib`.
+   IMU và RC, firmware cần ít nhất 2.280 mẫu liên tiếp trong cửa sổ 3 giây
+   ở ODR 800 Hz. Build có RTT và `DRONE_LOG_LEVEL=INFO` còn ghi log `imu_calib`.
 3. Khi `FM` hiện dạng `X+ 0/6`, firmware đã chuyển sang đo accel. Nhãn gợi ý
    một mặt còn thiếu và cho biết số mặt đã nhận. Dùng bảng bên dưới để đặt
    khung và giữ yên đến khi số đếm tăng. Có thể xoay qua sáu mặt theo thứ tự
    tùy ý. Dùng mặt chuẩn hoặc bộ gá để đặt mỗi trục FRD thẳng đứng đúng chiều.
    Độ nghiêng của khung lúc đo sẽ ảnh hưởng trực tiếp đến hệ số lệch chéo trục.
-   Mỗi cửa sổ cần ít nhất 380 mẫu trong 1 giây. Firmware dùng ngưỡng khoảng
+   Mỗi cửa sổ cần ít nhất 760 mẫu trong 1 giây. Firmware dùng ngưỡng khoảng
    10° để nhận diện mặt và kiểm tra gyro cùng độ dao động của accel.
    RTT báo các mặt còn thiếu. Mặt đã nhận được tính một lần. Giữ nguyên công
    tắc và ga khi xoay khung.
@@ -141,7 +141,7 @@ quy trình chỉ xóa các trang của ảnh chương trình để giữ hệ s�
 
 ## IMU và receiver
 
-IMU được cấu hình 400 Hz, accel ±16 g và gyro ±2000 °/s. App đổi mẫu sang SI
+IMU được cấu hình 800 Hz, accel ±16 g và gyro ±2000 °/s. App đổi mẫu sang SI
 và hệ thân FRD (X tiến, Y phải, Z xuống), theo ánh xạ sensor `[-X, +Y, -Z]`;
 cần xác nhận lại theo cách lắp thực tế. `t_read_us` là uptime MCU sau khi đọc
 thành công và tràn uint32 sau khoảng 71,6 phút. Xem API trong
@@ -202,12 +202,13 @@ hướng lúc Mahony khởi tạo. Thử nghiêng drone trên bàn khi đã thá
 | MIDDLE/HIGH | Cần điều khiển đặt góc trong ±25°, giữa cần đặt 0° | Tốc độ góc thân |
 
 Mahony chạy danh định 200 Hz. Mỗi lần cập nhật dùng gyro trung bình theo
-thời gian của hai khoảng mẫu liên tiếp, cùng accel mới nhất nếu độ lớn mẫu
+thời gian của bốn khoảng mẫu liên tiếp, cùng accel mới nhất nếu độ lớn mẫu
 trong khoảng 0,8–1,2 g. `dt` lấy từ chênh lệch timestamp đọc trên MCU. Vòng
 attitude chạy danh định 100 Hz, dùng sai số độ nghiêng để tạo tốc độ góc
 quanh X/Y thân với gain P ban đầu 4 s⁻¹. Vòng rate giữ setpoint X/Y giữa hai
 lần cập nhật attitude và nhận lệnh yaw trực tiếp. Lịch rate giữ khoảng cách
-tối thiểu 2 ms giữa các mẫu đã dùng, tương ứng khoảng 400 Hz theo ODR IMU.
+tối thiểu 2 ms giữa các mẫu đã dùng, tương ứng 400 Hz khi IMU ra mẫu đều ở
+800 Hz.
 
 Chế độ attitude vào failsafe nếu quaternion mất hiệu lực hoặc cũ hơn 20 ms.
 Khôi phục tư thế hợp lệ rồi đưa SA về OFF trước khi arm lại. Gain, tần số thực

@@ -179,9 +179,9 @@ static void test_real_driver_init_and_samples(void) {
     assert(uploaded_bytes == imu.sensor.device.config_size);
     assert(memcmp(uploaded_config, imu.sensor.device.config_file_ptr,
                   uploaded_bytes) == 0);
-    assert((registers[BMI2_ACC_CONF_ADDR] & 0xfU) == BMI2_ACC_ODR_400HZ);
+    assert((registers[BMI2_ACC_CONF_ADDR] & 0xfU) == BMI2_ACC_ODR_800HZ);
     assert((registers[BMI2_ACC_CONF_ADDR + 1U] & 3U) == BMI2_ACC_RANGE_16G);
-    assert((registers[BMI2_GYR_CONF_ADDR] & 0xfU) == BMI2_GYR_ODR_400HZ);
+    assert((registers[BMI2_GYR_CONF_ADDR] & 0xfU) == BMI2_GYR_ODR_800HZ);
     assert((registers[BMI2_GYR_CONF_ADDR + 1U] & 7U) == BMI2_GYR_RANGE_2000);
     // TODO: Check bandwidth and performance bits too; wrong accel filtering
     // currently passes despite the ODR/range checks.

@@ -62,15 +62,6 @@ class RawImuTests(unittest.TestCase):
         self.assertAlmostEqual(stream.points[-1][4], math.radians(125) / 32768)
 
     def test_new_mount_frd_and_shared_encoder_fixture(self):
-        raw = bytes.fromhex(
-            (
-                Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_raw_frd_v1.hex"
-            ).read_text()
-        )
-        frame = raw_record(config=(16, 2, 2000, 400, 400))
-        self.assertEqual(list(Frames().feed(raw)), [frame])
-        stream = ImuSeries()
-        self.assertTrue(stream.feed(frame))
         expected = (
             16 * 9.80665,
             -16 * 9.80665 / 32768,
@@ -79,8 +70,20 @@ class RawImuTests(unittest.TestCase):
             -math.radians(2000),
             -32767 * math.radians(2000) / 32768,
         )
-        for actual, value in zip(stream.points[-1][1:], expected):
-            self.assertAlmostEqual(actual, value)
+        fixtures = Path(__file__).resolve().parents[2] / "protocol/fixtures"
+        for odr_hz, name in (
+            (400, "imu_raw_frd_v1.hex"),
+            (800, "imu_raw_frd_800hz_v1.hex"),
+        ):
+            with self.subTest(odr_hz=odr_hz):
+                raw = bytes.fromhex((fixtures / name).read_text())
+                frame = raw_record(config=(16, 2, 2000, odr_hz, odr_hz))
+                self.assertEqual(list(Frames().feed(raw)), [frame])
+                stream = ImuSeries()
+                self.assertTrue(stream.feed(frame))
+                for actual, value in zip(stream.points[-1][1:], expected):
+                    self.assertAlmostEqual(actual, value)
+        stream = ImuSeries()
         # A stationary upright board and the three hand motions in FRD.
         for seq, axes, expected_signs in (
             (18, (0, 0, 2048, -100, 0, 0), (1, 0, 0)),

@@ -183,11 +183,11 @@ static void test_real_driver_init_and_samples(void) {
     assert(imu.sensor.driver_error == BMI160_OK);
     assert(delayed_us >= 2000U);
     assert((registers[BMI160_ACCEL_CONFIG_ADDR] & 0xfU) ==
-           BMI160_ACCEL_ODR_400HZ);
+           BMI160_ACCEL_ODR_800HZ);
     assert((registers[BMI160_ACCEL_CONFIG_ADDR + 1U] & 0xfU) ==
            BMI160_ACCEL_RANGE_16G);
     assert((registers[BMI160_GYRO_CONFIG_ADDR] & 0xfU) ==
-           BMI160_GYRO_ODR_400HZ);
+           BMI160_GYRO_ODR_800HZ);
     assert((registers[BMI160_GYRO_CONFIG_ADDR + 1U] & 7U) ==
            BMI160_GYRO_RANGE_2000_DPS);
     assert((registers[BMI160_ACCEL_CONFIG_ADDR] & 0xf0U) == 0x20U);

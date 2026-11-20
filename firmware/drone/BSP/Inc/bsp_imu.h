@@ -48,7 +48,7 @@ typedef struct {
  * @note Keep these constants and bsp_imu_init settings consistent. Changing
  * the constants alone does not reconfigure the sensor.
  */
-#define BSP_IMU_ODR_HZ 400U
+#define BSP_IMU_ODR_HZ 800U
 /** @brief Positive accelerometer full-scale range in g, used for SI conversion.
  */
 #define BSP_IMU_ACCEL_RANGE_G 16.0f

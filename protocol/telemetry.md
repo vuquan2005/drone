@@ -52,8 +52,8 @@ vị, hiệu chuẩn, lọc hoặc ánh xạ hệ trục. Offset tính từ đ�
 | 24     | uint8    | accel_range_g          | Biên dương full scale, hiện tại 16 g                             |
 | 25     | uint8    | axis_map               | `1`: gá cũ → FLU `[X, -Y, -Z]`; `2`: gá mới → FRD `[-X, +Y, -Z]` |
 | 26     | uint16   | gyro_range_dps         | Biên dương full scale, hiện tại 2000 °/s                         |
-| 28     | uint16   | accel_odr_hz           | ODR cấu hình accel, hiện tại 400 Hz                              |
-| 30     | uint16   | gyro_odr_hz            | ODR cấu hình gyro, hiện tại 400 Hz                               |
+| 28     | uint16   | accel_odr_hz           | ODR cấu hình accel, hiện tại 800 Hz                              |
+| 30     | uint16   | gyro_odr_hz            | ODR cấu hình gyro, hiện tại 800 Hz                               |
 
 Số int16 dùng bù hai, bao gồm đủ miền [-32768, 32767]. Firmware lấy trực tiếp
 counts từ cùng lần đọc tạo mẫu SI trong App, không dựng lại raw từ float.
@@ -83,7 +83,7 @@ Sequence và timestamp MCU tràn modulo 2^32; clock cảm biến tràn modulo 2^
 Sequence tăng kể cả khi frame bị RTT từ chối, nhưng không đếm mẫu cảm biến
 bị ghi đè trước khi MCU đọc. Một writer foreground, không retry; thiếu chỗ
 thì bỏ nguyên frame mới và tăng counter đầy CH1.
-400 Hz tương ứng 17600 byte/s, chưa tính stats/RC/log.
+800 Hz tương ứng 35.200 byte/s, chưa tính stats/RC/log.
 
 ## RTT statistics v1, type 2
 
@@ -147,7 +147,7 @@ cho biết snapshot bị thiếu, không đo số frame UART/radio mất.
 
 - Encoder: `firmware/drone/App/Src/app_telemetry.c`; API `app_telemetry_write_imu()`, compile option `DRONE_ENABLE_TELEMETRY`.
 - Framing và decoder: `tools/rtt/records.py`; không phụ thuộc UI.
-- Fixture chung: [IMU raw gá cũ](fixtures/imu_raw_v1.hex), [IMU raw FRD gá mới](fixtures/imu_raw_frd_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
+- Fixture chung: [IMU raw gá cũ](fixtures/imu_raw_v1.hex), [IMU raw FRD 400 Hz](fixtures/imu_raw_frd_v1.hex), [IMU raw FRD 800 Hz](fixtures/imu_raw_frd_800hz_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
   Test C so output byte-for-byte; Python kiểm tra framing, CRC và giá trị
   trường theo cùng fixture.
 

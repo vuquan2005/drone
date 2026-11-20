@@ -15,9 +15,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#define IMU_SAMPLE_PERIOD_US (1000000U / BSP_IMU_ODR_HZ)
+
 static bsp_imu_result_t status = BSP_IMU_NO_DATA;
 static bsp_imu_result_t imu_init_status = BSP_IMU_OK;
 static uint32_t tick = 1000U;
+static uint32_t sub_tick_us;
 static unsigned pwm_starts;
 static uint16_t motor_pulse[4];
 static bool pwm_write_ok = true;
@@ -48,7 +51,7 @@ imu_calibration_status_t imu_calibration_get_status(void) {
     return (imu_calibration_status_t){0};
 }
 uint32_t bsp_time_now_us(void) {
-    return tick * 1000U + 123U;
+    return tick * 1000U + 123U + sub_tick_us;
 }
 uint32_t HAL_GetTick(void) {
     return tick;
@@ -103,7 +106,7 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
         }
         imu->sample_count++;
         imu->sample.gyro_radps[0] = gyro_roll_radps;
-        imu->sample.t_read_us = tick * 1000U + 123U;
+        imu->sample.t_read_us = bsp_time_now_us();
         imu->sample.sensor_time_ticks = 256U;
         memcpy(imu->sample.accel_mps2, accel_mps2, sizeof(accel_mps2));
         imu->sample.accel_raw[2] = 2048;
@@ -182,6 +185,12 @@ static uint32_t get_u32(const char *p) {
            ((uint32_t)(uint8_t)p[2] << 16U) | ((uint32_t)(uint8_t)p[3] << 24U);
 }
 
+static void advance_time_us(uint32_t duration_us) {
+    sub_tick_us += duration_us;
+    tick += sub_tick_us / 1000U;
+    sub_tick_us %= 1000U;
+}
+
 static void test_attitude_control(const app_rate_config_t *rate_config) {
     tick = 4294966U; /* MCU microsecond clock wraps during the first batch. */
     imu_init_status = BSP_IMU_OK;
@@ -192,15 +201,20 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     float q[4];
     assert(app_get_attitude(q) && q[1] == 0.0f);
     gyro_roll_radps = 2.0f;
-    tick += 2U;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(NULL);
     assert(app_get_attitude(q) && q[1] == 0.0f);
     app_process(NULL); /* A duplicate timestamp contributes no interval. */
     assert(app_get_attitude(q) && q[1] == 0.0f);
     gyro_roll_radps = 0.0f;
-    tick += 3U;
-    app_process(NULL);
-    assert(app_get_attitude(q) && fabsf(q[1] - 0.002f) < 1e-6f);
+    for (unsigned interval = 1U; interval < 4U; ++interval) {
+        advance_time_us(IMU_SAMPLE_PERIOD_US);
+        app_process(NULL);
+        assert(app_get_attitude(q));
+        if (interval < 3U)
+            assert(q[1] == 0.0f);
+    }
+    assert(fabsf(q[1] - 0.00125f) < 1e-6f);
 
     init_app();
     assert(app_configure_rate(rate_config));
@@ -217,15 +231,15 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     pilot.roll = NORM_Q15_ONE;
     pilot.pitch = -NORM_Q15_ONE;
     pilot.yaw = NORM_Q15_ONE / 2;
-    for (unsigned sample = 0U; sample < 3U; ++sample) {
-        tick += sample % 2U == 0U ? 2U : 3U;
+    for (unsigned sample = 0U; sample < 7U; ++sample) {
+        advance_time_us(IMU_SAMPLE_PERIOD_US);
         app_process(&pilot);
         assert(drain(1U, trace) == 44U);
         assert(app_get_rate_result(&result));
         assert(result.achieved.roll == 0 && result.achieved.pitch == 0);
         assert(result.achieved.yaw > 3200 && result.achieved.yaw < 3350);
     }
-    tick += 3U;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
     assert(drain(1U, trace) == 112U);
     assert((uint8_t)trace[49] == 7U && get_u32(trace + 52U) == 2U);
@@ -233,17 +247,23 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     assert(result.achieved.roll > 5000 && result.achieved.roll < 6000);
     assert(result.achieved.pitch < -5000 && result.achieved.pitch > -6000);
     pilot.mode = APP_COMMAND_SWITCH_LOW;
-    tick += 2U;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
     assert(drain(1U, trace) == 44U);
     assert(app_get_rate_result(&result) && result.achieved.roll > 6500);
     pilot.mode = APP_COMMAND_SWITCH_HIGH;
     pilot.roll = pilot.pitch = 0;
-    tick += 3U;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
     assert(app_get_rate_result(&result) && result.achieved.roll == 0 &&
            result.achieved.pitch == 0);
 
+    /* Finish the current four-sample Mahony interval before testing staleness.
+     */
+    for (unsigned interval = 2U; interval < 4U; ++interval) {
+        advance_time_us(IMU_SAMPLE_PERIOD_US);
+        app_process(&pilot);
+    }
     pilot.throttle = 0;
     pilot.arm_requested = true;
     status = BSP_IMU_NO_DATA;
@@ -435,28 +455,28 @@ int main(void) {
     status = BSP_IMU_NO_DATA;
     process_app();
     assert(!app_get_rate_result(&preview));
-    /* IMU at 1 kHz, rate at 500 Hz: intermediate samples do not run PID. */
+    /* At 800 Hz, the 2 ms minimum makes PID consume every other sample. */
     rate_config.period_us = 2000;
     assert(app_configure_rate(&rate_config));
     receiver_connected = true;
     status = BSP_IMU_OK;
     tick++;
     process_app();
-    tick++;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     gyro_roll_radps = 0.5f;
     process_app();
     assert(!app_get_rate_result(&preview));
-    tick++;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     gyro_roll_radps = 1.0f;
     process_app();
     assert(app_get_rate_result(&preview));
     assert(preview.achieved.roll > 3200 && preview.achieved.roll < 3350);
     const norm_q15_t held_roll = preview.achieved.roll;
-    tick++;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     gyro_roll_radps = 0;
     process_app();
     assert(app_get_rate_result(&preview) && preview.achieved.roll == held_roll);
-    tick++;
+    advance_time_us(IMU_SAMPLE_PERIOD_US);
     status = BSP_IMU_NO_DATA;
     process_app();
     assert(app_get_rate_result(&preview) && preview.achieved.roll == held_roll);

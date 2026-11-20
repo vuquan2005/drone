@@ -79,9 +79,12 @@ Cần kiểm chứng xung, timing và kết quả trên board/ESC.
    tắc và ga khi xoay khung.
 4. Khi `FM` hiện `IMU DONE`, firmware đã lưu hệ số gyro và accel vào flash.
    Trả SB và SD về LOW rồi reset để vào `FLIGHT`. Log `imu` báo đã nạp hệ số
-   gyro và accel từ flash. Chạy lại quy trình sáu mặt sau khi cập nhật firmware
-   để đo các hệ số lệch chéo trục. Bản ghi v2 vẫn áp dụng bias và scale từng trục.
+   gyro và accel từ flash.
    Có thể kiểm tra gyro đã bù trong tab **Rate · FRD** khi khung đứng yên.
+
+Firmware chỉ đọc bản ghi hiệu chuẩn v3. Nếu đang dùng bản ghi v1 hoặc v2,
+chạy lại `IMU_CALIB` sau khi cập nhật để lưu bias gyro và ma trận hiệu chỉnh
+accel từ quy trình sáu mặt.
 
 | Mặt đo | Cách đặt khung FRD         |
 | ------ | -------------------------- |

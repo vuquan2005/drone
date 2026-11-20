@@ -109,19 +109,25 @@ static void expect_calibration(uint8_t chip_id,
                                const app_imu_calibration_t *expected) {
     app_imu_calibration_t actual = {0};
     assert(imu_calibration_load(chip_id, &actual));
-    assert(actual.accel_valid == expected->accel_valid);
+    assert(actual.accel_valid);
     for (unsigned axis = 0U; axis < 3U; ++axis) {
         assert(fabsf(actual.gyro_bias_radps[axis] -
                      expected->gyro_bias_radps[axis]) < 1e-7f);
-        if (actual.accel_valid) {
-            assert(fabsf(actual.accel_bias_mps2[axis] -
-                         expected->accel_bias_mps2[axis]) < 1e-5f);
-        }
+        assert(fabsf(actual.accel_bias_mps2[axis] -
+                     expected->accel_bias_mps2[axis]) < 1e-5f);
         for (unsigned input = 0U; input < 3U; ++input) {
             assert(fabsf(actual.accel_matrix[axis][input] -
                          expected->accel_matrix[axis][input]) < 1e-5f);
         }
     }
+}
+
+static void expect_no_calibration(uint8_t chip_id) {
+    app_imu_calibration_t calibration = initial;
+    unsigned char before[sizeof(calibration)];
+    memcpy(before, &calibration, sizeof(before));
+    assert(!imu_calibration_load(chip_id, &calibration));
+    assert(memcmp(&calibration, before, sizeof(before)) == 0);
 }
 
 static void seed_v1_page(void) {
@@ -172,9 +178,7 @@ static void seed_v2_page(void) {
 }
 
 static void test_flash_recovery(void) {
-    app_imu_calibration_t missing = initial;
-    assert(!imu_calibration_load(0xD1U, &missing));
-    assert(missing.gyro_bias_radps[0] == initial.gyro_bias_radps[0]);
+    expect_no_calibration(0xD1U);
     app_imu_calibration_t invalid = initial;
     invalid.gyro_bias_radps[0] = NAN;
     assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
@@ -187,36 +191,24 @@ static void test_flash_recovery(void) {
     invalid.accel_matrix[1][2] = 0.5f;
     assert(!imu_calibration_save(0xD1U, &invalid) && writes == 0U);
     seed_v1_page();
-    const app_imu_calibration_t legacy = {
-        .gyro_bias_radps = {0.003f, -0.004f, 0.005f},
-    };
-    expect_calibration(0xD1U, &legacy);
-    app_imu_calibration_t loaded = initial;
-    assert(imu_calibration_load(0xD1U, &loaded) && !loaded.accel_valid);
-    assert(loaded.accel_matrix[0][1] == 0.0f);
+    expect_no_calibration(0xD1U);
+    seed_v2_page();
+    expect_no_calibration(0xD1U);
 
+    assert(imu_calibration_save(0xD1U, &initial));
+    expect_calibration(0xD1U, &initial);
     assert(imu_calibration_save(0x24U, &replacement));
-    expect_calibration(0xD1U, &legacy);
+    expect_calibration(0xD1U, &initial);
     expect_calibration(0x24U, &replacement);
 
-    seed_v2_page();
-    const app_imu_calibration_t diagonal = {
-        .gyro_bias_radps = {-0.001f, 0.002f, -0.003f},
-        .accel_bias_mps2 = {0.15f, -0.2f, 0.07f},
-        .accel_matrix = {{0.96f, 0.0f, 0.0f},
-                         {0.0f, 1.04f, 0.0f},
-                         {0.0f, 0.0f, 1.02f}},
-        .accel_valid = true,
-    };
-    expect_calibration(0xD1U, &diagonal);
     interrupt_save = true;
     assert(!imu_calibration_save(0xD1U, &replacement));
-    expect_calibration(0xD1U, &diagonal);
+    expect_calibration(0xD1U, &initial);
     interrupt_save = false;
     assert(imu_calibration_save(0xD1U, &replacement));
     expect_calibration(0xD1U, &replacement);
-    pages[0][56] ^= 1U; /* Within the v3 matrix, beyond the v2 record. */
-    expect_calibration(0xD1U, &diagonal);
+    pages[1][56] ^= 1U; /* Within the v3 matrix. */
+    expect_calibration(0xD1U, &initial);
 }
 
 static void set_face(unsigned axis, int sign) {

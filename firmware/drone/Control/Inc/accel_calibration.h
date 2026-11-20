@@ -21,7 +21,7 @@ typedef enum {
 
 typedef struct {
     unsigned captured_faces;
-    float face_mean_mps2[ACCEL_CAL_NO_FACE];
+    float face_mean_mps2[ACCEL_CAL_NO_FACE][3];
     struct {
         accel_cal_face_t face;
         uint32_t samples;
@@ -46,16 +46,20 @@ accel_cal_face_t accel_calibration_push(accel_calibration_t *state,
                                         uint32_t t_read_us,
                                         uint32_t min_samples);
 
-/** Calculate bias (m/s^2, FRD) and dimensionless correction scale from six
- * captured faces. Returns false for incomplete data or out-of-range results.
- * Pass a valid state and distinct writable 3-element arrays.
+/** Fit bias (m/s^2, FRD) and a dimensionless correction matrix from six faces
+ * aligned with the body axes. Apply matrix * (measured - bias), with rows
+ * ordered by output axis and columns by input axis, both in FRD.
+ * Pass a valid state and non-overlapping writable outputs. Returns false for
+ * incomplete or inconsistent face data or out-of-range coefficients. Discard
+ * the outputs on failure.
  */
 bool accel_calibration_result(const accel_calibration_t *state,
-                              float bias_mps2[3], float scale[3]);
+                              float bias_mps2[3], float matrix[3][3]);
 
-/** Check finite bias and positive scale within the calibration limits.
- * Pass readable 3-element arrays in FRD and SI units.
+/** Check that the bias and all matrix coefficients are finite and within
+ * calibration limits. Pass readable arrays with the layout described above.
  */
-bool accel_calibration_valid(const float bias_mps2[3], const float scale[3]);
+bool accel_calibration_valid(const float bias_mps2[3],
+                             const float matrix[3][3]);
 
 #endif

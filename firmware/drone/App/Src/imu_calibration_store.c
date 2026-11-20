@@ -8,8 +8,9 @@
 
 #define IMU_CALIBRATION_V1 1U
 #define IMU_CALIBRATION_V2 2U
+#define IMU_CALIBRATION_V3 3U
 
-/* Both flash formats are little-endian and hold binary32 FRD coefficients. */
+/* Flash formats are little-endian and hold binary32 FRD coefficients. */
 typedef struct {
     uint32_t sequence;
     uint16_t version;
@@ -30,12 +31,21 @@ typedef struct {
     float accel_bias_mps2[3];
     float accel_scale[3];
     uint32_t crc32;
+} calibration_record_v2_t;
+
+typedef struct {
+    record_header_t header;
+    float accel_bias_mps2[3];
+    float accel_matrix[3][3];
+    uint32_t crc32;
 } calibration_record_t;
 
 _Static_assert(offsetof(calibration_record_v1_t, crc32) == 24U &&
                    sizeof(calibration_record_v1_t) == 28U &&
-                   offsetof(calibration_record_t, crc32) == 48U &&
-                   sizeof(calibration_record_t) == 52U,
+                   offsetof(calibration_record_v2_t, crc32) == 48U &&
+                   sizeof(calibration_record_v2_t) == 52U &&
+                   offsetof(calibration_record_t, crc32) == 72U &&
+                   sizeof(calibration_record_t) == 76U,
                "Unexpected IMU calibration flash record layout");
 
 static bool bias_valid(const float bias_radps[3]) {
@@ -50,12 +60,13 @@ static bool bias_valid(const float bias_radps[3]) {
 static bool read_record(unsigned slot, calibration_record_t *record) {
     union {
         calibration_record_v1_t v1;
-        calibration_record_t v2;
+        calibration_record_v2_t v2;
+        calibration_record_t v3;
     } encoded;
     if (!bsp_imu_flash_read(slot, &encoded, sizeof(encoded))) {
         return false;
     }
-    const record_header_t *header = &encoded.v2.header;
+    const record_header_t *header = &encoded.v3.header;
     if (header->chip_id == 0U || !bias_valid(header->gyro_bias_radps)) {
         return false;
     }
@@ -69,15 +80,30 @@ static bool read_record(unsigned slot, calibration_record_t *record) {
         *record = (calibration_record_t){.header = *header};
         return true;
     }
-    if (header->version != IMU_CALIBRATION_V2 || header->accel_range_g == 0U ||
-        encoded.v2.crc32 !=
-            app_crc32(&encoded.v2, offsetof(calibration_record_t, crc32)) ||
-        !accel_calibration_valid(encoded.v2.accel_bias_mps2,
-                                 encoded.v2.accel_scale)) {
+    if (header->accel_range_g == 0U) {
         return false;
     }
-    *record = encoded.v2;
-    return true;
+    if (header->version == IMU_CALIBRATION_V2) {
+        if (encoded.v2.crc32 !=
+            app_crc32(&encoded.v2, offsetof(calibration_record_v2_t, crc32))) {
+            return false;
+        }
+        *record = (calibration_record_t){.header = *header};
+        memcpy(record->accel_bias_mps2, encoded.v2.accel_bias_mps2,
+               sizeof(record->accel_bias_mps2));
+        for (unsigned axis = 0U; axis < 3U; ++axis) {
+            record->accel_matrix[axis][axis] = encoded.v2.accel_scale[axis];
+        }
+    } else if (header->version == IMU_CALIBRATION_V3 &&
+               encoded.v3.crc32 ==
+                   app_crc32(&encoded.v3,
+                             offsetof(calibration_record_t, crc32))) {
+        *record = encoded.v3;
+    } else {
+        return false;
+    }
+    return accel_calibration_valid(record->accel_bias_mps2,
+                                   (const float (*)[3])record->accel_matrix);
 }
 
 static void
@@ -100,7 +126,7 @@ newest_record(const calibration_record_t records[BSP_IMU_FLASH_SLOT_COUNT],
              (record->chip_id != chip_id ||
               record->axis_map != APP_IMU_AXIS_MAP_ID ||
               record->gyro_range_dps != (uint16_t)BSP_IMU_GYRO_RANGE_DPS ||
-              (record->version == IMU_CALIBRATION_V2 &&
+              (record->version != IMU_CALIBRATION_V1 &&
                record->accel_range_g != (uint16_t)BSP_IMU_ACCEL_RANGE_G)))) {
             continue;
         }
@@ -129,9 +155,9 @@ bool imu_calibration_load(uint8_t chip_id, app_imu_calibration_t *calibration) {
            sizeof(record->header.gyro_bias_radps));
     memcpy(calibration->accel_bias_mps2, record->accel_bias_mps2,
            sizeof(record->accel_bias_mps2));
-    memcpy(calibration->accel_scale, record->accel_scale,
-           sizeof(record->accel_scale));
-    calibration->accel_valid = record->header.version == IMU_CALIBRATION_V2;
+    memcpy(calibration->accel_matrix, record->accel_matrix,
+           sizeof(record->accel_matrix));
+    calibration->accel_valid = record->header.version != IMU_CALIBRATION_V1;
     return true;
 }
 
@@ -140,7 +166,7 @@ bool imu_calibration_save(uint8_t chip_id,
     if (chip_id == 0U || !bias_valid(calibration->gyro_bias_radps) ||
         !calibration->accel_valid ||
         !accel_calibration_valid(calibration->accel_bias_mps2,
-                                 calibration->accel_scale)) {
+                                 calibration->accel_matrix)) {
         return false;
     }
     calibration_record_t records[BSP_IMU_FLASH_SLOT_COUNT];
@@ -156,7 +182,7 @@ bool imu_calibration_save(uint8_t chip_id,
             {
                 .sequence =
                     newest < 0 ? 1U : records[newest].header.sequence + 1U,
-                .version = IMU_CALIBRATION_V2,
+                .version = IMU_CALIBRATION_V3,
                 .chip_id = chip_id,
                 .axis_map = APP_IMU_AXIS_MAP_ID,
                 .gyro_range_dps = (uint16_t)BSP_IMU_GYRO_RANGE_DPS,
@@ -167,8 +193,8 @@ bool imu_calibration_save(uint8_t chip_id,
            sizeof(record.header.gyro_bias_radps));
     memcpy(record.accel_bias_mps2, calibration->accel_bias_mps2,
            sizeof(record.accel_bias_mps2));
-    memcpy(record.accel_scale, calibration->accel_scale,
-           sizeof(record.accel_scale));
+    memcpy(record.accel_matrix, calibration->accel_matrix,
+           sizeof(record.accel_matrix));
     record.crc32 = app_crc32(&record, offsetof(calibration_record_t, crc32));
     return bsp_imu_flash_write(target, &record, sizeof(record));
 }

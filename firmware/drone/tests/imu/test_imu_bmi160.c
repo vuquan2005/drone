@@ -214,20 +214,26 @@ static void test_real_driver_init_and_samples(void) {
     imu.calibration = (app_imu_calibration_t){
         .gyro_bias_radps = {0.125f, -0.25f, 0.5f},
         .accel_bias_mps2 = {0.1f, -0.2f, 0.3f},
-        .accel_scale = {1.05f, 0.95f, 1.0f},
+        .accel_matrix = {{1.05f, 0.0f, 0.04f},
+                         {-0.03f, 0.95f, 0.0f},
+                         {0.0f, 0.02f, 1.0f}},
         .accel_valid = true,
     };
     assert(app_imu_poll(&imu) == BSP_IMU_OK);
     assert(imu.sample_valid && imu.sample_count == 1U);
-    assert(fabsf(imu.sample.accel_mps2[0] + 1.05f * (9.80665f + 0.1f)) <
+    const float x_mps2 = -9.80665f - 0.1f;
+    const float y_mps2 = -9.80665f + 0.2f;
+    const float z_mps2 = 156.9064f - 0.3f;
+    assert(fabsf(imu.sample.accel_mps2[0] - (1.05f * x_mps2 + 0.04f * z_mps2)) <
            0.0001f);
     const int16_t accel_raw[] = {2048, -2048, INT16_MIN};
     const int16_t gyro_raw[] = {16384, -16384, INT16_MAX};
     assert(memcmp(imu.sample.accel_raw, accel_raw, sizeof(accel_raw)) == 0);
     assert(memcmp(imu.sample.gyro_raw, gyro_raw, sizeof(gyro_raw)) == 0);
-    assert(fabsf(imu.sample.accel_mps2[1] + 0.95f * (9.80665f - 0.2f)) <
+    assert(fabsf(imu.sample.accel_mps2[1] -
+                 (-0.03f * x_mps2 + 0.95f * y_mps2)) < 0.0001f);
+    assert(fabsf(imu.sample.accel_mps2[2] - (0.02f * y_mps2 + z_mps2)) <
            0.0001f);
-    assert(fabsf(imu.sample.accel_mps2[2] - (156.9064f - 0.3f)) < 0.0001f);
     assert(fabsf(imu.sample.gyro_radps[0] + 17.5782925f) < 0.0001f);
     assert(fabsf(imu.sample.gyro_radps[1] + 17.2032925f) < 0.0001f);
     assert(fabsf(imu.sample.gyro_radps[2] + 35.40552f) < 0.0001f);

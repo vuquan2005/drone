@@ -94,9 +94,10 @@ bsp_imu_result_t app_imu_poll(app_imu_t *imu) {
                        stored_calibration->gyro_bias_radps[axis]);
                 assert(imu->calibration.accel_bias_mps2[axis] ==
                        stored_calibration->accel_bias_mps2[axis]);
-                assert(imu->calibration.accel_scale[axis] ==
-                       stored_calibration->accel_scale[axis]);
             }
+            assert(memcmp(imu->calibration.accel_matrix,
+                          stored_calibration->accel_matrix,
+                          sizeof(imu->calibration.accel_matrix)) == 0);
         }
         imu->sample_count++;
         imu->sample.gyro_radps[0] = gyro_roll_radps;
@@ -486,7 +487,9 @@ int main(void) {
     static const app_imu_calibration_t flash_calibration = {
         .gyro_bias_radps = {0.01f, -0.02f, 0.03f},
         .accel_bias_mps2 = {0.1f, 0.2f, -0.1f},
-        .accel_scale = {1.01f, 1.02f, 0.98f},
+        .accel_matrix = {{1.01f, -0.03f, 0.0f},
+                         {0.0f, 1.02f, 0.02f},
+                         {0.04f, 0.0f, 0.98f}},
         .accel_valid = true,
     };
     stored_calibration = &flash_calibration;

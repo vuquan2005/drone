@@ -1,5 +1,5 @@
 # %%
-"""Build a rectangular plate with edge clips and mounting holes. Dimensions are in millimeters."""
+"""Build a plate with trimmed corners, edge clips and mounting holes. Dimensions are in mm."""
 
 from argparse import SUPPRESS, ArgumentParser
 from pathlib import Path
@@ -19,15 +19,13 @@ from build123d import (
     export_stl,
 )
 
-PLATE_LENGTH = 120.0  # Chiều dài tấm theo trục X.
-PLATE_WIDTH = 100.0  # Chiều rộng tấm theo trục Y.
+PLATE_SIZE = 80.0  # Kích thước bao của tấm theo X và Y.
 PLATE_THICKNESS = 2  # Bề dày tấm theo trục Z.
+PLATE_CORNER_CUT = 25.0  # Khoảng cắt từ mỗi góc dọc theo cạnh tấm.
 PLATE_GAP = 3  # Khe từ đầu mỏ kẹp trên đến mặt dưới của tấm.
-MOUNT_HOLE_DIAMETER = 3.4  # Đường kính lỗ xuyên cho vít M3.
-MOUNT_HOLE_SPACING_X = 110.0  # Khoảng cách tâm lỗ theo X.
-MOUNT_HOLE_SPACING_Y = 90.0  # Khoảng cách tâm lỗ theo Y.
-INNER_HOLE_DIAMETER = 3.0  # Đường kính bốn lỗ xuyên ở giữa tấm.
-INNER_HOLE_SPACING = 45.0  # Cạnh hình vuông tính giữa các tâm lỗ.
+CENTER_OPENING_DIAMETER = 40.0  # Đường kính lỗ khoét giảm vật liệu ở tâm tấm.
+MOUNT_HOLE_DIAMETER = 3.0  # Đường kính bốn lỗ xuyên.
+MOUNT_HOLE_SPACING = 45.0  # Cạnh hình vuông tính giữa các tâm lỗ.
 MOUNT_HOLE_CHAMFER = 0.3  # Độ vát miệng lỗ ở mặt áp bàn in.
 
 GRIPPED_PART_SIZE = 73.0  # Chiều dài cạnh của vật vuông cần kẹp.
@@ -50,19 +48,19 @@ def build_mount():
     lower_jaw_z = -FACE_CLEARANCE - LOWER_JAW_THICKNESS
     plate_z = upper_jaw_z + UPPER_JAW_THICKNESS + PLATE_GAP
 
-    plate = Pos(0, 0, plate_z) * Box(
-        PLATE_LENGTH, PLATE_WIDTH, PLATE_THICKNESS, align=bottom_aligned
+    plate = Pos(0, 0, plate_z) * Box(PLATE_SIZE, PLATE_SIZE, PLATE_THICKNESS, align=bottom_aligned)
+    plate = chamfer(plate.edges().filter_by(Axis.Z), length=PLATE_CORNER_CUT)
+    hole = Pos(0, 0, plate_z) * Cylinder(
+        MOUNT_HOLE_DIAMETER / 2, PLATE_THICKNESS, align=bottom_aligned
     )
-    hole_patterns = (
-        (MOUNT_HOLE_DIAMETER, MOUNT_HOLE_SPACING_X, MOUNT_HOLE_SPACING_Y),
-        (INNER_HOLE_DIAMETER, INNER_HOLE_SPACING, INNER_HOLE_SPACING),
-    )
-    for diameter, spacing_x, spacing_y in hole_patterns:
-        hole = Pos(0, 0, plate_z) * Cylinder(diameter / 2, PLATE_THICKNESS, align=bottom_aligned)
-        hole_locations = GridLocations(spacing_x, spacing_y, 2, 2)
-        plate = plate.cut(*(location * hole for location in hole_locations.locations))
+    hole_locations = GridLocations(MOUNT_HOLE_SPACING, MOUNT_HOLE_SPACING, 2, 2)
+    plate = plate.cut(*(location * hole for location in hole_locations.locations))
     hole_entries = plate.edges().filter_by(GeomType.CIRCLE).group_by(Axis.Z)[-1]
     plate = chamfer(hole_entries, length=MOUNT_HOLE_CHAMFER)
+    center_opening = Pos(0, 0, plate_z) * Cylinder(
+        CENTER_OPENING_DIAMETER / 2, PLATE_THICKNESS, align=bottom_aligned
+    )
+    plate = plate.cut(center_opening)
 
     part_edge = GRIPPED_PART_SIZE / 2
     wall_start = part_edge + EDGE_CLEARANCE

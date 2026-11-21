@@ -11,7 +11,6 @@
 #include "imu_calibration_store.h"
 #include "mahony.h"
 #include "main.h"
-#include <math.h>
 #include <stddef.h>
 
 #define IMU_TIMEOUT_US 20000U
@@ -125,31 +124,9 @@ static void init_imu(void) {
     }
     imu_calibration_from_flash =
         imu_calibration_load(imu.sensor.device.chip_id, &imu.calibration);
-#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
-    const app_imu_calibration_t *cal = &imu.calibration;
-    APP_LOG_INFO("imu",
-                 "calibration_applied source=%s frame=FRD "
-                 "gyro_bias_uradps=%ld,%ld,%ld accel_enabled=%u",
+    APP_LOG_INFO("imu", "calibration_applied source=%s accel_enabled=%u",
                  imu_calibration_from_flash ? "flash" : "default",
-                 lroundf(cal->gyro_bias_radps[0] * 1e6f),
-                 lroundf(cal->gyro_bias_radps[1] * 1e6f),
-                 lroundf(cal->gyro_bias_radps[2] * 1e6f),
-                 (unsigned)cal->accel_valid);
-    if (cal->accel_valid) {
-        const float (*m)[3] = cal->accel_matrix;
-        APP_LOG_INFO(
-            "imu",
-            "accel_correction frame=FRD bias_umps2=%ld,%ld,%ld "
-            "matrix_row_major_x1e6=%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld",
-            lroundf(cal->accel_bias_mps2[0] * 1e6f),
-            lroundf(cal->accel_bias_mps2[1] * 1e6f),
-            lroundf(cal->accel_bias_mps2[2] * 1e6f), lroundf(m[0][0] * 1e6f),
-            lroundf(m[0][1] * 1e6f), lroundf(m[0][2] * 1e6f),
-            lroundf(m[1][0] * 1e6f), lroundf(m[1][1] * 1e6f),
-            lroundf(m[1][2] * 1e6f), lroundf(m[2][0] * 1e6f),
-            lroundf(m[2][1] * 1e6f), lroundf(m[2][2] * 1e6f));
-    }
-#endif
+                 (unsigned)imu.calibration.accel_valid);
 }
 
 app_config_t app_get_config(void) {
@@ -497,40 +474,11 @@ void app_init(void) {
         .max_rate_radps = {2.0f, 2.0f, 2.0f},
         .period_us = 2000U};
     if (app_configure_rate(&rate_config)) {
-        APP_LOG_INFO("rate", "configured min_period_us=%lu frame=FRD",
-                     (unsigned long)rate.config.period_us);
-#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
-        static const char *const axis_names[] = {"roll", "pitch", "yaw"};
-        for (unsigned i = 0U; i < RATE_AXIS_COUNT; ++i) {
-            const rate_axis_config_t *axis = &rate.config.axis[i];
-            APP_LOG_INFO(
-                "rate",
-                "axis_config axis=%s kp_s_per_rad_x1e6=%ld "
-                "ki_per_rad_x1e6=%ld kd_s2_per_rad_x1e6=%ld "
-                "integral_limit_ppm=%ld "
-                "output_limit_ppm=%ld d_filter_tau_us=%ld max_rate_uradps=%ld",
-                axis_names[i], lroundf(axis->kp * 1e6f),
-                lroundf(axis->ki * 1e6f), lroundf(axis->kd * 1e6f),
-                lroundf(axis->integral_limit * 1e6f),
-                lroundf(axis->output_limit * 1e6f),
-                lroundf(axis->d_filter_tau_s * 1e6f),
-                lroundf(rate.config.max_rate_radps[i] * 1e6f));
-        }
-#endif
+        APP_LOG_INFO("rate", "configured");
     } else {
         APP_LOG_ERROR("rate", "configuration_failed");
     }
 #endif
-    APP_LOG_INFO("attitude",
-                 "filter_config name=mahony nominal_hz=%u "
-                 "kp_per_s_x1e6=%ld ki_per_s2_x1e6=%ld",
-                 MAHONY_HZ, lroundf(MAHONY_KP_PER_S * 1e6f),
-                 lroundf(MAHONY_KI_PER_S2 * 1e6f));
-    APP_LOG_INFO("attitude",
-                 "controller_config nominal_hz=%u kp_per_s_x1e6=%ld "
-                 "max_tilt_urad=%ld",
-                 ATTITUDE_CONTROL_HZ, lroundf(ATTITUDE_KP_PER_S * 1e6f),
-                 lroundf(ATTITUDE_MAX_ANGLE_RAD * 1e6f));
     init_motor();
     init_imu();
 #if APP_TELEMETRY_ENABLED || APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)

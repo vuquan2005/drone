@@ -6,11 +6,6 @@
 #define IMU_INIT_ATTEMPTS 3U
 #define IMU_INIT_RETRY_DELAY_US 10000U
 
-const char *bsp_imu_startup_mode(void) {
-    return "model=BMI160 power=normal accel_filter=normal_avg4 "
-           "gyro_filter=normal";
-}
-
 /* Legacy Bosch callbacks have no context pointer. Bound for each public call;
  * all instances must be serialized in the foreground. */
 static bsp_imu_t *active_imu;

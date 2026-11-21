@@ -56,12 +56,6 @@ typedef struct {
  * conversion. */
 #define BSP_IMU_GYRO_RANGE_DPS 2000U
 
-/** @brief Describe the selected backend's requested power and filter modes.
- * @return Static text with sensor model and modes, valid for the life of the
- * firmware. Does not access the IMU or verify its registers.
- */
-const char *bsp_imu_startup_mode(void);
-
 /** Raw backend configuration codes accepted by the driver during init.
  * A code of UINT8_MAX denotes a field that does not apply to this model. */
 typedef struct {

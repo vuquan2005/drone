@@ -313,14 +313,8 @@ int main(void) {
     char output[TEST_OUTPUT_SIZE];
     if (!APP_TELEMETRY_ENABLED) {
         drain(0U, output);
-        assert(strstr(output,
-                      "[I][rate] configured min_period_us=2000 frame=FRD\n") !=
-               NULL);
-        assert(
-            strstr(output, "axis_config axis=roll kp_s_per_rad_x1e6=100000 ") !=
-            NULL);
-        assert(strstr(output, "d_filter_tau_us=0 max_rate_uradps=2000000\n") !=
-               NULL);
+        assert(strstr(output, "[I][rate] configured\n") != NULL);
+        assert(strstr(output, "axis_config") == NULL);
         tick += 50U;
         status = BSP_IMU_OK;
         process_app();
@@ -346,13 +340,10 @@ int main(void) {
     drain(0U, output);
     assert(strstr(output, "[1000][I][pwm] initialized\n") != NULL);
     assert(strstr(output, "[1000][I][imu] initialized id=0x24\n") != NULL);
-    assert(strstr(output, "[I][attitude] filter_config name=mahony "
-                          "nominal_hz=200 kp_per_s_x1e6=2000000 "
-                          "ki_per_s2_x1e6=0\n") != NULL);
+    assert(strstr(output, "filter_config") == NULL);
+    assert(strstr(output, "controller_config") == NULL);
     assert(strstr(output,
-                  "[I][attitude] controller_config nominal_hz=100 "
-                  "kp_per_s_x1e6=4000000 max_tilt_urad=436332\n") != NULL);
-    assert(strstr(output, "calibration_applied source=default frame=FRD ") !=
+                  "calibration_applied source=default accel_enabled=0\n") !=
            NULL);
     process_app();
     assert(drain(0U, output) == 0U && drain(1U, output) == 0U);
@@ -675,17 +666,13 @@ int main(void) {
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT && runtime_mode_supported());
     drain(0U, output);
-    assert(strstr(output, "[I][runtime] selected mode=flight supported=1\n") !=
-           NULL);
-    assert(strstr(output,
-                  "[I][imu] calibration_applied source=flash frame=FRD ") !=
-           NULL);
-    assert(strstr(output, "accel_enabled=1\n") != NULL);
-    assert(strstr(output, "gyro_bias_uradps=10000,-20000,30000 ") != NULL);
-    assert(strstr(output, "[I][imu] accel_correction frame=FRD "
-                          "bias_umps2=100000,200000,-100000 "
-                          "matrix_row_major_x1e6=1010000,-30000,0,0,1020000,"
-                          "20000,40000,0,980000\n") != NULL);
+    assert(strstr(output, "[I][runtime] selected mode=flight\n") != NULL);
+    assert(
+        strstr(output,
+               "[I][imu] calibration_applied source=flash accel_enabled=1\n") !=
+        NULL);
+    assert(strstr(output, "gyro_bias_uradps") == NULL);
+    assert(strstr(output, "accel_correction") == NULL);
     assert(app_configure_rate(&rate_config));
     tick += 50U;
     status = BSP_IMU_OK;
@@ -712,6 +699,13 @@ int main(void) {
     assert((uint8_t)output[12U] == 15U &&
            (uint8_t)output[13U] == APP_CONFIG_FLIGHT);
     assert(get_u32(output + 96U) == rate_config.period_us);
+    uint32_t coefficient_bits;
+    memcpy(&coefficient_bits, &flash_calibration.gyro_bias_radps[0],
+           sizeof(coefficient_bits));
+    assert(get_u32(output + 36U) == coefficient_bits);
+    memcpy(&coefficient_bits, &flash_calibration.accel_matrix[0][0],
+           sizeof(coefficient_bits));
+    assert(get_u32(output + 60U) == coefficient_bits);
     status = BSP_IMU_OK;
     tick += 70U;
     runtime_process();

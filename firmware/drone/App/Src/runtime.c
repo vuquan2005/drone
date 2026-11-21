@@ -256,8 +256,7 @@ void runtime_process(void) {
             [RUNTIME_IMU_CALIB] = "imu_calib",
         };
         if (mode != RUNTIME_BOOT_SELECT)
-            APP_LOG_INFO("runtime", "selected mode=%s supported=%u",
-                         mode_names[mode], (unsigned)runtime_mode_supported());
+            APP_LOG_INFO("runtime", "selected mode=%s", mode_names[mode]);
 #endif
         if (mode == RUNTIME_FLIGHT) {
             /* Initialization can block; poll fresh RC before dispatch. */

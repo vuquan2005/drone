@@ -20,7 +20,8 @@ uv run pre-commit install --install-hooks
 ```
 
 Dependency quản lý tại `pyproject.toml` và `uv.lock`; môi trường nằm trong
-`.venv/`. Nhóm `dev` cài mặc định, nhóm GUI `rtt` chọn bằng `--group rtt`.
+`.venv/`. Nhóm `dev` cài mặc định, nhóm GUI `rtt` chọn bằng `--group rtt`,
+nhóm `cad` chọn bằng `--group cad` và dùng Python 3.11–3.14.
 Khi đổi dependency, chạy `uv lock` và xem diff; giữ lockfile trong Git.
 Lần đầu cần mạng để tải môi trường/công cụ.
 
@@ -44,6 +45,19 @@ make telemetry
 
 Xem [hướng dẫn RTT](rtt/README.md) để cấu hình cổng, ghi CSV/log/raw,
 đọc timing và chạy kiểm thử.
+
+## CAD
+
+Mở extension OCP CAD Viewer trong VS Code. Để chạy từng ô `# %%` trong
+`ocp_vscode_demo.py`, dùng extension Jupyter và chọn kernel từ `.venv/`.
+Cũng có thể chạy toàn bộ demo từ gốc repo.
+
+```sh
+uv sync --locked --group cad
+uv run --locked --group cad ocp_vscode_demo.py
+```
+
+Dùng `uv sync --locked --group cad --group rtt` để cài cả CAD và viewer RTT.
 
 ## Đồng bộ PDF
 

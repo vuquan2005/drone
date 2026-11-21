@@ -39,7 +39,8 @@
     "**/build": true,
     "**/cmake-build-*": true,
     "**/temp": true,
-    "**/tmp": true
+    "**/tmp": true,
+    "**/OldVersions": true
   },
   "material-icon-theme.files.associations": {
     "*.ioc": "settings",
@@ -74,7 +75,13 @@
     "papers_md": "markdown",
     "references": "bibliography",
     "research": "review",
-    "tutorials": "helper"
+    "tutorials": "helper",
+    "protocol": "connection",
+    "Jumper-T20": "console",
+    "drone": "changesets",
+    "tools/rtt": "connection",
+    "telemetry": "benchmark",
+    "raw": "dump"
   },
   "workbench.editorAssociations": {
     "*.copilotmd": "vscode.markdown.preview.editor",

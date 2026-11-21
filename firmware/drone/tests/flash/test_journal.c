@@ -1,6 +1,9 @@
 #include "app_flash_journal.h"
+#include "app_log.h"
 #include "app_telemetry.h"
 #include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <string.h>
 
 enum { PAGE_COUNT = BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES };
@@ -9,6 +12,7 @@ static uint8_t storage[PAGE_COUNT][BSP_FLASH_PAGE_BYTES];
 static uint8_t pending_page[BSP_FLASH_PAGE_BYTES];
 static enum { IDLE, PROBING, READING, PROGRAMMING } operation;
 static uint32_t *probe_out;
+static uint32_t jedec_id;
 static void *read_out;
 static uint32_t index_pending;
 static uint32_t now_ms;
@@ -64,7 +68,11 @@ bsp_flash_result_t bsp_flash_poll(void) {
     }
     switch (operation) {
     case PROBING:
-        *probe_out = BSP_FLASH_JEDEC_ID;
+        *probe_out = jedec_id;
+        if (jedec_id != BSP_FLASH_JEDEC_ID) {
+            operation = IDLE;
+            return BSP_FLASH_WRONG_DEVICE;
+        }
         break;
     case READING:
         memcpy(read_out, storage[index_pending], BSP_FLASH_PAGE_BYTES);
@@ -107,6 +115,7 @@ static void reboot(void) {
 static void clean_chip(void) {
     memset(storage, 0xFF, sizeof(storage));
     programs = 0;
+    jedec_id = BSP_FLASH_JEDEC_ID;
     next_error = BSP_FLASH_OK;
     now_ms = 0;
 }
@@ -411,6 +420,99 @@ static void test_recorder_full(void) {
     assert(end.end_reason == APP_FLASH_JOURNAL_FILLED);
 }
 
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
+static char last_flash_log[192];
+static unsigned flash_log_level;
+static unsigned flash_log_count;
+
+bsp_rtt_result_t app_log_write(unsigned level, const char *tag,
+                               const char *format, ...) {
+    assert(strcmp(tag, "flash") == 0 || strcmp(tag, "telemetry") == 0);
+    va_list args;
+    va_start(args, format);
+    const int length =
+        vsnprintf(last_flash_log, sizeof(last_flash_log), format, args);
+    va_end(args);
+    assert(length > 0 && (size_t)length < sizeof(last_flash_log));
+    flash_log_level = level;
+    ++flash_log_count;
+    return BSP_RTT_OK;
+}
+
+static void test_record_request_logs(void) {
+    clean_chip();
+    flash_log_count = 0;
+    app_flash_recorder_init(now_ms);
+    assert(flash_log_count == 1U);
+    app_flash_recorder_update(true, true, 1U);
+    assert(flash_log_count == 2U);
+    assert(strcmp(last_flash_log,
+                  "record_request enabled=1 state=scanning scanned_pages=0") ==
+           0);
+
+    app_flash_recorder_update(true, true, 2U);
+    app_flash_recorder_update(false, false, 3U);
+    assert(flash_log_count == 2U);
+
+    app_flash_recorder_update(true, false, 4U);
+    assert(flash_log_count == 3U);
+    assert(strcmp(last_flash_log,
+                  "record_request enabled=0 state=scanning scanned_pages=0") ==
+           0);
+}
+
+static void test_flash_logs(void) {
+    clean_chip();
+    flash_log_count = 0;
+    storage[0][0] = 0; /* A non-journal page counts as ignored. */
+    reboot();
+    assert(strcmp(last_flash_log, "scan_start pages=65536") == 0);
+    until(APP_FLASH_JOURNAL_READY);
+    assert(flash_log_count == 2U);
+    assert(strcmp(last_flash_log,
+                  "scan_done jedec=0xef4018 elapsed_ms=6 next_page=1 "
+                  "ignored_pages=1 interrupted_sessions=0") == 0);
+
+    assert(app_flash_journal_begin(now_ms));
+    process(); /* Write started but is not verified. */
+    assert(flash_log_count == 2U);
+    until(APP_FLASH_JOURNAL_OPEN);
+    assert(flash_log_level == APP_LOG_LEVEL_INFO);
+    assert(strcmp(last_flash_log, "session_open id=1 addr=0x000100") == 0);
+    assert(app_flash_journal_append(large_frame, sizeof(large_frame), now_ms));
+    until(APP_FLASH_JOURNAL_OPEN);
+    assert(flash_log_count == 3U); /* Regular DATA pages are quiet. */
+    app_flash_journal_note_drops(2U);
+    assert(app_flash_journal_close(now_ms));
+    assert(strcmp(last_flash_log, "session_closing id=1 reason=stopped") == 0);
+    process();
+    assert(flash_log_count == 4U);
+    until(APP_FLASH_JOURNAL_READY);
+    assert(flash_log_count == 5U);
+    assert(strcmp(last_flash_log, "session_close id=1 reason=stopped "
+                                  "written_frames=1 dropped_frames=2") == 0);
+
+    reboot();
+    process(); /* Start the probe. */
+    process(); /* Complete the probe. */
+    process(); /* Start reading page zero. */
+    next_error = BSP_FLASH_TIMEOUT;
+    process();
+    assert(flash_log_level == APP_LOG_LEVEL_ERROR);
+    assert(strstr(last_flash_log, "op=read error=timeout") != NULL);
+    assert(strstr(last_flash_log, "page=0 addr=0x000000") != NULL);
+    const unsigned after_fault = flash_log_count;
+    process();
+    assert(flash_log_count == after_fault);
+
+    jedec_id = 0x123456U;
+    reboot();
+    until(APP_FLASH_JOURNAL_FAULT);
+    assert(strstr(last_flash_log, "op=probe error=wrong_device") != NULL);
+    assert(strstr(last_flash_log, "jedec=0x123456 expected=0xef4018") != NULL);
+}
+#endif
+
 int main(void) {
     test_append_and_flush();
     test_recovery();
@@ -418,5 +520,9 @@ int main(void) {
     test_fault();
     test_recorder_fifo_and_sinks();
     test_recorder_full();
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
+    test_flash_logs();
+    test_record_request_logs();
+#endif
     return 0;
 }

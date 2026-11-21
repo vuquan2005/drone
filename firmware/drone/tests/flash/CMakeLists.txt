@@ -17,7 +17,7 @@ foreach(RTT IN ITEMS 0 1)
         ${TARGET} PRIVATE ../imu/mocks ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/BSP/Inc
                           ${FIRMWARE_ROOT}/Control/Inc)
     target_compile_definitions(${TARGET} PRIVATE DRONE_FLASH_RECORD=1 DRONE_RTT=${RTT}
-                                                 DRONE_TELEMETRY=${RTT})
+                                                 DRONE_TELEMETRY=${RTT} DRONE_LOG_LEVEL=3)
     target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     add_test(NAME ${TARGET} COMMAND ${TARGET})
 endforeach()

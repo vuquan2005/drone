@@ -1,5 +1,6 @@
 #include "app_flash_recorder.h"
 #include "app_flash_journal.h"
+#include "app_log.h"
 #include "app_telemetry.h"
 #include <string.h>
 
@@ -46,12 +47,35 @@ void app_flash_recorder_init(uint32_t now_ms) {
     app_flash_journal_init(now_ms);
 }
 
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
+static void log_request(bool requested) {
+    static const char *const state_names[] = {
+        [APP_FLASH_JOURNAL_SCANNING] = "scanning",
+        [APP_FLASH_JOURNAL_READY] = "ready",
+        [APP_FLASH_JOURNAL_OPENING] = "opening",
+        [APP_FLASH_JOURNAL_OPEN] = "open",
+        [APP_FLASH_JOURNAL_WRITING] = "writing",
+        [APP_FLASH_JOURNAL_CLOSING] = "closing",
+        [APP_FLASH_JOURNAL_FULL] = "full",
+        [APP_FLASH_JOURNAL_FAULT] = "fault",
+    };
+    const app_flash_journal_status_t status = app_flash_journal_status();
+    APP_LOG_INFO("telemetry",
+                 "record_request enabled=%u state=%s scanned_pages=%lu",
+                 (unsigned)requested, state_names[status.state],
+                 (unsigned long)status.scanned_pages);
+}
+#endif
+
 void app_flash_recorder_update(bool valid, bool requested, uint32_t now_ms) {
     recorder.sample_ms = now_ms;
-    if (!valid) {
+    if (!valid || recorder.requested == requested) {
         return;
     }
     recorder.requested = requested;
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
+    log_request(requested);
+#endif
     if (!requested && recorder.session && !recorder.stopping) {
         recorder.stopping = true;
         recorder.stop_ms = now_ms;

@@ -1,4 +1,5 @@
 #include "app_flash_journal.h"
+#include "app_log.h"
 #include <string.h>
 
 enum {
@@ -154,9 +155,15 @@ static void idle_after_session(void) {
     journal.status.state = PAGE_COUNT - journal.status.next_page < 4U
                                ? APP_FLASH_JOURNAL_FULL
                                : APP_FLASH_JOURNAL_READY;
+    if (journal.status.state == APP_FLASH_JOURNAL_FULL) {
+        APP_LOG_WARN("flash", "state=full next_page=%lu free_pages=%lu",
+                     (unsigned long)journal.status.next_page,
+                     (unsigned long)(PAGE_COUNT - journal.status.next_page));
+    }
 }
 
-static void scan_page(void) {
+static void scan_page(uint32_t now_ms) {
+    (void)now_ms;
     const uint32_t index = journal.status.scanned_pages++;
     if (!page_is_erased(journal.page)) {
         journal.status.next_page = index + 1U;
@@ -175,6 +182,14 @@ static void scan_page(void) {
     }
     if (journal.status.scanned_pages == PAGE_COUNT) {
         mark_interrupted();
+        APP_LOG_INFO("telemetry",
+                     "scan_done jedec=0x%06lx elapsed_ms=%lu next_page=%lu "
+                     "ignored_pages=%lu interrupted_sessions=%lu",
+                     (unsigned long)journal.jedec_id,
+                     (unsigned long)(now_ms - journal.powered_ms),
+                     (unsigned long)journal.status.next_page,
+                     (unsigned long)journal.status.ignored_pages,
+                     (unsigned long)journal.status.interrupted_sessions);
         idle_after_session();
     }
 }
@@ -193,9 +208,60 @@ static void seal_page(app_flash_journal_page_type_t type, uint32_t now_ms) {
     memset(journal.page + used_bytes, 0xFF, sizeof(journal.page) - used_bytes);
 }
 
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_ERROR)
+static const char *flash_error_name(bsp_flash_result_t result) {
+    switch (result) {
+    case BSP_FLASH_WRONG_DEVICE:
+        return "wrong_device";
+    case BSP_FLASH_DEVICE_BUSY:
+        return "device_busy";
+    case BSP_FLASH_WRITE_PROTECTED:
+        return "write_protected";
+    case BSP_FLASH_NOT_ERASED:
+        return "not_erased";
+    case BSP_FLASH_VERIFY_FAILED:
+        return "verify_failed";
+    case BSP_FLASH_SPI_ERROR:
+        return "spi_error";
+    case BSP_FLASH_TIMEOUT:
+        return "timeout";
+    default:
+        return "unexpected_result";
+    }
+}
+
+static void log_transfer_error(bsp_flash_result_t result) {
+    const char *error = flash_error_name(result);
+    if (journal.status.state == APP_FLASH_JOURNAL_SCANNING &&
+        journal.status.scanned_pages == 0U &&
+        journal.jedec_id != BSP_FLASH_JEDEC_ID) {
+        APP_LOG_ERROR(
+            "flash", "op=probe error=%s code=%u jedec=0x%06lx expected=0x%06lx",
+            error, (unsigned)result, (unsigned long)journal.jedec_id,
+            (unsigned long)BSP_FLASH_JEDEC_ID);
+    } else if (journal.status.state == APP_FLASH_JOURNAL_SCANNING) {
+        APP_LOG_ERROR("flash", "op=read error=%s code=%u page=%lu addr=0x%06lx",
+                      error, (unsigned)result,
+                      (unsigned long)journal.status.scanned_pages,
+                      (unsigned long)(journal.status.scanned_pages *
+                                      BSP_FLASH_PAGE_BYTES));
+    } else {
+        APP_LOG_ERROR(
+            "flash",
+            "op=program error=%s code=%u page=%lu addr=0x%06lx session=%lu",
+            error, (unsigned)result, (unsigned long)journal.status.next_page,
+            (unsigned long)(journal.status.next_page * BSP_FLASH_PAGE_BYTES),
+            (unsigned long)journal.session_id);
+    }
+}
+#endif
+
 static bool check_transfer(bsp_flash_result_t result) {
     journal.transfer_pending = result == BSP_FLASH_PENDING;
     if (result != BSP_FLASH_OK && !journal.transfer_pending) {
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_ERROR)
+        log_transfer_error(result);
+#endif
         journal.status.flash_error = result;
         journal.status.state = APP_FLASH_JOURNAL_FAULT;
     }
@@ -220,7 +286,7 @@ static void process_scan(uint32_t now_ms) {
             ? bsp_flash_poll()
             : bsp_flash_read_start(address, journal.page, sizeof(journal.page));
     if (check_transfer(result)) {
-        scan_page();
+        scan_page(now_ms);
     }
 }
 
@@ -229,6 +295,9 @@ static void prepare_end(app_flash_journal_end_reason_t reason,
     journal.status.state = APP_FLASH_JOURNAL_CLOSING;
     journal.end_reason = reason;
     journal.close_ms = now_ms;
+    APP_LOG_INFO("telemetry", "session_closing id=%lu reason=%s",
+                 (unsigned long)journal.session_id,
+                 reason == APP_FLASH_JOURNAL_FILLED ? "full" : "stopped");
 }
 
 static void process_write(app_flash_journal_page_type_t type, uint32_t now_ms) {
@@ -257,7 +326,19 @@ static void process_write(app_flash_journal_page_type_t type, uint32_t now_ms) {
     journal.used = 0;
     journal.frames = 0;
 
+    if (type == APP_FLASH_JOURNAL_BEGIN) {
+        APP_LOG_INFO("telemetry", "session_open id=%lu addr=0x%06lx",
+                     (unsigned long)journal.session_id, (unsigned long)address);
+    }
     if (type == APP_FLASH_JOURNAL_END) {
+        APP_LOG_INFO("telemetry",
+                     "session_close id=%lu reason=%s written_frames=%lu "
+                     "dropped_frames=%lu",
+                     (unsigned long)journal.session_id,
+                     journal.end_reason == APP_FLASH_JOURNAL_FILLED ? "full"
+                                                                    : "stopped",
+                     (unsigned long)journal.written_frames,
+                     (unsigned long)journal.dropped_frames);
         idle_after_session();
     } else if (PAGE_COUNT - journal.status.next_page == 1U) {
         prepare_end(APP_FLASH_JOURNAL_FILLED, now_ms);
@@ -272,6 +353,8 @@ void app_flash_journal_init(uint32_t now_ms) {
     memset(&journal, 0, sizeof(journal));
     journal.powered_ms = now_ms;
     journal.session_id = UINT32_MAX;
+    APP_LOG_INFO("telemetry", "scan_start pages=%lu",
+                 (unsigned long)PAGE_COUNT);
 }
 
 void app_flash_journal_process(uint32_t now_ms) {

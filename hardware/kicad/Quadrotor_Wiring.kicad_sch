@@ -393,7 +393,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "DA_Drone:BMI270_Module"
+		(symbol "DA_Drone:BMI160"
 			(pin_names
 				(offset 1.016)
 			)
@@ -412,7 +412,7 @@
 					)
 				)
 			)
-			(property "Value" "BMI270_Module"
+			(property "Value" "BMI160"
 				(at 0 17.78 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -444,7 +444,7 @@
 					)
 				)
 			)
-			(property "Description" "BMI270 sensor module."
+			(property "Description" "GY-BMI160 module, SPI wiring."
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -455,7 +455,7 @@
 					)
 				)
 			)
-			(symbol "BMI270_Module_0_1"
+			(symbol "BMI160_0_1"
 				(rectangle
 					(start -15.24 15.24)
 					(end 15.24 -25.4)
@@ -468,11 +468,11 @@
 					)
 				)
 			)
-			(symbol "BMI270_Module_1_1"
+			(symbol "BMI160_1_1"
 				(pin power_in line
 					(at 20.32 10.16 180)
 					(length 5.08)
-					(name "VCC"
+					(name "3V3"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -508,7 +508,7 @@
 				(pin bidirectional line
 					(at 20.32 0 180)
 					(length 5.08)
-					(name "AD0/MISO"
+					(name "SA0"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -526,7 +526,7 @@
 				(pin bidirectional line
 					(at 20.32 -5.08 180)
 					(length 5.08)
-					(name "SDA/MOSI"
+					(name "SDA"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -544,7 +544,7 @@
 				(pin input line
 					(at 20.32 -10.16 180)
 					(length 5.08)
-					(name "SCL/SCLK"
+					(name "SCL"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -3000,121 +3000,6 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "power:PWR_FLAG"
-			(power global)
-			(pin_numbers
-				(hide yes)
-			)
-			(pin_names
-				(offset 0)
-				(hide yes)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "#FLG"
-				(at 0 1.905 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Value" "PWR_FLAG"
-				(at 0 3.81 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Footprint" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" "Special symbol for telling ERC where power comes from"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "flag power"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "PWR_FLAG_0_0"
-				(pin power_out line
-					(at 0 0 90)
-					(length 0)
-					(name ""
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-			)
-			(symbol "PWR_FLAG_0_1"
-				(polyline
-					(pts
-						(xy 0 0) (xy 0 1.27) (xy -1.016 1.905) (xy 0 2.54) (xy 1.016 1.905) (xy 0 1.27)
-					)
-					(stroke
-						(width 0)
-						(type default)
-					)
-					(fill
-						(type none)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
 	)
 	(rectangle
 		(start 248 10)
@@ -3162,7 +3047,7 @@
 		)
 		(uuid "03ef7f75-cea8-4285-9f55-bea0cb2a4325")
 	)
-	(text "BMI270 V1.3"
+	(text "BMI160"
 		(exclude_from_sim no)
 		(at 64.77 184.5 0)
 		(effects
@@ -3235,10 +3120,10 @@
 	)
 	(text "Khối nguồn"
 		(exclude_from_sim no)
-		(at 252 204 0)
+		(at 250.444 201.422 0)
 		(effects
 			(font
-				(size 1.8 1.8)
+				(size 4.572 4.572)
 			)
 			(justify left top)
 		)
@@ -3266,7 +3151,7 @@
 	)
 	(text "Khối cơ cấu chấp hành"
 		(exclude_from_sim no)
-		(at 250.952 16.256 0)
+		(at 250.19 13.716 0)
 		(effects
 			(font
 				(size 4.572 4.572)
@@ -3356,7 +3241,7 @@
 		(uuid "1b9284f6-4dbc-51db-abfa-3b8bf986092a")
 	)
 	(no_connect
-		(at 64.77 114.3)
+		(at 186.69 83.82)
 		(uuid "1dd561e4-2ac5-5f53-a928-ebb099883f60")
 	)
 	(no_connect
@@ -3428,7 +3313,7 @@
 		(uuid "56949d56-84db-5457-9fba-0aefe760e4ee")
 	)
 	(no_connect
-		(at 64.77 116.84)
+		(at 186.69 86.36)
 		(uuid "57dbf4e0-3ade-5a23-97fa-988ee125acf8")
 	)
 	(no_connect
@@ -3484,7 +3369,7 @@
 		(uuid "6fab21c4-d7a1-57bc-a96f-994a95f051ad")
 	)
 	(no_connect
-		(at 64.77 121.92)
+		(at 186.69 81.28)
 		(uuid "719a8b83-93c9-5713-9a2f-96f18382c280")
 	)
 	(no_connect
@@ -3496,7 +3381,7 @@
 		(uuid "76bfab9f-79be-5137-ba58-c8a1c1644cf9")
 	)
 	(no_connect
-		(at 64.77 119.38)
+		(at 186.69 78.74)
 		(uuid "7761684b-c58c-5948-ba79-caa70bf94353")
 	)
 	(no_connect
@@ -3699,7 +3584,7 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 81.28) (xy 191.77 81.28)
+			(xy 64.77 121.92) (xy 59.69 121.92)
 		)
 		(stroke
 			(width 0)
@@ -3749,7 +3634,7 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 86.36) (xy 191.77 86.36)
+			(xy 64.77 116.84) (xy 59.69 116.84)
 		)
 		(stroke
 			(width 0)
@@ -3939,16 +3824,6 @@
 	)
 	(wire
 		(pts
-			(xy 107.95 182.88) (xy 107.95 187.96)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "58fa69a9-ccfd-4fcf-b903-c222bbad0525")
-	)
-	(wire
-		(pts
 			(xy 373.38 48.26) (xy 355.6 48.26)
 		)
 		(stroke
@@ -3966,16 +3841,6 @@
 			(type default)
 		)
 		(uuid "5c4b02ab-c3c5-4323-8b3d-ba401f4fe88b")
-	)
-	(wire
-		(pts
-			(xy 288.29 210.82) (xy 288.29 215.9)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "5ea84dde-dc0a-4b26-972e-d0a89178676c")
 	)
 	(wire
 		(pts
@@ -4026,16 +3891,6 @@
 			(type default)
 		)
 		(uuid "736b89b2-32cf-47f1-8fe0-877fed173999")
-	)
-	(wire
-		(pts
-			(xy 269.24 213.36) (xy 269.24 208.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "73b6180f-6859-49d6-bd52-4e251b5eea0e")
 	)
 	(wire
 		(pts
@@ -4109,7 +3964,7 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 83.82) (xy 191.77 83.82)
+			(xy 64.77 114.3) (xy 59.69 114.3)
 		)
 		(stroke
 			(width 0)
@@ -4159,7 +4014,7 @@
 	)
 	(wire
 		(pts
-			(xy 269.24 236.22) (xy 269.24 241.3)
+			(xy 269.24 238.76) (xy 269.24 241.3)
 		)
 		(stroke
 			(width 0)
@@ -4269,6 +4124,16 @@
 	)
 	(wire
 		(pts
+			(xy 269.24 212.09) (xy 269.24 215.9)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d4e9987a-37ac-43cb-85d6-d97ceded1fc7")
+	)
+	(wire
+		(pts
 			(xy 297.18 35.56) (xy 292.1 35.56)
 		)
 		(stroke
@@ -4299,7 +4164,7 @@
 	)
 	(wire
 		(pts
-			(xy 186.69 78.74) (xy 191.77 78.74)
+			(xy 64.77 119.38) (xy 59.69 119.38)
 		)
 		(stroke
 			(width 0)
@@ -4437,16 +4302,6 @@
 		)
 		(uuid "fe563d56-3ca6-4f7d-836d-f7cbd7e50017")
 	)
-	(label "VBAT_LIPO"
-		(at 288.29 215.9 0)
-		(effects
-			(font
-				(size 0.95 0.95)
-			)
-			(justify left bottom)
-		)
-		(uuid "02ed9484-dc96-4353-b22b-999702c5ff53")
-	)
 	(label "STM32_TX_ELRS_RX"
 		(at 59.69 106.68 180)
 		(effects
@@ -4468,12 +4323,12 @@
 		(uuid "1d605311-8484-4b92-ac7b-c2e3b4e7ed01")
 	)
 	(label "SPI1_SCK"
-		(at 191.77 86.36 0)
+		(at 59.69 116.84 180)
 		(effects
 			(font
 				(size 0.95 0.95)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "27d87b2b-8681-417e-acc0-a4a54ba1b80b")
 	)
@@ -4628,17 +4483,17 @@
 		(uuid "69aeb400-daa1-4e60-8489-f9268745794c")
 	)
 	(label "IMU_CS"
-		(at 191.77 83.82 0)
+		(at 59.69 114.3 180)
 		(effects
 			(font
 				(size 0.95 0.95)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "6c816297-7a8d-470b-b0b2-5b63de714d8a")
 	)
 	(label "VBAT_LIPO"
-		(at 269.24 208.28 0)
+		(at 269.24 212.09 0)
 		(effects
 			(font
 				(size 0.95 0.95)
@@ -4676,16 +4531,6 @@
 			(justify right bottom)
 		)
 		(uuid "8805b9b2-afdb-47b9-8fef-58af9016f2b2")
-	)
-	(label "+3V3"
-		(at 107.95 187.96 0)
-		(effects
-			(font
-				(size 0.95 0.95)
-			)
-			(justify left bottom)
-		)
-		(uuid "89889f47-304f-47fb-a975-8161aa5ce314")
 	)
 	(label "GND"
 		(at 292.1 119.38 180)
@@ -4768,12 +4613,12 @@
 		(uuid "b7d68756-2534-431a-a75b-e9459e996bf5")
 	)
 	(label "SPI1_MOSI"
-		(at 191.77 81.28 0)
+		(at 59.69 121.92 180)
 		(effects
 			(font
 				(size 0.95 0.95)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "bec075a3-c9f1-459d-b131-fb8686f8b307")
 	)
@@ -4828,12 +4673,12 @@
 		(uuid "dcc3f40d-a964-4bfd-a2dc-3c0a4c7351ea")
 	)
 	(label "SPI1_MISO"
-		(at 191.77 78.74 0)
+		(at 59.69 119.38 180)
 		(effects
 			(font
 				(size 0.95 0.95)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "e6861262-30d2-4547-808b-d41f1455b38f")
 	)
@@ -4908,85 +4753,7 @@
 		(uuid "fe3ad6b5-5853-49ba-867a-86033a90cce7")
 	)
 	(symbol
-		(lib_id "power:PWR_FLAG")
-		(at 288.29 210.82 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "047a3d8d-0c56-51e5-bb90-fef35a83a22f")
-		(property "Reference" "#FLG01"
-			(at 288.29 206.82 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "PWR_FLAG"
-			(at 288.29 206.82 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 388.62 104.14 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 388.62 104.14 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 388.62 104.14 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "7d2a8ab3-a1f9-5870-bebc-f779127cac44")
-		)
-		(instances
-			(project "Quadrotor_Wiring"
-				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "#FLG01")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "DA_Drone:BMI270_Module")
+		(lib_id "DA_Drone:BMI160")
 		(at 64.77 204.47 0)
 		(unit 1)
 		(body_style 1)
@@ -5006,7 +4773,7 @@
 				)
 			)
 		)
-		(property "Value" "BMI270_Module"
+		(property "Value" "BMI160"
 			(at 64.77 183.77 0)
 			(hide yes)
 			(show_name no)
@@ -5039,7 +4806,7 @@
 				)
 			)
 		)
-		(property "Description" "BMI270 sensor module."
+		(property "Description" "GY-BMI160 module, SPI wiring."
 			(at 210.82 218.44 0)
 			(hide yes)
 			(show_name no)
@@ -5440,86 +5207,8 @@
 		)
 	)
 	(symbol
-		(lib_id "power:PWR_FLAG")
-		(at 107.95 182.88 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "723ca5a4-21fe-5b02-acf8-4a9e2257b3ca")
-		(property "Reference" "#FLG02"
-			(at 107.95 178.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "PWR_FLAG"
-			(at 107.95 178.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 223.52 182.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 223.52 182.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 223.52 182.88 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "2da277c5-e67b-5977-bcc0-770de1cb4b34")
-		)
-		(instances
-			(project "Quadrotor_Wiring"
-				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "#FLG02")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "DA_Drone:LiPo_Battery")
-		(at 269.24 223.52 0)
+		(at 269.24 226.06 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -5529,7 +5218,7 @@
 		(dnp no)
 		(uuid "7463284b-6aa1-5579-9d89-648b3a4ec198")
 		(property "Reference" "BT1"
-			(at 289 224 0)
+			(at 289 226.54 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -5539,7 +5228,7 @@
 			)
 		)
 		(property "Value" "LiPo_Battery"
-			(at 284.24 223.82 0)
+			(at 284.24 226.36 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5550,7 +5239,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 403.86 63.5 0)
+			(at 403.86 66.04 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5561,7 +5250,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 403.86 63.5 0)
+			(at 403.86 66.04 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5572,7 +5261,7 @@
 			)
 		)
 		(property "Description" "LiPo battery, main terminals."
-			(at 403.86 63.5 0)
+			(at 403.86 66.04 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)

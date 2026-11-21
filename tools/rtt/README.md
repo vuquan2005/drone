@@ -26,28 +26,29 @@ uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 
 ## Xuất telemetry đã ghi trong flash
 
-Cắm ST-LINK qua SWD. Từ gốc repo, nạp ảnh bảo trì `Export` rồi mở công cụ:
+Cắm ST-LINK qua SWD và dừng phiên debug đang dùng cùng ST-LINK. Từ gốc repo,
+chạy lệnh sau để nạp ảnh bảo trì `Export` và mở công cụ:
 
 ```sh
-make fw-flash PRESET=Export
-make flash-export
+make telemetry-export
 ```
 
-Board khởi động trực tiếp vào chế độ export và chờ lệnh qua RTT.
+Board khởi động trực tiếp vào chế độ export và chờ lệnh qua RTT. Nếu board
+đã chạy ảnh `Export`, dùng `make flash-export` để mở lại công cụ.
 Sau khi bảo trì xong, đóng OpenOCD và nạp lại firmware bay bằng preset đã dùng
-trước đó. Lệnh `fw-flash` nạp ảnh vào flash nội STM32. Thao tác xóa
+trước đó. Lệnh `telemetry-export` nạp ảnh vào flash nội STM32. Thao tác xóa
 telemetry trong Viewer tác động lên chip ngoài W25Q128FV.
 
 Bấm **Start OpenOCD** rồi **Export flash**. Cửa sổ quản lý OpenOCD với
 GDB ở `127.0.0.1:3333` và RTT ở cổng 9092/9093. Khi cần kết nối GDB,
 dùng `target extended-remote :3333` và cho CPU chạy trước khi export.
-Dừng phiên debug đang dùng cùng ST-LINK trước khi mở server. **Stop OpenOCD**
-hoặc đóng cửa sổ sẽ dừng server đã mở từ công cụ. Có thể chọn executable và cổng bằng
+**Stop OpenOCD** hoặc đóng cửa sổ sẽ dừng server đã mở từ công cụ.
+Có thể chọn executable và cổng bằng
 `FLASH_EXPORT_ARGS="--openocd /đường/dẫn --gdb-port 0"`, trong đó `0`
 tắt GDB. Dùng `--log-port` và `--data-port` để đổi cổng RTT của công cụ.
 
 Mỗi lượt xuất được lưu vào `experiments/raw/export/flash_export_<thời điểm>`.
-Đổi thư mục xuất bằng `make flash-export FLASH_EXPORT_ARGS="--export-dir /đường/dẫn"`.
+Đổi thư mục xuất bằng `make telemetry-export FLASH_EXPORT_ARGS="--export-dir /đường/dẫn"`.
 
 Trong lúc xuất, cửa sổ hiển thị lượt thử, lúc nhận `BEGIN` và số trang
 khác `0xFF` đã nhận. **STM32 log (RTT 0)** hiển thị mode, số trang chip đã

@@ -14,7 +14,7 @@ ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 FORMAT_HOOKS := prettier black clang-format cmake-format format-latex
 LINT_HOOKS := markdownlint-cli2 cmake-lint lint-latex
 
-.PHONY: telemetry flash-export help fw-build fw-flash fw-erase report cubemx clean format lint sync-papers sync-datasheets
+.PHONY: telemetry telemetry-export flash-export help fw-build fw-flash fw-erase report cubemx clean format lint sync-papers sync-datasheets
 
 help:
 	@printf '%s\n' \
@@ -22,7 +22,8 @@ help:
 	  'make fw-flash [PRESET=Export] Build, program, verify and reset via ST-LINK' \
 	  'make fw-erase                 Erase ALL Flash, including stored settings' \
 	  'make telemetry [TELEMETRY_ARGS=...] Open RTT plots, log and recording controls' \
-	  'make flash-export [FLASH_EXPORT_ARGS=...] Manage OpenOCD, export and erase telemetry flash' \
+	  'make telemetry-export [FLASH_EXPORT_ARGS=...] Program Export firmware and open the flash viewer' \
+	  'make flash-export [FLASH_EXPORT_ARGS=...] Open the flash viewer only' \
 	  'make report                         Build report/build/main.pdf with latexmk' \
 	  'make cubemx                         Regenerate firmware from drone.ioc (CLI)' \
 	  'make clean                          Remove firmware and report build directories' \
@@ -76,6 +77,10 @@ sync-datasheets:
 
 telemetry:
 	cd "$(ROOT_DIR)" && "$(UV)" run --locked --group rtt tools/rtt/view.py $(TELEMETRY_ARGS)
+
+telemetry-export:
+	$(MAKE) fw-flash PRESET=Export
+	$(MAKE) flash-export
 
 flash-export:
 	cd "$(ROOT_DIR)" && "$(UV)" run --locked --group rtt tools/rtt/flash_view.py $(FLASH_EXPORT_ARGS)

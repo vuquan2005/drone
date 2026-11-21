@@ -50,8 +50,8 @@ Xem [cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong
 FLIGHT, SC chọn bộ điều khiển, SB HIGH kích hoạt failsafe và SD MIDDLE yêu
 cầu [ghi telemetry vào SPI NOR](../../protocol/flash-journal.md).
 
-Để xuất flash, nạp ảnh bảo trì bằng `make fw-flash PRESET=Export` rồi dùng
-[`make flash-export`](../../tools/rtt/README.md#xuất-telemetry-đã-ghi-trong-flash).
+Để nạp ảnh bảo trì và mở công cụ xuất flash, dùng
+[`make telemetry-export`](../../tools/rtt/README.md#xuất-telemetry-đã-ghi-trong-flash).
 Ảnh này chạy từ `main()` và giao tiếp qua RTT. Nạp lại ảnh bay trước khi ghi
 telemetry hoặc chạy chế độ bay.
 

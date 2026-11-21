@@ -22,8 +22,8 @@ Sau khi nạp, có thể đọc RTT bằng OpenOCD độc lập và mở viewer 
 openocd -f firmware/drone/debug/rtt.cfg
 ```
 
-Để xuất flash, nạp ảnh bảo trì với `make fw-flash PRESET=Export`, rồi chạy
-`make flash-export`. Công cụ mở thêm GDB ở `127.0.0.1:3333`.
+Dùng `make telemetry-export` để nạp ảnh bảo trì và mở công cụ xuất flash.
+Công cụ mở thêm GDB ở `127.0.0.1:3333`.
 Muốn bật GDB với cấu hình RTT độc lập, chạy:
 
 ```sh

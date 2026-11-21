@@ -61,6 +61,9 @@ class FakeSocket:
     def recv(self, size):
         return next(self.chunks, b"")
 
+    def settimeout(self, timeout):
+        pass
+
 
 class TestFlashExport(unittest.TestCase):
     def test_fragmented_export_preserves_legacy_pages_and_extracts_sessions(self):
@@ -162,7 +165,11 @@ class TestFlashExport(unittest.TestCase):
 
     def test_erase_checks_saved_image_before_connecting(self):
         pages = {1: b"a" * export.PAGE_BYTES}
-        stats = {"pages_sent": 1, "stream_crc32": f"{export.page_checksum(pages):08x}"}
+        stats = {
+            "request_id": 8,
+            "pages_sent": 1,
+            "stream_crc32": f"{export.page_checksum(pages):08x}",
+        }
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             with (root / "flash.bin").open("w+b") as image:
@@ -175,6 +182,40 @@ class TestFlashExport(unittest.TestCase):
             ):
                 export.erase("localhost", 9090, 9091, root, stats, Event())
             connect.assert_not_called()
+            self.assertIn("erase_not_sent request=00000008", (root / "export.log").read_text())
+
+    def test_erase_log_distinguishes_missing_result_from_board_error(self):
+        stats = {"request_id": 8, "pages_sent": 0, "stream_crc32": "00000000"}
+        for statuses, outcome in (
+            ((), "erase_unconfirmed request=00000008 reason=no_ack"),
+            ((export.ERASE_STARTED,), "erase_unconfirmed request=00000008 reason=no_result"),
+            (
+                (export.ERASE_STARTED, export.ERASE_FAILED),
+                "erase_failed request=00000008 reason=board_error",
+            ),
+        ):
+            with self.subTest(statuses=statuses), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                with (root / "flash.bin").open("wb") as image:
+                    export.write_image(image, {}, complete=True)
+                data = FakeSocket(
+                    message(export.ERASE_STATUS, 8, export.PAGE_COUNT, export.U32.pack(status))
+                    for status in statuses
+                )
+                control = FakeSocket([])
+                with (
+                    patch.object(export.socket, "create_connection", side_effect=[data, control]),
+                    self.assertRaises(ValueError),
+                ):
+                    export.erase("localhost", 9090, 9091, root, stats, Event())
+                self.assertEqual(control.command, b"ERASE!00000008")
+                lines = (root / "export.log").read_text().splitlines()
+                self.assertEqual(lines[0].split(maxsplit=1)[1], "erase_sent request=00000008")
+                if statuses:
+                    self.assertEqual(
+                        lines[1].split(maxsplit=1)[1], "erase_acknowledged request=00000008"
+                    )
+                self.assertEqual(lines[-1].split(maxsplit=1)[1], outcome)
 
     def test_never_finalizes_inconsistent_export(self):
         pages = [(1, b"a" * 256), (2, b"b" * 256)]

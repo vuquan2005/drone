@@ -51,8 +51,10 @@ Sau khi xuất thành công, có thể bấm **Xóa flash sau khi export** và x
 để giải phóng toàn bộ W25Q128FV. Giữ nguyên board ở chế độ export, dùng firmware
 hỗ trợ lệnh xóa qua RTT và chờ viewer báo đã xóa và xác minh. Viewer kiểm tra
 lại kích thước và CRC của `flash.bin` trước khi gửi lệnh. Board chỉ nhận lệnh
-cho yêu cầu export vừa hoàn tất trong lần khởi động hiện tại. Nếu mất kết nối,
-kiểm tra `ERASE DONE` hoặc `ERASE ERR` trên tay điều khiển.
+cho yêu cầu export vừa hoàn tất trong lần khởi động hiện tại. `export.log` ghi
+thời điểm gửi lệnh, thời điểm board xác nhận và kết quả xóa theo ID yêu cầu.
+Nếu kết quả chưa được xác nhận, kiểm tra `ERASE DONE` hoặc `ERASE ERR` trên
+tay điều khiển.
 
 Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Giữ OpenOCD
 đang chạy với cấu hình RTT, đóng viewer và chạy từ gốc repo:

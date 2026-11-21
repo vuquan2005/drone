@@ -383,12 +383,15 @@ class Viewer(QtWidgets.QMainWindow):
     def finish_erase(self):
         future, self.erase_future = self.erase_future, None
         try:
-            future.result()
+            log_error = future.result()
         except (OSError, ValueError) as error:
             self.export_status.setText(f"Lỗi xóa flash · {error}")
         else:
             if not self.erase_cancel.is_set():
-                self.export_status.setText("Đã xóa và xác minh toàn bộ flash telemetry.")
+                message = "Đã xóa và xác minh toàn bộ flash telemetry."
+                if log_error is not None:
+                    message += f" · Lỗi ghi export.log: {log_error}"
+                self.export_status.setText(message)
         self.restore_flash_controls()
 
     def restore_flash_controls(self):

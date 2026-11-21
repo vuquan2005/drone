@@ -7,6 +7,7 @@ from pathlib import Path
 import struct
 import sys
 import tempfile
+from threading import Event
 import unittest
 from unittest.mock import patch
 import zlib
@@ -150,6 +151,7 @@ class TestFlashExport(unittest.TestCase):
             out = Path(directory) / "export"
             stats = export.export("localhost", 9090, 9091, 5, out, attempts=2)
             self.assertEqual((stats["pages_sent"], stats["attempts"]), (2, 2))
+            self.assertEqual(stats["request_id"], 9)
             with (out / "flash.bin").open("rb") as image:
                 self.assertEqual(image.read(768), export.ERASED_PAGE + pages[0][1] + pages[1][1])
             log = (out / "export.log").read_text()
@@ -157,6 +159,22 @@ class TestFlashExport(unittest.TestCase):
             self.assertIn("crc_errors=0 recovered=2/2", log)
             self.assertIn("complete pages=2", log)
             self.assertFalse((out / "flash.bin.part").exists())
+
+    def test_erase_checks_saved_image_before_connecting(self):
+        pages = {1: b"a" * export.PAGE_BYTES}
+        stats = {"pages_sent": 1, "stream_crc32": f"{export.page_checksum(pages):08x}"}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with (root / "flash.bin").open("w+b") as image:
+                export.write_image(image, pages, complete=True)
+                image.seek(export.PAGE_BYTES)
+                image.write(b"b")
+            with (
+                patch.object(export.socket, "create_connection") as connect,
+                self.assertRaisesRegex(ValueError, "flash.bin"),
+            ):
+                export.erase("localhost", 9090, 9091, root, stats, Event())
+            connect.assert_not_called()
 
     def test_never_finalizes_inconsistent_export(self):
         pages = [(1, b"a" * 256), (2, b"b" * 256)]

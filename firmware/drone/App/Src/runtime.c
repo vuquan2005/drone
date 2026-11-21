@@ -198,6 +198,12 @@ static const char *crsf_status_label(char *imu_progress) {
             return "EXPORT DONE";
         case FLASH_EXPORT_ERROR:
             return "EXPORT ERR";
+        case FLASH_EXPORT_ERASE_BUSY:
+            return "ERASING";
+        case FLASH_EXPORT_ERASE_DONE:
+            return "ERASE DONE";
+        case FLASH_EXPORT_ERASE_ERROR:
+            return "ERASE ERR";
         }
         break;
 #else
@@ -349,7 +355,7 @@ void runtime_process(void) {
         break;
     case RUNTIME_FLASH_EXPORT:
 #if DRONE_RTT
-        flash_export_process();
+        flash_export_process(HAL_GetTick());
 #endif
         break;
     case RUNTIME_FLASH_ERASE:

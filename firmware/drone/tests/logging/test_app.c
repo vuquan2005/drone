@@ -57,7 +57,8 @@ flash_erase_state_t flash_erase_get_state(void) {
 void flash_export_init(void) {
     assert(false);
 }
-void flash_export_process(void) {
+void flash_export_process(uint32_t now_ms) {
+    (void)now_ms;
     assert(false);
 }
 flash_export_state_t flash_export_get_state(void) {

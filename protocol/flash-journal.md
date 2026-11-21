@@ -90,7 +90,17 @@ Số nhiều byte dùng little-endian. Payload theo loại bản tin:
   `uint32 page_index` với 256 byte dữ liệu cho từng trang đã gửi.
 - `4 ERROR` báo chỉ số trang đang xử lý và một `uint32` mã lỗi BSP.
   Sau lỗi, có thể gửi yêu cầu mới. Lỗi BSP bị khóa cần reset board.
+- `5 ERASE_STATUS` dùng tổng số trang làm chỉ số và chứa một `uint32`
+  trạng thái xóa. Giá trị `0` báo đã nhận yêu cầu, `1` báo đã xác minh
+  toàn chip là `0xFF`, và `2` báo lỗi xóa hoặc xác minh.
 
 Host chỉ xác nhận bản xuất khi nhận `END` đúng ID, đúng số trang và CRC.
 Các khoảng chỉ số bị lược được điền lại bằng `0xFF` để tái tạo ảnh toàn
 chip. Trong ảnh, CSV được trích từ các trang hợp lệ có `BEGIN` tương ứng.
+
+Sau khi lưu và kiểm tra ảnh trên đĩa, host có thể gửi ASCII `ERASE!` nối
+với đúng 8 chữ số hex thường của ID yêu cầu đã dùng trong `END`. Ví dụ
+`ERASE!0000002a`. Firmware chỉ nhận lệnh khi lượt xuất tương ứng vừa hoàn
+tất trong lần boot hiện tại. Các lệnh đến trong lúc xóa bị bỏ qua. Board
+trả `ERASE_STATUS` với cùng ID khi nhận lệnh và sau khi xóa, đọc xác minh
+toàn bộ chip. Sau khi board nhận lệnh, quá trình vẫn tiếp tục nếu RTT ngắt.

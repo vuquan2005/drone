@@ -153,7 +153,8 @@ class ViewerTests(unittest.TestCase):
             viewer.close()
 
     def test_export_flash_from_viewer_restores_live_sockets(self):
-        from test_rtt_flash_export import export, journal, transfer
+        from test_rtt_flash_export import export, journal, message, transfer
+        from unittest.mock import patch
 
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         servers = [QtNetwork.QTcpServer(), QtNetwork.QTcpServer()]
@@ -182,9 +183,11 @@ class ViewerTests(unittest.TestCase):
             try:
                 wait_for(lambda: all(server.hasPendingConnections() for server in servers))
                 original = [server.nextPendingConnection() for server in servers]
+                self.assertFalse(viewer.erase_button.isEnabled())
                 viewer.export_button.click()
                 self.assertTrue(viewer.log_stream.paused and viewer.data_stream.paused)
                 self.assertFalse(viewer.record_button.isEnabled())
+                self.assertFalse(viewer.erase_button.isEnabled())
                 wait_for(lambda: all(server.hasPendingConnections() for server in servers))
                 control, data = [server.nextPendingConnection() for server in servers]
                 wait_for(lambda: control.bytesAvailable() >= 14)
@@ -200,12 +203,45 @@ class ViewerTests(unittest.TestCase):
                 self.assertIn("Flash saved · 1 sessions", viewer.export_status.text())
                 self.assertTrue(viewer.export_button.isEnabled())
                 self.assertTrue(viewer.record_button.isEnabled())
+                self.assertTrue(viewer.erase_button.isEnabled())
                 self.assertEqual(
                     (viewer.export_directory / "flash.bin").stat().st_size,
                     export.PAGE_BYTES * export.PAGE_COUNT,
                 )
                 wait_for(lambda: all(server.hasPendingConnections() for server in servers))
-                for connection in (*original, control, data):
+                live = [server.nextPendingConnection() for server in servers]
+                with patch.object(
+                    QtWidgets.QMessageBox,
+                    "question",
+                    return_value=QtWidgets.QMessageBox.StandardButton.Cancel,
+                ):
+                    viewer.erase_button.click()
+                    self.assertIsNone(viewer.erase_future)
+                    self.assertTrue(viewer.erase_button.isEnabled())
+                with patch.object(
+                    QtWidgets.QMessageBox,
+                    "question",
+                    return_value=QtWidgets.QMessageBox.StandardButton.Yes,
+                ):
+                    viewer.erase_button.click()
+                self.assertFalse(viewer.erase_button.isEnabled())
+                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
+                erase_control, erase_data = [server.nextPendingConnection() for server in servers]
+                wait_for(lambda: erase_control.bytesAvailable() >= 14)
+                self.assertEqual(bytes(erase_control.read(14)), f"ERASE!{request:08x}".encode())
+                for status in (export.ERASE_STARTED, export.ERASE_VERIFIED):
+                    erase_data.write(
+                        message(
+                            export.ERASE_STATUS, request, export.PAGE_COUNT, export.U32.pack(status)
+                        )
+                    )
+                erase_data.flush()
+                wait_for(lambda: viewer.erase_future is None)
+                self.assertIn("Đã xóa và xác minh", viewer.export_status.text())
+                self.assertFalse(viewer.erase_button.isEnabled())
+                self.assertTrue((viewer.export_directory / "flash.bin").is_file())
+                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
+                for connection in (*original, *live, control, data, erase_control, erase_data):
                     connection.abort()
             finally:
                 viewer.close()

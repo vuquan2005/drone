@@ -45,7 +45,14 @@ không nhận diện được. `export.json` tóm tắt kết quả và `export.
 thời điểm, số trang, lỗi CRC và kết quả từng lần đọc. Dùng **Open session**
 và chọn thư mục `session_*` để xem CSV và cấu hình đã lưu. Nếu không xác
 nhận được ảnh, exporter giữ `flash.bin.part` và ghi nguyên nhân vào
-`export.log`. Export chỉ đọc flash.
+`export.log`.
+
+Sau khi xuất thành công, có thể bấm **Xóa flash sau khi export** và xác nhận
+để giải phóng toàn bộ W25Q128FV. Giữ nguyên board ở chế độ export, dùng firmware
+hỗ trợ lệnh xóa qua RTT và chờ viewer báo đã xóa và xác minh. Viewer kiểm tra
+lại kích thước và CRC của `flash.bin` trước khi gửi lệnh. Board chỉ nhận lệnh
+cho yêu cầu export vừa hoàn tất trong lần khởi động hiện tại. Nếu mất kết nối,
+kiểm tra `ERASE DONE` hoặc `ERASE ERR` trên tay điều khiển.
 
 Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Giữ OpenOCD
 đang chạy với cấu hình RTT, đóng viewer và chạy từ gốc repo:

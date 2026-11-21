@@ -308,6 +308,11 @@ def new_export_directory(root=DEFAULT_EXPORT_ROOT):
     return root / f"flash_export_{stamp}"
 
 
+def write_log_line(log, message):
+    timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+    log.write(f"{timestamp} {message}\n")
+
+
 def verify_saved_image(path, stats):
     checksum = count = size = 0
     with path.open("rb") as image:
@@ -330,53 +335,90 @@ def verify_saved_image(path, stats):
 
 def erase(host, control_port, data_port, directory, stats, cancel):
     """Erase the chip only for the request that produced the saved image."""
-    verify_saved_image(directory / "flash.bin", stats)
     request = stats["request_id"]
-    with (
-        socket.create_connection((host, data_port), timeout=5.0) as data,
-        socket.create_connection((host, control_port), timeout=5.0) as control,
-    ):
-        deadline = time.monotonic() + ERASE_ACK_TIMEOUT_S
-        data.settimeout(0.25)
+    log_error = None
 
-        def chunks():
-            while not cancel.is_set() and time.monotonic() < deadline:
-                try:
-                    chunk = data.recv(16384)
-                except socket.timeout:
-                    continue
-                if not chunk:
-                    return
-                yield chunk
-
-        if cancel.is_set():
-            return
-        started = False
+    def report(event, detail=""):
+        nonlocal log_error
+        message = f"{event} request={request:08x} {detail}".rstrip()
         try:
-            control.sendall(f"ERASE!{request:08x}".encode("ascii"))
-            for kind, message_id, index, payload in messages(chunks()):
-                if kind != ERASE_STATUS or message_id != request or index != PAGE_COUNT:
-                    continue
-                (status,) = U32.unpack(payload)
-                if status == ERASE_STARTED and not started:
-                    started = True
-                    deadline = time.monotonic() + ERASE_TIMEOUT_S
-                elif status == ERASE_VERIFIED and started:
-                    return
-                elif status == ERASE_FAILED and started:
-                    raise ValueError("Board báo lỗi khi xóa hoặc kiểm tra flash.")
+            with (directory / "export.log").open("a", encoding="utf-8") as log:
+                write_log_line(log, message)
         except OSError as error:
-            raise ValueError(
-                "Mất kết nối khi gửi hoặc theo dõi lệnh xóa. Kiểm tra trạng thái trên tay điều khiển."
-            ) from error
-        if cancel.is_set():
-            return
-        if started:
-            raise ValueError("Chưa nhận được kết quả xóa. Kiểm tra trạng thái trên tay điều khiển.")
+            # Keep tracking the board even if the host can no longer write the log.
+            log_error = error
+
+    with ExitStack() as connections:
+        try:
+            verify_saved_image(directory / "flash.bin", stats)
+            if cancel.is_set():
+                report("erase_not_sent", "reason=cancelled")
+                return log_error
+            data = connections.enter_context(
+                socket.create_connection((host, data_port), timeout=5.0)
+            )
+            control = connections.enter_context(
+                socket.create_connection((host, control_port), timeout=5.0)
+            )
+            data.settimeout(0.25)
+        except (OSError, ValueError) as error:
+            report("erase_not_sent", f"error={error}")
+            raise
+        request_erase(data, control, request, cancel, report)
+    return log_error
+
+
+def request_erase(data, control, request, cancel, report):
+    deadline = time.monotonic() + ERASE_ACK_TIMEOUT_S
+
+    def chunks():
+        while not cancel.is_set() and time.monotonic() < deadline:
+            try:
+                chunk = data.recv(16384)
+            except socket.timeout:
+                continue
+            if not chunk:
+                return
+            yield chunk
+
+    if cancel.is_set():
+        report("erase_not_sent", "reason=cancelled")
+        return
+    started = False
+    try:
+        control.sendall(f"ERASE!{request:08x}".encode("ascii"))
+        report("erase_sent")
+        for kind, message_id, index, payload in messages(chunks()):
+            if kind != ERASE_STATUS or message_id != request or index != PAGE_COUNT:
+                continue
+            (status,) = U32.unpack(payload)
+            if status == ERASE_STARTED and not started:
+                started = True
+                deadline = time.monotonic() + ERASE_TIMEOUT_S
+                report("erase_acknowledged")
+            elif status == ERASE_VERIFIED and started:
+                report("erase_verified")
+                return
+            elif status == ERASE_FAILED and started:
+                report("erase_failed", "reason=board_error")
+                raise ValueError("Board báo lỗi khi xóa hoặc kiểm tra flash.")
+    except OSError as error:
+        report("erase_unconfirmed", f"reason=io_error error={error}")
         raise ValueError(
-            "Board chưa xác nhận lệnh xóa. Kiểm tra trạng thái trên tay điều khiển "
-            "và dùng firmware hỗ trợ xóa qua RTT."
-        )
+            "Mất kết nối khi gửi hoặc theo dõi lệnh xóa. "
+            "Kiểm tra trạng thái trên tay điều khiển."
+        ) from error
+    if cancel.is_set():
+        report("erase_unconfirmed", "reason=monitoring_cancelled")
+        return
+    if started:
+        report("erase_unconfirmed", "reason=no_result")
+        raise ValueError("Chưa nhận được kết quả xóa. Kiểm tra trạng thái trên tay điều khiển.")
+    report("erase_unconfirmed", "reason=no_ack")
+    raise ValueError(
+        "Board chưa xác nhận lệnh xóa. Kiểm tra trạng thái trên tay điều khiển "
+        "và dùng firmware hỗ trợ xóa qua RTT."
+    )
 
 
 def export(
@@ -398,8 +440,7 @@ def export(
     with (output / "export.log").open("x", encoding="utf-8", buffering=1) as log:
 
         def report(message):
-            timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
-            log.write(f"{timestamp} {message}\n")
+            write_log_line(log, message)
 
         report(
             f"start host={host} control_port={control_port} data_port={data_port} attempts={attempts}"

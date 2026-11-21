@@ -240,6 +240,15 @@ class ViewerTests(unittest.TestCase):
                 self.assertIn("Đã xóa và xác minh", viewer.export_status.text())
                 self.assertFalse(viewer.erase_button.isEnabled())
                 self.assertTrue((viewer.export_directory / "flash.bin").is_file())
+                log = (viewer.export_directory / "export.log").read_text().splitlines()
+                self.assertIn("complete pages=1", log[-4])
+                self.assertEqual(
+                    [line.split(maxsplit=1)[1] for line in log[-3:]],
+                    [
+                        f"{event} request={request:08x}"
+                        for event in ("erase_sent", "erase_acknowledged", "erase_verified")
+                    ],
+                )
                 wait_for(lambda: all(server.hasPendingConnections() for server in servers))
                 for connection in (*original, *live, control, data, erase_control, erase_data):
                     connection.abort()

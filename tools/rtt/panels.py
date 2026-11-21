@@ -7,6 +7,7 @@ import numpy as np
 from PySide6 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
 
+from records import RcCompact
 from telemetry import attitude_degrees
 
 AXIS_COLORS = ("#d1495b", "#218739", "#246bc1")
@@ -382,6 +383,10 @@ class ReceiverPanel(QtWidgets.QWidget):
         layout = QtWidgets.QVBoxLayout(self)
         self.rc_status = QtWidgets.QLabel("RC: waiting for data")
         layout.addWidget(self.rc_status)
+        self.switches = QtWidgets.QLabel()
+        self.switches.setWordWrap(True)
+        self.switches.hide()
+        layout.addWidget(self.switches)
         body = QtWidgets.QHBoxLayout()
         layout.addLayout(body, 1)
         self.stick_group = QtWidgets.QWidget()
@@ -427,6 +432,7 @@ class ReceiverPanel(QtWidgets.QWidget):
             QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Preferred
         )
         layout.addWidget(self.details)
+        self.channel_count = 16
         self.wide = None
         self.update_responsive()
 
@@ -460,9 +466,11 @@ class ReceiverPanel(QtWidgets.QWidget):
                 row, col = (index - start) % rows, ((index - start) // rows) * 2
                 self.bar_layout.addWidget(self.channel_labels[index], row, col)
                 self.bar_layout.addWidget(self.rc_bars[index], row, col + 1)
-        for label, bar in zip(self.channel_labels[:4], self.rc_bars[:4]):
-            label.setVisible(not wide)
-            bar.setVisible(not wide)
+        self.bar_group.setVisible(not wide or self.channel_count > 4)
+        for index, (label, bar) in enumerate(zip(self.channel_labels, self.rc_bars)):
+            visible = index < self.channel_count and (index >= 4 or not wide)
+            label.setVisible(visible)
+            bar.setVisible(visible)
         self.details.setVisible(self.width() >= 600 and self.height() >= 300)
 
     def resizeEvent(self, event):
@@ -475,6 +483,7 @@ class ReceiverPanel(QtWidgets.QWidget):
                 "No saved RC in this segment" if saved else "RC: waiting for data"
             )
             self.details.setText("Raw CRSF (0–2047)")
+            self.switches.hide()
             for bar in self.rc_bars:
                 bar.setValue(0)
                 bar.setFormat("—")
@@ -482,8 +491,27 @@ class ReceiverPanel(QtWidgets.QWidget):
             for stick in self.sticks:
                 stick.set_channels(None, False)
             return
-        _, _, _, connected, *channels = sample
+        compact = isinstance(sample, RcCompact)
+        if compact:
+            flags = sample.flags
+            connected = bool(flags & 1)
+            channels = sample[3:-1]
+            if connected:
+                arm = "ON" if flags & 2 else "OFF"
+                calibration = "HIGH" if flags & 4 else "below HIGH"
+                sc = ("LOW", "MIDDLE", "HIGH")[(flags >> 3) & 3]
+                sd = ("OFF", "RECORD", "STREAM")[(flags >> 5) & 3]
+                self.switches.setText(f"SA arm {arm} · SB {calibration} · SC {sc} · SD {sd}")
+            else:
+                self.switches.setText("Switch requests unavailable")
+        else:
+            _, _, _, connected, *channels = sample
+        self.switches.setVisible(compact)
+        if len(channels) != self.channel_count:
+            self.channel_count = len(channels)
+            self.update_responsive()
         live = age < 0.5 and data_connected
+        self.switches.setEnabled(live and bool(connected))
         state = ("connected" if connected else "disconnected") if live else "telemetry stale"
         self.rc_status.setText(f"Saved RC: {state}" if saved else f"RC: {state}")
         freshness = "saved" if saved else f"age {age:.1f}s"

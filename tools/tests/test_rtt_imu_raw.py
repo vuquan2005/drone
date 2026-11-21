@@ -10,7 +10,7 @@ import unittest
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from records import Frames, IMU_RAW, ImuSeries
+from records import Frames, IMU_RAW, IMU_BATCH_FIRST, IMU_BATCH_NEXT, ImuSeries
 from telemetry import TelemetryState
 from session_writer import IMU_RAW_COLUMNS, SessionWriter
 
@@ -26,6 +26,47 @@ def raw_record(
 
 
 class RawImuTests(unittest.TestCase):
+    def test_shared_batch_fixture_and_fragmentation(self):
+        path = Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_batch_v1.hex"
+        raw = bytes.fromhex(path.read_text())
+        self.assertEqual(len(raw), 51)
+        frame = (1, 9, raw[8:-4])
+        for split in range(len(raw) + 1):
+            framing = Frames()
+            self.assertEqual(
+                list(framing.feed(raw[:split])) + list(framing.feed(raw[split:])), [frame]
+            )
+        state = TelemetryState()
+        kind, samples = state.feed(frame, 1)
+        self.assertEqual(kind, "imu_batch")
+        self.assertEqual(
+            samples,
+            (
+                (1000, 1000000, 0x123456, -120, 35, 2048, 10, -20, 30, 16, 2, 2000, 800, 800),
+                (1001, 1001250, 0x123476, -118, 37, 2050, 11, -18, 31, 16, 2, 2000, 800, 800),
+            ),
+        )
+        self.assertEqual(len(state.arrivals), 2)
+        self.assertEqual(state.series.received, 2)
+        self.assertIsNone(state.feed(frame, 2))
+        self.assertEqual(state.series.resets, 0)
+
+    def test_batch_counter_wrap_missing_samples_and_invalid_count(self):
+        base = IMU_BATCH_FIRST.pack(2**32 - 1, 2**32 - 500, b"\xf0\xff\xff", 2, *([0] * 6))
+        payload = base + IMU_BATCH_NEXT.pack(1250, 255, *([1] * 6))
+        stream = ImuSeries()
+        samples = stream.feed_samples((1, 9, payload))
+        self.assertEqual(samples[1][:3], (0, 750, 239))
+        self.assertEqual(stream.points[-1][0], 0.00125)
+        self.assertEqual(stream.missing, 0)
+        bad_count = payload[:11] + b"\x09" + payload[12:]
+        self.assertFalse(stream.feed((1, 9, bad_count)))
+        self.assertFalse(stream.feed((1, 9, payload[:-1])))
+        self.assertEqual(stream.invalid, 2)
+        self.assertEqual(stream.received, 2)
+        self.assertTrue(stream.feed(raw_record(seq=9, stamp=12000)))
+        self.assertEqual(stream.missing, 8)
+
     def test_shared_fixture_and_fragmentation(self):
         raw = bytes.fromhex(
             (Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_raw_v1.hex").read_text()

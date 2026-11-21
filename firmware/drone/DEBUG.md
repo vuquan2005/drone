@@ -49,11 +49,14 @@ mới bị bỏ. API chỉ dùng trong foreground; xem [bsp_rtt.h](BSP/Inc/bsp_r
 [app_log.h](App/Inc/app_log.h) và [đặc tả telemetry](../../protocol/telemetry.md).
 Timestamp IMU là thời điểm MCU đọc, không phải thời điểm cảm biến lấy mẫu.
 
-Mức `INFO` ghi trạng thái chọn mode, cấu hình IMU do driver yêu cầu, hệ số
-hiệu chuẩn được áp dụng và cấu hình các vòng điều khiển. Các trường có hậu tố
-`_x1e6` lưu giá trị đã nhân một triệu, ví dụ `kp_s_per_rad_x1e6=100000` là
-`0,1 s/rad`. Để giữ các dòng đầu phiên trong `events_*.log`, bật
-**Start recording** trước khi reset board.
+Khi bật telemetry, firmware đưa mọi mẫu IMU đọc thành công vào nhóm RTT trong
+FLIGHT và IMU_CALIB. Mỗi nhóm chứa tối đa 8 mẫu và được gửi sau khoảng 10 ms
+nếu chưa đủ mẫu. Nhóm đủ 8 mẫu dài 141 byte, tương ứng 14.100 B/s ở 800 mẫu/s.
+
+Mức `INFO` ghi trạng thái chọn mode, khởi tạo IMU và rate PID, nguồn hiệu
+chuẩn và trạng thái bộ ước lượng. Xem thông số IMU, hệ số hiệu chuẩn và gain
+trong tab **Configuration** hoặc `config.jsonl` của phiên ghi. Để giữ các dòng
+đầu phiên trong `events_*.log`, bật **Start recording** trước khi reset board.
 
 Live Watch có thể đọc biến global/static, ví dụ `'app.c'::imu.sample_count`;
 các trường không được chụp đồng thời. `dropped_full` trong `bsp_rtt.c` đếm
@@ -68,8 +71,9 @@ chu kỳ rate 2000 µs là cấu hình thử bộ gá, chưa tune để bay. Rat
 IMU mới nhất; chưa có lọc chống alias khi giảm tốc độ mẫu. Cần đo I/O, timing,
 đáp ứng và hiệu chuẩn trước khi dùng cánh.
 
-1. Build/nạp Debug, mở RTT và kiểm tra log `rate` có `configured` và các dòng
-   `axis_config`. Bật radio/receiver, mở tab **Rate · FRD** và kiểm tra RC, IMU.
+1. Build/nạp Debug, mở RTT và kiểm tra log `rate` có `configured`. Kiểm tra
+   gain từng trục trong **Configuration**. Bật radio/receiver, mở tab
+   **Rate · FRD** và kiểm tra RC, IMU.
 2. Đưa từng cần roll/pitch/yaw qua hai đầu: setpoint tương ứng khoảng
    ±2 rad/s. Đặt cần giữa và xoay khung: gyro FRD dương phải tạo PID âm trên
    cùng trục. Bias có thể còn do chưa hiệu chuẩn.

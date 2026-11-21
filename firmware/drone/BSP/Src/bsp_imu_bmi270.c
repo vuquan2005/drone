@@ -4,11 +4,6 @@
 #define IMU_TRANSFER_BYTES 32U
 #define IMU_SPI_READ_BYTES (IMU_TRANSFER_BYTES + 1U)
 
-const char *bsp_imu_startup_mode(void) {
-    return "model=BMI270 adv_power_save=off accel_filter=normal_avg4 "
-           "gyro_filter=normal filter_perf=performance gyro_noise=performance";
-}
-
 static BMI2_INTF_RETURN_TYPE spi_read(uint8_t reg, uint8_t *data,
                                       uint32_t length, void *context) {
     bsp_imu_t *imu = context;
@@ -110,6 +105,24 @@ bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
     }
     imu->driver_error = result;
     imu->initialized = result == BMI2_OK;
+    if (imu->initialized) {
+        const struct bmi2_accel_config *accel = &settings[0].cfg.acc;
+        const struct bmi2_gyro_config *gyro = &settings[1].cfg.gyr;
+        imu->settings = (bsp_imu_settings_t){
+            .accel_odr = accel->odr,
+            .gyro_odr = gyro->odr,
+            .accel_range = accel->range,
+            .gyro_range = gyro->range,
+            .accel_filter = accel->bwp,
+            .gyro_filter = gyro->bwp,
+            .accel_power = UINT8_MAX,
+            .gyro_power = UINT8_MAX,
+            .accel_filter_perf = accel->filter_perf,
+            .gyro_filter_perf = gyro->filter_perf,
+            .gyro_noise_perf = gyro->noise_perf,
+            .adv_power_save = imu->device.aps_status,
+        };
+    }
     return imu->initialized ? BSP_IMU_OK : BSP_IMU_DRIVER_ERROR;
 }
 

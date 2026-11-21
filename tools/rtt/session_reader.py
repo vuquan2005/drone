@@ -2,6 +2,7 @@
 
 from collections import deque
 import csv
+import json
 from pathlib import Path
 import struct
 
@@ -13,9 +14,16 @@ from records import (
     IMU_RAW,
     RATE,
     RC,
+    RC_COMPACT,
     RTT_STATS,
 )
-from session_writer import IMU_RAW_COLUMNS, RATE_FIELDS, RC_COLUMNS, STATS_COLUMNS
+from session_writer import (
+    IMU_RAW_COLUMNS,
+    RATE_FIELDS,
+    RC_COLUMNS,
+    RC_COMPACT_COLUMNS,
+    STATS_COLUMNS,
+)
 from telemetry import TelemetryState
 
 SCHEMAS = (
@@ -24,6 +32,7 @@ SCHEMAS = (
     ("attitude", ATTITUDE_COLUMNS, ATTITUDE, 6),
     ("attitude_control", ATTITUDE_CONTROL_COLUMNS, ATTITUDE_CONTROL, 7),
     ("rc", RC_COLUMNS, RC, 3),
+    ("receiver_compact", RC_COMPACT_COLUMNS, RC_COMPACT, 8),
     ("rtt_stats", STATS_COLUMNS, RTT_STATS, 2),
 )
 FLOAT_START = {5: 4, 6: 2, 7: 4}
@@ -97,8 +106,15 @@ def read_session(directory):
                         # Rate CSV has MCU timestamps, unlike the live host-time plot.
                         if state.feed((1, kind, payload), elapsed / 1e6) is None:
                             raise ValueError("invalid telemetry payload")
-                        if kind == 3:
-                            state.rc_snapshots.append((elapsed / 1000, state.latest_rc))
+                        if kind in (3, 8):
+                            snapshots = state.rc_snapshots
+                            rc_seconds = 0
+                            if snapshots:
+                                previous_seconds, previous_sample = snapshots[-1]
+                                rc_seconds = (
+                                    previous_seconds + (stamp - previous_sample[1]) % 2**32 / 1000
+                                )
+                            snapshots.append((rc_seconds, state.latest_rc))
                         if kind == 5:
                             point = state.rate_points[-1]
                             history = rate_history.setdefault(segment, deque())
@@ -108,6 +124,27 @@ def read_session(directory):
                         previous[segment] = (elapsed, seq, last_stamp)
                     except (ValueError, OverflowError, struct.error) as error:
                         raise ValueError(f"{path.name}:{line_number}: {error}") from error
+    config_path = directory / "config.jsonl"
+    if config_path.is_file():
+        with config_path.open(encoding="utf-8") as source:
+            for line_number, line in enumerate(source, 1):
+                try:
+                    if len(line) > 8192 or line_number > 1_000_000:
+                        raise ValueError("configuration record limit exceeded")
+                    saved = json.loads(line)
+                    if not isinstance(saved, dict) or saved.get("schema_version") != 1:
+                        raise ValueError("unsupported CONFIG schema")
+                    segment = saved.pop("segment", None)
+                    if type(segment) is not int or segment < 1:
+                        raise ValueError("invalid CONFIG segment")
+                    if segment not in segments:
+                        segments[segment] = TelemetryState()
+                        segments[segment].rc_snapshots = []
+                    if segments[segment].config is not None:
+                        raise ValueError("duplicate CONFIG segment")
+                    segments[segment].config = saved
+                except ValueError as error:
+                    raise ValueError(f"{config_path.name}:{line_number}: {error}") from error
     if not segments:
         raise ValueError("No telemetry rows found in this folder")
     for segment, points in rate_history.items():

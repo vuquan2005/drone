@@ -1,6 +1,7 @@
 """Optional offscreen GUI/TCP integration test; never connects to a probe."""
 
 import csv
+import json
 import struct
 import zlib
 import tempfile
@@ -144,8 +145,6 @@ class ViewerTests(unittest.TestCase):
         self.addCleanup(output.cleanup)
         viewer.output_dir.setText(output.name)
         viewer.raw_checkbox.setChecked(True)
-        viewer.toggle_recording()
-        self.assertTrue(viewer.recording)
 
         def until(predicate):
             deadline = time.monotonic() + 4
@@ -155,9 +154,26 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(predicate())
 
         peers = []
+
+        def respond_to_config(data_peer):
+            until(lambda: peers[0].bytesAvailable() >= 5)
+            request = bytes(peers[0].read(5))
+            self.assertEqual(request[:1], b"C")
+            fixture = Path(__file__).resolve().parents[2] / "protocol/fixtures/config_v1.hex"
+            frame = bytes.fromhex(fixture.read_text())
+            response = frame[:8] + request[1:] + frame[12:-4]
+            data_peer.write(response + struct.pack("<I", zlib.crc32(response)))
+            until(lambda: viewer.telemetry.config is not None)
+            self.assertEqual(viewer.telemetry.config["imu"]["accel_odr_hz"], 800)
+            self.assertEqual(viewer.telemetry.config["rate"]["axes"]["pitch"]["kp_s_per_rad"], 0.5)
+
         try:
             until(lambda: all(server.hasPendingConnections() for server in servers))
             peers = [server.nextPendingConnection() for server in servers]
+            respond_to_config(peers[1])
+            self.assertIn('"accel_filter": "normal_avg4"', viewer.config_panel.toPlainText())
+            viewer.toggle_recording()
+            self.assertTrue(viewer.recording)
             peers[0].write(b"[1][I][imu] init\n[2][E][rx] lost\n")
             peers[1].write(packet()[:23])
             peers[1].flush()
@@ -171,7 +187,9 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(viewer.telemetry.series.missing, 1)
             self.assertEqual(len(viewer.imu_panel.curves[0][0].getData()[0]), 3)
             rate_frame = bytes.fromhex(
-                (Path(__file__).resolve().parents[2] / "protocol/fixtures/rate_v1.hex").read_text()
+                (
+                    Path(__file__).resolve().parents[2] / "protocol/fixtures/rate_compact_v1.hex"
+                ).read_text()
             )
             peers[1].write(rate_frame)
             until(lambda: viewer.telemetry.latest_rate is not None)
@@ -196,6 +214,7 @@ class ViewerTests(unittest.TestCase):
             peers[1].disconnectFromHost()
             until(lambda: servers[1].hasPendingConnections())
             peers.append(servers[1].nextPendingConnection())
+            respond_to_config(peers[-1])
             peers[-1].write(packet(100, 100000))
             until(lambda: viewer.telemetry.series.received == 3)
             self.assertEqual(viewer.telemetry.series.missing, 1)
@@ -258,16 +277,24 @@ class ViewerTests(unittest.TestCase):
             invalid_before = viewer.telemetry.series.invalid
             viewer.on_data((1, 3, struct.pack("<4I16H", 3, 1384, 1224, 2, *([0] * 16))))
             self.assertEqual(viewer.telemetry.series.invalid, invalid_before + 1)
+            viewer.on_data((1, 8, struct.pack("<3I4HB", 3, 1384, 1374, 172, 992, 1811, 2047, 0x4F)))
+            viewer.refresh()
+            self.assertEqual(viewer.receiver_panel.rc_bars[3].value(), 2047)
+            self.assertTrue(viewer.receiver_panel.rc_bars[4].isHidden())
+            self.assertIn(
+                "SA arm ON · SB HIGH · SC MIDDLE · SD STREAM", viewer.receiver_panel.switches.text()
+            )
             control_frame = bytes.fromhex(
                 (
                     Path(__file__).resolve().parents[2]
-                    / "protocol/fixtures/attitude_control_v1.hex"
+                    / "protocol/fixtures/attitude_control_compact_v1.hex"
                 ).read_text()
             )
             peers[-1].write(control_frame)
             until(lambda: viewer.telemetry.latest_attitude_control is not None)
             viewer.tabs.setCurrentWidget(viewer.attitude_control_panel)
             self.assertIn("Live · valid", viewer.attitude_control_panel.status.text())
+            self.assertIn("estimate age 0.04 ms", viewer.attitude_control_panel.status.text())
             self.assertAlmostEqual(
                 viewer.attitude_control_panel.curves[0].getData()[1][-1], math.degrees(0.25)
             )
@@ -295,7 +322,19 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(len(rc_rows), 3)
             self.assertEqual(rc_rows[1][1:5], ["1", "1234", "1224", "1"])
             self.assertEqual(rc_rows[2][4], "0")
+            with (directory / f"receiver_compact_{stamp}.csv").open(newline="") as file:
+                compact_rows = list(csv.reader(file))
+            self.assertEqual(
+                compact_rows[1][1:], ["3", "1384", "1374", "172", "992", "1811", "2047", "79"]
+            )
             self.assertNotEqual(rows[1][0], rows[3][0])
+            configs = [
+                json.loads(line) for line in (directory / "config.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual(
+                [config["segment"] for config in configs], [int(rows[1][0]), int(rows[3][0])]
+            )
+            self.assertEqual(configs[0]["config_sha256"], configs[1]["config_sha256"])
             self.assertIn("filtered but saved", next(directory.glob("events_*.log")).read_text())
             self.assertGreater(
                 len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 44
@@ -307,17 +346,20 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(viewer.log_stream.paused)
             self.assertIn("Saved session:", viewer.statusBar().currentMessage())
             viewer.segment_box.setCurrentIndex(viewer.segment_box.count() - 1)
+            self.assertIn('"source": "flash"', viewer.config_panel.toPlainText())
+            self.assertIn("SD STREAM", viewer.receiver_panel.switches.text())
+            self.assertIn("0.15s", viewer.receiver_panel.replay_position.text())
             self.assertIn("Saved · valid", viewer.attitude_control_panel.status.text())
             self.assertEqual(viewer.attitude_control_panel.curves[6].getData()[1][-1], 0.5)
             self.assertGreater(len(viewer.imu_panel.curves[0][0].getData()[0]), 0)
             viewer.return_live()
             self.assertIsNone(viewer.saved_session)
             self.assertFalse(viewer.data_stream.paused)
-            # Raw frames update the plot in SI/FRD and record original counts.
+            # Batched samples update the plot in SI/FRD and each get a CSV row.
             viewer.toggle_recording()
             raw_fixture = bytes.fromhex(
                 (
-                    Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_raw_v1.hex"
+                    Path(__file__).resolve().parents[2] / "protocol/fixtures/imu_batch_v1.hex"
                 ).read_text()
             )
             from records import Frames
@@ -327,12 +369,21 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(viewer.dirty)
             viewer.refresh()
             _, y = viewer.imu_panel.curves[0][0].getData()
-            self.assertAlmostEqual(y[-1], -16 * 9.80665)
+            self.assertAlmostEqual(y[-1], 118 * 16 * 9.80665 / 32768)
             viewer.toggle_recording()
             until(lambda: viewer.writer.done.is_set())
             with next(viewer.writer.directory.glob("imu_raw_*.csv")).open(newline="") as file:
                 raw_rows = list(csv.reader(file))
-            self.assertEqual(raw_rows[1][4:10], ["-32768", "-1", "32767", "1", "-32768", "32767"])
+            self.assertEqual(len(raw_rows), 3)
+            self.assertEqual(
+                raw_rows[1][1:10],
+                ["1000", "1000000", "1193046", "-120", "35", "2048", "10", "-20", "30"],
+            )
+            self.assertEqual(
+                raw_rows[2][1:10],
+                ["1001", "1001250", "1193078", "-118", "37", "2050", "11", "-18", "31"],
+            )
+            self.assertEqual(raw_rows[2][10:], ["16", "2", "2000", "800", "800"])
             viewer.log_panel.level.setCurrentText("All")
             viewer.refresh()
             image_path = os.environ.get("RTT_TEST_SCREENSHOT")
@@ -340,7 +391,7 @@ class ViewerTests(unittest.TestCase):
                 viewer.findChild(QtWidgets.QTabWidget).setCurrentIndex(1)
                 app.processEvents()
                 viewer.grab().save(image_path)
-            # The raw fixture reset the IMU stream and cleared the stats baseline.
+            # The IMU fixture reset the stream and cleared the stats baseline.
             viewer.on_data((1, 2, struct.pack("<10I", 100, 10000, *([0] * 8))))
             old_segment = viewer.telemetry.segment
             viewer.on_data((1, 2, struct.pack("<10I", 1, 100, *([0] * 8))))

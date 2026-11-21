@@ -3,7 +3,20 @@
 from collections import deque
 import math
 
-from records import ATTITUDE, ATTITUDE_CONTROL, IMU_RAW, ImuSeries, RC, RTT_STATS, RATE
+from records import (
+    ATTITUDE,
+    ATTITUDE_CONTROL,
+    ATTITUDE_CONTROL_COMPACT_TYPE,
+    ImuSeries,
+    RC,
+    RC_COMPACT,
+    RcCompact,
+    RTT_STATS,
+    RATE,
+    RATE_COMPACT_TYPE,
+    decode_compact_attitude_control,
+    decode_compact_rate,
+)
 
 
 def attitude_degrees(q):
@@ -16,9 +29,10 @@ def attitude_degrees(q):
 
 
 class TelemetryState:
-    """Track mixed streams; feed returns (CSV kind, values) only for accepted frames.
+    """Track mixed streams and return accepted records for display and capture.
 
     The caller supplies host monotonic seconds for freshness and receive rate.
+    An IMU batch returns ("imu_batch", samples) with one raw CSV row per sample.
     Reconnects and suspected MCU resets start a new segment while preserving
     cumulative host counters. Snapshot counters and plots reset together.
     """
@@ -27,6 +41,7 @@ class TelemetryState:
         self.series = ImuSeries()
         self.arrivals = deque(maxlen=20000)
         self.segment = 0
+        self.config = None
         self.latest_rate = self.rate_received_at = self.rate_last = None
         self.rate_points = deque(maxlen=500)
         self.rate_start = None
@@ -38,6 +53,7 @@ class TelemetryState:
         self.stats_received_at = None
 
     def new_connection(self):
+        self.config = None
         self.latest_rate = self.rate_received_at = self.rate_last = None
         self.rate_points = deque(maxlen=500)
         self.rate_start = None
@@ -56,11 +72,16 @@ class TelemetryState:
         self.attitude_control_points = deque(maxlen=2000)
         self.attitude_control_elapsed_us = 0
 
-    def feed_attitude_control(self, payload, received_at):
-        if len(payload) != ATTITUDE_CONTROL.size:
+    def feed_attitude_control(self, kind, payload, received_at):
+        if kind == ATTITUDE_CONTROL_COMPACT_TYPE:
+            values = decode_compact_attitude_control(payload)
+        else:
+            values = (
+                ATTITUDE_CONTROL.unpack(payload) if len(payload) == ATTITUDE_CONTROL.size else None
+            )
+        if values is None:
             self.series.invalid += 1
             return
-        values = ATTITUDE_CONTROL.unpack(payload)
         seq, stamp, _, flags = values[:4]
         q = values[4:8]
         if (
@@ -95,9 +116,45 @@ class TelemetryState:
         self.attitude_control_received_at = received_at
         return "attitude_control", values
 
+    def feed_rc(self, kind, payload, received_at):
+        compact = kind == 8
+        wire = RC_COMPACT if compact else RC
+        if len(payload) != wire.size:
+            self.series.invalid += 1
+            return
+        values = wire.unpack(payload)
+        if compact:
+            flags = values[-1]
+            channels = values[3:-1]
+            invalid_flags = (
+                flags & 0x80
+                or (flags != 0 and not flags & 1)
+                or ((flags >> 3) & 3) == 3
+                or ((flags >> 5) & 3) == 3
+            )
+        else:
+            channels = values[4:]
+            invalid_flags = values[3] > 1
+        if invalid_flags or any(value > 2047 for value in channels):
+            self.series.invalid += 1
+            return
+        if self.rc_last is not None:
+            ds = (values[0] - self.rc_last[0]) % 2**32
+            dt = (values[1] - self.rc_last[1]) % 2**32
+            if ds >= 2**31 or dt >= 2**31:
+                self.series.resets += 1
+                self.new_connection()
+            elif ds == 0:
+                self.series.invalid += 1
+                return
+        self.rc_last = values[:2]
+        self.latest_rc = RcCompact(*values) if compact else values
+        self.rc_received_at = received_at
+        return ("rc_compact" if compact else "rc"), values
+
     def feed(self, line, received_at):
-        if line[:2] == (1, 7):
-            return self.feed_attitude_control(line[2], received_at)
+        if line[0] == 1 and line[1] in (7, ATTITUDE_CONTROL_COMPACT_TYPE):
+            return self.feed_attitude_control(line[1], line[2], received_at)
         if line[:2] == (1, 6):
             if len(line[2]) != ATTITUDE.size:
                 self.series.invalid += 1
@@ -132,13 +189,14 @@ class TelemetryState:
             self.attitude_received_at = received_at
             return "attitude", values
 
-        if line[0] == 1 and line[1] == 5:
-            if len(line[2]) != RATE.size:
-                self.series.invalid += 1
-                return
-            values = RATE.unpack(line[2])
+        if line[0] == 1 and line[1] in (5, RATE_COMPACT_TYPE):
+            if line[1] == RATE_COMPACT_TYPE:
+                values = decode_compact_rate(line[2])
+            else:
+                values = RATE.unpack(line[2]) if len(line[2]) == RATE.size else None
             if (
-                values[3] not in (1, 3)
+                values is None
+                or values[3] not in (1, 3)
                 or not all(math.isfinite(x) for x in values[4:])
                 or (values[3] == 3 and not 0 < values[2] <= 20000)
                 or any(abs(x) > 1 for x in values[10:13])
@@ -165,27 +223,8 @@ class TelemetryState:
             self.latest_rate = values
             self.rate_received_at = received_at
             return "rate", values
-        if line[0] == 1 and line[1] == 3:
-            if len(line[2]) != RC.size:
-                self.series.invalid += 1
-                return
-            values = RC.unpack(line[2])
-            if values[3] > 1 or any(value > 2047 for value in values[4:]):
-                self.series.invalid += 1
-                return
-            if self.rc_last is not None:
-                ds = (values[0] - self.rc_last[0]) % 2**32
-                dt = (values[1] - self.rc_last[1]) % 2**32
-                if ds >= 2**31 or dt >= 2**31:
-                    self.series.resets += 1
-                    self.new_connection()
-                elif ds == 0:
-                    self.series.invalid += 1
-                    return
-            self.rc_last = values[:2]
-            self.latest_rc = values
-            self.rc_received_at = received_at
-            return "rc", values
+        if line[0] == 1 and line[1] in (3, 8):
+            return self.feed_rc(line[1], line[2], received_at)
         if line[0] == 1 and line[1] == 2:
             if len(line[2]) != RTT_STATS.size:
                 self.series.invalid += 1
@@ -206,8 +245,10 @@ class TelemetryState:
             self.stats_received += 1
             return "stats", values
         resets = self.series.resets
-        if self.series.feed(line):
+        samples = self.series.feed_samples(line)
+        if samples:
             if self.series.resets != resets:
+                self.config = None
                 self.latest_rate = self.rate_received_at = self.rate_last = None
                 self.rate_points.clear()
                 self.reset_attitude()
@@ -215,5 +256,5 @@ class TelemetryState:
                 self.latest_rc = self.rc_last = self.rc_received_at = None
                 self.segment += 1
                 self.latest_stats = self.stats_last = self.stats_received_at = None
-            self.arrivals.append(received_at)
-            return "imu_raw", IMU_RAW.unpack(line[2])
+            self.arrivals.extend([received_at] * len(samples))
+            return ("imu_batch", samples) if line[1] == 9 else ("imu_raw", samples[0])

@@ -51,6 +51,10 @@ imu_calibration_status_t imu_calibration_get_status(void) {
     assert(false);
     return (imu_calibration_status_t){0};
 }
+app_config_t imu_calibration_get_config(void) {
+    assert(false);
+    return (app_config_t){0};
+}
 uint32_t bsp_time_now_us(void) {
     return tick * 1000U + 123U + sub_tick_us;
 }
@@ -224,10 +228,11 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
                            .throttle = NORM_Q15_ONE / 2};
     char trace[512];
     app_process(&pilot);
-    assert(drain(1U, trace) == 112U); /* IMU then attitude control. */
-    assert((uint8_t)trace[49] == 7U && get_u32(trace + 52U) == 1U);
-    assert(get_u32(trace + 56U) == bsp_time_now_us());
-    assert(get_u32(trace + 60U) == bsp_time_now_us());
+    assert(drain(1U, trace) ==
+           62U); /* Only attitude control until the batch fills. */
+    assert((uint8_t)trace[5] == 12U && get_u32(trace + 8U) == 1U);
+    assert(get_u32(trace + 12U) == bsp_time_now_us());
+    assert((uint8_t)trace[16U] == 0U && (uint8_t)trace[17U] == 0x80U);
     mixer_result_t result;
     pilot.roll = NORM_Q15_ONE;
     pilot.pitch = -NORM_Q15_ONE;
@@ -235,22 +240,22 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     for (unsigned sample = 0U; sample < 7U; ++sample) {
         advance_time_us(IMU_SAMPLE_PERIOD_US);
         app_process(&pilot);
-        assert(drain(1U, trace) == 44U);
+        assert(drain(1U, trace) == (sample == 6U ? 141U : 0U));
         assert(app_get_rate_result(&result));
         assert(result.achieved.roll == 0 && result.achieved.pitch == 0);
         assert(result.achieved.yaw > 3200 && result.achieved.yaw < 3350);
     }
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
-    assert(drain(1U, trace) == 112U);
-    assert((uint8_t)trace[49] == 7U && get_u32(trace + 52U) == 2U);
+    assert(drain(1U, trace) == 62U);
+    assert((uint8_t)trace[5] == 12U && get_u32(trace + 8U) == 2U);
     assert(app_get_rate_result(&result));
     assert(result.achieved.roll > 5000 && result.achieved.roll < 6000);
     assert(result.achieved.pitch < -5000 && result.achieved.pitch > -6000);
     pilot.mode = APP_COMMAND_SWITCH_LOW;
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
-    assert(drain(1U, trace) == 44U);
+    assert(drain(1U, trace) == 0U);
     assert(app_get_rate_result(&result) && result.achieved.roll > 6500);
     pilot.mode = APP_COMMAND_SWITCH_HIGH;
     pilot.roll = pilot.pitch = 0;
@@ -308,14 +313,8 @@ int main(void) {
     char output[TEST_OUTPUT_SIZE];
     if (!APP_TELEMETRY_ENABLED) {
         drain(0U, output);
-        assert(strstr(output,
-                      "[I][rate] configured min_period_us=2000 frame=FRD\n") !=
-               NULL);
-        assert(
-            strstr(output, "axis_config axis=roll kp_s_per_rad_x1e6=100000 ") !=
-            NULL);
-        assert(strstr(output, "d_filter_tau_us=0 max_rate_uradps=2000000\n") !=
-               NULL);
+        assert(strstr(output, "[I][rate] configured\n") != NULL);
+        assert(strstr(output, "axis_config") == NULL);
         tick += 50U;
         status = BSP_IMU_OK;
         process_app();
@@ -341,13 +340,10 @@ int main(void) {
     drain(0U, output);
     assert(strstr(output, "[1000][I][pwm] initialized\n") != NULL);
     assert(strstr(output, "[1000][I][imu] initialized id=0x24\n") != NULL);
-    assert(strstr(output, "[I][attitude] filter_config name=mahony "
-                          "nominal_hz=200 kp_per_s_x1e6=2000000 "
-                          "ki_per_s2_x1e6=0\n") != NULL);
+    assert(strstr(output, "filter_config") == NULL);
+    assert(strstr(output, "controller_config") == NULL);
     assert(strstr(output,
-                  "[I][attitude] controller_config nominal_hz=100 "
-                  "kp_per_s_x1e6=4000000 max_tilt_urad=436332\n") != NULL);
-    assert(strstr(output, "calibration_applied source=default frame=FRD ") !=
+                  "calibration_applied source=default accel_enabled=0\n") !=
            NULL);
     process_app();
     assert(drain(0U, output) == 0U && drain(1U, output) == 0U);
@@ -365,19 +361,23 @@ int main(void) {
     drain(0U, output);
     assert(strstr(output, "[1001][I][imu] read recovered\n") != NULL);
     assert(app_get_status(&health) && health.imu_ready);
-    assert(drain(1U, output) == 44U);
-    assert(memcmp(output, "DRT!\x01\x04\x20\x00", 8U) == 0);
-    assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
-    assert(get_u32(output + 16) == 256U);
-    assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0x08U);
+    assert(drain(1U, output) == 0U);
     tick++;
     process_app();
     assert(drain(0U, output) == 0U);
-    assert(drain(1U, output) == 44U);
-    assert(get_u32(output + 8) == 2U && get_u32(output + 12) == 1002123U);
+    assert(drain(1U, output) == 0U);
     status = BSP_IMU_NO_DATA;
     process_app();
     assert(drain(1U, output) == 0U && pwm_starts == 1U);
+    tick += 9U;
+    app_telemetry_process_imu();
+    assert(drain(1U, output) == 51U);
+    assert(memcmp(output, "DRT!\x01\x09\x27\x00", 8U) == 0);
+    assert(get_u32(output + 8) == 1U && get_u32(output + 12) == 1001123U);
+    assert(get_u32(output + 16) == (2U << 24U) + 256U);
+    assert((uint8_t)output[24] == 0U && (uint8_t)output[25] == 0x08U);
+    assert(memcmp(output + 32U, "\xe8\x03\x00", 3U) ==
+           0); /* 1 ms later, same sensor clock. */
     tick = 1999U;
     process_app();
     assert(drain(1U, output) == 0U);
@@ -661,22 +661,18 @@ int main(void) {
     drain(0U, output);
     assert(strstr(output, "[I][runtime] boot_select state=waiting_for_rc\n") !=
            NULL);
-    assert(drain(1U, output) == 60U); /* RC visible before mode selection. */
+    assert(drain(1U, output) == 33U); /* RC visible before mode selection. */
     receiver_connected = true;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT && runtime_mode_supported());
     drain(0U, output);
-    assert(strstr(output, "[I][runtime] selected mode=flight supported=1\n") !=
-           NULL);
-    assert(strstr(output,
-                  "[I][imu] calibration_applied source=flash frame=FRD ") !=
-           NULL);
-    assert(strstr(output, "accel_enabled=1\n") != NULL);
-    assert(strstr(output, "gyro_bias_uradps=10000,-20000,30000 ") != NULL);
-    assert(strstr(output, "[I][imu] accel_correction frame=FRD "
-                          "bias_umps2=100000,200000,-100000 "
-                          "matrix_row_major_x1e6=1010000,-30000,0,0,1020000,"
-                          "20000,40000,0,980000\n") != NULL);
+    assert(strstr(output, "[I][runtime] selected mode=flight\n") != NULL);
+    assert(
+        strstr(output,
+               "[I][imu] calibration_applied source=flash accel_enabled=1\n") !=
+        NULL);
+    assert(strstr(output, "gyro_bias_uradps") == NULL);
+    assert(strstr(output, "accel_correction") == NULL);
     assert(app_configure_rate(&rate_config));
     tick += 50U;
     status = BSP_IMU_OK;
@@ -686,11 +682,32 @@ int main(void) {
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
     assert(runtime_get_command(&command) && command.valid);
-    assert(drain(1U, output) >= 60U && (uint8_t)output[5] == 3U);
+    assert(drain(1U, output) >= 33U && (uint8_t)output[5] == 8U);
+    assert((uint8_t)output[28U] == 0x03U);
     assert(get_u32(output + 12U) == tick);
     assert(get_u32(output + 16U) == tick - 10U);
 
-    tick += 100U;
+    status = BSP_IMU_NO_DATA;
+    tick += 10U;
+    runtime_process();
+    assert(drain(1U, output) == 36U && (uint8_t)output[5] == 9U);
+    assert(SEGGER_RTT_WriteDownBuffer(0U, "C\x78\x56\x34\x12", 5U) == 5U);
+    tick += 20U;
+    runtime_process();
+    assert(drain(1U, output) == 220U && (uint8_t)output[5] == 10U);
+    assert(get_u32(output + 8U) == 0x12345678U);
+    assert((uint8_t)output[12U] == 15U &&
+           (uint8_t)output[13U] == APP_CONFIG_FLIGHT);
+    assert(get_u32(output + 96U) == rate_config.period_us);
+    uint32_t coefficient_bits;
+    memcpy(&coefficient_bits, &flash_calibration.gyro_bias_radps[0],
+           sizeof(coefficient_bits));
+    assert(get_u32(output + 36U) == coefficient_bits);
+    memcpy(&coefficient_bits, &flash_calibration.accel_matrix[0][0],
+           sizeof(coefficient_bits));
+    assert(get_u32(output + 60U) == coefficient_bits);
+    status = BSP_IMU_OK;
+    tick += 70U;
     runtime_process();
     assert(attitude_transmissions == 1U);
     status = BSP_IMU_NO_DATA;

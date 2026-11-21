@@ -94,6 +94,7 @@ target_sources(
             App/Src/esc_calibration.c
             App/Src/imu_calibration.c
             App/Src/imu_calibration_store.c
+            App/Src/app_config.c
             App/Src/app.c
             App/Src/app_rate.c
             App/Src/app_safety.c

@@ -26,6 +26,10 @@ static uint32_t phase_start_ms;
 static uint32_t first_us;
 static uint32_t last_us;
 
+app_config_t imu_calibration_get_config(void) {
+    return (app_config_t){.mode = APP_CONFIG_IMU_CALIB, .imu = &imu};
+}
+
 void imu_calibration_init(void) {
     gyro_window = (gyro_bias_window_t){0};
     accel_session = (accel_calibration_t){0};
@@ -193,7 +197,7 @@ void imu_calibration_process(const app_command_t *command) {
         return;
     }
 
-    APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
+    app_telemetry_queue_imu(&imu.sample, imu.sample_count);
     if (state == IMU_CALIBRATION_GYRO) {
         process_gyro(&imu.sample);
     } else {

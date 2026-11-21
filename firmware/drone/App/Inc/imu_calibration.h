@@ -2,6 +2,7 @@
 #define IMU_CALIBRATION_H
 
 #include "app_command.h"
+#include "app_config.h"
 
 typedef enum {
     IMU_CALIBRATION_IDLE,
@@ -21,6 +22,10 @@ typedef struct {
     imu_calibration_state_t state;
     unsigned captured_faces; /**< Bit mask indexed by accel_cal_face_t. */
 } imu_calibration_status_t;
+
+/** Return the settings used to acquire IMU_CALIB samples after init. The IMU
+ * reference is readable in the same foreground iteration. */
+app_config_t imu_calibration_get_config(void);
 
 /** Initialize the IMU for a gyro and accelerometer calibration. The runtime
  * must have stopped PWM. Call once after selecting IMU_CALIB, in the

@@ -11,7 +11,6 @@
 #include "imu_calibration_store.h"
 #include "mahony.h"
 #include "main.h"
-#include <math.h>
 #include <stddef.h>
 
 #define IMU_TIMEOUT_US 20000U
@@ -21,6 +20,8 @@
 #define MAHONY_KI_PER_S2 0.0f
 #define ATTITUDE_KP_PER_S 4.0f
 #define ATTITUDE_MAX_ANGLE_RAD (25.0f * 0.01745329252f)
+#define GRAVITY_MIN_MPS2 7.85f
+#define GRAVITY_MAX_MPS2 11.77f
 
 _Static_assert(BSP_IMU_ODR_HZ >= MAHONY_HZ && BSP_IMU_ODR_HZ % MAHONY_HZ == 0U,
                "Mahony updates require an integer IMU decimation factor");
@@ -47,6 +48,7 @@ static struct {
 static app_command_t command;
 static app_rate_t rate;
 static bool imu_initialized;
+static bool imu_calibration_from_flash;
 static bool imu_available;
 static bool pwm_ready;
 static bool rate_failed;
@@ -109,6 +111,7 @@ static void init_motor(void) {
 }
 
 static void init_imu(void) {
+    imu_calibration_from_flash = false;
     imu_initialized = app_imu_init(&imu, bsp_board_imu_config()) == BSP_IMU_OK;
 #if defined(DRONE_IMU_BMI160)
     /* Body FRD mean from the last 5 s of telemetry_20261119_023330. */
@@ -119,34 +122,29 @@ static void init_imu(void) {
     if (imu.status != BSP_IMU_OK) {
         return;
     }
-    const bool from_flash =
+    imu_calibration_from_flash =
         imu_calibration_load(imu.sensor.device.chip_id, &imu.calibration);
-    (void)from_flash;
-#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
-    const app_imu_calibration_t *cal = &imu.calibration;
-    APP_LOG_INFO("imu",
-                 "calibration_applied source=%s frame=FRD "
-                 "gyro_bias_uradps=%ld,%ld,%ld accel_enabled=%u",
-                 from_flash ? "flash" : "default",
-                 lroundf(cal->gyro_bias_radps[0] * 1e6f),
-                 lroundf(cal->gyro_bias_radps[1] * 1e6f),
-                 lroundf(cal->gyro_bias_radps[2] * 1e6f),
-                 (unsigned)cal->accel_valid);
-    if (cal->accel_valid) {
-        const float (*m)[3] = cal->accel_matrix;
-        APP_LOG_INFO(
-            "imu",
-            "accel_correction frame=FRD bias_umps2=%ld,%ld,%ld "
-            "matrix_row_major_x1e6=%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld,%ld",
-            lroundf(cal->accel_bias_mps2[0] * 1e6f),
-            lroundf(cal->accel_bias_mps2[1] * 1e6f),
-            lroundf(cal->accel_bias_mps2[2] * 1e6f), lroundf(m[0][0] * 1e6f),
-            lroundf(m[0][1] * 1e6f), lroundf(m[0][2] * 1e6f),
-            lroundf(m[1][0] * 1e6f), lroundf(m[1][1] * 1e6f),
-            lroundf(m[1][2] * 1e6f), lroundf(m[2][0] * 1e6f),
-            lroundf(m[2][1] * 1e6f), lroundf(m[2][2] * 1e6f));
-    }
-#endif
+    APP_LOG_INFO("imu", "calibration_applied source=%s accel_enabled=%u",
+                 imu_calibration_from_flash ? "flash" : "default",
+                 (unsigned)imu.calibration.accel_valid);
+}
+
+app_config_t app_get_config(void) {
+    return (app_config_t){
+        .mode = APP_CONFIG_FLIGHT,
+        .imu = &imu,
+        .calibration_from_flash = imu_calibration_from_flash,
+        .rate = rate.configured ? &rate.config : NULL,
+        .imu_timeout_us = IMU_TIMEOUT_US,
+        .mahony_hz = MAHONY_HZ,
+        .attitude_hz = ATTITUDE_CONTROL_HZ,
+        .mahony_kp_per_s = MAHONY_KP_PER_S,
+        .mahony_ki_per_s2 = MAHONY_KI_PER_S2,
+        .attitude_kp_per_s = ATTITUDE_KP_PER_S,
+        .attitude_max_rad = ATTITUDE_MAX_ANGLE_RAD,
+        .gravity_min_mps2 = GRAVITY_MIN_MPS2,
+        .gravity_max_mps2 = GRAVITY_MAX_MPS2,
+    };
 }
 
 bool app_configure_rate(const app_rate_config_t *config) {
@@ -193,7 +191,8 @@ static void update_attitude(const app_imu_sample_t *sample) {
         accel[0] * accel[0] + accel[1] * accel[1] + accel[2] * accel[2];
     /* Reject gravity feedback outside approximately 0.8 to 1.2 g. */
     const bool gravity_usable =
-        accel_sq >= 7.85f * 7.85f && accel_sq <= 11.77f * 11.77f;
+        accel_sq >= GRAVITY_MIN_MPS2 * GRAVITY_MIN_MPS2 &&
+        accel_sq <= GRAVITY_MAX_MPS2 * GRAVITY_MAX_MPS2;
     if (initialize) {
         tilt_target.have_update = false;
         attitude.valid = gravity_usable && mahony_init(&attitude.filter, accel);
@@ -228,7 +227,6 @@ static void process_imu(void) {
     if (status == BSP_IMU_OK) {
         imu_available = true;
         update_attitude(&imu.sample);
-        APP_TELEMETRY_IMU(&imu.sample, imu.sample_count);
     }
 }
 
@@ -476,40 +474,11 @@ void app_init(void) {
         .max_rate_radps = {2.0f, 2.0f, 2.0f},
         .period_us = 2000U};
     if (app_configure_rate(&rate_config)) {
-        APP_LOG_INFO("rate", "configured min_period_us=%lu frame=FRD",
-                     (unsigned long)rate.config.period_us);
-#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
-        static const char *const axis_names[] = {"roll", "pitch", "yaw"};
-        for (unsigned i = 0U; i < RATE_AXIS_COUNT; ++i) {
-            const rate_axis_config_t *axis = &rate.config.axis[i];
-            APP_LOG_INFO(
-                "rate",
-                "axis_config axis=%s kp_s_per_rad_x1e6=%ld "
-                "ki_per_rad_x1e6=%ld kd_s2_per_rad_x1e6=%ld "
-                "integral_limit_ppm=%ld "
-                "output_limit_ppm=%ld d_filter_tau_us=%ld max_rate_uradps=%ld",
-                axis_names[i], lroundf(axis->kp * 1e6f),
-                lroundf(axis->ki * 1e6f), lroundf(axis->kd * 1e6f),
-                lroundf(axis->integral_limit * 1e6f),
-                lroundf(axis->output_limit * 1e6f),
-                lroundf(axis->d_filter_tau_s * 1e6f),
-                lroundf(rate.config.max_rate_radps[i] * 1e6f));
-        }
-#endif
+        APP_LOG_INFO("rate", "configured");
     } else {
         APP_LOG_ERROR("rate", "configuration_failed");
     }
 #endif
-    APP_LOG_INFO("attitude",
-                 "filter_config name=mahony nominal_hz=%u "
-                 "kp_per_s_x1e6=%ld ki_per_s2_x1e6=%ld",
-                 MAHONY_HZ, lroundf(MAHONY_KP_PER_S * 1e6f),
-                 lroundf(MAHONY_KI_PER_S2 * 1e6f));
-    APP_LOG_INFO("attitude",
-                 "controller_config nominal_hz=%u kp_per_s_x1e6=%ld "
-                 "max_tilt_urad=%ld",
-                 ATTITUDE_CONTROL_HZ, lroundf(ATTITUDE_KP_PER_S * 1e6f),
-                 lroundf(ATTITUDE_MAX_ANGLE_RAD * 1e6f));
     init_motor();
     init_imu();
 #if APP_TELEMETRY_ENABLED || APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
@@ -528,5 +497,9 @@ void app_process(const app_command_t *input) {
     process_imu();
     process_rate();
     process_motor();
+#if APP_TELEMETRY_ENABLED
+    if (imu.sample_valid)
+        app_telemetry_queue_imu(&imu.sample, imu.sample_count);
+#endif
     process_diagnostics();
 }

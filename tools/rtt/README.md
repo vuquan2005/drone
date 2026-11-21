@@ -27,8 +27,10 @@ uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 ## Xem và ghi dữ liệu
 
 Viewer hiển thị log có filter, IMU, receiver và rate/mixer. IMU hiển thị
-m/s² và rad/s trong hệ thân FRD; receiver hiển thị CH1–CH16 dạng raw CRSF
-0–2047. `connected` phản ánh tuổi frame RC hợp lệ, còn `telemetry stale`
+m/s² và rad/s trong hệ thân FRD. Với firmware mới, receiver hiển thị bốn
+trục CH1–CH4 dạng raw CRSF 0–2047 cùng trạng thái cần gạt SA/SB/SC/SD.
+Bản ghi RC cũ vẫn hiển thị đủ CH1–CH16. `connected` phản ánh tuổi frame RC
+hợp lệ, còn `telemetry stale`
 chỉ báo snapshot cũ hoặc TCP DATA ngắt. Tab **Rate · FRD** nhận snapshot
 20 Hz, không phải mọi bước PID. Tab **Attitude** hiển thị mô hình quadrotor với ba trục thân và đồ thị roll, pitch
 và yaw tương đối từ quaternion Mahony (tối đa 20 Hz). Bản ghi
@@ -51,12 +53,21 @@ make telemetry TELEMETRY_ARGS="--record --output-dir /tmp/drone-sessions"
 ```
 
 Mặc định mỗi phiên được lưu riêng trong `experiments/raw/telemetry/` (Git
-ignore), gồm `imu_raw_*.csv`, `rc_*.csv`, `rate_*.csv`, `rtt_stats_*.csv`,
+ignore), gồm `imu_raw_*.csv`, `receiver_compact_*.csv` (RC mới), `rc_*.csv` (RC cũ),
+`rate_*.csv`, `rtt_stats_*.csv`,
 `attitude_*.csv`, `attitude_control_*.csv`, `events_*.log` và `data_*.hex` nếu bật
-raw. IMU CSV giữ counts gốc cùng range,
-ODR và mã ánh xạ trục; raw hex giữ byte DATA trước decode. Log được ghi kể cả
+raw. Viewer đọc cả type 4 và type 9. IMU CSV giữ một dòng mỗi mẫu, gồm
+counts gốc, timestamp, range, ODR và mã ánh xạ trục. Với type 9, viewer điền
+cấu hình cố định theo đặc tả. Raw hex giữ byte DATA trước decode. Log được ghi kể cả
 khi bị filter trên UI. Queue ghi đầy hoặc lỗi ghi có thể làm phiên thiếu dữ
 liệu; kiểm tra writer drops và trạng thái recording trước khi phân tích.
+
+Tab **Configuration** hiển thị cấu hình IMU và các vòng điều khiển. Viewer
+yêu cầu snapshot qua cổng LOG khi hai kết nối RTT sẵn sàng. Firmware trả
+snapshot qua cổng DATA. Viewer lưu một dòng mỗi segment trong `config.jsonl`
+khi bật recording, kể cả khi snapshot đã đến trước lúc bấm ghi. Dùng trường
+`segment` để ghép với CSV và `config_sha256` để đối chiếu giữa các phiên.
+Nếu phiên thiếu snapshot, tab này sẽ báo thiếu cấu hình khi mở lại.
 
 Chọn **Open session…** và thư mục phiên để xem dữ liệu đã lưu, **Segment** để
 chọn đoạn, hoặc **Return to live** để nối lại. Viewer không sửa file nguồn;
@@ -70,7 +81,8 @@ Segment tăng khi DATA nối lại hoặc nghi reset; không so gap qua ranh gi�
 Thiếu boot ID nên không phải mọi reset đều được phát hiện. Trong cùng segment,
 hiệu `t_read_us` modulo 2^32 giữa sequence liên tiếp cho biết khoảng cách đọc
 MCU, không trực tiếp đo jitter lấy mẫu cảm biến. Tách gap khỏi thống kê và
-đối chiếu `imu_tx_full` cùng writer drops. Chi tiết frame, đơn vị, ánh xạ trục
+đối chiếu `imu_tx_full` cùng writer drops. Với type 9, mỗi lần RTT bỏ một
+frame có thể làm thiếu tối đa 8 mẫu. Chi tiết frame, đơn vị, ánh xạ trục
 và counter nằm trong [đặc tả telemetry](../../protocol/telemetry.md).
 
 Viewer không hỗ trợ telemetry IMU type 1 hoặc CSV `IMU1` cũ; dùng phiên bản

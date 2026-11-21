@@ -6,6 +6,7 @@
 #define APP_H
 
 #include "app_command.h"
+#include "app_config.h"
 #include "app_rate.h"
 #include "app_safety.h"
 
@@ -17,6 +18,10 @@ typedef struct {
     app_arm_state_t arm_state;
     app_safety_reason_t safety_reason; /**< Stored reason for APP_FAILSAFE. */
 } app_status_t;
+
+/** Return the applied FLIGHT configuration after app_init(). Read the
+ * referenced settings in the same foreground iteration. */
+app_config_t app_get_config(void);
 
 /** Initialize flight state, attitude and rate control, PWM and IMU; starts
  * DISARMED.

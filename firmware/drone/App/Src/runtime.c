@@ -22,6 +22,7 @@ static uint32_t last_crsf_status_ms;
 static uint32_t last_crsf_attitude_ms;
 #if APP_TELEMETRY_ENABLED
 static uint32_t last_receiver_ms;
+static uint32_t last_config_poll_ms;
 #endif
 
 void runtime_init(void) {
@@ -39,6 +40,7 @@ void runtime_init(void) {
     last_crsf_attitude_ms = last_crsf_status_ms;
 #if APP_TELEMETRY_ENABLED
     last_receiver_ms = last_crsf_status_ms;
+    last_config_poll_ms = last_crsf_status_ms;
 #endif
     APP_LOG_INFO("runtime", "boot_select state=waiting_for_rc");
 }
@@ -204,6 +206,35 @@ static void process_crsf_telemetry(uint32_t now_ms) {
         (void)app_receiver_send_attitude(body_to_ned);
 }
 
+#if APP_TELEMETRY_ENABLED
+static void process_config_requests(uint32_t now_ms) {
+    if (mode == RUNTIME_BOOT_SELECT || now_ms - last_config_poll_ms < 20U)
+        return;
+    last_config_poll_ms = now_ms;
+    uint32_t id;
+    if (!app_telemetry_poll_config_request(&id))
+        return;
+    app_config_t config = {0};
+    switch (mode) {
+    case RUNTIME_FLIGHT:
+        config = app_get_config();
+        break;
+    case RUNTIME_IMU_CALIB:
+        config = imu_calibration_get_config();
+        break;
+    case RUNTIME_ESC_CALIB:
+        config.mode = APP_CONFIG_ESC_CALIB;
+        break;
+    case RUNTIME_FLASH_EXPORT:
+        config.mode = APP_CONFIG_FLASH_EXPORT;
+        break;
+    case RUNTIME_BOOT_SELECT:
+        return;
+    }
+    (void)app_telemetry_write_config(id, &config);
+}
+#endif
+
 void runtime_process(void) {
     if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
         (void)app_command_decode(&receiver_sample, &command);
@@ -225,8 +256,7 @@ void runtime_process(void) {
             [RUNTIME_IMU_CALIB] = "imu_calib",
         };
         if (mode != RUNTIME_BOOT_SELECT)
-            APP_LOG_INFO("runtime", "selected mode=%s supported=%u",
-                         mode_names[mode], (unsigned)runtime_mode_supported());
+            APP_LOG_INFO("runtime", "selected mode=%s", mode_names[mode]);
 #endif
         if (mode == RUNTIME_FLIGHT) {
             /* Initialization can block; poll fresh RC before dispatch. */
@@ -260,5 +290,9 @@ void runtime_process(void) {
     case RUNTIME_BOOT_SELECT:
         break;
     }
+    app_telemetry_process_imu();
+#if APP_TELEMETRY_ENABLED
+    process_config_requests(now);
+#endif
     process_crsf_telemetry(HAL_GetTick());
 }

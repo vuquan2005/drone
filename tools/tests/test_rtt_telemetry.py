@@ -6,7 +6,14 @@ import sys
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from records import ATTITUDE_CONTROL, IMU_RAW, RC, RTT_STATS
+from records import (
+    ATTITUDE_CONTROL,
+    ATTITUDE_CONTROL_COMPACT,
+    ATTITUDE_CONTROL_COMPACT_TYPE,
+    IMU_RAW,
+    RC,
+    RTT_STATS,
+)
 from telemetry import TelemetryState
 
 
@@ -26,11 +33,12 @@ class TelemetryTests(unittest.TestCase):
     def test_attitude_control_uses_mcu_time_and_breaks_on_missing_or_invalid_samples(self):
         state = TelemetryState()
 
-        def feed(seq, stamp, flags=1, rate=0.5):
+        def feed(seq, stamp, flags=1, rate=0.5, *, legacy=False):
+            age = 32768 if legacy else 44
             values = (
                 seq,
                 stamp,
-                (stamp - 44) % 2**32,
+                (stamp - age) % 2**32,
                 flags,
                 1,
                 0,
@@ -38,25 +46,36 @@ class TelemetryTests(unittest.TestCase):
                 0,
                 0.25,
                 0,
-                0.125,
+                0.125 if flags else 0,
                 0,
-                rate,
+                rate if flags else 0,
                 0,
             )
-            return state.feed((1, 7, ATTITUDE_CONTROL.pack(*values)), 12.5)
+            if legacy:
+                frame = (1, 7, ATTITUDE_CONTROL.pack(*values))
+            else:
+                payload = ATTITUDE_CONTROL_COMPACT.pack(
+                    seq, stamp, (flags << 15) | age, *values[4:]
+                )
+                frame = (1, ATTITUDE_CONTROL_COMPACT_TYPE, payload)
+            result = state.feed(frame, 12.5)
+            if result is not None:
+                self.assertEqual(result[1], values)
+            return result
 
         self.assertEqual(feed(1, 2**32 - 5000)[0], "attitude_control")
-        self.assertEqual(feed(3, 15000)[0], "attitude_control")
+        self.assertEqual(feed(3, 20, legacy=True)[0], "attitude_control")
+        self.assertEqual(feed(4, 30, flags=0)[0], "attitude_control")
         points = state.attitude_control_points
-        self.assertAlmostEqual(points[-1][0], 0.020)
+        self.assertAlmostEqual(points[-2][0], 0.005020)
         self.assertAlmostEqual(points[-1][1], math.degrees(0.25))
-        self.assertEqual(points[-1][7], 0.5)
-        self.assertTrue(math.isnan(points[-2][2]))
-        self.assertEqual(feed(4, 25000, flags=0)[0], "attitude_control")
+        self.assertEqual(points[-2][7], 0.5)
+        self.assertTrue(math.isnan(points[-3][2]))
         self.assertTrue(math.isnan(points[-1][7]))
-        self.assertIsNone(feed(4, 25000))
+        self.assertIsNone(feed(4, 30))
         self.assertIsNone(feed(5, 35000, rate=math.inf))
-        self.assertEqual(state.series.invalid, 2)
+        self.assertIsNone(state.feed((1, ATTITUDE_CONTROL_COMPACT_TYPE, b"short"), 12.5))
+        self.assertEqual(state.series.invalid, 3)
         state.new_connection()
         self.assertIsNone(state.latest_attitude_control)
         self.assertFalse(state.attitude_control_points)

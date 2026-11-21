@@ -51,16 +51,19 @@ typedef struct {
 #define BSP_IMU_ODR_HZ 800U
 /** @brief Positive accelerometer full-scale range in g, used for SI conversion.
  */
-#define BSP_IMU_ACCEL_RANGE_G 16.0f
+#define BSP_IMU_ACCEL_RANGE_G 16U
 /** @brief Positive gyroscope full-scale range in degrees/s, used for SI
  * conversion. */
-#define BSP_IMU_GYRO_RANGE_DPS 2000.0f
+#define BSP_IMU_GYRO_RANGE_DPS 2000U
 
-/** @brief Describe the selected backend's requested power and filter modes.
- * @return Static text with sensor model and modes, valid for the life of the
- * firmware. Does not access the IMU or verify its registers.
- */
-const char *bsp_imu_startup_mode(void);
+/** Raw backend configuration codes accepted by the driver during init.
+ * A code of UINT8_MAX denotes a field that does not apply to this model. */
+typedef struct {
+    uint8_t accel_odr, gyro_odr, accel_range, gyro_range;
+    uint8_t accel_filter, gyro_filter, accel_power, gyro_power;
+    uint8_t accel_filter_perf, gyro_filter_perf, gyro_noise_perf,
+        adv_power_save;
+} bsp_imu_settings_t;
 
 /** @brief Signed raw XYZ samples in sensor-package axes; no calibration. */
 typedef struct {
@@ -82,6 +85,7 @@ typedef struct {
     struct bmi2_dev device;
 #endif
     bsp_imu_config_t config;
+    bsp_imu_settings_t settings; /**< Available after a successful init. */
     bool initialized;
     int8_t driver_error; /**< Last Bosch return code; zero on driver success. */
 } bsp_imu_t;

@@ -6,11 +6,6 @@
 #define IMU_INIT_ATTEMPTS 3U
 #define IMU_INIT_RETRY_DELAY_US 10000U
 
-const char *bsp_imu_startup_mode(void) {
-    return "model=BMI160 power=normal accel_filter=normal_avg4 "
-           "gyro_filter=normal";
-}
-
 /* Legacy Bosch callbacks have no context pointer. Bound for each public call;
  * all instances must be serialized in the foreground. */
 static bsp_imu_t *active_imu;
@@ -124,6 +119,24 @@ bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
     }
     imu->driver_error = result;
     imu->initialized = result == BMI160_OK;
+    if (imu->initialized) {
+        const struct bmi160_cfg *accel = &imu->device.accel_cfg;
+        const struct bmi160_cfg *gyro = &imu->device.gyro_cfg;
+        imu->settings = (bsp_imu_settings_t){
+            .accel_odr = accel->odr,
+            .gyro_odr = gyro->odr,
+            .accel_range = accel->range,
+            .gyro_range = gyro->range,
+            .accel_filter = accel->bw,
+            .gyro_filter = gyro->bw,
+            .accel_power = accel->power,
+            .gyro_power = gyro->power,
+            .accel_filter_perf = UINT8_MAX,
+            .gyro_filter_perf = UINT8_MAX,
+            .gyro_noise_perf = UINT8_MAX,
+            .adv_power_save = UINT8_MAX,
+        };
+    }
     return imu->initialized ? BSP_IMU_OK : BSP_IMU_DRIVER_ERROR;
 }
 

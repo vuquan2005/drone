@@ -42,6 +42,11 @@ class SessionWriterTests(unittest.TestCase):
             kind, control = TelemetryState().feed(frame, 0)
             self.assertEqual(kind, "attitude_control")
             self.assertTrue(writer.submit(kind, (2, *control)))
+            rc_fixture = fixture.with_name("rc_compact_v1.hex")
+            (frame,) = Frames().feed(bytes.fromhex(rc_fixture.read_text()))
+            kind, rc = TelemetryState().feed(frame, 0)
+            self.assertEqual(kind, "rc_compact")
+            self.assertTrue(writer.submit(kind, (2, *rc)))
             self.assertTrue(writer.submit("stats", (2, 1, 1234, 17, 3, 0, 225, 224, 1, 0, 0)))
             self.assertTrue(writer.submit("log", b"[1][I][imu] ready\n"))
             self.assertTrue(writer.submit("raw", b"\x00\xff\x10"))
@@ -55,6 +60,7 @@ class SessionWriterTests(unittest.TestCase):
                     f"imu_raw_{stamp}.csv",
                     f"rtt_stats_{stamp}.csv",
                     f"rc_{stamp}.csv",
+                    f"receiver_compact_{stamp}.csv",
                     f"rate_{stamp}.csv",
                     f"attitude_{stamp}.csv",
                     f"attitude_control_{stamp}.csv",
@@ -74,6 +80,8 @@ class SessionWriterTests(unittest.TestCase):
             self.assertEqual(segments[2].latest_attitude, attitude)
             self.assertAlmostEqual(segments[2].attitude_points[-1][1], 73.7398, places=3)
             self.assertEqual(segments[2].latest_attitude_control, control)
+            self.assertEqual(segments[2].latest_rc, rc)
+            self.assertEqual(segments[2].rc_snapshots, [(0, rc)])
             self.assertEqual(segments[2].attitude_control_points[-1][-2:], (0.5, -0.25))
             self.assertFalse(list(writer.directory.glob("imu_[0-9]*.csv")))
             self.assertFalse(writer.submit("csv", (1,) * 10))
@@ -163,11 +171,13 @@ class SessionWriterTests(unittest.TestCase):
                         "imu_raw": 1,
                         "stats": 0,
                         "rc": 0,
+                        "rc_compact": 0,
                         "rate": 0,
                         "attitude": 0,
                         "attitude_control": 0,
                         "log": 0,
                         "raw": 0,
+                        "config": 0,
                     },
                 )
             finally:

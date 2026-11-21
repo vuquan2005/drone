@@ -8,7 +8,8 @@ import unittest
 import zlib
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from records import Frames, ImuSeries, Lines, RTT_STATS, RTT_STATS_FIELDS, RC, IMU_RAW
+from records import Frames, ImuSeries, Lines, RTT_STATS, RTT_STATS_FIELDS, RC, RC_COMPACT, IMU_RAW
+from telemetry import TelemetryState
 
 
 def record(seq=1, stamp=1000, sensor=42, axes=(1000, -2000, 9800, 100, -200, 300)):
@@ -74,6 +75,28 @@ class RecordTests(unittest.TestCase):
         bad = bytearray(raw)
         bad[6] = 47
         self.assertEqual(list(Frames().feed(bad + raw)), [(1, 3, RC.pack(*values))])
+
+    def test_compact_rc_fixture_and_flags_validation(self):
+        path = Path(__file__).resolve().parents[2] / "protocol/fixtures/rc_compact_v1.hex"
+        raw = bytes.fromhex(path.read_text())
+        values = (1, 1234, 1224, 172, 992, 1811, 2047, 0x4F)
+        self.assertEqual(len(raw), 33)
+        frame = (1, 8, RC_COMPACT.pack(*values))
+        for offset in range(len(raw) + 1):
+            framing = Frames()
+            frames = list(framing.feed(raw[:offset])) + list(framing.feed(raw[offset:]))
+            self.assertEqual(frames, [frame])
+        state = TelemetryState()
+        self.assertEqual(state.feed(frame, 0), ("rc_compact", values))
+        self.assertEqual(state.latest_rc.flags, 0x4F)
+        next_sample = (2, 1284, 1224, *values[3:-1])
+        for flags in (0x02, 0x19, 0x61, 0x81):
+            self.assertIsNone(state.feed((1, 8, RC_COMPACT.pack(*next_sample, flags)), 0))
+        self.assertEqual(state.series.invalid, 4)
+        self.assertEqual(state.latest_rc.sequence, 1)
+        state.feed((1, 8, RC_COMPACT.pack(*next_sample, 0)), 0)
+        self.assertEqual(state.latest_rc.flags, 0)
+        self.assertEqual(state.latest_rc.ch4_raw, 2047)
 
     def test_binary_fragmentation_and_midstream_join(self):
         raw = packet()

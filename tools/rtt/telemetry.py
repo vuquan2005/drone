@@ -6,6 +6,7 @@ import math
 from records import (
     ATTITUDE,
     ATTITUDE_CONTROL,
+    ATTITUDE_CONTROL_COMPACT_TYPE,
     ImuSeries,
     RC,
     RC_COMPACT,
@@ -13,6 +14,7 @@ from records import (
     RTT_STATS,
     RATE,
     RATE_COMPACT_TYPE,
+    decode_compact_attitude_control,
     decode_compact_rate,
 )
 
@@ -70,11 +72,16 @@ class TelemetryState:
         self.attitude_control_points = deque(maxlen=2000)
         self.attitude_control_elapsed_us = 0
 
-    def feed_attitude_control(self, payload, received_at):
-        if len(payload) != ATTITUDE_CONTROL.size:
+    def feed_attitude_control(self, kind, payload, received_at):
+        if kind == ATTITUDE_CONTROL_COMPACT_TYPE:
+            values = decode_compact_attitude_control(payload)
+        else:
+            values = (
+                ATTITUDE_CONTROL.unpack(payload) if len(payload) == ATTITUDE_CONTROL.size else None
+            )
+        if values is None:
             self.series.invalid += 1
             return
-        values = ATTITUDE_CONTROL.unpack(payload)
         seq, stamp, _, flags = values[:4]
         q = values[4:8]
         if (
@@ -146,8 +153,8 @@ class TelemetryState:
         return ("rc_compact" if compact else "rc"), values
 
     def feed(self, line, received_at):
-        if line[:2] == (1, 7):
-            return self.feed_attitude_control(line[2], received_at)
+        if line[0] == 1 and line[1] in (7, ATTITUDE_CONTROL_COMPACT_TYPE):
+            return self.feed_attitude_control(line[1], line[2], received_at)
         if line[:2] == (1, 6):
             if len(line[2]) != ATTITUDE.size:
                 self.series.invalid += 1

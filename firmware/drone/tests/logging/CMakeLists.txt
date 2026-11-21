@@ -18,7 +18,7 @@ foreach(level IN ITEMS 0 3 4)
             DRONE_LOG_LEVEL=${level}
             RATE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rate_compact_v1.hex"
             ATTITUDE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_v1.hex"
-            ATTITUDE_CONTROL_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_control_v1.hex"
+            ATTITUDE_CONTROL_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_control_compact_v1.hex"
             CONFIG_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/config_v1.hex"
             IMU_BATCH_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/imu_batch_v1.hex"
             RC_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rc_compact_v1.hex"

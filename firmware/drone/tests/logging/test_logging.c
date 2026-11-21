@@ -1,3 +1,4 @@
+#include "app_crc32.h"
 #include "app_log.h"
 #include "app_telemetry.h"
 #include "bsp_time.h"
@@ -320,18 +321,34 @@ static void enabled_tests(void) {
         .rate_radps = {0.5f, -0.25f},
         .valid = true};
     assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_OK);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 68U);
-    check_fixture(output, 68U, ATTITUDE_CONTROL_FIXTURE_PATH);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 62U);
+    check_fixture(output, 62U, ATTITUDE_CONTROL_FIXTURE_PATH);
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
     assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_FULL);
     bsp_rtt_init();
     evaluation.valid = false;
     assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_OK);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 68U);
-    assert(get_u32(output + 8U) == 3U && get_u32(output + 20U) == 0U);
-    for (unsigned offset = 48U; offset < 64U; offset += 4U) {
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 62U);
+    assert(get_u32(output + 8U) == 3U);
+    assert((uint8_t)output[16U] == 44U && (uint8_t)output[17U] == 0U);
+    for (unsigned offset = 42U; offset < 58U; offset += 4U) {
         assert(get_u32(output + offset) == 0U);
     }
+    evaluation.valid = true;
+    evaluation.t_control_us = 5U;
+    evaluation.t_estimate_us = evaluation.t_control_us - 32767U;
+    assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 62U);
+    assert((uint8_t)output[16U] == 0xFFU && (uint8_t)output[17U] == 0xFFU);
+    --evaluation.t_estimate_us;
+    assert(app_telemetry_write_attitude_control(&evaluation) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 68U);
+    assert((uint8_t)output[5U] == 7U && (uint8_t)output[6U] == 56U);
+    assert(get_u32(output + 8U) == 5U);
+    assert(get_u32(output + 12U) == evaluation.t_control_us);
+    assert(get_u32(output + 16U) == evaluation.t_estimate_us);
+    assert(get_u32(output + 20U) == 1U);
+    assert(get_u32(output + 64U) == app_crc32((const uint8_t *)output, 64U));
     app_log_init(NULL);
     assert(app_log_write(1U, "imu", "no clock") == BSP_RTT_NOT_INITIALIZED);
 }

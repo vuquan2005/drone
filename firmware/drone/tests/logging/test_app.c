@@ -229,10 +229,10 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     char trace[512];
     app_process(&pilot);
     assert(drain(1U, trace) ==
-           68U); /* Only attitude control until the batch fills. */
-    assert((uint8_t)trace[5] == 7U && get_u32(trace + 8U) == 1U);
+           62U); /* Only attitude control until the batch fills. */
+    assert((uint8_t)trace[5] == 12U && get_u32(trace + 8U) == 1U);
     assert(get_u32(trace + 12U) == bsp_time_now_us());
-    assert(get_u32(trace + 16U) == bsp_time_now_us());
+    assert((uint8_t)trace[16U] == 0U && (uint8_t)trace[17U] == 0x80U);
     mixer_result_t result;
     pilot.roll = NORM_Q15_ONE;
     pilot.pitch = -NORM_Q15_ONE;
@@ -247,8 +247,8 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     }
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
-    assert(drain(1U, trace) == 68U);
-    assert((uint8_t)trace[5] == 7U && get_u32(trace + 8U) == 2U);
+    assert(drain(1U, trace) == 62U);
+    assert((uint8_t)trace[5] == 12U && get_u32(trace + 8U) == 2U);
     assert(app_get_rate_result(&result));
     assert(result.achieved.roll > 5000 && result.achieved.roll < 6000);
     assert(result.achieved.pitch < -5000 && result.achieved.pitch > -6000);

@@ -112,6 +112,8 @@ RATE_FIELDS = (
 ATTITUDE = struct.Struct("<II4f")
 ATTITUDE_COLUMNS = ("segment", "sequence", "t_sample_us", "qw", "qx", "qy", "qz")
 ATTITUDE_CONTROL = struct.Struct("<4I10f")
+ATTITUDE_CONTROL_COMPACT = struct.Struct("<IIH10f")
+ATTITUDE_CONTROL_COMPACT_TYPE = 12
 ATTITUDE_CONTROL_COLUMNS = (
     "segment",
     "sequence",
@@ -139,6 +141,7 @@ KNOWN_SIZES = {
     8: RC_COMPACT.size,
     CONFIG_TYPE: CONFIG_REPLY_BYTES,
     RATE_COMPACT_TYPE: RATE_COMPACT.size,
+    ATTITUDE_CONTROL_COMPACT_TYPE: ATTITUDE_CONTROL_COMPACT.size,
 }
 MAX_PAYLOAD = 256
 IMU_BATCH_SIZES = {
@@ -186,6 +189,15 @@ class Frames:
             payload = bytes(self.pending[HEADER.size : size - 4])
             del self.pending[:size]
             yield version, kind, payload
+
+
+def decode_compact_attitude_control(payload):
+    """Expand type 12 into the existing Attitude Control CSV fields."""
+    if len(payload) != ATTITUDE_CONTROL_COMPACT.size:
+        return None
+    seq, control_us, age_valid, *fields = ATTITUDE_CONTROL_COMPACT.unpack(payload)
+    estimate_us = (control_us - (age_valid & 0x7FFF)) % 2**32
+    return (seq, control_us, estimate_us, age_valid >> 15, *fields)
 
 
 def decode_compact_rate(payload):

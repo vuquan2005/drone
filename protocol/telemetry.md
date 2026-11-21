@@ -8,14 +8,14 @@ CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                                                                                                                                            |
-| ------ | ------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                                                       |
-| 4      | 1       | version        | `1`                                                                                                                                                                |
-| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate cũ, `6` tư thế, `7` vòng attitude, `8` RC gọn, `9` IMU raw gộp, `10` cấu hình, `11` rate gọn |
-| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu. Type 10 có 208 byte. Type 11 có 54 byte.                          |
-| 8      | N       | payload        | Theo version và type                                                                                                                                               |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                                                       |
+| Offset | Số byte | Trường         | Quy ước                                                                                                                                                                                       |
+| ------ | ------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                                                                                  |
+| 4      | 1       | version        | `1`                                                                                                                                                                                           |
+| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate cũ, `6` tư thế, `7` vòng attitude cũ, `8` RC gọn, `9` IMU raw gộp, `10` cấu hình, `11` rate gọn, `12` vòng attitude gọn |
+| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu. Type 10–12 lần lượt có 208, 54, 50 byte.                                                     |
+| 8      | N       | payload        | Theo version và type                                                                                                                                                                          |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                                                                                  |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -331,12 +331,11 @@ Firmware gửi tối đa 20 Hz trên CH1 khi ước lượng còn mới.
 Viewer đổi quaternion thành roll, pitch và yaw tương đối theo độ. CSV
 `attitude_*.csv` giữ nguyên quaternion và timestamp để xem lại.
 
-## Vòng điều khiển attitude v1, type 7
+## Vòng điều khiển attitude v1, type 7 cũ
 
-Payload 56 byte, frame 68 byte, dùng cùng header và CRC32. App thử gửi trên
-CH1 sau cập nhật motor cho mỗi lần tính vòng attitude với quaternion còn
-mới ở SC MIDDLE/HIGH, danh định 100 Hz. Sequence tăng cả khi RTT đầy. Các
-trường số dùng little-endian.
+Payload 56 byte, frame 68 byte, dùng cùng header và CRC32. Viewer đọc type 7
+từ firmware cũ. Firmware hiện tại dùng type 7 để giữ nguyên hai timestamp khi
+tuổi quaternion vượt giới hạn của type 12. Các trường số dùng little-endian.
 
 | Offset payload | Kiểu        | Nội dung                                                                        |
 | -------------- | ----------- | ------------------------------------------------------------------------------- |
@@ -351,4 +350,31 @@ trường số dùng little-endian.
 
 Hai trường cuối bằng 0 khi bit hợp lệ tắt. CSV giữ timestamp MCU và giá trị
 gốc. Viewer chuyển quaternion và góc đặt sang độ để so sánh trên cùng trục
-thời gian. Fixture dùng chung C/Python nằm tại `protocol/fixtures/attitude_control_v1.hex`.
+thời gian. Fixture [type 7](fixtures/attitude_control_v1.hex) dùng để kiểm tra
+khả năng đọc khung cũ.
+
+## Vòng điều khiển attitude gọn v1, type 12
+
+Payload 50 byte, frame 62 byte. App thử gửi trên CH1 sau cập nhật motor cho
+mỗi lần tính vòng attitude với quaternion còn mới ở SC MIDDLE/HIGH, danh
+định 100 Hz, tương ứng 6.200 B/s khi dùng toàn khung type 12. Sequence dùng
+chung với type 7 và tăng cả khi RTT đầy. Các trường số dùng little-endian.
+
+| Offset payload | Kiểu        | Nội dung                                                           |
+| -------------: | ----------- | ------------------------------------------------------------------ |
+|              0 | uint32      | Sequence lần thử gửi                                               |
+|              4 | uint32      | Timestamp MCU tại đầu lần tính, µs modulo 2^32                     |
+|              8 | uint16      | Bit 15 báo phép tính hợp lệ, bit 0–14 chứa tuổi quaternion theo µs |
+|             10 | float32 × 4 | Quaternion FRD → NED đã dùng, theo thứ tự `w, x, y, z`             |
+|             26 | float32 × 2 | Góc đặt Euler roll/pitch, rad                                      |
+|             34 | float32 × 2 | Sai số nghiêng X/Y thân, gấp đôi phần vector của quaternion sai số |
+|             42 | float32 × 2 | Tốc độ góc lệnh X/Y thân trước giới hạn của vòng rate, rad/s       |
+
+Tuổi quaternion bằng `(t_control_us - t_estimate_us) mod 2^32`. Firmware gửi
+type 7 nếu tuổi lớn hơn 32.767 µs. Hai trường sai số và tốc độ góc lệnh bằng
+0 khi bit hợp lệ tắt. Viewer khôi phục `t_estimate_us` bằng
+`(t_control_us - age_us) mod 2^32` và lấy `flags` từ bit 15. Schema CSV giữ
+nguyên, mỗi khung được giải mã độc lập.
+
+Fixture [Attitude Control gọn](fixtures/attitude_control_compact_v1.hex) dùng
+chung cho encoder C và decoder Python.

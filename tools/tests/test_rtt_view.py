@@ -287,13 +287,14 @@ class ViewerTests(unittest.TestCase):
             control_frame = bytes.fromhex(
                 (
                     Path(__file__).resolve().parents[2]
-                    / "protocol/fixtures/attitude_control_v1.hex"
+                    / "protocol/fixtures/attitude_control_compact_v1.hex"
                 ).read_text()
             )
             peers[-1].write(control_frame)
             until(lambda: viewer.telemetry.latest_attitude_control is not None)
             viewer.tabs.setCurrentWidget(viewer.attitude_control_panel)
             self.assertIn("Live · valid", viewer.attitude_control_panel.status.text())
+            self.assertIn("estimate age 0.04 ms", viewer.attitude_control_panel.status.text())
             self.assertAlmostEqual(
                 viewer.attitude_control_panel.curves[0].getData()[1][-1], math.degrees(0.25)
             )

@@ -8,6 +8,10 @@ enum {
     STATS_FRAME_BYTES = 52U,
     RC_FRAME_BYTES = 33U,
     RATE_FRAME_BYTES = 66U,
+    ATTITUDE_CONTROL_FRAME_BYTES = 68U,
+    ATTITUDE_CONTROL_COMPACT_FRAME_BYTES = 62U,
+    ATTITUDE_CONTROL_AGE_MASK = 0x7FFFU,
+    ATTITUDE_CONTROL_VALID_BIT = 0x8000U,
     CONFIG_FRAME_BYTES = 8U + 4U + APP_CONFIG_PAYLOAD_BYTES + 4U,
     GET_CONFIG = 'C',
     IMU_BATCH_CAPACITY = 8U,
@@ -323,24 +327,41 @@ bsp_rtt_result_t app_telemetry_write_attitude_control(
     const uint32_t sequence = ++attitude_control_sequence;
     if (sample == NULL)
         return BSP_RTT_INVALID_ARGUMENT;
-    uint8_t frame[68] = {'D', 'R', 'T', '!', 1U, 7U, 56U, 0U};
+    const uint32_t age_us = sample->t_control_us - sample->t_estimate_us;
+    const bool compact = age_us <= ATTITUDE_CONTROL_AGE_MASK;
+    const size_t frame_bytes = compact ? ATTITUDE_CONTROL_COMPACT_FRAME_BYTES
+                                       : ATTITUDE_CONTROL_FRAME_BYTES;
     const bsp_rtt_result_t ready =
-        bsp_rtt_prepare_write(BSP_RTT_DATA, sizeof(frame));
+        bsp_rtt_prepare_write(BSP_RTT_DATA, frame_bytes);
     if (ready != BSP_RTT_OK)
         return ready;
-    put_u32(frame + 8, sequence);
-    put_u32(frame + 12, sample->t_control_us);
-    put_u32(frame + 16, sample->t_estimate_us);
-    put_u32(frame + 20, sample->valid ? 1U : 0U);
+    uint8_t frame[ATTITUDE_CONTROL_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U};
+    frame[5] = compact ? 12U : 7U;
+    put_u16(frame + 6U, (uint16_t)(frame_bytes - 12U));
+    put_u32(frame + 8U, sequence);
+    put_u32(frame + 12U, sample->t_control_us);
+    uint8_t *fields;
+    if (compact) {
+        const uint16_t age_valid =
+            (uint16_t)age_us |
+            (sample->valid ? ATTITUDE_CONTROL_VALID_BIT : 0U);
+        put_u16(frame + 16U, age_valid);
+        fields = frame + 18U;
+    } else {
+        put_u32(frame + 16U, sample->t_estimate_us);
+        put_u32(frame + 20U, sample->valid ? 1U : 0U);
+        fields = frame + 24U;
+    }
     for (unsigned i = 0; i < 4U; ++i)
-        put_float(frame + 24 + 4 * i, sample->body_to_ned[i]);
+        put_float(fields + 4U * i, sample->body_to_ned[i]);
     for (unsigned i = 0; i < 2U; ++i) {
-        put_float(frame + 40 + 4 * i, sample->target_rad[i]);
-        put_float(frame + 48 + 4 * i,
+        put_float(fields + 16U + 4U * i, sample->target_rad[i]);
+        put_float(fields + 24U + 4U * i,
                   sample->valid ? sample->tilt_error[i] : 0.0f);
-        put_float(frame + 56 + 4 * i,
+        put_float(fields + 32U + 4U * i,
                   sample->valid ? sample->rate_radps[i] : 0.0f);
     }
-    put_u32(frame + 64, app_crc32(frame, 64));
-    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
+    const size_t crc_offset = frame_bytes - 4U;
+    put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
+    return bsp_rtt_write(BSP_RTT_DATA, frame, frame_bytes);
 }

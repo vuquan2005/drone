@@ -106,6 +106,8 @@ typedef struct {
 } app_attitude_control_sample_t;
 
 /** @brief Send one attitude-controller sample over RTT DATA.
+ * Uses the 62-byte type 12 for quaternion ages up to 32767 us (modulo 2^32),
+ * or the 68-byte type 7 with both timestamps for larger ages.
  * @param sample Readable sample for the duration of the call. NULL is invalid.
  * @return RTT result. Invalid evaluations encode zero error and rate fields.
  * @note Nonblocking foreground only. Sequence counts attempted writes.

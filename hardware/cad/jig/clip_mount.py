@@ -54,10 +54,10 @@ def build_mount():
     return mount
 
 
-def main(*, preview=True):
+def main(*, export_format=None):
     mount = build_mount()
 
-    if preview:
+    if export_format is None:
         from ocp_vscode import find_and_set_port, get_port, port_check, show
 
         port = get_port()
@@ -74,7 +74,7 @@ def main(*, preview=True):
 
     exports = Path(__file__).resolve().parent / "exports"
     exports.mkdir(exist_ok=True)
-    if not export_step(mount, exports / "clip_mount.step"):
+    if export_format == "both" and not export_step(mount, exports / "clip_mount.step"):
         raise RuntimeError("Could not export the STEP mount")
     if not export_stl(mount, exports / "clip_mount.stl"):
         raise RuntimeError("Could not export the STL mount")
@@ -91,7 +91,14 @@ if __name__ == "__main__":
         )
         mode = parser.add_mutually_exclusive_group()
         mode.add_argument(
-            "--export", action="store_false", dest="preview", help="Export STEP and STL"
+            "--export",
+            dest="export_format",
+            nargs="?",
+            const="both",
+            choices=("both", "stl"),
+            help="Export STEP and STL, or pass stl to export STL only",
         )
-        mode.add_argument("--preview", action="store_true", help=SUPPRESS)
-        main(preview=parser.parse_args().preview)
+        mode.add_argument(
+            "--preview", dest="export_format", action="store_const", const=None, help=SUPPRESS
+        )
+        main(export_format=parser.parse_args().export_format)

@@ -8,7 +8,6 @@ import secrets
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
 from threading import Event
 
 from PySide6 import QtCore, QtWidgets
@@ -23,6 +22,7 @@ from panels import (
     AttitudeControlPanel,
 )
 from config_record import CONFIG_REQUEST, CONFIG_TYPE, decode_config_reply
+from flash_export import DEFAULT_EXPORT_ROOT, MAX_ATTEMPTS, new_export_directory
 from flash_export import export as export_flash
 from stream import Stream
 from telemetry import TelemetryState
@@ -34,7 +34,7 @@ CONFIG_MAX_ATTEMPTS = 5
 
 
 class Viewer(QtWidgets.QMainWindow):
-    flash_progress = QtCore.Signal(int)
+    flash_progress = QtCore.Signal(int, int)
 
     def __init__(self, args):
         super().__init__()
@@ -44,6 +44,8 @@ class Viewer(QtWidgets.QMainWindow):
         self.saved_session = None
         self.load_future = None
         self.export_future = None
+        self.export_directory = None
+        self.export_root = Path(getattr(args, "export_dir", DEFAULT_EXPORT_ROOT))
         self.loader = ThreadPoolExecutor(max_workers=1)
         self.writer = None
         self.recording = False
@@ -160,8 +162,11 @@ class Viewer(QtWidgets.QMainWindow):
             QtCore.QTimer.singleShot(0, self.toggle_recording)
 
     def choose_session(self):
+        start = self.output_dir.text()
+        if self.export_directory is not None and (self.export_directory / "flash.bin").is_file():
+            start = str(self.export_directory)
         directory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Open telemetry session", self.output_dir.text()
+            self, "Open telemetry session", start
         )
         if directory:
             self.load_session(directory)
@@ -283,8 +288,7 @@ class Viewer(QtWidgets.QMainWindow):
             or (self.writer is not None and not self.writer.done.is_set())
         ):
             return
-        stamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
-        self.export_directory = Path(self.output_dir.text()) / f"flash_export_{stamp}"
+        self.export_directory = new_export_directory(self.export_root)
         self.export_cancel = Event()
         self.pause_streams()
         self.open_button.setEnabled(False)
@@ -303,9 +307,14 @@ class Viewer(QtWidgets.QMainWindow):
             progress=self.flash_progress.emit,
         )
 
-    def update_export_progress(self, pages):
+    def update_export_progress(self, attempt, pages):
         if self.export_future is not None and not self.export_cancel.is_set():
-            self.export_status.setText(f"Exporting flash · {pages:,} pages received")
+            progress = (
+                "waiting for board · SD HIGH + SB LOW" if pages < 0 else f"{pages:,} pages received"
+            )
+            self.export_status.setText(
+                f"Exporting flash · attempt {attempt}/{MAX_ATTEMPTS} · {progress}"
+            )
 
     def finish_export(self):
         future, self.export_future = self.export_future, None
@@ -315,6 +324,9 @@ class Viewer(QtWidgets.QMainWindow):
             message = "Flash export cancelled."
         except Exception as error:
             message = f"Flash export failed: {error}"
+            log = self.export_directory / "export.log"
+            if log.is_file():
+                message += f" · {log}"
         else:
             message = f"Flash saved · {stats['sessions']} sessions · {self.export_directory}"
         self.export_status.setText(message)
@@ -578,6 +590,7 @@ def main():
     parser.add_argument("--log-port", type=int, default=9090)
     parser.add_argument("--data-port", type=int, default=9091)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--export-dir", type=Path, default=DEFAULT_EXPORT_ROOT)
     parser.add_argument(
         "--record", action="store_true", help="Start a recording session immediately"
     )

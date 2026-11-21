@@ -44,6 +44,23 @@ def transfer(request, pages, invalid=0, crc_flip=0):
     )
 
 
+class FakeSocket:
+    def __init__(self, chunks):
+        self.chunks = iter(chunks)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+    def sendall(self, data):
+        self.command = data
+
+    def recv(self, size):
+        return next(self.chunks, b"")
+
+
 class TestFlashExport(unittest.TestCase):
     def test_fragmented_export_preserves_legacy_pages_and_extracts_sessions(self):
         imu = bytes.fromhex((FIXTURES / "imu_batch_v1.hex").read_text())
@@ -64,10 +81,15 @@ class TestFlashExport(unittest.TestCase):
         stale = list(transfer(6, [(0, unknown)]))
         wire = b"noise" + b"".join((*stale[1:], *transfer(7, pages, invalid=1)))
         image = io.BytesIO()
-        stats = export.receive_image((wire[i : i + 17] for i in range(0, len(wire), 17)), 7, image)
+        received = {}
+        count, invalid, crc = export.receive_pages(
+            (wire[i : i + 17] for i in range(0, len(wire), 17)), 7, received
+        )
+        self.assertEqual(crc, export.page_checksum(received))
+        export.write_image(image, received, complete=True)
         self.assertEqual(image.tell(), 16 * 1024 * 1024)
-        self.assertEqual(stats["pages_sent"], len(pages))
-        self.assertEqual(stats["invalid_pages"], 1)
+        self.assertEqual(count, len(pages))
+        self.assertEqual(invalid, 1)
         image.seek(0)
         self.assertEqual(image.read(768), export.ERASED_PAGE * 3)
         self.assertEqual(image.read(256), unknown)
@@ -101,35 +123,71 @@ class TestFlashExport(unittest.TestCase):
         self.assertEqual(list(parser.feed(stale[64:] + imu)), list(Frames().feed(imu)))
         self.assertEqual(parser.errors, 0)
 
-    def test_rejects_truncation_crc_mismatch_and_order(self):
+    def test_rejects_truncation_and_out_of_order_pages(self):
         pages = [(1, b"a" * 256), (2, b"b" * 256)]
         begin, first, second, end = transfer(8, pages)
-        for chunks, error in (
-            ((begin, first), "before flash export END"),
-            ((begin, second, first, end), "out-of-order"),
-            ((begin, first, end), "count or CRC"),
-            (tuple(transfer(8, pages, crc_flip=1)), "count or CRC"),
+        with self.assertRaisesRegex(EOFError, "before flash export END"):
+            export.receive_pages((begin, first), 8, {})
+        with self.assertRaisesRegex(ValueError, "out-of-order"):
+            export.receive_pages((begin, second, first, end), 8, {})
+
+    def test_recovers_complementary_attempts_and_logs_crc_errors(self):
+        pages = [(1, b"a" * 256), (2, b"b" * 256)]
+        begin, first, second, end = transfer(8, pages)
+        corrupt = second[:-1] + bytes([second[-1] ^ 1])
+        other_begin, _, other_second, other_end = transfer(9, pages)
+        sockets = [
+            FakeSocket([begin, first, corrupt, end]),
+            FakeSocket([]),
+            FakeSocket([other_begin, other_second, other_end]),
+            FakeSocket([]),
+        ]
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(export.secrets, "randbits", side_effect=[8, 9]),
+            patch.object(export.socket, "create_connection", side_effect=sockets),
         ):
-            with self.subTest(error=error), self.assertRaisesRegex(ValueError, error):
-                export.receive_image(chunks, 8, io.BytesIO())
+            out = Path(directory) / "export"
+            stats = export.export("localhost", 9090, 9091, 5, out, attempts=2)
+            self.assertEqual((stats["pages_sent"], stats["attempts"]), (2, 2))
+            with (out / "flash.bin").open("rb") as image:
+                self.assertEqual(image.read(768), export.ERASED_PAGE + pages[0][1] + pages[1][1])
+            log = (out / "export.log").read_text()
+            self.assertIn("crc_errors=1 recovered=1/2", log)
+            self.assertIn("crc_errors=0 recovered=2/2", log)
+            self.assertIn("complete pages=2", log)
+            self.assertFalse((out / "flash.bin.part").exists())
+
+    def test_never_finalizes_inconsistent_export(self):
+        pages = [(1, b"a" * 256), (2, b"b" * 256)]
+        begin, first, _, end = transfer(8, pages)
+        next_begin, _, next_second, next_end = transfer(9, pages, crc_flip=1)
+        duplicate = message(export.PAGE, 9, 1, b"c" * 256)
+        same_end = list(transfer(9, pages))[-1]
+        for second_attempt, error in (
+            ([], "count or CRC"),
+            ([next_begin, next_second, next_end], "END changed"),
+            ([next_begin, duplicate, same_end], "page 1 changed"),
+        ):
+            with (
+                self.subTest(error=error),
+                tempfile.TemporaryDirectory() as directory,
+                patch.object(export.secrets, "randbits", side_effect=[8, 9]),
+            ):
+                out = Path(directory) / "export"
+                sockets = [FakeSocket([begin, first, end]), FakeSocket([])]
+                if second_attempt:
+                    sockets.extend([FakeSocket(second_attempt), FakeSocket([])])
+                with (
+                    patch.object(export.socket, "create_connection", side_effect=sockets),
+                    self.assertRaisesRegex(ValueError, error),
+                ):
+                    export.export("localhost", 9090, 9091, 5, out, attempts=len(sockets) // 2)
+                self.assertTrue((out / "flash.bin.part").is_file())
+                self.assertFalse((out / "flash.bin").exists())
+                self.assertIn("failed", (out / "export.log").read_text())
 
     def test_command_and_incomplete_file(self):
-        class FakeSocket:
-            def __init__(self, chunks):
-                self.chunks = iter(chunks)
-
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args):
-                pass
-
-            def sendall(self, data):
-                self.command = data
-
-            def recv(self, size):
-                return next(self.chunks, b"")
-
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             for complete in (False, True):
@@ -145,11 +203,11 @@ class TestFlashExport(unittest.TestCase):
                         ),
                     ):
                         if complete:
-                            stats = export.export("localhost", 9090, 9091, 5, out)
+                            stats = export.export("localhost", 9090, 9091, 5, out, attempts=1)
                             self.assertEqual(stats["sessions"], 0)
                         else:
                             with self.assertRaisesRegex(ValueError, "before flash export END"):
-                                export.export("localhost", 9090, 9091, 5, out)
+                                export.export("localhost", 9090, 9091, 5, out, attempts=1)
                     self.assertEqual(control.command, b"EXPORT000000f1")
                     self.assertEqual((out / "flash.bin").is_file(), complete)
                     self.assertEqual((out / "flash.bin.part").is_file(), not complete)

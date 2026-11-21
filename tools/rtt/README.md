@@ -28,26 +28,36 @@ uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 
 Dùng firmware bật RTT, reset board với **SD HIGH + SB LOW** và đợi tay
 điều khiển báo `EXPORT WAIT`. Mở `make telemetry`, dừng ghi live nếu
-đang ghi, rồi bấm **Export flash**. Viewer dùng thư mục trong
-**Recording options → Save folder** và tạo thư mục con `flash_export_*`.
-Trong lúc xuất, viewer tạm dừng kết nối live và hiển thị số trang đã
-nhận. **Cancel export** hủy lần truyền về máy.
+đang ghi, rồi bấm **Export flash**. Mỗi lượt xuất được lưu vào
+`experiments/raw/export/flash_export_<thời điểm>`. Thư mục ghi live được
+chọn trong **Recording options → Save folder**, mặc định là
+`experiments/raw/telemetry`. Đổi thư mục xuất bằng
+`make telemetry TELEMETRY_ARGS="--export-dir /đường/dẫn"`.
+
+Trong lúc xuất, viewer tạm dừng kết nối live và hiển thị lần đọc cùng số
+trang đã nhận. Khi thiếu trang hoặc CRC sai, exporter đọc lại tối đa năm
+lần tính cả lần đầu. Các trang qua kiểm tra CRC từ những lần có cùng
+thông tin END được ghép theo địa chỉ. Ảnh chỉ hoàn tất khi đủ số trang
+và khớp CRC của board. **Cancel export** dừng truyền về máy.
 
 `flash.bin` là ảnh 16 MiB của chip, giữ cả dữ liệu cũ ở các trang journal
-không nhận diện được. `export.json` tóm tắt kết quả. Dùng **Open session**
-và chọn một thư mục `session_*` bên trong để xem CSV và cấu hình đã lưu.
-Nếu ngắt kết nối giữa chừng, file còn tên `flash.bin.part`. Bấm
-**Export flash** lần nữa để đọc lại từ đầu vào một thư mục mới.
+không nhận diện được. `export.json` tóm tắt kết quả và `export.log` ghi
+thời điểm, số trang, lỗi CRC và kết quả từng lần đọc. Dùng **Open session**
+và chọn thư mục `session_*` để xem CSV và cấu hình đã lưu. Nếu không xác
+nhận được ảnh, exporter giữ `flash.bin.part` và ghi nguyên nhân vào
+`export.log`. Export chỉ đọc flash.
 
 Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Giữ OpenOCD
 đang chạy với cấu hình RTT, đóng viewer và chạy từ gốc repo:
 
 ```sh
-python3 tools/rtt/flash_export.py experiments/raw/telemetry/flash-export-01
+python3 tools/rtt/flash_export.py
 ```
 
-CLI mặc định dùng cổng OpenOCD 9090 và 9091. Có thể đổi bằng `--host`,
-`--control-port` và `--data-port`.
+CLI dùng cùng thư mục mặc định với viewer. Để lưu vào nơi khác, truyền
+đường dẫn tới thư mục mới. Có thể thay số lần đọc tối đa bằng
+`--attempts` và cấu hình kết nối qua `--host`, `--control-port` và
+`--data-port`.
 
 ## Xem và ghi dữ liệu
 

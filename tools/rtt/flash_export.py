@@ -3,6 +3,7 @@
 import argparse
 from contextlib import ExitStack
 import csv
+from datetime import datetime
 import json
 import os
 from pathlib import Path
@@ -38,6 +39,8 @@ BEGIN, PAGE, END, ERROR = range(1, 5)
 PAGE_BYTES, PAGE_COUNT = PAYLOAD_SIZES[PAGE], 65536
 ERASED_PAGE = b"\xff" * PAGE_BYTES
 ERASED_BLOCK = ERASED_PAGE * 256
+DEFAULT_EXPORT_ROOT = Path(__file__).resolve().parents[2] / "experiments/raw/export"
+MAX_ATTEMPTS = 5
 CSV_COLUMNS = {
     "imu_raw": IMU_RAW_COLUMNS,
     "stats": STATS_COLUMNS,
@@ -50,7 +53,7 @@ CSV_COLUMNS = {
 CSV_NAMES = {"rc_compact": "receiver_compact", "stats": "rtt_stats"}
 
 
-def messages(chunks):
+def messages(chunks, diagnostics=None):
     """Find complete CRC-valid export messages in arbitrary TCP chunks."""
     pending = bytearray()
     for chunk in chunks:
@@ -71,6 +74,8 @@ def messages(chunks):
             if len(pending) < size:
                 break
             if zlib.crc32(pending[: size - U32.size]) != U32.unpack_from(pending, size - 4)[0]:
+                if diagnostics is not None:
+                    diagnostics["crc_errors"] += 1
                 del pending[0]
                 continue
             payload = bytes(pending[HEADER.size : HEADER.size + length])
@@ -85,11 +90,11 @@ def write_erased(file, count):
         count -= pages
 
 
-def receive_image(chunks, request, file, progress=None):
-    """Reconstruct every page and validate the END manifest before returning."""
+def receive_pages(chunks, request, pages, diagnostics=None, progress=None):
+    """Collect one attempt; return only after its END manifest is received."""
     started = False
-    next_index = sent = checksum = 0
-    for kind, message_id, index, payload in messages(chunks):
+    next_index = 0
+    for kind, message_id, index, payload in messages(chunks, diagnostics):
         if message_id != request:
             continue
         if kind == BEGIN:
@@ -106,20 +111,33 @@ def receive_image(chunks, request, file, progress=None):
         elif kind == PAGE:
             if not next_index <= index < PAGE_COUNT or payload == ERASED_PAGE:
                 raise ValueError(f"invalid or out-of-order flash page {index}")
-            write_erased(file, index - next_index)
-            file.write(payload)
-            checksum = zlib.crc32(payload, zlib.crc32(U32.pack(index), checksum))
+            pages[index] = payload
             next_index = index + 1
-            sent += 1
-            if progress is not None and sent % 128 == 0:
-                progress(sent)
+            if progress is not None and len(pages) % 128 == 0:
+                progress(len(pages))
         elif kind == END:
-            pages, invalid, expected_crc = struct.unpack("<III", payload)
-            if index != PAGE_COUNT or sent != pages or invalid > sent or checksum != expected_crc:
-                raise ValueError("flash export count or CRC does not match END")
-            write_erased(file, PAGE_COUNT - next_index)
-            return {"pages_sent": sent, "invalid_pages": invalid, "stream_crc32": f"{checksum:08x}"}
-    raise ValueError("connection ended before flash export END")
+            sent, invalid, expected_crc = struct.unpack("<III", payload)
+            if index != PAGE_COUNT or not len(pages) <= sent <= PAGE_COUNT or invalid > sent:
+                raise ValueError("invalid flash export END counts")
+            return sent, invalid, expected_crc
+    raise EOFError("connection ended before flash export END")
+
+
+def page_checksum(pages):
+    checksum = 0
+    for index, payload in sorted(pages.items()):
+        checksum = zlib.crc32(payload, zlib.crc32(U32.pack(index), checksum))
+    return checksum
+
+
+def write_image(file, pages, complete):
+    next_index = 0
+    for index, payload in sorted(pages.items()):
+        write_erased(file, index - next_index)
+        file.write(payload)
+        next_index = index + 1
+    if complete:
+        write_erased(file, PAGE_COUNT - next_index)
 
 
 def journal_record(page, index):
@@ -282,33 +300,143 @@ def receive_chunks(data, timeout, cancel):
     raise InterruptedError("flash export cancelled")
 
 
-def export(host, control_port, data_port, timeout, output, *, cancel=None, progress=None):
+def new_export_directory(root=DEFAULT_EXPORT_ROOT):
+    stamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
+    return root / f"flash_export_{stamp}"
+
+
+def export(
+    host,
+    control_port,
+    data_port,
+    timeout,
+    output,
+    *,
+    cancel=None,
+    progress=None,
+    attempts=MAX_ATTEMPTS,
+):
+    if attempts < 1:
+        raise ValueError("attempts must be positive")
     output.mkdir(parents=True, exist_ok=False)
     partial = output / "flash.bin.part"
     image_path = output / "flash.bin"
-    request = secrets.randbits(32)
-    connect_timeout = min(timeout, 5.0) if cancel is not None else timeout
-    with (
-        socket.create_connection((host, data_port), timeout=connect_timeout) as data,
-        socket.create_connection((host, control_port), timeout=connect_timeout) as control,
-        partial.open("xb") as image,
-    ):
-        if cancel is not None and cancel.is_set():
-            raise InterruptedError("flash export cancelled")
-        control.sendall(f"EXPORT{request:08x}".encode("ascii"))
-        stats = receive_image(receive_chunks(data, timeout, cancel), request, image, progress)
-        image.flush()
-        os.fsync(image.fileno())
-    partial.rename(image_path)
-    with image_path.open("rb") as image:
-        stats.update(decode_sessions(image, output))
-    write_json(output / "export.json", stats)
+    with (output / "export.log").open("x", encoding="utf-8", buffering=1) as log:
+
+        def report(message):
+            timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
+            log.write(f"{timestamp} {message}\n")
+
+        report(
+            f"start host={host} control_port={control_port} data_port={data_port} attempts={attempts}"
+        )
+        try:
+            stats = download(
+                host, control_port, data_port, timeout, partial, cancel, progress, attempts, report
+            )
+            partial.rename(image_path)
+            with image_path.open("rb") as image:
+                stats.update(decode_sessions(image, output))
+            write_json(output / "export.json", stats)
+        except (OSError, ValueError) as error:
+            report(f"failed {error}")
+            raise
+        report(
+            f"complete pages={stats['pages_sent']} crc={stats['stream_crc32']} sessions={stats['sessions']}"
+        )
     return stats
+
+
+def download(host, control_port, data_port, timeout, partial, cancel, progress, attempts, report):
+    pages = {}
+    manifest = None
+    connect_timeout = min(timeout, 5.0) if cancel is not None else timeout
+    with partial.open("xb") as image:
+        try:
+            for attempt in range(1, attempts + 1):
+                if cancel is not None and cancel.is_set():
+                    raise InterruptedError("flash export cancelled")
+                if progress is not None:
+                    progress(attempt, -1)
+                request = secrets.randbits(32)
+                received = {}
+                diagnostics = {"crc_errors": 0}
+                report(f"attempt={attempt} request={request:08x} requesting")
+                try:
+                    with (
+                        socket.create_connection(
+                            (host, data_port), timeout=connect_timeout
+                        ) as data,
+                        socket.create_connection(
+                            (host, control_port), timeout=connect_timeout
+                        ) as control,
+                    ):
+                        if cancel is not None and cancel.is_set():
+                            raise InterruptedError("flash export cancelled")
+                        control.sendall(f"EXPORT{request:08x}".encode("ascii"))
+                        reply = receive_pages(
+                            receive_chunks(data, timeout, cancel),
+                            request,
+                            received,
+                            diagnostics,
+                            None if progress is None else lambda count: progress(attempt, count),
+                        )
+                except InterruptedError:
+                    raise
+                except (OSError, EOFError) as error:
+                    report(
+                        f"attempt={attempt} incomplete received={len(received)} "
+                        f"crc_errors={diagnostics['crc_errors']} error={error}"
+                    )
+                    failure = str(error)
+                    continue
+                if manifest is None:
+                    manifest = reply
+                elif manifest != reply:
+                    report(f"attempt={attempt} previous_end={manifest} current_end={reply}")
+                    raise ValueError("flash export END changed between attempts")
+                for index, payload in received.items():
+                    if pages.setdefault(index, payload) != payload:
+                        raise ValueError(f"flash page {index} changed between attempts")
+                expected_count, invalid, expected_crc = manifest
+                checksum = page_checksum(pages)
+                report(
+                    f"attempt={attempt} received={len(received)} received_crc={page_checksum(received):08x} "
+                    f"crc_errors={diagnostics['crc_errors']} recovered={len(pages)}/{expected_count} "
+                    f"crc={checksum:08x} expected_crc={expected_crc:08x} invalid_pages={invalid}"
+                )
+                if len(pages) > expected_count:
+                    raise ValueError("combined export exceeds the board's page count")
+                if len(pages) == expected_count and checksum == expected_crc:
+                    write_image(image, pages, complete=True)
+                    image.flush()
+                    os.fsync(image.fileno())
+                    return {
+                        "pages_sent": expected_count,
+                        "invalid_pages": invalid,
+                        "stream_crc32": f"{checksum:08x}",
+                        "attempts": attempt,
+                    }
+                failure = (
+                    f"flash export count or CRC does not match END "
+                    f"({len(pages)}/{expected_count} pages, {checksum:08x}/{expected_crc:08x})"
+                )
+            raise ValueError(failure)
+        except (OSError, ValueError):
+            if image.tell() == 0:
+                write_image(image, pages, complete=False)
+            raise
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("output", type=Path, help="new directory for flash.bin and session CSVs")
+    parser.add_argument(
+        "output",
+        type=Path,
+        nargs="?",
+        help="new directory (default: experiments/raw/export/flash_export_*)",
+    )
+    parser.add_argument("--attempts", type=int, default=MAX_ATTEMPTS, help="maximum read attempts")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--control-port", type=int, default=9090)
     parser.add_argument("--data-port", type=int, default=9091)
@@ -321,11 +449,19 @@ def main():
     ):
         parser.error("timeout must be positive and ports must be in 1..65535")
     try:
-        stats = export(args.host, args.control_port, args.data_port, args.timeout, args.output)
+        output = args.output or new_export_directory()
+        stats = export(
+            args.host,
+            args.control_port,
+            args.data_port,
+            args.timeout,
+            output,
+            attempts=args.attempts,
+        )
     except (OSError, ValueError) as error:
-        print(f"Flash export failed: {error}", file=sys.stderr)
+        print(f"Flash export failed: {error} (log: {output / 'export.log'})", file=sys.stderr)
         return 1
-    print(f"Saved 16 MiB to {args.output / 'flash.bin'} ({stats['sessions']} sessions)")
+    print(f"Saved 16 MiB to {output / 'flash.bin'} ({stats['sessions']} sessions)")
     return 0
 
 

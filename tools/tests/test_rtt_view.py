@@ -175,6 +175,7 @@ class ViewerTests(unittest.TestCase):
                     log_port=servers[0].serverPort(),
                     data_port=servers[1].serverPort(),
                     output_dir=directory,
+                    export_dir=Path(directory) / "export",
                 )
             )
             viewer.show()
@@ -194,6 +195,8 @@ class ViewerTests(unittest.TestCase):
                 data.write(b"".join(transfer(request, pages)))
                 data.flush()
                 wait_for(lambda: viewer.export_future is None)
+                self.assertEqual(viewer.export_directory.parent, Path(directory) / "export")
+                self.assertTrue((viewer.export_directory / "export.log").is_file())
                 self.assertIn("Flash saved · 1 sessions", viewer.export_status.text())
                 self.assertTrue(viewer.export_button.isEnabled())
                 self.assertTrue(viewer.record_button.isEnabled())

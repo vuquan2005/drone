@@ -8,6 +8,7 @@
 #include "bsp_motor_pwm.h"
 #include "bsp_rtt.h"
 #include "flash_erase.h"
+#include "flash_export.h"
 #include "imu_calibration.h"
 #include "imu_calibration_store.h"
 #include "runtime.h"
@@ -52,6 +53,16 @@ void flash_erase_process(const app_command_t *command, uint32_t now_ms) {
 flash_erase_state_t flash_erase_get_state(void) {
     assert(false);
     return FLASH_ERASE_WAIT;
+}
+void flash_export_init(void) {
+    assert(false);
+}
+void flash_export_process(void) {
+    assert(false);
+}
+flash_export_state_t flash_export_get_state(void) {
+    assert(false);
+    return FLASH_EXPORT_WAIT;
 }
 void imu_calibration_init(void) {
     assert(false);

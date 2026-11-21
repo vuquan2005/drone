@@ -57,3 +57,40 @@ Bộ đếm trong END tính theo frame. Số frame đã ghi bao gồm frame cấ
 Số frame bỏ gồm các frame không vừa FIFO và các frame còn trong FIFO hoặc
 batch IMU khi hết chỗ ghi DATA. Có thể đối chiếu sequence trong type 9 để
 đếm số mẫu IMU bị mất giữa các nhóm đã lưu.
+
+## Xuất ảnh flash qua RTT v1
+
+Trong `RUNTIME_FLASH_EXPORT`, host gửi ASCII `EXPORT` nối với đúng 8 chữ
+số hex thường của ID yêu cầu trên RTT down-channel 0. Ví dụ
+`EXPORT0000002a`. Firmware trả các bản tin dưới đây trên RTT DATA.
+Mỗi lần yêu cầu mới bắt đầu đọc lại từ trang 0. Bản tin còn tồn trong
+buffer của yêu cầu trước được nhận diện bằng ID.
+
+| Offset | Số byte | Trường                                |
+| ------ | ------- | ------------------------------------- |
+| 0      | 4       | Magic ASCII `DRE!`                    |
+| 4      | 1       | Version `1`                           |
+| 5      | 1       | Loại bản tin                          |
+| 6      | 2       | Độ dài payload                        |
+| 8      | 4       | ID yêu cầu                            |
+| 12     | 4       | Chỉ số trang hoặc mốc kết thúc        |
+| 16     | N       | Payload                               |
+| 16+N   | 4       | CRC-32/ISO-HDLC của header và payload |
+
+Số nhiều byte dùng little-endian. Payload theo loại bản tin:
+
+- `1 BEGIN` có chỉ số 0 và hai `uint32` lần lượt là kích thước trang và
+  tổng số trang.
+- `2 PAGE` chứa 256 byte nguyên bản tại chỉ số trang. Trang toàn
+  `0xFF` được lược khỏi luồng. Các trang không trống, kể cả trang có dữ
+  liệu cũ hoặc CRC journal sai, được giữ nguyên và gửi theo thứ tự tăng.
+- `3 END` dùng tổng số trang đã quét làm chỉ số. Ba `uint32` lần lượt
+  là số trang đã gửi, số trang đã gửi có envelope journal không hợp lệ
+  và CRC-32/ISO-HDLC của luồng trang. Đầu vào CRC là chuỗi nối
+  `uint32 page_index` với 256 byte dữ liệu cho từng trang đã gửi.
+- `4 ERROR` báo chỉ số trang đang xử lý và một `uint32` mã lỗi BSP.
+  Sau lỗi, có thể gửi yêu cầu mới. Lỗi BSP bị khóa cần reset board.
+
+Host chỉ xác nhận bản xuất khi nhận `END` đúng ID, đúng số trang và CRC.
+Các khoảng chỉ số bị lược được điền lại bằng `0xFF` để tái tạo ảnh toàn
+chip. Trong ảnh, CSV được trích từ các trang hợp lệ có `BEGIN` tương ứng.

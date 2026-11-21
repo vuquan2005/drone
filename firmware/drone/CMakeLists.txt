@@ -126,7 +126,8 @@ target_include_directories(
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RTT=$<BOOL:${DRONE_ENABLE_RTT}>)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_LOG_LEVEL=${DRONE_LOG_LEVEL_VALUE})
 if(DRONE_ENABLE_RTT)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE BSP/Src/bsp_rtt.c Drivers/RTT/SEGGER_RTT.c)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE BSP/Src/bsp_rtt.c Drivers/RTT/SEGGER_RTT.c
+                                                 App/Src/flash_export.c)
     target_include_directories(${CMAKE_PROJECT_NAME}
                                PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/RTT)
     if(DRONE_LOG_LEVEL_VALUE GREATER 0)

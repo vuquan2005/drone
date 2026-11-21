@@ -8,6 +8,8 @@ import secrets
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from threading import Event
 
 from PySide6 import QtCore, QtWidgets
 
@@ -21,6 +23,7 @@ from panels import (
     AttitudeControlPanel,
 )
 from config_record import CONFIG_REQUEST, CONFIG_TYPE, decode_config_reply
+from flash_export import export as export_flash
 from stream import Stream
 from telemetry import TelemetryState
 from session_writer import SessionWriter
@@ -31,6 +34,8 @@ CONFIG_MAX_ATTEMPTS = 5
 
 
 class Viewer(QtWidgets.QMainWindow):
+    flash_progress = QtCore.Signal(int)
+
     def __init__(self, args):
         super().__init__()
         self.setWindowTitle("Drone · RTT")
@@ -38,6 +43,7 @@ class Viewer(QtWidgets.QMainWindow):
         self.telemetry = TelemetryState()
         self.saved_session = None
         self.load_future = None
+        self.export_future = None
         self.loader = ThreadPoolExecutor(max_workers=1)
         self.writer = None
         self.recording = False
@@ -83,6 +89,9 @@ class Viewer(QtWidgets.QMainWindow):
         self.open_button = QtWidgets.QPushButton("Open session…")
         self.open_button.clicked.connect(self.choose_session)
         controls.addWidget(self.open_button)
+        self.export_button = QtWidgets.QPushButton("Export flash")
+        self.export_button.clicked.connect(self.toggle_export)
+        controls.addWidget(self.export_button)
         self.live_button = QtWidgets.QPushButton("Return to live")
         self.live_button.clicked.connect(self.return_live)
         self.live_button.hide()
@@ -110,6 +119,11 @@ class Viewer(QtWidgets.QMainWindow):
         self.record_status.hide()
         self.record_status.setWordWrap(True)
         layout.addWidget(self.record_status)
+        self.export_status = QtWidgets.QLabel()
+        self.export_status.setWordWrap(True)
+        self.export_status.hide()
+        layout.addWidget(self.export_status)
+        self.flash_progress.connect(self.update_export_progress)
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         layout.addWidget(splitter)
         tabs = self.tabs = QtWidgets.QTabWidget()
@@ -155,9 +169,10 @@ class Viewer(QtWidgets.QMainWindow):
     def load_session(self, directory):
         if self.recording or (self.writer is not None and not self.writer.done.is_set()):
             return
-        if self.load_future is not None:
+        if self.load_future is not None or self.export_future is not None:
             return
         self.open_button.setEnabled(False)
+        self.export_button.setEnabled(False)
         self.record_button.setEnabled(False)
         self.statusBar().showMessage("Loading session…")
         self.pending_directory = str(directory)
@@ -167,6 +182,7 @@ class Viewer(QtWidgets.QMainWindow):
         future, self.load_future = self.load_future, None
         self.open_button.setEnabled(True)
         self.record_button.setEnabled(self.saved_session is None)
+        self.export_button.setEnabled(self.saved_session is None)
         try:
             segments, logs = future.result()
         except Exception as error:
@@ -174,11 +190,9 @@ class Viewer(QtWidgets.QMainWindow):
             return
         self.load_directory = self.pending_directory
         self.saved_session = segments
-        for stream in (self.log_stream, self.data_stream):
-            stream.paused = True
-            stream.retry.stop()
-            stream.socket.abort()
+        self.pause_streams()
         self.record_button.setEnabled(False)
+        self.export_button.setEnabled(False)
         self.record_status.hide()
         self.log_panel.clear_log()
         for line in logs:
@@ -236,15 +250,82 @@ class Viewer(QtWidgets.QMainWindow):
         self.segment_box.hide()
         self.live_button.hide()
         self.record_button.setEnabled(True)
+        self.export_button.setEnabled(True)
         self.imu_panel.update_series(self.telemetry.series)
         self.imu_panel.plots[0].setXRange(0, 10, padding=0)
         self.rate_panel.plots[0].setXRange(0, 10, padding=0)
         for plot in self.rate_panel.plots[-2:]:
             plot.setLabel("bottom", "Host time from segment start", units="s")
+        self.resume_streams()
+
+    def pause_streams(self):
+        for stream in (self.log_stream, self.data_stream):
+            stream.paused = True
+            stream.retry.stop()
+            stream.socket.abort()
+
+    def resume_streams(self):
         for stream in (self.log_stream, self.data_stream):
             stream.paused = False
             stream.retry.start(2000)
             stream.connect()
+
+    def toggle_export(self):
+        if self.export_future is not None:
+            self.export_cancel.set()
+            self.export_button.setEnabled(False)
+            self.export_status.setText("Cancelling flash export…")
+            return
+        if (
+            self.saved_session is not None
+            or self.load_future is not None
+            or self.recording
+            or (self.writer is not None and not self.writer.done.is_set())
+        ):
+            return
+        stamp = datetime.now().astimezone().strftime("%Y%m%d_%H%M%S_%f")
+        self.export_directory = Path(self.output_dir.text()) / f"flash_export_{stamp}"
+        self.export_cancel = Event()
+        self.pause_streams()
+        self.open_button.setEnabled(False)
+        self.record_button.setEnabled(False)
+        self.export_button.setText("Cancel export")
+        self.export_status.setText("Waiting for flash export · reset with SD HIGH + SB LOW.")
+        self.export_status.show()
+        self.export_future = self.loader.submit(
+            export_flash,
+            self.log_stream.host,
+            self.log_stream.port,
+            self.data_stream.port,
+            180.0,
+            self.export_directory,
+            cancel=self.export_cancel,
+            progress=self.flash_progress.emit,
+        )
+
+    def update_export_progress(self, pages):
+        if self.export_future is not None and not self.export_cancel.is_set():
+            self.export_status.setText(f"Exporting flash · {pages:,} pages received")
+
+    def finish_export(self):
+        future, self.export_future = self.export_future, None
+        try:
+            stats = future.result()
+        except InterruptedError:
+            message = "Flash export cancelled."
+        except Exception as error:
+            message = f"Flash export failed: {error}"
+        else:
+            message = f"Flash saved · {stats['sessions']} sessions · {self.export_directory}"
+        self.export_status.setText(message)
+        self.export_button.setText("Export flash")
+        if self.close_when_done:
+            QtCore.QTimer.singleShot(0, self.close)
+            return
+        self.open_button.setEnabled(True)
+        self.record_button.setEnabled(True)
+        self.export_button.setEnabled(True)
+        self.resume_streams()
 
     def tab_changed(self, *_):
         # Hidden live panels catch up from the unchanged telemetry history.
@@ -346,7 +427,11 @@ class Viewer(QtWidgets.QMainWindow):
             self.output_dir.setText(directory)
 
     def toggle_recording(self):
-        if self.saved_session is not None or self.load_future is not None:
+        if (
+            self.saved_session is not None
+            or self.load_future is not None
+            or self.export_future is not None
+        ):
             return
         if self.recording:
             self.save_config()
@@ -401,6 +486,11 @@ class Viewer(QtWidgets.QMainWindow):
             QtCore.QTimer.singleShot(0, self.close)
 
     def closeEvent(self, event):
+        if self.export_future is not None:
+            self.close_when_done = True
+            self.toggle_export()
+            event.ignore()
+            return
         if self.writer is not None and not self.writer.done.is_set():
             self.save_config()
             self.recording = False
@@ -416,15 +506,19 @@ class Viewer(QtWidgets.QMainWindow):
         super().closeEvent(event)
 
     def refresh(self):
+        if self.export_future is not None:
+            if self.export_future.done():
+                self.finish_export()
+            return
         if self.load_future is not None:
             if self.load_future.done():
                 self.finish_load()
             return
         if self.saved_session is not None:
             return
-        self.open_button.setEnabled(
-            not self.recording and (self.writer is None or self.writer.done.is_set())
-        )
+        idle = not self.recording and (self.writer is None or self.writer.done.is_set())
+        self.open_button.setEnabled(idle)
+        self.export_button.setEnabled(idle)
         self.update_record_status()
         state = self.telemetry
         now = time.monotonic()

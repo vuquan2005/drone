@@ -38,6 +38,10 @@ void bsp_rtt_init(void);
  * uninitialized, or output is NULL. Serialized foreground calls only. */
 size_t bsp_rtt_read_control(void *output, size_t capacity);
 
+/** Return whether a complete write fits without counting a drop.
+ * For a foreground sender that retains and retries the same bytes. */
+bool bsp_rtt_can_write(bsp_rtt_channel_t channel, size_t size);
+
 /** @brief Preflight one intended write before encoding a record.
  * @param channel BSP_RTT_LOG or BSP_RTT_DATA.
  * @param size Encoded size, strictly less than the channel capacity; 0 is

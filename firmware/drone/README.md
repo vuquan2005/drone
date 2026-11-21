@@ -40,17 +40,29 @@ Tăng ga trước hạn sẽ hủy đếm. Sau khi hết hạn, tay điều khi�
 
 | CH7/SB     | CH6/SC        | CH8/SD                         | Chế độ                                  |
 | ---------- | ------------- | ------------------------------ | --------------------------------------- |
-| HIGH       | MIDDLE        | Bất kỳ                         | `IMU_CALIB`, hiệu chuẩn gyro và accel   |
-| HIGH       | LOW hoặc HIGH | Bất kỳ                         | `ESC_CALIB`, hiệu chuẩn ESC             |
+| HIGH       | Bất kỳ        | HIGH / STREAM                  | `FLASH_ERASE`, chờ xác nhận xóa SPI NOR |
+| HIGH       | MIDDLE        | LOW / OFF hoặc MIDDLE / RECORD | `IMU_CALIB`, hiệu chuẩn gyro và accel   |
+| HIGH       | LOW hoặc HIGH | LOW / OFF hoặc MIDDLE / RECORD | `ESC_CALIB`, hiệu chuẩn ESC             |
 | Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, chờ triển khai, PWM tắt |
 | Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                |
 
-Preset Debug mặc định bật `DRONE_DEBUG_FORCE_FLIGHT`, bỏ qua bước chọn trên;
-Release mặc định tắt tùy chọn này. Để thử chọn mode hoặc hiệu chuẩn bằng
-Debug, tắt tùy chọn trong cấu hình build. Xem
-[cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong FLIGHT, SC
-chọn bộ điều khiển và SB HIGH kích hoạt failsafe.
-Các yêu cầu ghi/xuất telemetry qua SD chưa được thực thi trong FLIGHT.
+Xem [cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong
+FLIGHT, SC chọn bộ điều khiển, SB HIGH kích hoạt failsafe và SD MIDDLE yêu
+cầu [ghi telemetry vào SPI NOR](../../protocol/flash-journal.md).
+
+## Xóa telemetry trên flash ngoài
+
+`FLASH_ERASE` xóa toàn bộ W25Q128FV trên SPI2. Đặt **SD HIGH, SB HIGH**
+rồi reset với RC hợp lệ. Firmware giữ PWM tắt và báo `ERASE WAIT` qua
+CRSF. Hạ ga về ≤2%, đưa SA về LOW sau khi vào mode, rồi gạt SA lên HIGH
+và giữ đủ 3 giây với SD và SB vẫn HIGH. Khởi động với SA sẵn ở HIGH
+vẫn phải thực hiện lại cạnh LOW → HIGH.
+
+Nếu mất RC hoặc điều kiện xác nhận thay đổi trong lúc giữ SA, đưa SA về
+LOW rồi xác nhận lại. Sau khi xác nhận, firmware báo `ERASING` trong lúc
+xóa và đọc kiểm tra toàn bộ chip. Chờ `ERASE DONE` trước khi reset về chế
+độ ghi. Nếu báo `ERASE ERR` hoặc mất nguồn giữa chừng, vào lại chế độ xóa
+để xác nhận và chạy lại. Dữ liệu hiệu chuẩn IMU nằm trong flash nội STM32.
 
 ## Hiệu chuẩn ESC
 

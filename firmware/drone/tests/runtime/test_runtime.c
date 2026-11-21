@@ -1,7 +1,9 @@
 #include "accel_calibration.h"
 #include "app.h"
+#include "bsp_flash.h"
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
+#include "flash_erase.h"
 #include "imu_calibration.h"
 #include "runtime.h"
 #include <assert.h>
@@ -28,6 +30,57 @@ static char status_label[CRSF_FLIGHT_MODE_TEXT_MAX + 1U];
 static bool status_tx_ready;
 static bool attitude_fresh;
 static unsigned attitude_reads, attitude_attempts;
+static enum { FLASH_IDLE, FLASH_PROBE, FLASH_CHIP_ERASE, FLASH_READ } flash_op;
+static uint32_t *flash_id_out;
+static uint8_t *flash_read_out;
+static uint32_t flash_reads;
+static unsigned erase_calls;
+static bool verify_dirty;
+
+bsp_flash_result_t bsp_flash_probe_start(uint32_t *id) {
+    assert(flash_op == FLASH_IDLE);
+    flash_id_out = id;
+    flash_op = FLASH_PROBE;
+    return BSP_FLASH_PENDING;
+}
+
+bsp_flash_result_t bsp_flash_chip_erase_start(void) {
+    assert(flash_op == FLASH_IDLE && *flash_id_out == BSP_FLASH_JEDEC_ID);
+    ++erase_calls;
+    flash_op = FLASH_CHIP_ERASE;
+    return BSP_FLASH_PENDING;
+}
+
+bsp_flash_result_t bsp_flash_read_start(uint32_t address, void *out,
+                                        size_t size) {
+    assert(flash_op == FLASH_IDLE && erase_calls == 1U);
+    assert(address == flash_reads * BSP_FLASH_PAGE_BYTES &&
+           address < BSP_FLASH_SIZE_BYTES && size == BSP_FLASH_PAGE_BYTES);
+    flash_read_out = out;
+    flash_op = FLASH_READ;
+    return BSP_FLASH_PENDING;
+}
+
+bsp_flash_result_t bsp_flash_poll(void) {
+    switch (flash_op) {
+    case FLASH_PROBE:
+        *flash_id_out = BSP_FLASH_JEDEC_ID;
+        break;
+    case FLASH_CHIP_ERASE:
+        break;
+    case FLASH_READ:
+        memset(flash_read_out, 0xFF, BSP_FLASH_PAGE_BYTES);
+        if (verify_dirty)
+            flash_read_out[10] = 0U;
+        ++flash_reads;
+        break;
+    default:
+        assert(false);
+    }
+    flash_op = FLASH_IDLE;
+    return BSP_FLASH_OK;
+}
+
 void esc_calibration_init(void) {
     calib_inits++;
 }
@@ -134,6 +187,9 @@ static void reset(void) {
     disconnect_during_init = false;
     inits = polls = starts = processes = stops = calib_inits = calib_polls = 0;
     imu_calib_inits = imu_calib_polls = 0;
+    flash_op = FLASH_IDLE;
+    erase_calls = flash_reads = 0U;
+    verify_dirty = false;
     imu_calib_status =
         (imu_calibration_status_t){.state = IMU_CALIBRATION_GYRO};
     flight_status =
@@ -307,6 +363,89 @@ static void test_crsf_attitude(void) {
     assert(runtime_get_mode() == RUNTIME_ESC_CALIB && attitude_reads == 0U);
 }
 
+static void select_manual_erase(void) {
+    reset();
+    input.channels[4] = input.channels[6] = input.channels[7] = 1811;
+    input.channels[5] = 992; /* Erase takes priority over IMU calibration. */
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_FLASH_ERASE &&
+           runtime_mode_supported());
+    assert(starts == 0 && calib_inits == 0 && imu_calib_inits == 0 &&
+           stops == 1);
+    expect_next_status("ERASE WAIT");
+}
+
+static void confirm_manual_erase(void) {
+    input.channels[4] = 172;
+    runtime_process();
+    input.channels[4] = 1811;
+    runtime_process();
+    tick += 2999U;
+    runtime_process();
+    assert(flash_erase_get_state() == FLASH_ERASE_WAIT && erase_calls == 0U);
+    ++tick;
+    runtime_process();
+    assert(flash_erase_get_state() == FLASH_ERASE_BUSY);
+}
+
+static void test_manual_erase(void) {
+    select_manual_erase();
+    tick += 4000U;
+    runtime_process();
+    assert(flash_erase_get_state() == FLASH_ERASE_WAIT && erase_calls == 0U);
+
+    input.channels[4] = 992;
+    runtime_process();
+    input.channels[4] = 1811;
+    tick += 4000U;
+    runtime_process();
+    assert(flash_erase_get_state() == FLASH_ERASE_WAIT && erase_calls == 0U);
+
+    input.channels[4] = 172;
+    runtime_process();
+    input.channels[4] = 1811;
+    runtime_process();
+    tick += 2000U;
+    input.connected = false;
+    runtime_process();
+    input.connected = true;
+    tick += 4000U;
+    runtime_process();
+    assert(flash_erase_get_state() == FLASH_ERASE_WAIT && erase_calls == 0U);
+
+    input.channels[4] = 172;
+    runtime_process();
+    input.channels[4] = input.channels[2] = 1811;
+    tick += 4000U;
+    runtime_process();
+    input.channels[2] = 172;
+    tick += 4000U;
+    runtime_process();
+    assert(flash_erase_get_state() == FLASH_ERASE_WAIT && erase_calls == 0U);
+
+    confirm_manual_erase();
+    expect_next_status("ERASING");
+    input.connected = false;
+    input.channels[4] = input.channels[6] = input.channels[7] = 172;
+    for (unsigned i = 0;
+         i < 2U * (BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES) + 8U; ++i) {
+        runtime_process();
+    }
+    assert(flash_reads == BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES);
+    assert(erase_calls == 1U && stops == 1 && starts == 0 && processes == 0);
+    assert(runtime_get_mode() == RUNTIME_FLASH_ERASE);
+    expect_next_status("ERASE DONE");
+
+    select_manual_erase();
+    confirm_manual_erase();
+    verify_dirty = true;
+    for (unsigned i = 0; i < 8U; ++i) {
+        runtime_process();
+    }
+    assert(erase_calls == 1U && flash_reads == 1U);
+    expect_next_status("ERASE ERR");
+}
+
 int main(void) {
     reset();
     available = false;
@@ -378,14 +517,14 @@ int main(void) {
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT && calib_inits == 0);
     input.connected = true;
     runtime_process();
-    assert(runtime_get_mode() == RUNTIME_ESC_CALIB && calib_inits == 1 &&
+    assert(runtime_get_mode() == RUNTIME_FLASH_ERASE && calib_inits == 0 &&
            starts == 0);
     reset();
     input.channels[7] = 992;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT);
-    /* SC middle + SB high takes priority over any SD position. */
-    for (unsigned i = 0; i < 3U; ++i) {
+    /* SC middle + SB high selects IMU calibration with SD OFF or RECORD. */
+    for (unsigned i = 0; i < 2U; ++i) {
         reset();
         input.channels[5] = 992;
         input.channels[6] = 1811;
@@ -437,5 +576,6 @@ int main(void) {
     test_crsf_status();
     test_crsf_imu_calibration();
     test_crsf_attitude();
+    test_manual_erase();
     return 0;
 }

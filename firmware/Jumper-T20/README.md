@@ -17,9 +17,10 @@ Hai tệp YAML ghi phiên bản `2.11.0`:
 | CH7  | Calib - ESC hoặc IMU       | SB    |
 | CH8  | Telem - ghi/xuất telemetry | SD    |
 
-Khi khởi động, SB HIGH cùng SC ở giữa chọn hiệu chuẩn IMU. Với SB HIGH và
-SC ở hai vị trí còn lại, firmware chọn hiệu chuẩn ESC. Khi SB ở LOW, SD
-HIGH yêu cầu chế độ xuất telemetry lúc khởi động. Trong chế độ bay, SC là
+Khi khởi động, SD HIGH cùng SB HIGH chọn chế độ chờ xác nhận xóa flash.
+Với SD ở LOW hoặc MIDDLE, SB HIGH cùng SC ở giữa chọn hiệu chuẩn IMU.
+SC ở hai vị trí còn lại chọn hiệu chuẩn ESC. Khi SB ở LOW, SD HIGH yêu
+cầu chế độ xuất telemetry lúc khởi động. Trong chế độ bay, SC là
 yêu cầu chế độ bay và SD chọn tắt, ghi hoặc xuất telemetry theo
 [bảng chọn chế độ của firmware](../drone/README.md#chọn-chế-độ-sau-reset).
 

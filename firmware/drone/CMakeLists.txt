@@ -99,6 +99,7 @@ target_sources(
             App/Src/runtime.c
             App/Src/app_flash_journal.c
             App/Src/esc_calibration.c
+            App/Src/flash_erase.c
             App/Src/imu_calibration.c
             App/Src/imu_calibration_store.c
             App/Src/app_config.c

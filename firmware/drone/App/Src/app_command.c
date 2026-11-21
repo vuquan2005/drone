@@ -58,8 +58,10 @@ bool app_command_decode(const app_receiver_sample_t *sample,
         ((clipped(sample->channels[2]) - APP_COMMAND_RC_MIN) * NORM_Q15_ONE +
          span / 2) /
         span;
-    command->arm_requested =
-        switch_position(sample->channels[4]) == APP_COMMAND_SWITCH_HIGH;
+    const app_command_switch_t arm_switch =
+        switch_position(sample->channels[4]);
+    command->arm_requested = arm_switch == APP_COMMAND_SWITCH_HIGH;
+    command->arm_switch_low = arm_switch == APP_COMMAND_SWITCH_LOW;
     command->mode = switch_position(sample->channels[5]);
     command->esc_calibration_requested =
         switch_position(sample->channels[6]) == APP_COMMAND_SWITCH_HIGH;

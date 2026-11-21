@@ -6,6 +6,7 @@
 #include "app_telemetry.h"
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
+#include "flash_erase.h"
 #include "imu_calibration.h"
 #include "main.h"
 #include <stddef.h>
@@ -51,7 +52,7 @@ void runtime_init(void) {
 
 bool runtime_mode_supported(void) {
     return mode == RUNTIME_FLIGHT || mode == RUNTIME_ESC_CALIB ||
-           mode == RUNTIME_IMU_CALIB;
+           mode == RUNTIME_IMU_CALIB || mode == RUNTIME_FLASH_ERASE;
 }
 
 runtime_mode_t runtime_get_mode(void) {
@@ -73,6 +74,10 @@ static runtime_mode_t select_mode(void) {
 #endif
     if (!command.valid) {
         return RUNTIME_BOOT_SELECT;
+    }
+    if (command.esc_calibration_requested &&
+        command.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM) {
+        return RUNTIME_FLASH_ERASE;
     }
     if (command.imu_calibration_requested) {
         return RUNTIME_IMU_CALIB;
@@ -182,6 +187,18 @@ static const char *crsf_status_label(char *imu_progress) {
         break;
     case RUNTIME_FLASH_EXPORT:
         return "FLASH N/A";
+    case RUNTIME_FLASH_ERASE:
+        switch (flash_erase_get_state()) {
+        case FLASH_ERASE_WAIT:
+            return "ERASE WAIT";
+        case FLASH_ERASE_BUSY:
+            return "ERASING";
+        case FLASH_ERASE_DONE:
+            return "ERASE DONE";
+        case FLASH_ERASE_ERROR:
+            return "ERASE ERR";
+        }
+        break;
     case RUNTIME_IMU_CALIB:
         return crsf_imu_calibration_label(imu_progress);
     }
@@ -234,6 +251,7 @@ static void process_config_requests(uint32_t now_ms) {
         config.mode = APP_CONFIG_FLASH_EXPORT;
         break;
     case RUNTIME_BOOT_SELECT:
+    case RUNTIME_FLASH_ERASE:
         return;
     }
     (void)app_telemetry_write_config(id, &config);
@@ -268,6 +286,7 @@ void runtime_process(void) {
             [RUNTIME_ESC_CALIB] = "esc_calib",
             [RUNTIME_FLASH_EXPORT] = "flash_export",
             [RUNTIME_IMU_CALIB] = "imu_calib",
+            [RUNTIME_FLASH_ERASE] = "flash_erase",
         };
         if (mode != RUNTIME_BOOT_SELECT)
             APP_LOG_INFO("runtime", "selected mode=%s", mode_names[mode]);
@@ -282,6 +301,10 @@ void runtime_process(void) {
         }
         if (mode == RUNTIME_ESC_CALIB) {
             esc_calibration_init();
+            return;
+        }
+        if (mode == RUNTIME_FLASH_ERASE) {
+            flash_erase_init();
             return;
         }
         if (mode == RUNTIME_IMU_CALIB) {
@@ -303,6 +326,9 @@ void runtime_process(void) {
         imu_calibration_process(&command);
         break;
     case RUNTIME_FLASH_EXPORT:
+        break;
+    case RUNTIME_FLASH_ERASE:
+        flash_erase_process(&command, HAL_GetTick());
         break;
     case RUNTIME_BOOT_SELECT:
         break;

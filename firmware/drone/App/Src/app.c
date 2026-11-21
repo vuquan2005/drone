@@ -21,6 +21,8 @@
 #define MAHONY_KI_PER_S2 0.0f
 #define ATTITUDE_KP_PER_S 4.0f
 #define ATTITUDE_MAX_ANGLE_RAD (25.0f * 0.01745329252f)
+#define GRAVITY_MIN_MPS2 7.85f
+#define GRAVITY_MAX_MPS2 11.77f
 
 _Static_assert(BSP_IMU_ODR_HZ >= MAHONY_HZ && BSP_IMU_ODR_HZ % MAHONY_HZ == 0U,
                "Mahony updates require an integer IMU decimation factor");
@@ -47,6 +49,7 @@ static struct {
 static app_command_t command;
 static app_rate_t rate;
 static bool imu_initialized;
+static bool imu_calibration_from_flash;
 static bool imu_available;
 static bool pwm_ready;
 static bool rate_failed;
@@ -109,6 +112,7 @@ static void init_motor(void) {
 }
 
 static void init_imu(void) {
+    imu_calibration_from_flash = false;
     imu_initialized = app_imu_init(&imu, bsp_board_imu_config()) == BSP_IMU_OK;
 #if defined(DRONE_IMU_BMI160)
     /* Body FRD mean from the last 5 s of telemetry_20261119_023330. */
@@ -119,15 +123,14 @@ static void init_imu(void) {
     if (imu.status != BSP_IMU_OK) {
         return;
     }
-    const bool from_flash =
+    imu_calibration_from_flash =
         imu_calibration_load(imu.sensor.device.chip_id, &imu.calibration);
-    (void)from_flash;
 #if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
     const app_imu_calibration_t *cal = &imu.calibration;
     APP_LOG_INFO("imu",
                  "calibration_applied source=%s frame=FRD "
                  "gyro_bias_uradps=%ld,%ld,%ld accel_enabled=%u",
-                 from_flash ? "flash" : "default",
+                 imu_calibration_from_flash ? "flash" : "default",
                  lroundf(cal->gyro_bias_radps[0] * 1e6f),
                  lroundf(cal->gyro_bias_radps[1] * 1e6f),
                  lroundf(cal->gyro_bias_radps[2] * 1e6f),
@@ -147,6 +150,24 @@ static void init_imu(void) {
             lroundf(m[2][1] * 1e6f), lroundf(m[2][2] * 1e6f));
     }
 #endif
+}
+
+app_config_t app_get_config(void) {
+    return (app_config_t){
+        .mode = APP_CONFIG_FLIGHT,
+        .imu = &imu,
+        .calibration_from_flash = imu_calibration_from_flash,
+        .rate = rate.configured ? &rate.config : NULL,
+        .imu_timeout_us = IMU_TIMEOUT_US,
+        .mahony_hz = MAHONY_HZ,
+        .attitude_hz = ATTITUDE_CONTROL_HZ,
+        .mahony_kp_per_s = MAHONY_KP_PER_S,
+        .mahony_ki_per_s2 = MAHONY_KI_PER_S2,
+        .attitude_kp_per_s = ATTITUDE_KP_PER_S,
+        .attitude_max_rad = ATTITUDE_MAX_ANGLE_RAD,
+        .gravity_min_mps2 = GRAVITY_MIN_MPS2,
+        .gravity_max_mps2 = GRAVITY_MAX_MPS2,
+    };
 }
 
 bool app_configure_rate(const app_rate_config_t *config) {
@@ -193,7 +214,8 @@ static void update_attitude(const app_imu_sample_t *sample) {
         accel[0] * accel[0] + accel[1] * accel[1] + accel[2] * accel[2];
     /* Reject gravity feedback outside approximately 0.8 to 1.2 g. */
     const bool gravity_usable =
-        accel_sq >= 7.85f * 7.85f && accel_sq <= 11.77f * 11.77f;
+        accel_sq >= GRAVITY_MIN_MPS2 * GRAVITY_MIN_MPS2 &&
+        accel_sq <= GRAVITY_MAX_MPS2 * GRAVITY_MAX_MPS2;
     if (initialize) {
         tilt_target.have_update = false;
         attitude.valid = gravity_usable && mahony_init(&attitude.filter, accel);

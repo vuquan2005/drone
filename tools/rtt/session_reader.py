@@ -2,6 +2,7 @@
 
 from collections import deque
 import csv
+import json
 from pathlib import Path
 import struct
 
@@ -123,6 +124,27 @@ def read_session(directory):
                         previous[segment] = (elapsed, seq, last_stamp)
                     except (ValueError, OverflowError, struct.error) as error:
                         raise ValueError(f"{path.name}:{line_number}: {error}") from error
+    config_path = directory / "config.jsonl"
+    if config_path.is_file():
+        with config_path.open(encoding="utf-8") as source:
+            for line_number, line in enumerate(source, 1):
+                try:
+                    if len(line) > 8192 or line_number > 1_000_000:
+                        raise ValueError("configuration record limit exceeded")
+                    saved = json.loads(line)
+                    if not isinstance(saved, dict) or saved.get("schema_version") != 1:
+                        raise ValueError("unsupported CONFIG schema")
+                    segment = saved.pop("segment", None)
+                    if type(segment) is not int or segment < 1:
+                        raise ValueError("invalid CONFIG segment")
+                    if segment not in segments:
+                        segments[segment] = TelemetryState()
+                        segments[segment].rc_snapshots = []
+                    if segments[segment].config is not None:
+                        raise ValueError("duplicate CONFIG segment")
+                    segments[segment].config = saved
+                except ValueError as error:
+                    raise ValueError(f"{config_path.name}:{line_number}: {error}") from error
     if not segments:
         raise ValueError("No telemetry rows found in this folder")
     for segment, points in rate_history.items():

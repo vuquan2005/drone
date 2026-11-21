@@ -124,6 +124,24 @@ bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
     }
     imu->driver_error = result;
     imu->initialized = result == BMI160_OK;
+    if (imu->initialized) {
+        const struct bmi160_cfg *accel = &imu->device.accel_cfg;
+        const struct bmi160_cfg *gyro = &imu->device.gyro_cfg;
+        imu->settings = (bsp_imu_settings_t){
+            .accel_odr = accel->odr,
+            .gyro_odr = gyro->odr,
+            .accel_range = accel->range,
+            .gyro_range = gyro->range,
+            .accel_filter = accel->bw,
+            .gyro_filter = gyro->bw,
+            .accel_power = accel->power,
+            .gyro_power = gyro->power,
+            .accel_filter_perf = UINT8_MAX,
+            .gyro_filter_perf = UINT8_MAX,
+            .gyro_noise_perf = UINT8_MAX,
+            .adv_power_save = UINT8_MAX,
+        };
+    }
     return imu->initialized ? BSP_IMU_OK : BSP_IMU_DRIVER_ERROR;
 }
 

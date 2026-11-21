@@ -62,6 +62,13 @@ cấu hình cố định theo đặc tả. Raw hex giữ byte DATA trước deco
 khi bị filter trên UI. Queue ghi đầy hoặc lỗi ghi có thể làm phiên thiếu dữ
 liệu; kiểm tra writer drops và trạng thái recording trước khi phân tích.
 
+Tab **Configuration** hiển thị cấu hình IMU và các vòng điều khiển. Viewer
+yêu cầu snapshot qua cổng LOG khi hai kết nối RTT sẵn sàng. Firmware trả
+snapshot qua cổng DATA. Viewer lưu một dòng mỗi segment trong `config.jsonl`
+khi bật recording, kể cả khi snapshot đã đến trước lúc bấm ghi. Dùng trường
+`segment` để ghép với CSV và `config_sha256` để đối chiếu giữa các phiên.
+Nếu phiên thiếu snapshot, tab này sẽ báo thiếu cấu hình khi mở lại.
+
 Chọn **Open session…** và thư mục phiên để xem dữ liệu đã lưu, **Segment** để
 chọn đoạn, hoặc **Return to live** để nối lại. Viewer không sửa file nguồn;
 không mở phiên khi đang ghi. Log hiển thị tối đa 2000 dòng cuối và không đồng

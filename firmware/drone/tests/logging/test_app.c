@@ -51,6 +51,10 @@ imu_calibration_status_t imu_calibration_get_status(void) {
     assert(false);
     return (imu_calibration_status_t){0};
 }
+app_config_t imu_calibration_get_config(void) {
+    assert(false);
+    return (app_config_t){0};
+}
 uint32_t bsp_time_now_us(void) {
     return tick * 1000U + 123U + sub_tick_us;
 }
@@ -700,8 +704,16 @@ int main(void) {
     tick += 10U;
     runtime_process();
     assert(drain(1U, output) == 36U && (uint8_t)output[5] == 9U);
+    assert(SEGGER_RTT_WriteDownBuffer(0U, "C\x78\x56\x34\x12", 5U) == 5U);
+    tick += 20U;
+    runtime_process();
+    assert(drain(1U, output) == 220U && (uint8_t)output[5] == 10U);
+    assert(get_u32(output + 8U) == 0x12345678U);
+    assert((uint8_t)output[12U] == 15U &&
+           (uint8_t)output[13U] == APP_CONFIG_FLIGHT);
+    assert(get_u32(output + 96U) == rate_config.period_us);
     status = BSP_IMU_OK;
-    tick += 90U;
+    tick += 70U;
     runtime_process();
     assert(attitude_transmissions == 1U);
     status = BSP_IMU_NO_DATA;

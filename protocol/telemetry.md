@@ -8,14 +8,14 @@ CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                                                                                                           |
-| ------ | ------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                      |
-| 4      | 1       | version        | `1`                                                                                                                               |
-| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate, `6` tư thế, `7` vòng attitude, `8` RC gọn, `9` IMU raw gộp |
-| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu.                                  |
-| 8      | N       | payload        | Theo version và type                                                                                                              |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                      |
+| Offset | Số byte | Trường         | Quy ước                                                                                                                                          |
+| ------ | ------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                                     |
+| 4      | 1       | version        | `1`                                                                                                                                              |
+| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate, `6` tư thế, `7` vòng attitude, `8` RC gọn, `9` IMU raw gộp, `10` cấu hình |
+| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu. Type 10 có 208 byte.                            |
+| 8      | N       | payload        | Theo version và type                                                                                                                             |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                                     |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -201,6 +201,45 @@ Khi mất kết nối, firmware gửi `flags=0` và giữ bốn giá trị trụ
 khởi động, các trục bằng 0 cho đến khi nhận RC. Các bit cần gạt ghi yêu cầu
 từ tay điều khiển. Trạng thái arm thực tế và các lần failsafe được ghi qua
 log. CSV `receiver_compact_*.csv` giữ nguyên bốn kênh raw và byte `flags`.
+
+## Cấu hình v1, type 10
+
+Viewer gửi `GET_CONFIG` trên RTT down-channel 0 qua TCP 9090. Lệnh gồm byte
+ASCII `C` và một `uint32` little-endian làm ID yêu cầu. Khi đã chọn chế độ
+và khởi tạo xong, firmware thử trả lời trên CH1. Payload gồm lại ID yêu cầu
+4 byte rồi cấu hình 204 byte. Toàn frame dài 220 byte. Firmware chỉ gửi khi
+có yêu cầu. Viewer thử lại khi hết thời gian chờ và chỉ nhận bản trả lời
+có đúng ID cho segment đang kết nối.
+
+Offset dưới đây tính từ byte đầu của **204 byte cấu hình**. Số thực dùng
+IEEE-754 binary32 little-endian. Bộ mã hóa `app_config_encode()` dùng được
+cho nơi lưu trữ khác bằng cùng layout, không cần ID yêu cầu RTT.
+
+| Offset | Kiểu      | Nội dung                                                                                                                                                                                                               |
+| -----: | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|      0 | uint8     | Flags theo thứ tự bit 0–3. IMU đã init, calib từ flash, hiệu chỉnh accel đang bật, rate PID đã cấu hình.                                                                                                               |
+|      1 | uint8     | Chế độ `1` FLIGHT, `2` ESC_CALIB, `3` FLASH_EXPORT, `4` IMU_CALIB.                                                                                                                                                     |
+|      2 | uint8[2]  | `chip_id`, `axis_map`                                                                                                                                                                                                  |
+|      4 | uint16[4] | ODR accel và gyro theo Hz, full scale accel theo g và gyro theo °/s                                                                                                                                                    |
+|     12 | uint8[12] | Mã driver theo thứ tự ODR accel/gyro, range accel/gyro, bộ lọc BW/BWP accel/gyro, nguồn accel/gyro, hiệu năng lọc accel/gyro, hiệu năng nhiễu gyro và advanced power save. `255` là trường không áp dụng cho model đó. |
+|     24 | float[3]  | Bias gyro được áp dụng, FRD rad/s                                                                                                                                                                                      |
+|     36 | float[3]  | Bias accel, FRD m/s²                                                                                                                                                                                                   |
+|     48 | float[9]  | Ma trận hiệu chỉnh accel 3×3 theo hàng, không thứ nguyên                                                                                                                                                               |
+|     84 | uint32[2] | Chu kỳ rate tối thiểu và timeout IMU, µs                                                                                                                                                                               |
+|     92 | uint16[2] | Tần số danh định Mahony và attitude, Hz                                                                                                                                                                                |
+|     96 | float[6]  | `kp` Mahony theo 1/s, `ki` Mahony theo 1/s², `kp` attitude theo 1/s, tilt tối đa theo rad, hai ngưỡng trọng lực Mahony theo m/s²                                                                                       |
+|    120 | float[21] | 7 trường cho từng trục roll, pitch, yaw, theo thứ tự `kp` s/rad, `ki` 1/rad, `kd` s²/rad, giới hạn tích phân, giới hạn ngõ ra, hằng số lọc D theo s và rate tối đa theo rad/s                                          |
+
+Các mã BW/BWP lưu chế độ bộ lọc và oversampling theo model từ cấu hình
+driver đã áp dụng. Các mã này được lấy từ cấu hình driver khi init.
+Trong IMU_CALIB, snapshot mô tả mẫu đo hiệu chuẩn, với hiệu chỉnh accel
+và rate PID tắt. Nhóm IMU hoặc rate không có thì các byte tương ứng bằng 0
+và viewer hiển thị `null`.
+
+Khi ghi phiên, viewer lưu một dòng `config.jsonl` cho mỗi segment có cấu
+hình. Dòng chứa cùng `segment` với CSV, tên trường kèm đơn vị và SHA-256 của
+204 byte cấu hình để đối chiếu các phiên. ID yêu cầu không nằm trong hash.
+Fixture [CONFIG v1](fixtures/config_v1.hex) dùng chung cho C và viewer.
 
 ## Mã nguồn và kiểm thử
 

@@ -6,6 +6,8 @@ import struct
 import zlib
 import math
 
+from config_record import CONFIG_REPLY_BYTES, CONFIG_TYPE
+
 
 class Lines:
     """Discard oversized records through newline, never parse their suffix."""
@@ -133,6 +135,7 @@ KNOWN_SIZES = {
     6: ATTITUDE.size,
     7: ATTITUDE_CONTROL.size,
     8: RC_COMPACT.size,
+    CONFIG_TYPE: CONFIG_REPLY_BYTES,
 }
 MAX_PAYLOAD = 256
 IMU_BATCH_SIZES = {

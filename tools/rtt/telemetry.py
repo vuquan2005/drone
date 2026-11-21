@@ -37,6 +37,7 @@ class TelemetryState:
         self.series = ImuSeries()
         self.arrivals = deque(maxlen=20000)
         self.segment = 0
+        self.config = None
         self.latest_rate = self.rate_received_at = self.rate_last = None
         self.rate_points = deque(maxlen=500)
         self.rate_start = None
@@ -48,6 +49,7 @@ class TelemetryState:
         self.stats_received_at = None
 
     def new_connection(self):
+        self.config = None
         self.latest_rate = self.rate_received_at = self.rate_last = None
         self.rate_points = deque(maxlen=500)
         self.rate_start = None
@@ -236,6 +238,7 @@ class TelemetryState:
         samples = self.series.feed_samples(line)
         if samples:
             if self.series.resets != resets:
+                self.config = None
                 self.latest_rate = self.rate_received_at = self.rate_last = None
                 self.rate_points.clear()
                 self.reset_attitude()

@@ -177,6 +177,7 @@ class SessionWriterTests(unittest.TestCase):
                         "attitude_control": 0,
                         "log": 0,
                         "raw": 0,
+                        "config": 0,
                     },
                 )
             finally:

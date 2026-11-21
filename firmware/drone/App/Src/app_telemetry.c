@@ -7,6 +7,8 @@
 enum {
     STATS_FRAME_BYTES = 52U,
     RC_FRAME_BYTES = 33U,
+    CONFIG_FRAME_BYTES = 8U + 4U + APP_CONFIG_PAYLOAD_BYTES + 4U,
+    GET_CONFIG = 'C',
     IMU_BATCH_CAPACITY = 8U,
     IMU_BATCH_MAX_AGE_US = 10000U,
     IMU_FIRST_AXES_OFFSET = 20U,
@@ -37,12 +39,15 @@ static uint32_t rate_sequence;
 static uint32_t attitude_sequence;
 static uint32_t attitude_control_sequence;
 static uint32_t imu_full, stats_full, imu_rejected, stats_rejected;
+static uint32_t config_request_id;
+static unsigned config_request_bytes;
 
 void app_telemetry_init(void) {
     receiver_sequence = rate_sequence = attitude_sequence = 0U;
     attitude_control_sequence = 0U;
     stats_sequence = imu_full = stats_full = imu_rejected = stats_rejected = 0U;
     imu_batch.count = 0U;
+    config_request_bytes = 0U;
 }
 
 static bsp_rtt_result_t track_stats(bsp_rtt_result_t result) {
@@ -64,6 +69,42 @@ static void put_u16(uint8_t *out, uint16_t value) {
     for (unsigned i = 0; i < 2U; ++i) {
         out[i] = (uint8_t)(value >> (8U * i));
     }
+}
+
+bool app_telemetry_poll_config_request(uint32_t *id) {
+    uint8_t byte;
+    for (unsigned i = 0U; i < 15U && bsp_rtt_read_control(&byte, 1U); ++i) {
+        if (config_request_bytes == 0U) {
+            if (byte == GET_CONFIG) {
+                config_request_id = 0U;
+                config_request_bytes = 1U;
+            }
+        } else {
+            config_request_id |= (uint32_t)byte
+                                 << (8U * (config_request_bytes - 1U));
+            if (++config_request_bytes == 5U) {
+                config_request_bytes = 0U;
+                *id = config_request_id;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bsp_rtt_result_t app_telemetry_write_config(uint32_t id,
+                                            const app_config_t *config) {
+    const bsp_rtt_result_t ready =
+        bsp_rtt_prepare_write(BSP_RTT_DATA, CONFIG_FRAME_BYTES);
+    if (ready != BSP_RTT_OK)
+        return ready;
+    uint8_t frame[CONFIG_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 10U};
+    put_u16(frame + 6U, CONFIG_FRAME_BYTES - 12U);
+    put_u32(frame + 8U, id);
+    app_config_encode(frame + 12U, config);
+    const size_t crc_offset = CONFIG_FRAME_BYTES - 4U;
+    put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
+    return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }
 
 static void flush_imu_batch(void) {

@@ -51,9 +51,59 @@ static uint32_t get_u32(const char *p) {
     return (uint32_t)(uint8_t)p[0] | ((uint32_t)(uint8_t)p[1] << 8U) |
            ((uint32_t)(uint8_t)p[2] << 16U) | ((uint32_t)(uint8_t)p[3] << 24U);
 }
+
+static void test_config_response(void) {
+    assert(SEGGER_RTT_WriteDownBuffer(0U, "!C\x78", 3U) == 3U);
+    uint32_t request_id;
+    assert(!app_telemetry_poll_config_request(&request_id));
+    assert(SEGGER_RTT_WriteDownBuffer(0U, "\x56\x34\x12", 3U) == 3U);
+    assert(app_telemetry_poll_config_request(&request_id));
+    assert(request_id == 0x12345678U);
+    assert(!app_telemetry_poll_config_request(&request_id));
+
+    static const app_imu_t imu = {
+        .sensor = {.device.chip_id = 0xd1U,
+                   .initialized = true,
+                   .settings = {11, 11, 12, 0, 2, 2, 0x11, 0x15, 255, 255, 255,
+                                255}},
+        .calibration = {.gyro_bias_radps = {0.125f, -0.25f, 0.5f},
+                        .accel_bias_mps2 = {-1.0f, 2.0f, -3.0f},
+                        .accel_matrix = {{1.0f, 0.125f, 0.0f},
+                                         {0.0f, 0.875f, 0.0f},
+                                         {0.0f, 0.0f, 1.25f}},
+                        .accel_valid = true},
+    };
+    static const app_rate_config_t rate = {
+        .axis = {{0.25f, 0.125f, 0.0625f, 0.5f, 1.0f, 0.015625f},
+                 {0.5f, 0.25f, 0.125f, 0.75f, 1.0f, 0.03125f},
+                 {1.0f, 0.5f, 0.25f, 0.25f, 0.5f, 0.0625f}},
+        .max_rate_radps = {2.0f, 3.0f, 4.0f},
+        .period_us = 2000U,
+    };
+    const app_config_t config = {
+        .mode = APP_CONFIG_FLIGHT,
+        .imu = &imu,
+        .calibration_from_flash = true,
+        .rate = &rate,
+        .imu_timeout_us = 20000U,
+        .mahony_hz = 200U,
+        .attitude_hz = 100U,
+        .mahony_kp_per_s = 2.0f,
+        .attitude_kp_per_s = 4.0f,
+        .attitude_max_rad = 0.5f,
+        .gravity_min_mps2 = 7.85f,
+        .gravity_max_mps2 = 11.77f,
+    };
+    char output[221];
+    assert(app_telemetry_write_config(request_id, &config) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 220U);
+    check_fixture(output, 220U, CONFIG_FIXTURE_PATH);
+}
+
 static void enabled_tests(void) {
     bsp_rtt_init();
     app_telemetry_init();
+    test_config_response();
     assert(app_log_write(APP_LOG_LEVEL_INFO, "imu", "boot") ==
            BSP_RTT_NOT_INITIALIZED);
     app_log_init(clock_ms);

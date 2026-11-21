@@ -2,7 +2,9 @@
 """View existing RTT streams: uv run --group rtt tools/rtt/view.py."""
 
 import argparse
+import json
 from pathlib import Path
+import secrets
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -18,10 +20,14 @@ from panels import (
     AttitudePanel,
     AttitudeControlPanel,
 )
+from config_record import CONFIG_REQUEST, CONFIG_TYPE, decode_config_reply
 from stream import Stream
 from telemetry import TelemetryState
 from session_writer import SessionWriter
 from session_reader import read_session
+
+CONFIG_RETRY_S = 1.0
+CONFIG_MAX_ATTEMPTS = 5
 
 
 class Viewer(QtWidgets.QMainWindow):
@@ -37,6 +43,10 @@ class Viewer(QtWidgets.QMainWindow):
         self.recording = False
         self.close_when_done = False
         self.states = {"LOG": "connecting", "DATA": "connecting"}
+        self.config_request_id = None
+        self.config_requested_at = 0.0
+        self.config_attempts = 0
+        self.saved_config_segments = set()
         self.dirty = False
         root = QtWidgets.QWidget()
         self.setCentralWidget(root)
@@ -113,6 +123,9 @@ class Viewer(QtWidgets.QMainWindow):
         tabs.addTab(self.rate_panel, "Rate · FRD")
         tabs.addTab(self.attitude_panel, "Attitude")
         tabs.addTab(self.attitude_control_panel, "Attitude Control")
+        self.config_panel = QtWidgets.QPlainTextEdit("Waiting for the board configuration.")
+        self.config_panel.setReadOnly(True)
+        tabs.addTab(self.config_panel, "Configuration")
         splitter.addWidget(tabs)
         self.log_panel = LogPanel()
         splitter.addWidget(self.log_panel)
@@ -208,6 +221,7 @@ class Viewer(QtWidgets.QMainWindow):
         self.host_stats.setText(
             f"Saved IMU: {state.series.received} samples · missing seq {state.series.missing}"
         )
+        self.show_config(state.config, "No configuration saved for this segment.")
         self.writer_stats.clear()
         self.statusBar().showMessage(f"Saved session: {self.load_directory} · saved data")
 
@@ -239,17 +253,70 @@ class Viewer(QtWidgets.QMainWindow):
 
     def new_session(self):
         self.telemetry.new_connection()
+        self.reset_config_request()
         if self.tabs.currentWidget() is self.receiver_panel:
             self.receiver_panel.update_sample(None, 0, False)
         self.dirty = True
 
+    def show_config(self, config, empty_message):
+        self.config_panel.setPlainText(
+            empty_message if config is None else json.dumps(config, indent=2)
+        )
+
+    def reset_config_request(self):
+        self.config_request_id = secrets.randbits(32)
+        self.config_requested_at = 0.0
+        self.config_attempts = 0
+        self.show_config(None, "Waiting for the board configuration.")
+
+    def request_config(self, now):
+        if (
+            self.config_request_id is None
+            or self.telemetry.config is not None
+            or self.states["LOG"] != "connected"
+            or self.states["DATA"] != "connected"
+            or now - self.config_requested_at < CONFIG_RETRY_S
+        ):
+            return
+        if self.config_attempts == CONFIG_MAX_ATTEMPTS:
+            self.show_config(None, "The board did not return a configuration snapshot.")
+            self.config_attempts += 1
+        elif self.config_attempts < CONFIG_MAX_ATTEMPTS:
+            request = CONFIG_REQUEST.pack(b"C", self.config_request_id)
+            if self.log_stream.socket.write(request) == len(request):
+                self.config_attempts += 1
+            self.config_requested_at = now
+
+    def save_config(self):
+        state = self.telemetry
+        if (
+            self.recording
+            and state.config is not None
+            and state.segment not in self.saved_config_segments
+            and self.writer.submit("config", {"segment": state.segment, **state.config})
+        ):
+            self.saved_config_segments.add(state.segment)
+
     def on_data(self, line):
         if self.saved_session is not None:
+            return
+        if line[:2] == (1, CONFIG_TYPE):
+            try:
+                request_id, config = decode_config_reply(line[2])
+            except ValueError:
+                self.telemetry.series.invalid += 1
+                return
+            if request_id == self.config_request_id and self.telemetry.config is None:
+                self.telemetry.config = config
+                self.show_config(config, "")
+                self.save_config()
             return
         segment = self.telemetry.segment
         record = self.telemetry.feed(line, time.monotonic())
         if record is None:
             return
+        if self.telemetry.segment != segment:
+            self.reset_config_request()
         kind, values = record
         if self.recording:
             if kind == "imu_batch":
@@ -282,6 +349,7 @@ class Viewer(QtWidgets.QMainWindow):
         if self.saved_session is not None or self.load_future is not None:
             return
         if self.recording:
+            self.save_config()
             self.recording = False
             self.writer.stop()
             return
@@ -294,6 +362,8 @@ class Viewer(QtWidgets.QMainWindow):
             self.record_status.setText(f"Recording ERROR: {error}")
             return
         self.recording = True
+        self.saved_config_segments.clear()
+        self.save_config()
         self.update_record_status()
 
     def update_record_status(self):
@@ -317,12 +387,14 @@ class Viewer(QtWidgets.QMainWindow):
         self.record_status.show()
         drop_count = sum(drops.values())
         warning = f" · writer drops {drop_count}" if drop_count else ""
+        if self.recording and self.telemetry.segment not in self.saved_config_segments:
+            warning += " · configuration pending for current segment"
         self.record_status.setText(f"{state}: {w.directory}{warning}")
         self.writer_stats.setText(
             f"Queue {w.queue.qsize()} · "
             f"writer drops CSV={drops['imu_raw']} rate={drops['rate']} attitude={drops['attitude']} "
             f"attitude control={drops['attitude_control']} stats={drops['stats']} "
-            f"RC={drops['rc'] + drops['rc_compact']} "
+            f"RC={drops['rc'] + drops['rc_compact']} config={drops['config']} "
             f"LOG={drops['log']} raw chunks={drops['raw']}"
         )
         if self.close_when_done and not busy:
@@ -330,6 +402,7 @@ class Viewer(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         if self.writer is not None and not self.writer.done.is_set():
+            self.save_config()
             self.recording = False
             self.writer.stop()
             self.close_when_done = True
@@ -355,6 +428,8 @@ class Viewer(QtWidgets.QMainWindow):
         self.update_record_status()
         state = self.telemetry
         now = time.monotonic()
+        self.request_config(now)
+        self.save_config()
         active_panel = self.tabs.currentWidget()
         if active_panel is self.receiver_panel:
             self.receiver_panel.update_sample(

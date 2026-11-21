@@ -4,6 +4,7 @@
 #ifndef APP_TELEMETRY_H
 #define APP_TELEMETRY_H
 
+#include "app_config.h"
 #include "app_imu.h"
 #include "app_rate.h"
 #include "app_receiver.h"
@@ -40,6 +41,16 @@ void app_telemetry_queue_imu(const app_imu_sample_t *sample, uint32_t sequence);
  * Nonblocking and serialized with other telemetry calls.
  */
 void app_telemetry_process_imu(void);
+
+/** Poll down-channel 0 for a complete GET_CONFIG request, including partial
+ * requests from earlier calls. On success writes the request ID to id.
+ * Call in foreground after init, with a non-NULL writable id. */
+bool app_telemetry_poll_config_request(uint32_t *id);
+
+/** Try one type 10 response. Config and referenced state must be valid during
+ * this foreground call. A full RTT buffer discards the response. */
+bsp_rtt_result_t app_telemetry_write_config(uint32_t id,
+                                            const app_config_t *config);
 /** @brief Enqueue one cumulative RTT/IMU statistics snapshot (type 2).
  * @param uptime_ms MCU time captured by caller, wrapping uint32 milliseconds.
  * @param imu_samples Successful IMU read count since App init.

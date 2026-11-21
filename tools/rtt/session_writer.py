@@ -1,6 +1,7 @@
 """Write bounded telemetry sessions independently of Qt and socket handling."""
 
 import csv
+import json
 from datetime import datetime
 from pathlib import Path
 from queue import Empty, Full, Queue
@@ -95,12 +96,16 @@ class SessionWriter:
         self.error = None
         self.accepted = 0
         self.processed = 0
-        self.dropped = dict.fromkeys((*self.csv_writers, "log", "raw"), 0)
+        self.dropped = dict.fromkeys((*self.csv_writers, "log", "raw", "config"), 0)
         self.thread = Thread(target=self._run, name="telemetry-writer", daemon=True)
         self.thread.start()
 
     def submit(self, kind, value):
-        if kind not in self.files or self.stopping.is_set() or self.error is not None:
+        if (
+            (kind not in self.files and kind != "config")
+            or self.stopping.is_set()
+            or self.error is not None
+        ):
             return False
         try:
             self.queue.put_nowait((kind, value))
@@ -117,6 +122,10 @@ class SessionWriter:
     def _write(self, kind, value):
         if kind in self.csv_writers:
             self.csv_writers[kind].writerow(value)
+        elif kind == "config":
+            if kind not in self.files:
+                self.files[kind] = (self.directory / "config.jsonl").open("x", encoding="utf-8")
+            self.files[kind].write(json.dumps(value, allow_nan=False) + "\n")
         elif kind == "raw":
             # Plain hex text, not Intel HEX; whitespace is not a frame boundary.
             if value:
@@ -144,7 +153,7 @@ class SessionWriter:
                     self._flush()
                     last_flush = time.monotonic()
             self._flush()
-        except (OSError, csv.Error, UnicodeError) as error:
+        except (OSError, csv.Error, UnicodeError, ValueError) as error:
             self.error = str(error)
             self.stopping.set()
         finally:

@@ -1,6 +1,7 @@
 """Optional offscreen GUI/TCP integration test; never connects to a probe."""
 
 import csv
+import json
 import struct
 import zlib
 import tempfile
@@ -144,8 +145,6 @@ class ViewerTests(unittest.TestCase):
         self.addCleanup(output.cleanup)
         viewer.output_dir.setText(output.name)
         viewer.raw_checkbox.setChecked(True)
-        viewer.toggle_recording()
-        self.assertTrue(viewer.recording)
 
         def until(predicate):
             deadline = time.monotonic() + 4
@@ -155,9 +154,26 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(predicate())
 
         peers = []
+
+        def respond_to_config(data_peer):
+            until(lambda: peers[0].bytesAvailable() >= 5)
+            request = bytes(peers[0].read(5))
+            self.assertEqual(request[:1], b"C")
+            fixture = Path(__file__).resolve().parents[2] / "protocol/fixtures/config_v1.hex"
+            frame = bytes.fromhex(fixture.read_text())
+            response = frame[:8] + request[1:] + frame[12:-4]
+            data_peer.write(response + struct.pack("<I", zlib.crc32(response)))
+            until(lambda: viewer.telemetry.config is not None)
+            self.assertEqual(viewer.telemetry.config["imu"]["accel_odr_hz"], 800)
+            self.assertEqual(viewer.telemetry.config["rate"]["axes"]["pitch"]["kp_s_per_rad"], 0.5)
+
         try:
             until(lambda: all(server.hasPendingConnections() for server in servers))
             peers = [server.nextPendingConnection() for server in servers]
+            respond_to_config(peers[1])
+            self.assertIn('"accel_filter": "normal_avg4"', viewer.config_panel.toPlainText())
+            viewer.toggle_recording()
+            self.assertTrue(viewer.recording)
             peers[0].write(b"[1][I][imu] init\n[2][E][rx] lost\n")
             peers[1].write(packet()[:23])
             peers[1].flush()
@@ -196,6 +212,7 @@ class ViewerTests(unittest.TestCase):
             peers[1].disconnectFromHost()
             until(lambda: servers[1].hasPendingConnections())
             peers.append(servers[1].nextPendingConnection())
+            respond_to_config(peers[-1])
             peers[-1].write(packet(100, 100000))
             until(lambda: viewer.telemetry.series.received == 3)
             self.assertEqual(viewer.telemetry.series.missing, 1)
@@ -308,6 +325,13 @@ class ViewerTests(unittest.TestCase):
                 compact_rows[1][1:], ["3", "1384", "1374", "172", "992", "1811", "2047", "79"]
             )
             self.assertNotEqual(rows[1][0], rows[3][0])
+            configs = [
+                json.loads(line) for line in (directory / "config.jsonl").read_text().splitlines()
+            ]
+            self.assertEqual(
+                [config["segment"] for config in configs], [int(rows[1][0]), int(rows[3][0])]
+            )
+            self.assertEqual(configs[0]["config_sha256"], configs[1]["config_sha256"])
             self.assertIn("filtered but saved", next(directory.glob("events_*.log")).read_text())
             self.assertGreater(
                 len(bytes.fromhex(next(directory.glob("data_*.hex")).read_text())), 4000 * 44
@@ -319,6 +343,7 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(viewer.log_stream.paused)
             self.assertIn("Saved session:", viewer.statusBar().currentMessage())
             viewer.segment_box.setCurrentIndex(viewer.segment_box.count() - 1)
+            self.assertIn('"source": "flash"', viewer.config_panel.toPlainText())
             self.assertIn("SD STREAM", viewer.receiver_panel.switches.text())
             self.assertIn("0.15s", viewer.receiver_panel.replay_position.text())
             self.assertIn("Saved · valid", viewer.attitude_control_panel.status.text())

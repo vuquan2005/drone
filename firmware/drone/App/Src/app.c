@@ -332,6 +332,8 @@ static void log_arm_result(app_arm_state_t previous, app_safety_reason_t reason,
         return;
     if (previous == APP_ARMED && safety.state == APP_FAILSAFE) {
         APP_LOG_WARN("arm", "failsafe reason=%s", reason_names[reason]);
+    } else if (reason == APP_SAFETY_IDLE_TIMEOUT) {
+        APP_LOG_WARN("arm", "disarmed reason=idle_timeout");
     } else if (previous == APP_ARMED && safety.state == APP_DISARMED) {
         APP_LOG_INFO("arm", "disarmed");
     } else if (previous != APP_ARMED && safety.state == APP_ARMED) {
@@ -351,9 +353,10 @@ static inline void log_arm_result(app_arm_state_t previous,
 
 static void process_motor(void) {
     const app_arm_state_t previous = safety.state;
+    const uint32_t now_ms = HAL_GetTick();
     const app_safety_reason_t reason =
         app_safety_update(&safety, &command, imu_healthy(),
-                          rate.configured && !rate_failed, pwm_ready);
+                          rate.configured && !rate_failed, pwm_ready, now_ms);
     if (previous != safety.state &&
         (previous == APP_ARMED || safety.state == APP_ARMED)) {
         app_rate_reset(&rate);
@@ -374,7 +377,8 @@ static void process_motor(void) {
     if (pwm_failed) {
         pwm_ready = false;
         app_motor_stop();
-        app_safety_update(&safety, &command, imu_healthy(), false, false);
+        app_safety_update(&safety, &command, imu_healthy(), false, false,
+                          now_ms);
         app_rate_reset(&rate);
         APP_LOG_ERROR(
             "arm",

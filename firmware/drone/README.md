@@ -32,6 +32,12 @@ hợp lệ. Frame RC hợp lệ đầu tiên xác định chế độ theo bản
 reset tiếp theo. Trong FLIGHT, hệ thống phải khỏe và firmware phải thấy
 CH5/SA OFF trước khi chấp nhận lần gạt SA ON với ga ≤2%.
 
+Khi thử trên bộ gá, giữ ga ≤2% liên tục 5 giây trong lúc arm sẽ tự disarm.
+Tăng ga trước hạn sẽ hủy đếm. Sau khi hết hạn, tay điều khiển báo
+`IDLE TIMEOUT` và cần gạt SA OFF rồi ON với ga ≤2% để arm lại.
+`DRONE_ENABLE_BENCH_IDLE_DISARM` bật mặc định. Đặt tùy chọn CMake này thành
+`OFF` với build bay tự do vì firmware chưa xác nhận được trạng thái hạ cánh.
+
 | CH7/SB     | CH6/SC        | CH8/SD                         | Chế độ                                  |
 | ---------- | ------------- | ------------------------------ | --------------------------------------- |
 | HIGH       | MIDDLE        | Bất kỳ                         | `IMU_CALIB`, hiệu chuẩn gyro và accel   |

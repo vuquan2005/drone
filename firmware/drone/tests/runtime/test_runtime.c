@@ -197,6 +197,9 @@ static void test_crsf_status(void) {
     flight_status.safety_reason = APP_SAFETY_CALIBRATION;
     expect_next_status("FAILSAFE");
     flight_status.arm_state = APP_DISARMED;
+    flight_status.safety_reason = APP_SAFETY_IDLE_TIMEOUT;
+    expect_next_status("IDLE TIMEOUT");
+    flight_status.safety_reason = APP_SAFETY_OK;
     expect_next_status("DISARMED");
 
     reset();

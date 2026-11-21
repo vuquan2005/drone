@@ -16,7 +16,7 @@ typedef struct {
     bool imu_ready;   /**< A successful IMU read is no older than 20000 us. */
     bool motor_ready; /**< PWM initialized and no output failure latched. */
     app_arm_state_t arm_state;
-    app_safety_reason_t safety_reason; /**< Stored reason for APP_FAILSAFE. */
+    app_safety_reason_t safety_reason; /**< Stored fault or idle expiry. */
 } app_status_t;
 
 /** Return the applied FLIGHT configuration after app_init(). Read the

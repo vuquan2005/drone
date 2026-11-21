@@ -566,6 +566,33 @@ int main(void) {
     assert(strstr(output, "[I][arm] armed\n") != NULL);
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
+
+    tick += APP_ARM_IDLE_TIMEOUT_MS - 1U;
+    process_app();
+    assert(app_get_arm_state() == APP_ARMED);
+    tick++;
+    process_app();
+    assert(app_get_status(&health) && health.arm_state == APP_DISARMED);
+    assert(health.safety_reason == APP_SAFETY_IDLE_TIMEOUT);
+    drain(0U, output);
+    assert(strstr(output, "[W][arm] disarmed reason=idle_timeout\n") != NULL);
+    receiver_throttle = 992;
+    tick++;
+    process_app();
+    tick++;
+    process_app();
+    assert(app_get_arm_state() == APP_DISARMED);
+    for (unsigned i = 0; i < 4; ++i)
+        assert(motor_pulse[i] == 1000);
+    receiver_switches[0] = 172;
+    receiver_throttle = 172;
+    tick++;
+    process_app();
+    receiver_switches[0] = 1811;
+    tick++;
+    process_app();
+    assert(app_get_arm_state() == APP_ARMED);
+
     receiver_throttle = 992;
     tick++;
     process_app();

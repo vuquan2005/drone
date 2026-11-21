@@ -51,6 +51,7 @@ option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry ove
 option(DRONE_DEBUG_FORCE_FLIGHT "Enter FLIGHT without waiting for RC boot selection" OFF)
 
 option(DRONE_ENABLE_RATE_CONTROL "Configure rate controller with initial bench gains" ON)
+option(DRONE_ENABLE_BENCH_IDLE_DISARM "Disarm after 5 s of low throttle on the bench" ON)
 
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
@@ -137,6 +138,9 @@ target_link_libraries(${CMAKE_PROJECT_NAME} stm32cubemx # Add user defined libra
 
 target_compile_definitions(${CMAKE_PROJECT_NAME}
                            PRIVATE DRONE_RATE_CONTROL=$<BOOL:${DRONE_ENABLE_RATE_CONTROL}>)
+if(NOT DRONE_ENABLE_BENCH_IDLE_DISARM)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE APP_ARM_IDLE_TIMEOUT_MS=0U)
+endif()
 
 target_compile_definitions(${CMAKE_PROJECT_NAME}
                            PRIVATE DRONE_DEBUG_FORCE_FLIGHT=$<BOOL:${DRONE_DEBUG_FORCE_FLIGHT}>)

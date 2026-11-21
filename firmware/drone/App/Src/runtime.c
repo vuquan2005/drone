@@ -87,7 +87,8 @@ static const char *crsf_flight_status_label(void) {
     (void)app_get_status(&status);
     switch (status.arm_state) {
     case APP_DISARMED:
-        return "DISARMED";
+        return status.safety_reason == APP_SAFETY_IDLE_TIMEOUT ? "IDLE TIMEOUT"
+                                                               : "DISARMED";
     case APP_ARMED:
         return "ARMED";
     case APP_FAILSAFE:

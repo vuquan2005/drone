@@ -9,24 +9,27 @@ from build123d import Align, Axis, Box, Color, Pos, Rot, chamfer, export_step, e
 PLATE_LENGTH = 120.0  # Chiều dài tấm theo trục X.
 PLATE_WIDTH = 100.0  # Chiều rộng tấm theo trục Y.
 PLATE_THICKNESS = 2  # Bề dày tấm theo trục Z.
-PLATE_GAP = 3  # Khe từ mặt trên của mỏ kẹp trên đến mặt dưới của tấm.
+PLATE_GAP = 3  # Khe từ đầu mỏ kẹp trên đến mặt dưới của tấm.
 
 GRIPPED_PART_SIZE = 73.0  # Chiều dài cạnh của vật vuông cần kẹp.
 GRIPPED_PART_THICKNESS = 2  # Bề dày vật cần kẹp theo trục Z.
 CLIP_WIDTH = 10.0  # Chiều rộng mỗi ngàm, đo dọc theo cạnh vật.
 CLIP_WALL = 1  # Bề dày thành đứng của ngàm, đo vuông góc với cạnh vật.
-JAW_THICKNESS = 1.0  # Bề dày của từng mỏ kẹp trên và dưới theo trục Z.
-JAW_ENGAGEMENT = 1  # Khoảng mỗi mỏ kẹp nhô vào phía trong mép vật.
+UPPER_JAW_THICKNESS = 1.0  # Bề dày đầu mỏ kẹp trên theo trục Z.
+LOWER_JAW_THICKNESS = 2.0  # Bề dày mỏ kẹp dưới tại chân mỏ.
+UPPER_JAW_ENGAGEMENT = 1.0  # Khoảng mỏ kẹp trên nhô qua mép vật.
+LOWER_JAW_ENGAGEMENT = 0.75  # Khoảng mỏ kẹp dưới nhô qua mép vật.
+LOWER_JAW_LAND = 0.45  # Bề rộng mặt kẹp phẳng còn lại tính từ thành ngàm.
 JAW_LEAD_IN = 0.75  # Độ vát ở mép dưới phía trong của mỏ kẹp dưới.
 EDGE_CLEARANCE = 0.2  # Khe hở ngang giữa mỗi cạnh vật và thành ngàm tương ứng.
-FACE_CLEARANCE = 0.05  # Khe hở theo Z giữa mỗi mặt vật và mỏ kẹp tương ứng.
+FACE_CLEARANCE = 0.2  # Khe hở theo Z giữa mỗi mặt vật và mỏ kẹp tương ứng.
 
 
 def build_mount():
     bottom_aligned = (Align.CENTER, Align.CENTER, Align.MIN)
     upper_jaw_z = GRIPPED_PART_THICKNESS + FACE_CLEARANCE
-    lower_jaw_z = -FACE_CLEARANCE - JAW_THICKNESS
-    plate_z = upper_jaw_z + JAW_THICKNESS + PLATE_GAP
+    lower_jaw_z = -FACE_CLEARANCE - LOWER_JAW_THICKNESS
+    plate_z = upper_jaw_z + UPPER_JAW_THICKNESS + PLATE_GAP
 
     plate = Pos(0, 0, plate_z) * Box(
         PLATE_LENGTH, PLATE_WIDTH, PLATE_THICKNESS, align=bottom_aligned
@@ -39,13 +42,29 @@ def build_mount():
     wall = Pos((wall_start + outer_edge) / 2, 0, lower_jaw_z) * Box(
         CLIP_WALL, CLIP_WIDTH, clip_height, align=bottom_aligned
     )
-    jaw_tip = part_edge - JAW_ENGAGEMENT
-    jaw = Pos((jaw_tip + outer_edge) / 2, 0, 0) * Box(
-        outer_edge - jaw_tip, CLIP_WIDTH, JAW_THICKNESS, align=bottom_aligned
+
+    # In với mặt tấm úp xuống bàn. Mặt dốc 45° đỡ toàn bộ phần nhô của mỏ trên.
+    upper_tip = part_edge - UPPER_JAW_ENGAGEMENT
+    upper_overhang = wall_start - upper_tip
+    upper_jaw = Pos((upper_tip + outer_edge) / 2, 0, upper_jaw_z) * Box(
+        outer_edge - upper_tip,
+        CLIP_WIDTH,
+        UPPER_JAW_THICKNESS + upper_overhang,
+        align=bottom_aligned,
     )
-    entry_edge = jaw.edges().filter_by(Axis.Y).group_by(Axis.X)[0].sort_by(Axis.Z)[0]
-    lower_jaw = chamfer(entry_edge, length=JAW_LEAD_IN)
-    clip = wall.fuse(Pos(0, 0, lower_jaw_z) * lower_jaw, Pos(0, 0, upper_jaw_z) * jaw)
+    upper_print_edge = upper_jaw.edges().filter_by(Axis.Y).group_by(Axis.X)[0].sort_by(Axis.Z)[-1]
+    upper_jaw = chamfer(upper_print_edge, length=upper_overhang)
+
+    # Giữ một dải phẳng trên mỏ dưới để móc mép vật và vát phần nhô còn lại.
+    lower_tip = part_edge - LOWER_JAW_ENGAGEMENT
+    lower_jaw = Pos((lower_tip + outer_edge) / 2, 0, lower_jaw_z) * Box(
+        outer_edge - lower_tip, CLIP_WIDTH, LOWER_JAW_THICKNESS, align=bottom_aligned
+    )
+    lower_inner_edges = lower_jaw.edges().filter_by(Axis.Y).group_by(Axis.X)[0].sort_by(Axis.Z)
+    lower_jaw = chamfer(lower_inner_edges[0], length=JAW_LEAD_IN)
+    lower_print_edge = lower_jaw.edges().filter_by(Axis.Y).group_by(Axis.X)[0].sort_by(Axis.Z)[-1]
+    lower_jaw = chamfer(lower_print_edge, length=wall_start - lower_tip - LOWER_JAW_LAND)
+    clip = wall.fuse(lower_jaw, upper_jaw)
 
     clips = [Rot(0, 0, angle) * clip for angle in range(0, 360, 90)]
     mount = plate.fuse(*clips).clean()
@@ -76,7 +95,8 @@ def main(*, export_format=None):
     exports.mkdir(exist_ok=True)
     if export_format == "both" and not export_step(mount, exports / "clip_mount.step"):
         raise RuntimeError("Could not export the STEP mount")
-    if not export_stl(mount, exports / "clip_mount.stl"):
+    print_mount = Pos(0, 0, mount.bounding_box().max.Z) * Rot(180, 0, 0) * mount
+    if not export_stl(print_mount, exports / "clip_mount.stl"):
         raise RuntimeError("Could not export the STL mount")
 
 

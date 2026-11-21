@@ -43,7 +43,7 @@ Tăng ga trước hạn sẽ hủy đếm. Sau khi hết hạn, tay điều khi�
 | HIGH       | Bất kỳ        | HIGH / STREAM                  | `FLASH_ERASE`, chờ xác nhận xóa SPI NOR |
 | HIGH       | MIDDLE        | LOW / OFF hoặc MIDDLE / RECORD | `IMU_CALIB`, hiệu chuẩn gyro và accel   |
 | HIGH       | LOW hoặc HIGH | LOW / OFF hoặc MIDDLE / RECORD | `ESC_CALIB`, hiệu chuẩn ESC             |
-| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, xuất chỉ đọc qua RTT    |
+| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, xuất dữ liệu qua RTT    |
 | Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                |
 
 Xem [cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong
@@ -51,6 +51,10 @@ FLIGHT, SC chọn bộ điều khiển, SB HIGH kích hoạt failsafe và SD MID
 cầu [ghi telemetry vào SPI NOR](../../protocol/flash-journal.md).
 
 ## Xóa telemetry trên flash ngoài
+
+Có thể xóa qua [RTT Viewer](../../tools/rtt/README.md#xuất-telemetry-đã-ghi-trong-flash)
+sau khi đã lưu và xác minh bản export. Để xóa trực tiếp từ tay điều khiển,
+dùng chế độ `FLASH_ERASE`.
 
 `FLASH_ERASE` xóa toàn bộ W25Q128FV trên SPI2. Đặt **SD HIGH, SB HIGH**
 rồi reset với RC hợp lệ. Firmware giữ PWM tắt và báo `ERASE WAIT` qua

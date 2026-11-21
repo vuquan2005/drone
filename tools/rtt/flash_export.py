@@ -35,7 +35,10 @@ from telemetry import TelemetryState
 
 JOURNAL = struct.Struct("<4sBBHIIII")
 U32 = struct.Struct("<I")
-BEGIN, PAGE, END, ERROR = range(1, 5)
+BEGIN, PAGE, END, ERROR, ERASE_STATUS = range(1, 6)
+ERASE_STARTED, ERASE_VERIFIED, ERASE_FAILED = range(3)
+ERASE_ACK_TIMEOUT_S = 10.0
+ERASE_TIMEOUT_S = 300.0
 PAGE_BYTES, PAGE_COUNT = PAYLOAD_SIZES[PAGE], 65536
 ERASED_PAGE = b"\xff" * PAGE_BYTES
 ERASED_BLOCK = ERASED_PAGE * 256
@@ -305,6 +308,77 @@ def new_export_directory(root=DEFAULT_EXPORT_ROOT):
     return root / f"flash_export_{stamp}"
 
 
+def verify_saved_image(path, stats):
+    checksum = count = size = 0
+    with path.open("rb") as image:
+        for index in range(PAGE_COUNT):
+            page = image.read(PAGE_BYTES)
+            size += len(page)
+            if len(page) != PAGE_BYTES:
+                break
+            if page != ERASED_PAGE:
+                checksum = zlib.crc32(page, zlib.crc32(U32.pack(index), checksum))
+                count += 1
+        if (
+            size != PAGE_COUNT * PAGE_BYTES
+            or image.read(1)
+            or count != stats["pages_sent"]
+            or f"{checksum:08x}" != stats["stream_crc32"]
+        ):
+            raise ValueError("flash.bin đã thay đổi hoặc không đầy đủ.")
+
+
+def erase(host, control_port, data_port, directory, stats, cancel):
+    """Erase the chip only for the request that produced the saved image."""
+    verify_saved_image(directory / "flash.bin", stats)
+    request = stats["request_id"]
+    with (
+        socket.create_connection((host, data_port), timeout=5.0) as data,
+        socket.create_connection((host, control_port), timeout=5.0) as control,
+    ):
+        deadline = time.monotonic() + ERASE_ACK_TIMEOUT_S
+        data.settimeout(0.25)
+
+        def chunks():
+            while not cancel.is_set() and time.monotonic() < deadline:
+                try:
+                    chunk = data.recv(16384)
+                except socket.timeout:
+                    continue
+                if not chunk:
+                    return
+                yield chunk
+
+        if cancel.is_set():
+            return
+        started = False
+        try:
+            control.sendall(f"ERASE!{request:08x}".encode("ascii"))
+            for kind, message_id, index, payload in messages(chunks()):
+                if kind != ERASE_STATUS or message_id != request or index != PAGE_COUNT:
+                    continue
+                (status,) = U32.unpack(payload)
+                if status == ERASE_STARTED and not started:
+                    started = True
+                    deadline = time.monotonic() + ERASE_TIMEOUT_S
+                elif status == ERASE_VERIFIED and started:
+                    return
+                elif status == ERASE_FAILED and started:
+                    raise ValueError("Board báo lỗi khi xóa hoặc kiểm tra flash.")
+        except OSError as error:
+            raise ValueError(
+                "Mất kết nối khi gửi hoặc theo dõi lệnh xóa. Kiểm tra trạng thái trên tay điều khiển."
+            ) from error
+        if cancel.is_set():
+            return
+        if started:
+            raise ValueError("Chưa nhận được kết quả xóa. Kiểm tra trạng thái trên tay điều khiển.")
+        raise ValueError(
+            "Board chưa xác nhận lệnh xóa. Kiểm tra trạng thái trên tay điều khiển "
+            "và dùng firmware hỗ trợ xóa qua RTT."
+        )
+
+
 def export(
     host,
     control_port,
@@ -416,6 +490,7 @@ def download(host, control_port, data_port, timeout, partial, cancel, progress, 
                         "invalid_pages": invalid,
                         "stream_crc32": f"{checksum:08x}",
                         "attempts": attempt,
+                        "request_id": request,
                     }
                 failure = (
                     f"flash export count or CRC does not match END "

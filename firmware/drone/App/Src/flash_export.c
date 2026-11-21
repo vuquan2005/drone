@@ -2,6 +2,7 @@
 #include "app_crc32.h"
 #include "app_flash_journal.h"
 #include "app_log.h"
+#include "flash_erase.h"
 #include <string.h>
 
 enum {
@@ -14,15 +15,26 @@ enum {
     MESSAGE_PAGE = 2U,
     MESSAGE_END = 3U,
     MESSAGE_ERROR = 4U,
+    MESSAGE_ERASE_STATUS = 5U,
+    ERASE_STARTED = 0U,
+    ERASE_VERIFIED = 1U,
+    ERASE_FAILED = 2U,
 };
 
-static const uint8_t command_prefix[] = {'E', 'X', 'P', 'O', 'R', 'T'};
+typedef enum { NO_COMMAND, EXPORT_COMMAND, ERASE_COMMAND } command_kind_t;
+
+static const char export_prefix[] = "EXPORT";
+static const char erase_prefix[] = "ERASE!";
+enum { PREFIX_BYTES = sizeof(export_prefix) - 1U };
+_Static_assert(sizeof(export_prefix) == sizeof(erase_prefix),
+               "RTT command prefixes must have the same length");
 
 static struct {
     flash_export_state_t state;
     enum { PROBE, READ } step;
     bool pending;
-    bool requested;
+    command_kind_t command_kind;
+    command_kind_t request;
     unsigned command_bytes;
     uint32_t command_id;
     uint32_t active_id;
@@ -43,16 +55,23 @@ static void put_u32(uint8_t *out, uint32_t value) {
 }
 
 static void poll_command(void) {
-    uint8_t command[sizeof(command_prefix) + REQUEST_ID_HEX_BYTES];
+    uint8_t command[PREFIX_BYTES + REQUEST_ID_HEX_BYTES];
     const size_t count = bsp_rtt_read_control(command, sizeof(command));
     for (size_t i = 0U; i < count; ++i) {
         const uint8_t value = command[i];
-        if (exporter.command_bytes < sizeof(command_prefix)) {
-            if (value == command_prefix[exporter.command_bytes]) {
-                if (++exporter.command_bytes == sizeof(command_prefix))
+        if (exporter.command_bytes < PREFIX_BYTES) {
+            if (exporter.command_bytes == 1U) {
+                exporter.command_kind =
+                    value == 'R' ? ERASE_COMMAND : EXPORT_COMMAND;
+            }
+            const char *prefix = exporter.command_kind == ERASE_COMMAND
+                                     ? erase_prefix
+                                     : export_prefix;
+            if (value == prefix[exporter.command_bytes]) {
+                if (++exporter.command_bytes == PREFIX_BYTES)
                     exporter.command_id = 0U;
             } else {
-                exporter.command_bytes = value == command_prefix[0] ? 1U : 0U;
+                exporter.command_bytes = value == 'E' ? 1U : 0U;
             }
         } else {
             unsigned digit;
@@ -61,14 +80,14 @@ static void poll_command(void) {
             } else if (value >= 'a' && value <= 'f') {
                 digit = value - 'a' + 10U;
             } else {
-                exporter.command_bytes = value == command_prefix[0] ? 1U : 0U;
+                exporter.command_bytes = value == 'E' ? 1U : 0U;
                 continue;
             }
             exporter.command_id = (exporter.command_id << 4U) | digit;
             if (++exporter.command_bytes == sizeof(command)) {
                 exporter.command_bytes = 0U;
                 exporter.next_id = exporter.command_id;
-                exporter.requested = true;
+                exporter.request = exporter.command_kind;
             }
         }
     }
@@ -91,7 +110,7 @@ static void prepare_message(uint8_t kind, uint16_t size) {
 }
 
 static void start_export(void) {
-    exporter.requested = false;
+    exporter.request = NO_COMMAND;
     exporter.active_id = exporter.next_id;
     exporter.step = PROBE;
     exporter.page = exporter.sent_pages = exporter.invalid_pages = 0U;
@@ -145,9 +164,45 @@ void flash_export_init(void) {
     exporter.state = FLASH_EXPORT_WAIT;
 }
 
-void flash_export_process(void) {
+static void erase_status(uint32_t status) {
+    put_u32(exporter.tx + HEADER_BYTES, status);
+    prepare_message(MESSAGE_ERASE_STATUS, 4U);
+}
+
+void flash_export_process(uint32_t now_ms) {
     poll_command();
-    if (exporter.requested) {
+    if (exporter.state == FLASH_EXPORT_ERASE_BUSY) {
+        exporter.request = NO_COMMAND;
+        if (exporter.tx_size != 0U) {
+            send_pending();
+            return;
+        }
+        flash_erase_process(NULL, now_ms);
+        const flash_erase_state_t state = flash_erase_get_state();
+        if (state == FLASH_ERASE_DONE) {
+            exporter.state = FLASH_EXPORT_ERASE_DONE;
+            erase_status(ERASE_VERIFIED);
+        } else if (state == FLASH_ERASE_ERROR) {
+            exporter.state = FLASH_EXPORT_ERASE_ERROR;
+            erase_status(ERASE_FAILED);
+        }
+        return;
+    }
+    if (exporter.tx_size != 0U && exporter.tx_kind == MESSAGE_ERASE_STATUS) {
+        send_pending();
+        return;
+    }
+    if (exporter.request == ERASE_COMMAND) {
+        exporter.request = NO_COMMAND;
+        if (exporter.state == FLASH_EXPORT_DONE &&
+            exporter.next_id == exporter.active_id) {
+            flash_erase_start(now_ms);
+            exporter.state = FLASH_EXPORT_ERASE_BUSY;
+            erase_status(ERASE_STARTED);
+            return;
+        }
+    }
+    if (exporter.request == EXPORT_COMMAND) {
         /* Finish any in-flight SPI transfer before reusing the receive buffer.
          */
         if (exporter.pending && bsp_flash_poll() == BSP_FLASH_PENDING)

@@ -9,6 +9,7 @@ enum { PAGE_COUNT = BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES };
 static const char *control;
 static bool rtt_available;
 static bool fail_read;
+static unsigned erases;
 static unsigned reads;
 static enum { NONE, PROBE, READ } flash_op;
 static uint32_t *probe_id;
@@ -73,6 +74,12 @@ bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *out,
     return BSP_FLASH_SPI_ERROR;
 }
 
+bsp_flash_result_t bsp_flash_chip_erase_start(void) {
+    assert(flash_op == NONE);
+    ++erases;
+    return BSP_FLASH_OK;
+}
+
 bsp_flash_result_t bsp_flash_poll(void) {
     assert(flash_op != NONE);
     const bool reading = flash_op == READ;
@@ -84,7 +91,7 @@ bsp_flash_result_t bsp_flash_poll(void) {
     if (fail_read)
         return BSP_FLASH_SPI_ERROR;
     memset(page, 0xFF, BSP_FLASH_PAGE_BYTES);
-    if (read_index == 0U || read_index == PAGE_COUNT - 1U)
+    if (erases == 0U && (read_index == 0U || read_index == PAGE_COUNT - 1U))
         page[0] = (uint8_t)read_index ^ 0xA5U;
     return BSP_FLASH_OK;
 }
@@ -104,31 +111,34 @@ static void until(flash_export_state_t state) {
     unsigned budget = 2U * PAGE_COUNT + 32U;
     while (flash_export_get_state() != state) {
         assert(budget-- != 0U);
-        flash_export_process();
+        flash_export_process(0U);
     }
 }
 
 int main(void) {
     flash_export_init();
+    control = "ERASE!00000022";
+    flash_export_process(0U);
+    assert(flash_export_get_state() == FLASH_EXPORT_WAIT && erases == 0U);
     control = "EXPORTaa";
-    flash_export_process(); /* An interrupted command is replaced below. */
+    flash_export_process(0U); /* An interrupted command is replaced below. */
     assert(flash_export_get_state() == FLASH_EXPORT_WAIT);
 
     control = "EXPORT12345678";
     rtt_available = true;
-    flash_export_process();
+    flash_export_process(0U);
     const uint8_t *begin = check_frame(0, 0x12345678U, 1, 0, 8);
     assert(get_u32(begin) == BSP_FLASH_PAGE_BYTES &&
            get_u32(begin + 4) == PAGE_COUNT);
     rtt_available = false;
     for (unsigned i = 0; i < 20U; ++i)
-        flash_export_process();
+        flash_export_process(0U);
     assert(reads == 1U && sent == 1U); /* Pending PAGE survives backpressure. */
 
     rtt_available = true;
-    flash_export_process();
+    flash_export_process(0U);
     assert(check_frame(1, 0x12345678U, 2, 0, 256)[0] == 0xA5U);
-    flash_export_process(); /* Read page 1 is in flight when the new request
+    flash_export_process(0U); /* Read page 1 is in flight when the new request
                                arrives. */
     assert(flash_op == READ);
     control = "EXPORT00000022";
@@ -144,10 +154,36 @@ int main(void) {
     crc = app_crc32_extend(crc, last - 4, 260);
     assert(get_u32(end + 8) == crc);
 
+    control = "ERASE!12345678";
+    flash_export_process(0U);
+    assert(flash_export_get_state() == FLASH_EXPORT_DONE && erases == 0U);
+
+    control = "ERASE!0000";
+    flash_export_process(0U);
+    assert(flash_export_get_state() == FLASH_EXPORT_DONE && erases == 0U);
+    control = "0022";
+    rtt_available = false;
+    until(FLASH_EXPORT_ERASE_BUSY);
+    for (unsigned i = 0; i < 5U; ++i)
+        flash_export_process(0U);
+    assert(erases == 0U);
+    rtt_available = true;
+    flash_export_process(0U);
+    assert(get_u32(check_frame(6, 0x22U, 5, PAGE_COUNT, 4)) == 0U);
+    control = "EXPORT00000044";
+    const unsigned before_verify = reads;
+    until(FLASH_EXPORT_ERASE_DONE);
+    assert(erases == 1U && reads - before_verify == PAGE_COUNT);
+    flash_export_process(0U);
+    assert(get_u32(check_frame(7, 0x22U, 5, PAGE_COUNT, 4)) == 1U);
+    control = "ERASE!00000022";
+    flash_export_process(0U);
+    assert(flash_export_get_state() == FLASH_EXPORT_ERASE_DONE && erases == 1U);
+
     fail_read = true;
     control = "EXPORT00000033";
     until(FLASH_EXPORT_ERROR);
-    check_frame(6, 0x33U, 1, 0, 8);
-    assert(get_u32(check_frame(7, 0x33U, 4, 0, 4)) == BSP_FLASH_SPI_ERROR);
+    check_frame(8, 0x33U, 1, 0, 8);
+    assert(get_u32(check_frame(9, 0x33U, 4, 0, 4)) == BSP_FLASH_SPI_ERROR);
     return 0;
 }

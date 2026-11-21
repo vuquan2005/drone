@@ -29,10 +29,17 @@ static struct {
 
 void flash_erase_init(void) {
     maintenance.step = WAIT_LOW;
+    APP_LOG_INFO("flash", "erase_wait");
+}
+
+void flash_erase_start(uint32_t now_ms) {
     maintenance.pending = false;
     maintenance.address = 0U;
     maintenance.jedec_id = 0U;
-    APP_LOG_INFO("flash", "erase_wait");
+    maintenance.probe_wait_ms = now_ms;
+    maintenance.next_probe_ms = now_ms;
+    maintenance.step = PROBE;
+    APP_LOG_INFO("flash", "erase_confirmed");
 }
 
 static void confirm(const app_command_t *command, uint32_t now_ms) {
@@ -56,10 +63,7 @@ static void confirm(const app_command_t *command, uint32_t now_ms) {
         maintenance.step = HOLD_HIGH;
     } else if (maintenance.step == HOLD_HIGH &&
                now_ms - maintenance.hold_ms >= CONFIRM_MS) {
-        maintenance.probe_wait_ms = now_ms;
-        maintenance.next_probe_ms = now_ms;
-        maintenance.step = PROBE;
-        APP_LOG_INFO("flash", "erase_confirmed");
+        flash_erase_start(now_ms);
     }
 }
 

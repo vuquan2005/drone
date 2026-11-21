@@ -7,6 +7,7 @@
 #define BSP_FLASH_SIZE_BYTES (16U * 1024U * 1024U)
 #define BSP_FLASH_PAGE_BYTES 256U
 #define BSP_FLASH_JEDEC_ID 0xEF4018U
+#define BSP_FLASH_CHIP_ERASE_TIMEOUT_MS 201000U
 
 typedef enum {
     BSP_FLASH_OK,
@@ -33,7 +34,7 @@ typedef enum {
 
 /** @brief Start a JEDEC probe. The caller must retain id until poll completes.
  * @param id Receives the 24-bit ID even on WRONG_DEVICE, or stays unchanged
- * if the transfer fails. Must be non-NULL.
+ * if the transfer fails or the chip is busy. Must be non-NULL.
  * @return PENDING, OPERATION_ACTIVE, INVALID_ARGUMENT or a latched transport
  * failure. */
 bsp_flash_result_t bsp_flash_probe_start(uint32_t *id);
@@ -64,6 +65,12 @@ bsp_flash_result_t bsp_flash_read_start(uint32_t address, void *out,
  */
 bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *data,
                                            size_t size);
+
+/** @brief Start erasing the entire external flash.
+ * @return PENDING on acceptance, or NOT_PROBED, OPERATION_ACTIVE or a
+ * latched failure. Poll through BUSY until completion. The caller must
+ * verify the erased content before using the chip. Foreground only. */
+bsp_flash_result_t bsp_flash_chip_erase_start(void);
 
 /** @brief Advance one transaction step without waiting for DMA or flash BUSY.
  * @return PENDING while active, IDLE when no operation is pending, or a

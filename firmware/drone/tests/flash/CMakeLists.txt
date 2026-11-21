@@ -21,3 +21,8 @@ foreach(RTT IN ITEMS 0 1)
     target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Werror -UNDEBUG)
     add_test(NAME ${TARGET} COMMAND ${TARGET})
 endforeach()
+
+add_executable(flash_chip_erase_tests test_chip_erase.c ${FIRMWARE_ROOT}/BSP/Src/bsp_flash.c)
+target_include_directories(flash_chip_erase_tests PRIVATE mocks ${FIRMWARE_ROOT}/BSP/Inc)
+target_compile_options(flash_chip_erase_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME flash_chip_erase_tests COMMAND flash_chip_erase_tests)

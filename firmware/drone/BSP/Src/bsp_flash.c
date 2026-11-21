@@ -12,6 +12,7 @@ enum {
     READ_DATA = 0x03,
     WRITE_ENABLE = 0x06,
     PAGE_PROGRAM = 0x02,
+    CHIP_ERASE = 0xC7,
     SR1_BUSY = 0x01,
     SR1_WEL = 0x02,
     SR1_BP = 0x1C,
@@ -19,10 +20,12 @@ enum {
     ADDRESS_HEADER_BYTES = 4,
     DMA_TIMEOUT_MS = 5,
     PROGRAM_TIMEOUT_MS = 5,
+    ERASE_POLL_INTERVAL_MS = 50,
 };
 
 typedef enum {
     STEP_IDLE,
+    STEP_PROBE_READY,
     STEP_PROBE,
     STEP_STATUS,
     STEP_READ_READY,
@@ -48,6 +51,7 @@ static struct {
     flash_step_t step;
     bsp_flash_result_t fault;
     bool probed;
+    bool erase;
     uint32_t transfer_ms;
     uint32_t programmed_ms;
     uint32_t last_poll_ms;
@@ -149,7 +153,7 @@ bsp_flash_result_t bsp_flash_probe_start(uint32_t *id) {
     }
     flash.probed = false;
     flash.out = id;
-    return start_transfer(STEP_PROBE, READ_JEDEC, 4);
+    return start_transfer(STEP_PROBE_READY, READ_SR1, 2);
 }
 
 bsp_flash_result_t bsp_flash_status_start(uint8_t *status) {
@@ -191,12 +195,23 @@ bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *data,
     }
     flash.address = address;
     flash.size = size;
+    flash.erase = false;
     memcpy(flash.data, data, size);
     return start_transfer(STEP_PROGRAM_READY, READ_SR1, 2);
 }
 
+bsp_flash_result_t bsp_flash_chip_erase_start(void) {
+    const bsp_flash_result_t result = available(true);
+    if (result != BSP_FLASH_OK) {
+        return result;
+    }
+    flash.erase = true;
+    return start_transfer(STEP_PROGRAM_READY, READ_SR1, 2);
+}
+
 static bsp_flash_result_t wait_program(uint32_t now_ms) {
-    if (now_ms == flash.last_poll_ms) {
+    const uint32_t interval_ms = flash.erase ? ERASE_POLL_INTERVAL_MS : 1U;
+    if (now_ms - flash.last_poll_ms < interval_ms) {
         return BSP_FLASH_PENDING;
     }
     flash.last_poll_ms = now_ms;
@@ -226,6 +241,13 @@ bsp_flash_result_t bsp_flash_poll(void) {
     const uint8_t status = flash.rx[1];
     const uint8_t *payload = flash.rx + ADDRESS_HEADER_BYTES;
     switch (flash.step) {
+    case STEP_PROBE_READY:
+        /* A missing chip can read as all ones; let JEDEC report the mismatch.
+         */
+        if (status != 0xFFU && (status & SR1_BUSY) != 0U) {
+            return finish(BSP_FLASH_DEVICE_BUSY);
+        }
+        return start_transfer(STEP_PROBE, READ_JEDEC, 4);
     case STEP_PROBE: {
         const uint32_t id = ((uint32_t)status << 16U) |
                             ((uint32_t)flash.rx[2] << 8U) | flash.rx[3];
@@ -256,7 +278,8 @@ bsp_flash_result_t bsp_flash_poll(void) {
         if ((status & SR2_CMP) != 0U) {
             return finish(BSP_FLASH_WRITE_PROTECTED);
         }
-        return start_addressed(STEP_CHECK_ERASED, READ_DATA);
+        return flash.erase ? start_transfer(STEP_WRITE_ENABLE, WRITE_ENABLE, 1)
+                           : start_addressed(STEP_CHECK_ERASED, READ_DATA);
     case STEP_CHECK_ERASED:
         for (size_t i = 0; i < flash.size; ++i) {
             if (payload[i] != 0xFFU) {
@@ -270,7 +293,8 @@ bsp_flash_result_t bsp_flash_poll(void) {
         if ((status & (SR1_BUSY | SR1_WEL)) != SR1_WEL) {
             return finish(BSP_FLASH_WRITE_PROTECTED);
         }
-        return start_addressed(STEP_PROGRAM, PAGE_PROGRAM);
+        return flash.erase ? start_transfer(STEP_PROGRAM, CHIP_ERASE, 1)
+                           : start_addressed(STEP_PROGRAM, PAGE_PROGRAM);
     case STEP_PROGRAM:
         flash.programmed_ms = now_ms;
         flash.last_poll_ms = now_ms;
@@ -278,9 +302,16 @@ bsp_flash_result_t bsp_flash_poll(void) {
         return BSP_FLASH_PENDING;
     case STEP_CHECK_PROGRAM:
         if ((status & SR1_BUSY) == 0U) {
+            if (flash.erase) {
+                return finish((status & SR1_WEL) == 0U
+                                  ? BSP_FLASH_OK
+                                  : BSP_FLASH_WRITE_PROTECTED);
+            }
             return start_addressed(STEP_VERIFY, READ_DATA);
         }
-        if ((uint32_t)(now_ms - flash.programmed_ms) >= PROGRAM_TIMEOUT_MS) {
+        const uint32_t timeout_ms =
+            flash.erase ? BSP_FLASH_CHIP_ERASE_TIMEOUT_MS : PROGRAM_TIMEOUT_MS;
+        if (now_ms - flash.programmed_ms >= timeout_ms) {
             return fail(BSP_FLASH_TIMEOUT);
         }
         flash.step = STEP_WAIT_PROGRAM;

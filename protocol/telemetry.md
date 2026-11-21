@@ -8,14 +8,14 @@ CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                                                                                                                          |
-| ------ | ------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                                     |
-| 4      | 1       | version        | `1`                                                                                                                                              |
-| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate, `6` tư thế, `7` vòng attitude, `8` RC gọn, `9` IMU raw gộp, `10` cấu hình |
-| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu. Type 10 có 208 byte.                            |
-| 8      | N       | payload        | Theo version và type                                                                                                                             |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                                     |
+| Offset | Số byte | Trường         | Quy ước                                                                                                                                                            |
+| ------ | ------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                                                       |
+| 4      | 1       | version        | `1`                                                                                                                                                                |
+| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate cũ, `6` tư thế, `7` vòng attitude, `8` RC gọn, `9` IMU raw gộp, `10` cấu hình, `11` rate gọn |
+| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu. Type 10 có 208 byte. Type 11 có 54 byte.                          |
+| 8      | N       | payload        | Theo version và type                                                                                                                                               |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                                                       |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -256,11 +256,10 @@ rộng. CH1 có thể xen kẽ các type khác tần số; host phân loại the
 
 Chưa có boot ID; host không thể luôn phân biệt reset với tràn/gián đoạn dài.
 
-## Rate preview v1 — type 5
+## Rate preview cũ v1 — type 5
 
-Snapshot tính toán gửi tối đa 20 Hz khi rate đã được cấu hình; không điều khiển
-ESC. Header `DRT!`, version 1, type 5, payload 80 byte, CRC32 như các bản tin
-khác; tổng 92 byte. Số nguyên và IEEE-754 binary32 đều little-endian.
+Viewer đọc dữ liệu Rate từ firmware cũ. Type 5 có payload 80 byte và toàn
+frame 92 byte. Số nguyên và IEEE-754 binary32 đều little-endian.
 
 | Offset payload | Kiểu       | Nội dung                                                        |
 | -------------- | ---------- | --------------------------------------------------------------- |
@@ -281,8 +280,42 @@ bản tin trùng/lùi. Tuổi snapshot trên GUI tính theo thời gian host nh�
 không thay thế kiểm tra độ mới IMU trong firmware. Các lần mất bản tin thuộc
 counter DATA chung; chưa có counter drop riêng type 5.
 
-Fixture dùng chung C/Python: `protocol/fixtures/rate_v1.hex`. Viewer hiển thị
-snapshot trong tab Rate · FRD và ghi `rate_*.csv` khi người dùng bật recording.
+Fixture đọc dữ liệu cũ nằm tại `protocol/fixtures/rate_v1.hex`.
+
+## Rate preview gọn v1 — type 11
+
+Firmware gửi snapshot tối đa 20 Hz khi rate đã được cấu hình. Payload có
+54 byte và toàn frame có 66 byte, tương ứng tối đa 1.320 B/s. Sequence và
+timestamp dùng cùng quy ước type 5. Số nguyên và IEEE-754 binary32 đều
+little-endian.
+
+| Offset payload | Kiểu       | Nội dung                                                                      |
+| -------------: | ---------- | ----------------------------------------------------------------------------- |
+|              0 | uint32     | Sequence lần thử gửi                                                          |
+|              4 | uint32     | Timestamp đọc IMU cuối đã tiêu thụ, µs modulo 2^32                            |
+|              8 | uint16     | `dt_us`, từ 1 đến 20.000 nếu hợp lệ, bằng 0 khi kết quả chưa có hoặc đã reset |
+|             10 | float32[3] | Setpoint roll/pitch/yaw theo thân FRD, rad/s                                  |
+|             22 | float32[3] | Gyro roll/pitch/yaw theo thân FRD, rad/s                                      |
+|             34 | float32[3] | Output PID chuẩn hóa, từ −1 đến +1                                            |
+|             46 | uint16[4]  | M1–M4 Q15, giá trị từ 0 đến 32.768                                            |
+
+Khi `dt_us=0`, firmware ghi 0 cho setpoint, gyro, output và motor. Timestamp
+có thể chứa mốc IMU đầu tiên sau reset. Viewer khôi phục `flags=1` khi
+`dt_us=0`, hoặc `flags=3` khi `dt_us>0`, và ghi schema `rate_*.csv` hiện tại.
+Motor chuẩn hóa bằng giá trị Q15 chia cho 32.768.
+
+Viewer khôi phục residual theo các bước dưới đây. Quy tắc này cố định cho
+type 11 và sử dụng thứ tự motor M1–M4:
+
+1. `requested_q15` bằng output PID nhân 32.768 rồi làm tròn đến số nguyên
+   gần nhất. Khi nằm đúng giữa hai số nguyên, làm tròn ra xa 0.
+2. `achieved_q15` bằng tổng các giá trị motor nhân dấu tương ứng, rồi chia 2
+   và cắt phần lẻ về phía 0. Dấu theo từng trục là `[-1,-1,+1,+1]` cho roll,
+   `[+1,-1,-1,+1]` cho pitch và `[+1,-1,+1,-1]` cho yaw.
+3. `residual` bằng `(requested_q15 - achieved_q15) / 32768`.
+
+Fixture [Rate gọn](fixtures/rate_compact_v1.hex) dùng chung cho encoder C và
+decoder Python.
 
 ## Tư thế Mahony v1, type 6
 

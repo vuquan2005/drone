@@ -16,7 +16,7 @@ foreach(level IN ITEMS 0 3 4)
         ${TARGET}
         PRIVATE
             DRONE_LOG_LEVEL=${level}
-            RATE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rate_v1.hex"
+            RATE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/rate_compact_v1.hex"
             ATTITUDE_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_v1.hex"
             ATTITUDE_CONTROL_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/attitude_control_v1.hex"
             CONFIG_FIXTURE_PATH="${FIRMWARE_ROOT}/../../protocol/fixtures/config_v1.hex"

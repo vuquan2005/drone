@@ -75,12 +75,13 @@ bsp_rtt_result_t app_telemetry_write_stats(uint32_t uptime_ms,
 bsp_rtt_result_t
 app_telemetry_write_receiver(const app_receiver_sample_t *sample,
                              uint32_t uptime_ms);
-/** Enqueue a type 5 computational preview snapshot (92 bytes), at caller's
- * decimated cadence. State must be initialized and serialized with the rate
- * pipeline. NULL returns INVALID_ARGUMENT. Includes configured/valid flags;
- * invalid dynamics are zero after reset. No motor I/O, nonblocking foreground,
- * one preflight/write attempt without retry; generic DATA drops count failures.
- * Sequence counts attempts, timestamp is the last consumed IMU read time (us).
+/** Enqueue a 66-byte type 11 computational snapshot at the caller's cadence.
+ * The state must be configured and serialized with the rate pipeline. NULL,
+ * unconfigured state, or a valid sample with out-of-range dt or motors returns
+ * INVALID_ARGUMENT. Invalid snapshots encode zero dt and dynamics, preserving
+ * the timestamp. Valid dt is 1–20000 us and motors are unsigned Q15.
+ * Foreground-only, nonblocking, one preflight/write without retry. Sequence
+ * counts attempts. Timestamp is the last consumed IMU read time (us).
  * Layout and units: protocol/telemetry.md. */
 bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate);
 /** @brief Send one RTT DATA snapshot of a fresh FRD-to-NED quaternion.

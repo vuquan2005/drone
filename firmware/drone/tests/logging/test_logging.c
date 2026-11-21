@@ -279,15 +279,31 @@ static void enabled_tests(void) {
                        .dt_us = 2000,
                        .setpoint_radps = {0.25f, -0.5f, 1},
                        .gyro_frd_radps = {0.1f, -0.2f, 0.3f},
-                       .output = {0.015f, -0.03f, 0.07f},
-                       .residual = {0, 0, 0.01f}};
+                       .output = {0.015f, -0.03f, 0.07f}};
     /* Exact Q15 fractions on the wire. */
     for (unsigned i = 0; i < 4; ++i)
         rate.mixer.motor[i] = (norm_q15_t)(8192 * (i + 1));
     assert(app_telemetry_write_rate(&rate) == BSP_RTT_OK);
-    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 92U);
-    check_fixture(output, 92U, RATE_FIXTURE_PATH);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 66U);
+    check_fixture(output, 66U, RATE_FIXTURE_PATH);
     assert(app_telemetry_write_rate(NULL) == BSP_RTT_INVALID_ARGUMENT);
+    rate.configured = false;
+    assert(app_telemetry_write_rate(&rate) == BSP_RTT_INVALID_ARGUMENT);
+    rate.configured = true;
+    rate.dt_us = 20001U;
+    assert(app_telemetry_write_rate(&rate) == BSP_RTT_INVALID_ARGUMENT);
+    rate.dt_us = 2000U;
+    rate.mixer.motor[3] = NORM_Q15_ONE + 1;
+    assert(app_telemetry_write_rate(&rate) == BSP_RTT_INVALID_ARGUMENT);
+    rate.mixer.motor[3] = NORM_Q15_ONE;
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 0U);
+    rate.valid = false;
+    assert(app_telemetry_write_rate(&rate) == BSP_RTT_OK);
+    assert(drain(BSP_RTT_DATA, output, sizeof(output)) == 66U);
+    assert(get_u32(output + 12U) == 123456U);
+    for (unsigned offset = 16U; offset < 62U; ++offset)
+        assert(output[offset] == 0);
+    rate.valid = true;
     assert(bsp_rtt_write(BSP_RTT_DATA, fill, sizeof(fill)) == BSP_RTT_OK);
     assert(app_telemetry_write_rate(&rate) == BSP_RTT_FULL);
     bsp_rtt_init();

@@ -12,6 +12,8 @@ from records import (
     RcCompact,
     RTT_STATS,
     RATE,
+    RATE_COMPACT_TYPE,
+    decode_compact_rate,
 )
 
 
@@ -180,13 +182,14 @@ class TelemetryState:
             self.attitude_received_at = received_at
             return "attitude", values
 
-        if line[0] == 1 and line[1] == 5:
-            if len(line[2]) != RATE.size:
-                self.series.invalid += 1
-                return
-            values = RATE.unpack(line[2])
+        if line[0] == 1 and line[1] in (5, RATE_COMPACT_TYPE):
+            if line[1] == RATE_COMPACT_TYPE:
+                values = decode_compact_rate(line[2])
+            else:
+                values = RATE.unpack(line[2]) if len(line[2]) == RATE.size else None
             if (
-                values[3] not in (1, 3)
+                values is None
+                or values[3] not in (1, 3)
                 or not all(math.isfinite(x) for x in values[4:])
                 or (values[3] == 3 and not 0 < values[2] <= 20000)
                 or any(abs(x) > 1 for x in values[10:13])

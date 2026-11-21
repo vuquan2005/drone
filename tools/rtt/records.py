@@ -96,6 +96,8 @@ class RcCompact(NamedTuple):
 
 
 RATE = struct.Struct("<4I16f")
+RATE_COMPACT = struct.Struct("<IIH9f4H")
+RATE_COMPACT_TYPE = 11
 RATE_FIELDS = (
     "sequence",
     "t_sample_us",
@@ -136,6 +138,7 @@ KNOWN_SIZES = {
     7: ATTITUDE_CONTROL.size,
     8: RC_COMPACT.size,
     CONFIG_TYPE: CONFIG_REPLY_BYTES,
+    RATE_COMPACT_TYPE: RATE_COMPACT.size,
 }
 MAX_PAYLOAD = 256
 IMU_BATCH_SIZES = {
@@ -183,6 +186,33 @@ class Frames:
             payload = bytes(self.pending[HEADER.size : size - 4])
             del self.pending[:size]
             yield version, kind, payload
+
+
+def decode_compact_rate(payload):
+    """Expand type 11 into the original Rate CSV fields."""
+    if len(payload) != RATE_COMPACT.size:
+        return None
+    seq, stamp, dt, *values = RATE_COMPACT.unpack(payload)
+    axes, motors = values[:9], values[9:]
+    if (
+        dt > 20000
+        or any(not -1 <= value <= 1 for value in axes[6:])
+        or any(motor > 32768 for motor in motors)
+    ):
+        return None
+
+    # These signs and rounding rules are fixed by the type 11 wire format.
+    signs = ((-1, -1, 1, 1), (1, -1, -1, 1), (1, -1, 1, -1))
+    residuals = []
+    for output, axis_signs in zip(axes[6:], signs):
+        scaled = output * 32768
+        truncated = math.trunc(scaled)
+        fraction = scaled - truncated
+        requested = truncated + (fraction >= 0.5) - (fraction <= -0.5)
+        achieved = math.trunc(sum(sign * motor for sign, motor in zip(axis_signs, motors)) / 2)
+        residuals.append((requested - achieved) / 32768)
+    flags = 3 if dt else 1
+    return (seq, stamp, dt, flags, *axes, *(motor / 32768 for motor in motors), *residuals)
 
 
 def imu_batch_samples(payload):

@@ -187,7 +187,9 @@ class ViewerTests(unittest.TestCase):
             self.assertEqual(viewer.telemetry.series.missing, 1)
             self.assertEqual(len(viewer.imu_panel.curves[0][0].getData()[0]), 3)
             rate_frame = bytes.fromhex(
-                (Path(__file__).resolve().parents[2] / "protocol/fixtures/rate_v1.hex").read_text()
+                (
+                    Path(__file__).resolve().parents[2] / "protocol/fixtures/rate_compact_v1.hex"
+                ).read_text()
             )
             peers[1].write(rate_frame)
             until(lambda: viewer.telemetry.latest_rate is not None)

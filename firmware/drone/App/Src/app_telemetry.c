@@ -7,6 +7,7 @@
 enum {
     STATS_FRAME_BYTES = 52U,
     RC_FRAME_BYTES = 33U,
+    RATE_FRAME_BYTES = 66U,
     CONFIG_FRAME_BYTES = 8U + 4U + APP_CONFIG_PAYLOAD_BYTES + 4U,
     GET_CONFIG = 'C',
     IMU_BATCH_CAPACITY = 8U,
@@ -262,27 +263,40 @@ static void put_float(uint8_t *out, float value) {
 }
 
 bsp_rtt_result_t app_telemetry_write_rate(const app_rate_t *rate) {
+    _Static_assert(NORM_Q15_ONE == 32768 && RATE_AXIS_COUNT == 3U &&
+                       MIXER_MOTOR_COUNT == 4U,
+                   "Rate type 11 requires the Quad X Q15 layout");
     const uint32_t sequence = ++rate_sequence;
-    if (rate == NULL)
+    if (rate == NULL || !rate->configured)
         return BSP_RTT_INVALID_ARGUMENT;
-    bsp_rtt_result_t ready = bsp_rtt_prepare_write(BSP_RTT_DATA, 92U);
+    if (rate->valid) {
+        if (rate->dt_us == 0U || rate->dt_us > 20000U)
+            return BSP_RTT_INVALID_ARGUMENT;
+        for (unsigned i = 0U; i < MIXER_MOTOR_COUNT; ++i) {
+            if (rate->mixer.motor[i] < 0 || rate->mixer.motor[i] > NORM_Q15_ONE)
+                return BSP_RTT_INVALID_ARGUMENT;
+        }
+    }
+
+    const bsp_rtt_result_t ready =
+        bsp_rtt_prepare_write(BSP_RTT_DATA, RATE_FRAME_BYTES);
     if (ready != BSP_RTT_OK)
         return ready;
-    uint8_t frame[92] = {'D', 'R', 'T', '!', 1U, 5U, 80U, 0U};
-    put_u32(frame + 8, sequence);
-    put_u32(frame + 12, rate->previous_us);
-    put_u32(frame + 16, rate->dt_us);
-    put_u32(frame + 20, (rate->configured ? 1U : 0U) | (rate->valid ? 2U : 0U));
-    for (unsigned i = 0; i < 3; ++i) {
-        put_float(frame + 24 + 4 * i, rate->setpoint_radps[i]);
-        put_float(frame + 36 + 4 * i, rate->gyro_frd_radps[i]);
-        put_float(frame + 48 + 4 * i, rate->output[i]);
-        put_float(frame + 76 + 4 * i, rate->residual[i]);
+    uint8_t frame[RATE_FRAME_BYTES] = {'D', 'R', 'T', '!', 1U, 11U, 54U, 0U};
+    put_u32(frame + 8U, sequence);
+    put_u32(frame + 12U, rate->previous_us);
+    if (rate->valid) {
+        put_u16(frame + 16U, (uint16_t)rate->dt_us);
+        for (unsigned i = 0U; i < RATE_AXIS_COUNT; ++i) {
+            put_float(frame + 18U + 4U * i, rate->setpoint_radps[i]);
+            put_float(frame + 30U + 4U * i, rate->gyro_frd_radps[i]);
+            put_float(frame + 42U + 4U * i, rate->output[i]);
+        }
+        for (unsigned i = 0U; i < MIXER_MOTOR_COUNT; ++i)
+            put_u16(frame + 54U + 2U * i, (uint16_t)rate->mixer.motor[i]);
     }
-    for (unsigned i = 0; i < 4; ++i)
-        put_float(frame + 60 + 4 * i,
-                  (float)rate->mixer.motor[i] / NORM_Q15_ONE);
-    put_u32(frame + 88, app_crc32(frame, 88));
+    const size_t crc_offset = sizeof(frame) - 4U;
+    put_u32(frame + crc_offset, app_crc32(frame, crc_offset));
     return bsp_rtt_write(BSP_RTT_DATA, frame, sizeof(frame));
 }
 

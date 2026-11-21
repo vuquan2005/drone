@@ -43,7 +43,7 @@ Tăng ga trước hạn sẽ hủy đếm. Sau khi hết hạn, tay điều khi�
 | HIGH       | Bất kỳ        | HIGH / STREAM                  | `FLASH_ERASE`, chờ xác nhận xóa SPI NOR |
 | HIGH       | MIDDLE        | LOW / OFF hoặc MIDDLE / RECORD | `IMU_CALIB`, hiệu chuẩn gyro và accel   |
 | HIGH       | LOW hoặc HIGH | LOW / OFF hoặc MIDDLE / RECORD | `ESC_CALIB`, hiệu chuẩn ESC             |
-| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, chờ triển khai, PWM tắt |
+| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, xuất chỉ đọc qua RTT    |
 | Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                |
 
 Xem [cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong

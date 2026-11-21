@@ -152,6 +152,62 @@ class ViewerTests(unittest.TestCase):
             viewer.timer.stop()
             viewer.close()
 
+    def test_export_flash_from_viewer_restores_live_sockets(self):
+        from test_rtt_flash_export import export, journal, transfer
+
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        servers = [QtNetwork.QTcpServer(), QtNetwork.QTcpServer()]
+        for server in servers:
+            self.assertTrue(server.listen(QtNetwork.QHostAddress.SpecialAddress.LocalHost, 0))
+            self.addCleanup(server.close)
+
+        def wait_for(predicate):
+            deadline = time.monotonic() + 3
+            while not predicate() and time.monotonic() < deadline:
+                app.processEvents()
+                time.sleep(0.002)
+            self.assertTrue(predicate())
+
+        with tempfile.TemporaryDirectory() as directory:
+            viewer = Viewer(
+                SimpleNamespace(
+                    host="127.0.0.1",
+                    log_port=servers[0].serverPort(),
+                    data_port=servers[1].serverPort(),
+                    output_dir=directory,
+                )
+            )
+            viewer.show()
+            try:
+                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
+                original = [server.nextPendingConnection() for server in servers]
+                viewer.export_button.click()
+                self.assertTrue(viewer.log_stream.paused and viewer.data_stream.paused)
+                self.assertFalse(viewer.record_button.isEnabled())
+                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
+                control, data = [server.nextPendingConnection() for server in servers]
+                wait_for(lambda: control.bytesAvailable() >= 14)
+                command = bytes(control.read(14))
+                self.assertTrue(command.startswith(b"EXPORT"))
+                request = int(command[6:], 16)
+                pages = [(0, journal(export.BEGIN, 0, 0, 42))]
+                data.write(b"".join(transfer(request, pages)))
+                data.flush()
+                wait_for(lambda: viewer.export_future is None)
+                self.assertIn("Flash saved · 1 sessions", viewer.export_status.text())
+                self.assertTrue(viewer.export_button.isEnabled())
+                self.assertTrue(viewer.record_button.isEnabled())
+                self.assertEqual(
+                    (viewer.export_directory / "flash.bin").stat().st_size,
+                    export.PAGE_BYTES * export.PAGE_COUNT,
+                )
+                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
+                for connection in (*original, control, data):
+                    connection.abort()
+            finally:
+                viewer.close()
+                wait_for(lambda: viewer.export_future is None)
+
     def test_dual_tcp_plot_filter_and_reconnect(self):
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         servers = [QtNetwork.QTcpServer(), QtNetwork.QTcpServer()]

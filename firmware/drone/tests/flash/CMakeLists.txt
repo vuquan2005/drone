@@ -26,3 +26,11 @@ add_executable(flash_chip_erase_tests test_chip_erase.c ${FIRMWARE_ROOT}/BSP/Src
 target_include_directories(flash_chip_erase_tests PRIVATE mocks ${FIRMWARE_ROOT}/BSP/Inc)
 target_compile_options(flash_chip_erase_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
 add_test(NAME flash_chip_erase_tests COMMAND flash_chip_erase_tests)
+
+add_executable(flash_export_tests test_export.c ${FIRMWARE_ROOT}/App/Src/flash_export.c
+                                  ${FIRMWARE_ROOT}/App/Src/app_flash_journal.c)
+target_include_directories(flash_export_tests PRIVATE ${FIRMWARE_ROOT}/App/Inc
+                                                      ${FIRMWARE_ROOT}/BSP/Inc)
+target_compile_definitions(flash_export_tests PRIVATE DRONE_RTT=1)
+target_compile_options(flash_export_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+add_test(NAME flash_export_tests COMMAND flash_export_tests)

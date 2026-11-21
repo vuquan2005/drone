@@ -24,6 +24,31 @@ uv run tools/rtt/capture_raw.py --port 9091 > /tmp/imu.bin
 uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 ```
 
+## Xuất telemetry đã ghi trong flash
+
+Dùng firmware bật RTT, reset board với **SD HIGH + SB LOW** và đợi tay
+điều khiển báo `EXPORT WAIT`. Mở `make telemetry`, dừng ghi live nếu
+đang ghi, rồi bấm **Export flash**. Viewer dùng thư mục trong
+**Recording options → Save folder** và tạo thư mục con `flash_export_*`.
+Trong lúc xuất, viewer tạm dừng kết nối live và hiển thị số trang đã
+nhận. **Cancel export** hủy lần truyền về máy.
+
+`flash.bin` là ảnh 16 MiB của chip, giữ cả dữ liệu cũ ở các trang journal
+không nhận diện được. `export.json` tóm tắt kết quả. Dùng **Open session**
+và chọn một thư mục `session_*` bên trong để xem CSV và cấu hình đã lưu.
+Nếu ngắt kết nối giữa chừng, file còn tên `flash.bin.part`. Bấm
+**Export flash** lần nữa để đọc lại từ đầu vào một thư mục mới.
+
+Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Giữ OpenOCD
+đang chạy với cấu hình RTT, đóng viewer và chạy từ gốc repo:
+
+```sh
+python3 tools/rtt/flash_export.py experiments/raw/telemetry/flash-export-01
+```
+
+CLI mặc định dùng cổng OpenOCD 9090 và 9091. Có thể đổi bằng `--host`,
+`--control-port` và `--data-port`.
+
 ## Xem và ghi dữ liệu
 
 Viewer hiển thị log có filter, IMU, receiver và rate/mixer. IMU hiển thị

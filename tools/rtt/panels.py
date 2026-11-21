@@ -378,13 +378,49 @@ class ChannelStick(QtWidgets.QWidget):
 
 
 class ReceiverPanel(QtWidgets.QWidget):
+    SWITCH_COLORS = {
+        "—": "#edf0f4",
+        "LOW": "#e2e8f0",
+        "MIDDLE": "#cde5fc",
+        "HIGH": "#cdeed9",
+    }
+
     def __init__(self):
         super().__init__()
         layout = QtWidgets.QVBoxLayout(self)
         self.rc_status = QtWidgets.QLabel("RC: waiting for data")
         layout.addWidget(self.rc_status)
-        self.switches = QtWidgets.QLabel()
-        self.switches.setWordWrap(True)
+        self.switches = QtWidgets.QWidget()
+        self.switch_layout = QtWidgets.QGridLayout(self.switches)
+        self.switch_layout.setContentsMargins(0, 0, 0, 0)
+        self.switch_layout.setHorizontalSpacing(12)
+        self.switch_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.switch_columns = 0
+        self.switch_boxes, self.switch_values = [], []
+        for name, description in (
+            ("SA", "CH5 · Arm request"),
+            ("SB", "CH7 · Calibration request"),
+            ("SC", "CH6 · Mode switch"),
+            ("SD", "CH8 · Telemetry"),
+        ):
+            box = QtWidgets.QWidget()
+            box.setToolTip(description)
+            box_layout = QtWidgets.QHBoxLayout(box)
+            box_layout.setContentsMargins(0, 0, 0, 0)
+            box_layout.addWidget(QtWidgets.QLabel(name))
+            value = QtWidgets.QLabel()
+            value.setAccessibleName(f"{name} · {description}")
+            value.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            font = value.font()
+            font.setBold(True)
+            value.setFont(font)
+            width = max(
+                value.fontMetrics().horizontalAdvance(state) for state in self.SWITCH_COLORS
+            )
+            value.setMinimumWidth(width + 12)
+            box_layout.addWidget(value)
+            self.switch_boxes.append(box)
+            self.switch_values.append(value)
         self.switches.hide()
         layout.addWidget(self.switches)
         body = QtWidgets.QHBoxLayout()
@@ -457,6 +493,13 @@ class ReceiverPanel(QtWidgets.QWidget):
         self.replay_position.setText(f"{seconds:.2f}s · {index + 1}/{len(self.rc_snapshots)}")
 
     def update_responsive(self):
+        switch_columns = 4 if self.width() >= 480 else 2
+        if switch_columns != self.switch_columns:
+            self.switch_columns = switch_columns
+            for index, box in enumerate(self.switch_boxes):
+                row, column = divmod(index, switch_columns)
+                self.switch_layout.addWidget(box, row, column)
+
         wide = self.width() >= 850 and self.height() >= 280
         self.stick_group.setVisible(wide)
         if wide != self.wide:
@@ -491,26 +534,34 @@ class ReceiverPanel(QtWidgets.QWidget):
             for stick in self.sticks:
                 stick.set_channels(None, False)
             return
+        live = age < 0.5 and data_connected
         compact = isinstance(sample, RcCompact)
         if compact:
             flags = sample.flags
             connected = bool(flags & 1)
             channels = sample[3:-1]
-            if connected:
-                arm = "ON" if flags & 2 else "OFF"
-                calibration = "HIGH" if flags & 4 else "below HIGH"
-                sc = ("LOW", "MIDDLE", "HIGH")[(flags >> 3) & 3]
-                sd = ("OFF", "RECORD", "STREAM")[(flags >> 5) & 3]
-                self.switches.setText(f"SA arm {arm} · SB {calibration} · SC {sc} · SD {sd}")
-            else:
-                self.switches.setText("Switch requests unavailable")
+            states = ("—",) * 4
+            if live and connected:
+                positions = ("LOW", "MIDDLE", "HIGH")
+                states = (
+                    "HIGH" if flags & 2 else "LOW",
+                    "HIGH" if flags & 4 else "LOW",
+                    positions[(flags >> 3) & 3],
+                    positions[(flags >> 5) & 3],
+                )
+            for label, state in zip(self.switch_values, states):
+                if label.text() != state:
+                    label.setText(state)
+                    label.setStyleSheet(
+                        f"background-color: {self.SWITCH_COLORS[state]}; color: #152238;"
+                        " border-radius: 4px; padding: 2px 6px;"
+                    )
         else:
             _, _, _, connected, *channels = sample
         self.switches.setVisible(compact)
         if len(channels) != self.channel_count:
             self.channel_count = len(channels)
             self.update_responsive()
-        live = age < 0.5 and data_connected
         self.switches.setEnabled(live and bool(connected))
         state = ("connected" if connected else "disconnected") if live else "telemetry stale"
         self.rc_status.setText(f"Saved RC: {state}" if saved else f"RC: {state}")

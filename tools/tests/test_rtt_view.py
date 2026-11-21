@@ -28,6 +28,7 @@ class ViewerTests(unittest.TestCase):
     def test_receiver_responsive(self):
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
         from panels import ReceiverPanel
+        from records import RcCompact
 
         panel = ReceiverPanel()
         panel.resize(1000, 450)
@@ -63,6 +64,36 @@ class ViewerTests(unittest.TestCase):
         self.assertEqual(panel.rc_bars[2].value(), 2)
         panel.update_sample(sample, 1, False)
         self.assertFalse(panel.sticks[0].active)
+        panel.resize(350, 250)
+        panel.update_sample(RcCompact(2, 150, 140, 0, 1, 2, 3, 1), 0.1, True)
+        app.processEvents()
+        self.assertTrue(panel.switches.isVisible())
+        self.assertEqual(
+            [box.layout().itemAt(0).widget().text() for box in panel.switch_boxes],
+            ["SA", "SB", "SC", "SD"],
+        )
+        self.assertEqual(panel.switch_boxes[0].toolTip(), "CH5 · Arm request")
+        self.assertEqual([value.text() for value in panel.switch_values], ["LOW"] * 4)
+        self.assertEqual(panel.switch_boxes[0].y(), panel.switch_boxes[1].y())
+        self.assertGreater(panel.switch_boxes[2].y(), panel.switch_boxes[0].y())
+        panel.resize(500, 250)
+        app.processEvents()
+        self.assertEqual(len({box.y() for box in panel.switch_boxes}), 1)
+        arm_switch = panel.switch_values[0]
+        low_style = arm_switch.styleSheet()
+        switch_sample = RcCompact(3, 200, 190, 0, 1, 2, 3, 0x33)
+        panel.update_sample(switch_sample, 0.1, True)
+        self.assertEqual(
+            [value.text() for value in panel.switch_values], ["HIGH", "LOW", "HIGH", "MIDDLE"]
+        )
+        self.assertNotEqual(arm_switch.styleSheet(), low_style)
+        panel.update_sample(switch_sample, 0.5, True)
+        self.assertEqual([value.text() for value in panel.switch_values], ["—"] * 4)
+        panel.update_sample(RcCompact(3, 200, 140, 0, 1, 2, 3, 0), 0.1, True)
+        self.assertEqual([value.text() for value in panel.switch_values], ["—"] * 4)
+        self.assertFalse(panel.switches.isEnabled())
+        panel.update_sample(sample, 0.1, True)
+        self.assertTrue(panel.switches.isHidden())
         panel.update_sample(None, 0, False, saved=True)
         self.assertIsNone(panel.sticks[0].values)
         panel.close()
@@ -281,8 +312,9 @@ class ViewerTests(unittest.TestCase):
             viewer.refresh()
             self.assertEqual(viewer.receiver_panel.rc_bars[3].value(), 2047)
             self.assertTrue(viewer.receiver_panel.rc_bars[4].isHidden())
-            self.assertIn(
-                "SA arm ON · SB HIGH · SC MIDDLE · SD STREAM", viewer.receiver_panel.switches.text()
+            self.assertEqual(
+                [value.text() for value in viewer.receiver_panel.switch_values],
+                ["HIGH", "HIGH", "MIDDLE", "HIGH"],
             )
             control_frame = bytes.fromhex(
                 (
@@ -347,7 +379,7 @@ class ViewerTests(unittest.TestCase):
             self.assertIn("Saved session:", viewer.statusBar().currentMessage())
             viewer.segment_box.setCurrentIndex(viewer.segment_box.count() - 1)
             self.assertIn('"source": "flash"', viewer.config_panel.toPlainText())
-            self.assertIn("SD STREAM", viewer.receiver_panel.switches.text())
+            self.assertEqual(viewer.receiver_panel.switch_values[3].text(), "HIGH")
             self.assertIn("0.15s", viewer.receiver_panel.replay_position.text())
             self.assertIn("Saved · valid", viewer.attitude_control_panel.status.text())
             self.assertEqual(viewer.attitude_control_panel.curves[6].getData()[1][-1], 0.5)

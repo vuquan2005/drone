@@ -7,6 +7,7 @@
 
 enum {
     PAGE_COUNT = BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES,
+    SCAN_LOG_INTERVAL_PAGES = 4096U,
     HEADER_BYTES = 16U,
     CRC_BYTES = 4U,
     WIRE_VERSION = 1U,
@@ -121,7 +122,19 @@ static void start_export(void) {
     put_u32(payload, BSP_FLASH_PAGE_BYTES);
     put_u32(payload + 4, PAGE_COUNT);
     prepare_message(MESSAGE_BEGIN, 8U);
-    APP_LOG_INFO("flash", "export_start");
+    APP_LOG_INFO("flash", "export_start request=%08lx total=%lu",
+                 (unsigned long)exporter.active_id, (unsigned long)PAGE_COUNT);
+}
+
+static void advance_page(void) {
+    ++exporter.page;
+    if (exporter.page < PAGE_COUNT &&
+        exporter.page % SCAN_LOG_INTERVAL_PAGES == 0U) {
+        APP_LOG_INFO(
+            "flash", "export_scan request=%08lx scanned=%lu/%lu pages=%lu",
+            (unsigned long)exporter.active_id, (unsigned long)exporter.page,
+            (unsigned long)PAGE_COUNT, (unsigned long)exporter.sent_pages);
+    }
 }
 
 static void send_pending(void) {
@@ -133,11 +146,16 @@ static void send_pending(void) {
 
     if (exporter.tx_kind == MESSAGE_END) {
         exporter.state = FLASH_EXPORT_DONE;
+        APP_LOG_INFO("flash",
+                     "export_end request=%08lx pages=%lu invalid_pages=%lu",
+                     (unsigned long)exporter.active_id,
+                     (unsigned long)exporter.sent_pages,
+                     (unsigned long)exporter.invalid_pages);
     } else if (exporter.tx_kind == MESSAGE_ERROR) {
         exporter.state = FLASH_EXPORT_ERROR;
     } else if (exporter.tx_kind == MESSAGE_PAGE) {
-        ++exporter.page;
         ++exporter.sent_pages;
+        advance_page();
     }
     exporter.tx_size = 0U;
 }
@@ -148,7 +166,7 @@ static void process_page(void) {
     while (i < BSP_FLASH_PAGE_BYTES && payload[i] == 0xFFU)
         ++i;
     if (i == BSP_FLASH_PAGE_BYTES) {
-        ++exporter.page;
+        advance_page();
         return;
     }
     app_flash_journal_page_t info;
@@ -177,7 +195,7 @@ void flash_export_process(uint32_t now_ms) {
             send_pending();
             return;
         }
-        flash_erase_process(NULL, now_ms);
+        flash_erase_process(now_ms);
         const flash_erase_state_t state = flash_erase_get_state();
         if (state == FLASH_ERASE_DONE) {
             exporter.state = FLASH_EXPORT_ERASE_DONE;
@@ -223,9 +241,6 @@ void flash_export_process(uint32_t now_ms) {
         put_u32(payload + 4, exporter.invalid_pages);
         put_u32(payload + 8, exporter.stream_crc);
         prepare_message(MESSAGE_END, 12U);
-        APP_LOG_INFO("flash", "export_end pages=%lu invalid_pages=%lu",
-                     (unsigned long)exporter.sent_pages,
-                     (unsigned long)exporter.invalid_pages);
         return;
     }
 
@@ -244,8 +259,9 @@ void flash_export_process(uint32_t now_ms) {
     if (result != BSP_FLASH_OK) {
         put_u32(payload, (uint32_t)result);
         prepare_message(MESSAGE_ERROR, 4U);
-        APP_LOG_ERROR("flash", "export_failed code=%u page=%lu",
-                      (unsigned)result, (unsigned long)exporter.page);
+        APP_LOG_ERROR("flash", "export_failed request=%08lx code=%u page=%lu",
+                      (unsigned long)exporter.active_id, (unsigned)result,
+                      (unsigned long)exporter.page);
     } else if (exporter.step == PROBE) {
         exporter.step = READ;
     } else {

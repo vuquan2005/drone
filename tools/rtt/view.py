@@ -8,7 +8,6 @@ import secrets
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
-from threading import Event
 
 from PySide6 import QtCore, QtWidgets
 
@@ -22,9 +21,6 @@ from panels import (
     AttitudeControlPanel,
 )
 from config_record import CONFIG_REQUEST, CONFIG_TYPE, decode_config_reply
-from flash_export import DEFAULT_EXPORT_ROOT, MAX_ATTEMPTS, new_export_directory
-from flash_export import erase as erase_flash
-from flash_export import export as export_flash
 from stream import Stream
 from telemetry import TelemetryState
 from session_writer import SessionWriter
@@ -35,20 +31,15 @@ CONFIG_MAX_ATTEMPTS = 5
 
 
 class Viewer(QtWidgets.QMainWindow):
-    flash_progress = QtCore.Signal(int, int)
-
     def __init__(self, args):
         super().__init__()
-        self.setWindowTitle("Drone · RTT")
+        initial_session = getattr(args, "session", None)
+        self.offline = initial_session is not None
+        self.setWindowTitle("Drone · Saved telemetry" if self.offline else "Drone · RTT")
         self.resize(1100, 820)
         self.telemetry = TelemetryState()
         self.saved_session = None
         self.load_future = None
-        self.export_future = None
-        self.export_directory = None
-        self.export_receipt = None
-        self.erase_future = None
-        self.export_root = Path(getattr(args, "export_dir", DEFAULT_EXPORT_ROOT))
         self.loader = ThreadPoolExecutor(max_workers=1)
         self.writer = None
         self.recording = False
@@ -94,13 +85,6 @@ class Viewer(QtWidgets.QMainWindow):
         self.open_button = QtWidgets.QPushButton("Open session…")
         self.open_button.clicked.connect(self.choose_session)
         controls.addWidget(self.open_button)
-        self.export_button = QtWidgets.QPushButton("Export flash")
-        self.export_button.clicked.connect(self.toggle_export)
-        controls.addWidget(self.export_button)
-        self.erase_button = QtWidgets.QPushButton("Erase flash")
-        self.erase_button.setEnabled(False)
-        self.erase_button.clicked.connect(self.confirm_erase)
-        controls.addWidget(self.erase_button)
         self.live_button = QtWidgets.QPushButton("Return to live")
         self.live_button.clicked.connect(self.return_live)
         self.live_button.hide()
@@ -128,11 +112,6 @@ class Viewer(QtWidgets.QMainWindow):
         self.record_status.hide()
         self.record_status.setWordWrap(True)
         layout.addWidget(self.record_status)
-        self.export_status = QtWidgets.QLabel()
-        self.export_status.setWordWrap(True)
-        self.export_status.hide()
-        layout.addWidget(self.export_status)
-        self.flash_progress.connect(self.update_export_progress)
         splitter = QtWidgets.QSplitter(QtCore.Qt.Orientation.Vertical)
         layout.addWidget(splitter)
         tabs = self.tabs = QtWidgets.QTabWidget()
@@ -165,13 +144,19 @@ class Viewer(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.refresh)
         self.timer.start(40)
         self.tabs.currentChanged.connect(self.tab_changed)
-        if getattr(args, "record", False):
+        if self.offline:
+            self.pause_streams()
+            endpoints.hide()
+            self.record_button.hide()
+            self.record_options_button.hide()
+            self.load_session(initial_session)
+        elif getattr(args, "record", False):
             QtCore.QTimer.singleShot(0, self.toggle_recording)
 
     def choose_session(self):
         start = self.output_dir.text()
-        if self.export_directory is not None and (self.export_directory / "flash.bin").is_file():
-            start = str(self.export_directory)
+        if self.saved_session is not None:
+            start = str(Path(self.load_directory).parent)
         directory = QtWidgets.QFileDialog.getExistingDirectory(
             self, "Open telemetry session", start
         )
@@ -181,15 +166,9 @@ class Viewer(QtWidgets.QMainWindow):
     def load_session(self, directory):
         if self.recording or (self.writer is not None and not self.writer.done.is_set()):
             return
-        if (
-            self.load_future is not None
-            or self.export_future is not None
-            or self.erase_future is not None
-        ):
+        if self.load_future is not None:
             return
         self.open_button.setEnabled(False)
-        self.export_button.setEnabled(False)
-        self.erase_button.setEnabled(False)
         self.record_button.setEnabled(False)
         self.statusBar().showMessage("Loading session…")
         self.pending_directory = str(directory)
@@ -199,7 +178,6 @@ class Viewer(QtWidgets.QMainWindow):
         future, self.load_future = self.load_future, None
         self.open_button.setEnabled(True)
         self.record_button.setEnabled(self.saved_session is None)
-        self.export_button.setEnabled(self.saved_session is None)
         try:
             segments, logs = future.result()
         except Exception as error:
@@ -209,7 +187,6 @@ class Viewer(QtWidgets.QMainWindow):
         self.saved_session = segments
         self.pause_streams()
         self.record_button.setEnabled(False)
-        self.export_button.setEnabled(False)
         self.record_status.hide()
         self.log_panel.clear_log()
         for line in logs:
@@ -221,7 +198,7 @@ class Viewer(QtWidgets.QMainWindow):
             self.segment_box.addItem(f"Segment {segment}", segment)
         self.segment_box.blockSignals(False)
         self.segment_box.show()
-        self.live_button.show()
+        self.live_button.setVisible(not self.offline)
         self.show_segment()
 
     def show_segment(self, *_):
@@ -257,7 +234,7 @@ class Viewer(QtWidgets.QMainWindow):
         self.statusBar().showMessage(f"Saved session: {self.load_directory} · saved data")
 
     def return_live(self):
-        if self.load_future is not None:
+        if self.offline or self.load_future is not None:
             return
         self.saved_session = None
         self.receiver_panel.set_saved_snapshots([])
@@ -267,7 +244,6 @@ class Viewer(QtWidgets.QMainWindow):
         self.segment_box.hide()
         self.live_button.hide()
         self.record_button.setEnabled(True)
-        self.export_button.setEnabled(True)
         self.imu_panel.update_series(self.telemetry.series)
         self.imu_panel.plots[0].setXRange(0, 10, padding=0)
         self.rate_panel.plots[0].setXRange(0, 10, padding=0)
@@ -286,123 +262,6 @@ class Viewer(QtWidgets.QMainWindow):
             stream.paused = False
             stream.retry.start(2000)
             stream.connect()
-
-    def toggle_export(self):
-        if self.export_future is not None:
-            self.export_cancel.set()
-            self.export_button.setEnabled(False)
-            self.export_status.setText("Cancelling flash export…")
-            return
-        if (
-            self.saved_session is not None
-            or self.load_future is not None
-            or self.erase_future is not None
-            or self.recording
-            or (self.writer is not None and not self.writer.done.is_set())
-        ):
-            return
-        self.export_directory = new_export_directory(self.export_root)
-        self.export_receipt = None
-        self.export_cancel = Event()
-        self.pause_streams()
-        self.open_button.setEnabled(False)
-        self.record_button.setEnabled(False)
-        self.erase_button.setEnabled(False)
-        self.export_button.setText("Cancel export")
-        self.export_status.setText("Waiting for flash export · reset with SD HIGH + SB LOW.")
-        self.export_status.show()
-        self.export_future = self.loader.submit(
-            export_flash,
-            self.log_stream.host,
-            self.log_stream.port,
-            self.data_stream.port,
-            180.0,
-            self.export_directory,
-            cancel=self.export_cancel,
-            progress=self.flash_progress.emit,
-        )
-
-    def update_export_progress(self, attempt, pages):
-        if self.export_future is not None and not self.export_cancel.is_set():
-            progress = (
-                "waiting for board · SD HIGH + SB LOW" if pages < 0 else f"{pages:,} pages received"
-            )
-            self.export_status.setText(
-                f"Exporting flash · attempt {attempt}/{MAX_ATTEMPTS} · {progress}"
-            )
-
-    def finish_export(self):
-        future, self.export_future = self.export_future, None
-        try:
-            stats = future.result()
-        except InterruptedError:
-            message = "Flash export cancelled."
-        except Exception as error:
-            message = f"Flash export failed: {error}"
-            log = self.export_directory / "export.log"
-            if log.is_file():
-                message += f" · {log}"
-        else:
-            if not self.export_cancel.is_set():
-                self.export_receipt = stats
-            message = f"Flash saved · {stats['sessions']} sessions · {self.export_directory}"
-        self.export_status.setText(message)
-        self.export_button.setText("Export flash")
-        self.restore_flash_controls()
-
-    def confirm_erase(self):
-        if not self.erase_button.isEnabled() or self.export_receipt is None:
-            return
-        answer = QtWidgets.QMessageBox.question(
-            self,
-            "Xóa toàn bộ flash telemetry?",
-            f"Bản sao đã lưu tại:\n{self.export_directory / 'flash.bin'}\n\n"
-            "Thao tác này xóa toàn bộ flash telemetry trên board vừa export. "
-            "Giữ board ở chế độ export và chờ kết quả xác minh.",
-            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.Cancel,
-            QtWidgets.QMessageBox.StandardButton.Cancel,
-        )
-        if answer != QtWidgets.QMessageBox.StandardButton.Yes:
-            return
-        receipt, self.export_receipt = self.export_receipt, None
-        self.erase_cancel = Event()
-        self.pause_streams()
-        for button in (self.open_button, self.record_button, self.export_button, self.erase_button):
-            button.setEnabled(False)
-        self.export_status.setText("Đang kiểm tra bản sao và chờ board xóa flash…")
-        self.erase_future = self.loader.submit(
-            erase_flash,
-            self.log_stream.host,
-            self.log_stream.port,
-            self.data_stream.port,
-            self.export_directory,
-            receipt,
-            self.erase_cancel,
-        )
-
-    def finish_erase(self):
-        future, self.erase_future = self.erase_future, None
-        try:
-            log_error = future.result()
-        except (OSError, ValueError) as error:
-            self.export_status.setText(f"Lỗi xóa flash · {error}")
-        else:
-            if not self.erase_cancel.is_set():
-                message = "Đã xóa và xác minh toàn bộ flash telemetry."
-                if log_error is not None:
-                    message += f" · Lỗi ghi export.log: {log_error}"
-                self.export_status.setText(message)
-        self.restore_flash_controls()
-
-    def restore_flash_controls(self):
-        if self.close_when_done:
-            QtCore.QTimer.singleShot(0, self.close)
-            return
-        self.open_button.setEnabled(True)
-        self.record_button.setEnabled(True)
-        self.export_button.setEnabled(True)
-        self.erase_button.setEnabled(self.export_receipt is not None)
-        self.resume_streams()
 
     def tab_changed(self, *_):
         # Hidden live panels catch up from the unchanged telemetry history.
@@ -504,12 +363,7 @@ class Viewer(QtWidgets.QMainWindow):
             self.output_dir.setText(directory)
 
     def toggle_recording(self):
-        if (
-            self.saved_session is not None
-            or self.load_future is not None
-            or self.export_future is not None
-            or self.erase_future is not None
-        ):
+        if self.offline or self.saved_session is not None or self.load_future is not None:
             return
         if self.recording:
             self.save_config()
@@ -564,16 +418,6 @@ class Viewer(QtWidgets.QMainWindow):
             QtCore.QTimer.singleShot(0, self.close)
 
     def closeEvent(self, event):
-        if self.erase_future is not None:
-            self.close_when_done = True
-            self.erase_cancel.set()
-            event.ignore()
-            return
-        if self.export_future is not None:
-            self.close_when_done = True
-            self.toggle_export()
-            event.ignore()
-            return
         if self.writer is not None and not self.writer.done.is_set():
             self.save_config()
             self.recording = False
@@ -589,24 +433,14 @@ class Viewer(QtWidgets.QMainWindow):
         super().closeEvent(event)
 
     def refresh(self):
-        if self.erase_future is not None:
-            if self.erase_future.done():
-                self.finish_erase()
-            return
-        if self.export_future is not None:
-            if self.export_future.done():
-                self.finish_export()
-            return
         if self.load_future is not None:
             if self.load_future.done():
                 self.finish_load()
             return
-        if self.saved_session is not None:
+        if self.offline or self.saved_session is not None:
             return
         idle = not self.recording and (self.writer is None or self.writer.done.is_set())
         self.open_button.setEnabled(idle)
-        self.export_button.setEnabled(idle)
-        self.erase_button.setEnabled(idle and self.export_receipt is not None)
         self.update_record_status()
         state = self.telemetry
         now = time.monotonic()
@@ -666,7 +500,7 @@ def main():
     parser.add_argument("--log-port", type=int, default=9090)
     parser.add_argument("--data-port", type=int, default=9091)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--export-dir", type=Path, default=DEFAULT_EXPORT_ROOT)
+    parser.add_argument("--session", type=Path, help="Open a saved telemetry session offline")
     parser.add_argument(
         "--record", action="store_true", help="Start a recording session immediately"
     )
@@ -678,6 +512,8 @@ def main():
         parser.error("Ports must be between 1 and 65535")
     if args.log_port == args.data_port:
         parser.error("LOG and DATA need different TCP ports")
+    if args.session is not None and args.record:
+        parser.error("--session and --record cannot be used together")
     print("RTT viewer starting", flush=True)
     app = QtWidgets.QApplication([sys.argv[0]])
     viewer = Viewer(args)

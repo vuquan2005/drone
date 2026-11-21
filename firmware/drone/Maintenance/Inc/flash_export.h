@@ -14,7 +14,7 @@ typedef enum {
     FLASH_EXPORT_ERASE_ERROR,
 } flash_export_state_t;
 
-/** Initialize the export mode with PWM already disabled. */
+/** Initialize the exporter during boot with PWM already disabled. */
 void flash_export_init(void);
 
 /** Handle control bytes and one bounded flash or transmit step.
@@ -22,7 +22,7 @@ void flash_export_init(void);
  */
 void flash_export_process(uint32_t now_ms);
 
-/** Return the mode status for CRSF. DONE means END was queued to RTT. */
+/** Return the maintenance state. DONE means END was queued to RTT. */
 flash_export_state_t flash_export_get_state(void);
 #endif
 

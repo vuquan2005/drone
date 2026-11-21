@@ -4,6 +4,7 @@ PRE_COMMIT ?= pre-commit
 LATEXMK ?= latexmk
 UV ?= uv
 TELEMETRY_ARGS ?=
+FLASH_EXPORT_ARGS ?=
 CUBE ?= cube
 PRESET ?= Debug
 SWD ?= port=SWD freq=1000 reset=SWrst
@@ -13,14 +14,15 @@ ROOT_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 FORMAT_HOOKS := prettier black clang-format cmake-format format-latex
 LINT_HOOKS := markdownlint-cli2 cmake-lint lint-latex
 
-.PHONY: telemetry help fw-build fw-flash fw-erase report cubemx clean format lint sync-papers sync-datasheets
+.PHONY: telemetry flash-export help fw-build fw-flash fw-erase report cubemx clean format lint sync-papers sync-datasheets
 
 help:
 	@printf '%s\n' \
-	  'make fw-build [PRESET=Release] Configure and build firmware (default: Debug)' \
-	  'make fw-flash [PRESET=Release] Build, program, verify and reset via ST-LINK' \
+	  'make fw-build [PRESET=Export] Configure and build firmware (default: Debug)' \
+	  'make fw-flash [PRESET=Export] Build, program, verify and reset via ST-LINK' \
 	  'make fw-erase                 Erase ALL Flash, including stored settings' \
 	  'make telemetry [TELEMETRY_ARGS=...] Open RTT plots, log and recording controls' \
+	  'make flash-export [FLASH_EXPORT_ARGS=...] Manage OpenOCD, export and erase telemetry flash' \
 	  'make report                         Build report/build/main.pdf with latexmk' \
 	  'make cubemx                         Regenerate firmware from drone.ioc (CLI)' \
 	  'make clean                          Remove firmware and report build directories' \
@@ -30,7 +32,7 @@ help:
 	  'make sync-datasheets                Extract datasheet PDFs to Markdown and images'
 
 fw-build:
-	@case "$(PRESET)" in Debug|Release) ;; *) echo 'PRESET must be Debug or Release' >&2; exit 1;; esac
+	@case "$(PRESET)" in Debug|Release|Export) ;; *) echo 'PRESET must be Debug, Release or Export' >&2; exit 1;; esac
 	@command -v "$(CUBE)" >/dev/null || { echo 'cube not found; add it to PATH or set CUBE=/path/to/cube' >&2; exit 1; }
 	cd "$(ROOT_DIR)firmware/drone" && "$(CUBE)" cmake --preset "$(PRESET)"
 	cd "$(ROOT_DIR)firmware/drone" && "$(CUBE)" cmake --build --preset "$(PRESET)"
@@ -74,3 +76,6 @@ sync-datasheets:
 
 telemetry:
 	cd "$(ROOT_DIR)" && "$(UV)" run --locked --group rtt tools/rtt/view.py $(TELEMETRY_ARGS)
+
+flash-export:
+	cd "$(ROOT_DIR)" && "$(UV)" run --locked --group rtt tools/rtt/flash_view.py $(FLASH_EXPORT_ARGS)

@@ -44,6 +44,7 @@ ERASED_PAGE = b"\xff" * PAGE_BYTES
 ERASED_BLOCK = ERASED_PAGE * 256
 DEFAULT_EXPORT_ROOT = Path(__file__).resolve().parents[2] / "experiments/raw/export"
 MAX_ATTEMPTS = 5
+BEGIN_TIMEOUT_S = 15.0
 CSV_COLUMNS = {
     "imu_raw": IMU_RAW_COLUMNS,
     "stats": STATS_COLUMNS,
@@ -60,6 +61,8 @@ def messages(chunks, diagnostics=None):
     """Find complete CRC-valid export messages in arbitrary TCP chunks."""
     pending = bytearray()
     for chunk in chunks:
+        if diagnostics is not None:
+            diagnostics["bytes_received"] = diagnostics.get("bytes_received", 0) + len(chunk)
         pending.extend(chunk)
         while True:
             start = pending.find(MAGIC)
@@ -106,12 +109,15 @@ def receive_pages(chunks, request, pages, diagnostics=None, progress=None):
             started = True
             if progress is not None:
                 progress(0)
-        elif not started:
             continue
-        elif kind == ERROR:
+        if kind == ERROR:
             (code,) = U32.unpack(payload)
             raise ValueError(f"firmware flash error {code} at page {index}")
-        elif kind == PAGE:
+        if not started:
+            if kind == END:
+                raise EOFError("received matching END before BEGIN")
+            continue
+        if kind == PAGE:
             if not next_index <= index < PAGE_COUNT or payload == ERASED_PAGE:
                 raise ValueError(f"invalid or out-of-order flash page {index}")
             pages[index] = payload
@@ -281,7 +287,7 @@ def decode_sessions(image, root):
     return {"sessions": sessions, "interrupted_sessions": interrupted, "orphan_pages": orphan_pages}
 
 
-def receive_chunks(data, timeout, cancel):
+def receive_chunks(data, timeout, cancel, begin_received):
     """Allow a GUI caller to interrupt an otherwise long idle wait."""
     if cancel is None:
         yield from iter(lambda: data.recv(16384), b"")
@@ -289,7 +295,10 @@ def receive_chunks(data, timeout, cancel):
 
     data.settimeout(min(timeout, 0.25))
     deadline = time.monotonic() + timeout
+    begin_deadline = time.monotonic() + min(timeout, BEGIN_TIMEOUT_S)
     while not cancel.is_set():
+        if not begin_received() and time.monotonic() >= begin_deadline:
+            raise TimeoutError("timed out waiting for matching flash export BEGIN")
         try:
             chunk = data.recv(16384)
         except socket.timeout:
@@ -405,20 +414,16 @@ def request_erase(data, control, request, cancel, report):
     except OSError as error:
         report("erase_unconfirmed", f"reason=io_error error={error}")
         raise ValueError(
-            "Mất kết nối khi gửi hoặc theo dõi lệnh xóa. "
-            "Kiểm tra trạng thái trên tay điều khiển."
+            "Mất kết nối khi gửi hoặc theo dõi lệnh xóa. " "Kiểm tra tab STM32 log."
         ) from error
     if cancel.is_set():
         report("erase_unconfirmed", "reason=monitoring_cancelled")
         return
     if started:
         report("erase_unconfirmed", "reason=no_result")
-        raise ValueError("Chưa nhận được kết quả xóa. Kiểm tra trạng thái trên tay điều khiển.")
+        raise ValueError("Chưa nhận được kết quả xóa. Kiểm tra tab STM32 log.")
     report("erase_unconfirmed", "reason=no_ack")
-    raise ValueError(
-        "Board chưa xác nhận lệnh xóa. Kiểm tra trạng thái trên tay điều khiển "
-        "và dùng firmware hỗ trợ xóa qua RTT."
-    )
+    raise ValueError("Board chưa xác nhận lệnh xóa. Kiểm tra tab STM32 log và firmware Export.")
 
 
 def export(
@@ -476,6 +481,16 @@ def download(host, control_port, data_port, timeout, partial, cancel, progress, 
                 request = secrets.randbits(32)
                 received = {}
                 diagnostics = {"crc_errors": 0}
+                started = False
+
+                def update_progress(count):
+                    nonlocal started
+                    if count == 0:
+                        started = True
+                        report(f"attempt={attempt} request={request:08x} begin_received")
+                    if progress is not None:
+                        progress(attempt, count)
+
                 report(f"attempt={attempt} request={request:08x} requesting")
                 try:
                     with (
@@ -490,17 +505,18 @@ def download(host, control_port, data_port, timeout, partial, cancel, progress, 
                             raise InterruptedError("flash export cancelled")
                         control.sendall(f"EXPORT{request:08x}".encode("ascii"))
                         reply = receive_pages(
-                            receive_chunks(data, timeout, cancel),
+                            receive_chunks(data, timeout, cancel, lambda: started),
                             request,
                             received,
                             diagnostics,
-                            None if progress is None else lambda count: progress(attempt, count),
+                            update_progress,
                         )
                 except InterruptedError:
                     raise
                 except (OSError, EOFError) as error:
                     report(
                         f"attempt={attempt} incomplete received={len(received)} "
+                        f"data_bytes={diagnostics.get('bytes_received', 0)} "
                         f"crc_errors={diagnostics['crc_errors']} error={error}"
                     )
                     failure = str(error)

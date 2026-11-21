@@ -27,7 +27,7 @@ static struct {
     uint8_t page[BSP_FLASH_PAGE_BYTES];
 } maintenance;
 
-void flash_erase_init(void) {
+void flash_erase_rc_init(void) {
     maintenance.step = WAIT_LOW;
     APP_LOG_INFO("flash", "erase_wait");
 }
@@ -124,12 +124,19 @@ static void verify(void) {
     }
 }
 
-void flash_erase_process(const app_command_t *command, uint32_t now_ms) {
+void flash_erase_rc_process(const app_command_t *command, uint32_t now_ms) {
+    if (flash_erase_get_state() == FLASH_ERASE_WAIT) {
+        confirm(command, now_ms);
+        return;
+    }
+    flash_erase_process(now_ms);
+}
+
+void flash_erase_process(uint32_t now_ms) {
     switch (maintenance.step) {
     case WAIT_LOW:
     case WAIT_HIGH:
     case HOLD_HIGH:
-        confirm(command, now_ms);
         break;
     case PROBE:
         probe(now_ms);

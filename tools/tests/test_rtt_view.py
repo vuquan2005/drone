@@ -19,7 +19,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
 HAS_GUI = all(importlib.util.find_spec(name) for name in ("PySide6", "pyqtgraph"))
 if HAS_GUI:
-    from PySide6 import QtNetwork, QtWidgets
+    from PySide6 import QtCore, QtNetwork, QtWidgets
     from view import Viewer
 
 
@@ -152,7 +152,8 @@ class ViewerTests(unittest.TestCase):
             viewer.timer.stop()
             viewer.close()
 
-    def test_export_flash_from_viewer_restores_live_sockets(self):
+    def test_flash_view_manages_server_export_erase_and_saved_sessions(self):
+        from flash_view import FlashViewer
         from test_rtt_flash_export import export, journal, message, transfer
         from unittest.mock import patch
 
@@ -170,23 +171,36 @@ class ViewerTests(unittest.TestCase):
             self.assertTrue(predicate())
 
         with tempfile.TemporaryDirectory() as directory:
-            viewer = Viewer(
+            root = Path(directory)
+            openocd = root / "openocd"
+            openocd.write_text(
+                '#!/bin/sh\nprintf "%s\\n" "$@" "Drone flash RTT ready"\nexec sleep 30\n'
+            )
+            openocd.chmod(0o700)
+            viewer = FlashViewer(
                 SimpleNamespace(
-                    host="127.0.0.1",
+                    openocd=str(openocd),
+                    gdb_port=3333,
                     log_port=servers[0].serverPort(),
                     data_port=servers[1].serverPort(),
-                    output_dir=directory,
-                    export_dir=Path(directory) / "export",
+                    export_dir=root / "export",
                 )
             )
             viewer.show()
             try:
-                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
-                original = [server.nextPendingConnection() for server in servers]
+                self.assertFalse(viewer.export_button.isEnabled())
                 self.assertFalse(viewer.erase_button.isEnabled())
+                viewer.server_button.click()
+                wait_for(viewer.export_button.isEnabled)
+                self.assertIn("GDB 127.0.0.1:3333", viewer.server_status.text())
+                self.assertIn("set DRONE_GDB_PORT 3333", viewer.server_log.toPlainText())
+                wait_for(servers[0].hasPendingConnections)
+                board = servers[0].nextPendingConnection()
+                board.write(b"[4][I][flash] export_wait preset=Export\n")
+                board.flush()
+                wait_for(lambda: "export_wait preset=Export" in viewer.board_status.text())
                 viewer.export_button.click()
-                self.assertTrue(viewer.log_stream.paused and viewer.data_stream.paused)
-                self.assertFalse(viewer.record_button.isEnabled())
+                self.assertFalse(viewer.server_button.isEnabled())
                 self.assertFalse(viewer.erase_button.isEnabled())
                 wait_for(lambda: all(server.hasPendingConnections() for server in servers))
                 control, data = [server.nextPendingConnection() for server in servers]
@@ -194,29 +208,52 @@ class ViewerTests(unittest.TestCase):
                 command = bytes(control.read(14))
                 self.assertTrue(command.startswith(b"EXPORT"))
                 request = int(command[6:], 16)
-                pages = [(0, journal(export.BEGIN, 0, 0, 42))]
-                data.write(b"".join(transfer(request, pages)))
+                pages = [
+                    (0, journal(export.BEGIN, 0, 0, 42)),
+                    (1, journal(export.END, 1, 0, 45, struct.pack("<III", 1, 0, 0))),
+                    (2, journal(export.BEGIN, 2, 2, 48)),
+                ]
+                frames = list(transfer(request, pages))
+                data.write(frames[0])
                 data.flush()
-                wait_for(lambda: viewer.export_future is None)
-                self.assertEqual(viewer.export_directory.parent, Path(directory) / "export")
+                wait_for(lambda: "BEGIN received" in viewer.status.text())
+                board.write(
+                    f"[20][I][flash] export_scan request={request:08x} scanned=4096/65536 pages=0\n".encode()
+                )
+                board.flush()
+                wait_for(lambda: "scanned=4096/65536" in viewer.board_status.text())
+                self.assertIn("scanned=4096/65536", viewer.board_log.toPlainText())
+                data.write(b"".join(frames[1:]))
+                data.flush()
+                wait_for(lambda: viewer.job is None)
+                self.assertEqual(viewer.export_directory.parent, root / "export")
                 self.assertTrue((viewer.export_directory / "export.log").is_file())
-                self.assertIn("Flash saved · 1 sessions", viewer.export_status.text())
+                self.assertEqual(viewer.session_count.text(), "2 sessions · 1 interrupted")
+                self.assertEqual(viewer.sessions.count(), 2)
+                self.assertIn("closed", viewer.sessions.item(0).text())
+                self.assertIn("interrupted", viewer.sessions.item(1).text())
+                viewer.sessions.setCurrentRow(1)
+                with patch.object(
+                    QtCore.QProcess, "startDetached", return_value=(True, 12)
+                ) as start:
+                    viewer.open_button.click()
+                self.assertEqual(
+                    start.call_args.args[1][1:],
+                    ["--session", str(viewer.export_directory / "session_00002")],
+                )
                 self.assertTrue(viewer.export_button.isEnabled())
-                self.assertTrue(viewer.record_button.isEnabled())
                 self.assertTrue(viewer.erase_button.isEnabled())
                 self.assertEqual(
                     (viewer.export_directory / "flash.bin").stat().st_size,
                     export.PAGE_BYTES * export.PAGE_COUNT,
                 )
-                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
-                live = [server.nextPendingConnection() for server in servers]
                 with patch.object(
                     QtWidgets.QMessageBox,
                     "question",
                     return_value=QtWidgets.QMessageBox.StandardButton.Cancel,
                 ):
                     viewer.erase_button.click()
-                    self.assertIsNone(viewer.erase_future)
+                    self.assertIsNone(viewer.job)
                     self.assertTrue(viewer.erase_button.isEnabled())
                 with patch.object(
                     QtWidgets.QMessageBox,
@@ -236,12 +273,12 @@ class ViewerTests(unittest.TestCase):
                         )
                     )
                 erase_data.flush()
-                wait_for(lambda: viewer.erase_future is None)
-                self.assertIn("Đã xóa và xác minh", viewer.export_status.text())
+                wait_for(lambda: viewer.job is None)
+                self.assertIn("Flash erased and verified", viewer.status.text())
                 self.assertFalse(viewer.erase_button.isEnabled())
                 self.assertTrue((viewer.export_directory / "flash.bin").is_file())
                 log = (viewer.export_directory / "export.log").read_text().splitlines()
-                self.assertIn("complete pages=1", log[-4])
+                self.assertIn("complete pages=3", log[-4])
                 self.assertEqual(
                     [line.split(maxsplit=1)[1] for line in log[-3:]],
                     [
@@ -249,12 +286,47 @@ class ViewerTests(unittest.TestCase):
                         for event in ("erase_sent", "erase_acknowledged", "erase_verified")
                     ],
                 )
-                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
-                for connection in (*original, *live, control, data, erase_control, erase_data):
+                self.assertIn("erase_verified", viewer.export_log.toPlainText())
+                viewer.server_button.click()
+                wait_for(lambda: viewer.server_status.text() == "OpenOCD stopped")
+                self.assertFalse(viewer.export_button.isEnabled())
+                self.assertTrue(viewer.open_button.isEnabled())
+                for connection in (board, control, data, erase_control, erase_data):
                     connection.abort()
             finally:
                 viewer.close()
-                wait_for(lambda: viewer.export_future is None)
+                wait_for(lambda: viewer.job is None and not viewer.isVisible())
+
+    def test_exported_session_opens_offline_without_connecting_to_rtt(self):
+        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
+        server = QtNetwork.QTcpServer()
+        self.assertTrue(server.listen(QtNetwork.QHostAddress.SpecialAddress.LocalHost, 0))
+        self.addCleanup(server.close)
+        with tempfile.TemporaryDirectory() as directory:
+            (Path(directory) / "session.json").write_text(
+                json.dumps({"session_id": 0, "status": "interrupted", "data_pages": 0})
+            )
+            viewer = Viewer(
+                SimpleNamespace(
+                    host="127.0.0.1",
+                    log_port=server.serverPort(),
+                    data_port=server.serverPort(),
+                    session=Path(directory),
+                )
+            )
+            viewer.show()
+            try:
+                deadline = time.monotonic() + 3
+                while viewer.load_future is not None and time.monotonic() < deadline:
+                    app.processEvents()
+                    time.sleep(0.002)
+                self.assertIsNotNone(viewer.saved_session)
+                self.assertEqual(viewer.segment_box.currentData(), 1)
+                self.assertTrue(viewer.live_button.isHidden())
+                self.assertTrue(viewer.log_stream.paused and viewer.data_stream.paused)
+                self.assertFalse(server.hasPendingConnections())
+            finally:
+                viewer.close()
 
     def test_dual_tcp_plot_filter_and_reconnect(self):
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])

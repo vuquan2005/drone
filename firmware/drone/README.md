@@ -43,12 +43,17 @@ Tăng ga trước hạn sẽ hủy đếm. Sau khi hết hạn, tay điều khi�
 | HIGH       | Bất kỳ        | HIGH / STREAM                  | `FLASH_ERASE`, chờ xác nhận xóa SPI NOR |
 | HIGH       | MIDDLE        | LOW / OFF hoặc MIDDLE / RECORD | `IMU_CALIB`, hiệu chuẩn gyro và accel   |
 | HIGH       | LOW hoặc HIGH | LOW / OFF hoặc MIDDLE / RECORD | `ESC_CALIB`, hiệu chuẩn ESC             |
-| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT`, xuất dữ liệu qua RTT    |
+| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `BOOT_SELECT`, PWM tắt, chờ đổi SD      |
 | Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                |
 
 Xem [cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong
 FLIGHT, SC chọn bộ điều khiển, SB HIGH kích hoạt failsafe và SD MIDDLE yêu
 cầu [ghi telemetry vào SPI NOR](../../protocol/flash-journal.md).
+
+Để xuất flash, nạp ảnh bảo trì bằng `make fw-flash PRESET=Export` rồi dùng
+[`make flash-export`](../../tools/rtt/README.md#xuất-telemetry-đã-ghi-trong-flash).
+Ảnh này chạy từ `main()` và giao tiếp qua RTT. Nạp lại ảnh bay trước khi ghi
+telemetry hoặc chạy chế độ bay.
 
 ## Xóa telemetry trên flash ngoài
 

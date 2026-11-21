@@ -246,6 +246,22 @@ class TestFlashExport(unittest.TestCase):
                 self.assertFalse((out / "flash.bin").exists())
                 self.assertIn("failed", (out / "export.log").read_text())
 
+    def test_empty_end_without_begin_is_retried(self):
+        first = list(transfer(8, []))
+        second = list(transfer(9, []))
+        sockets = [FakeSocket(first[1:]), FakeSocket([]), FakeSocket(second), FakeSocket([])]
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            patch.object(export.secrets, "randbits", side_effect=[8, 9]),
+            patch.object(export.socket, "create_connection", side_effect=sockets),
+        ):
+            out = Path(directory) / "export"
+            stats = export.export("localhost", 9090, 9091, 5, out, attempts=2)
+            self.assertEqual((stats["pages_sent"], stats["attempts"]), (0, 2))
+            log = (out / "export.log").read_text()
+            self.assertIn("received matching END before BEGIN", log)
+            self.assertIn("attempt=2 request=00000009 begin_received", log)
+
     def test_command_and_incomplete_file(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

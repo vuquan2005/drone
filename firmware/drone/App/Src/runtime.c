@@ -7,7 +7,6 @@
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
 #include "flash_erase.h"
-#include "flash_export.h"
 #include "imu_calibration.h"
 #include "main.h"
 #include <stddef.h>
@@ -53,8 +52,7 @@ void runtime_init(void) {
 
 bool runtime_mode_supported(void) {
     return mode == RUNTIME_FLIGHT || mode == RUNTIME_ESC_CALIB ||
-           mode == RUNTIME_IMU_CALIB || mode == RUNTIME_FLASH_ERASE ||
-           (DRONE_RTT && mode == RUNTIME_FLASH_EXPORT);
+           mode == RUNTIME_IMU_CALIB || mode == RUNTIME_FLASH_ERASE;
 }
 
 runtime_mode_t runtime_get_mode(void) {
@@ -88,7 +86,7 @@ static runtime_mode_t select_mode(void) {
         return RUNTIME_ESC_CALIB;
     }
     if (command.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM) {
-        return RUNTIME_FLASH_EXPORT;
+        return RUNTIME_BOOT_SELECT;
     }
     return RUNTIME_FLIGHT;
 }
@@ -167,7 +165,7 @@ static const char *crsf_imu_calibration_label(char *progress) {
 static const char *crsf_status_label(char *imu_progress) {
     switch (mode) {
     case RUNTIME_BOOT_SELECT:
-        return "WAIT RC";
+        return command.valid ? "WAIT SD" : "WAIT RC";
     case RUNTIME_FLIGHT:
         return crsf_flight_status_label();
     case RUNTIME_ESC_CALIB:
@@ -187,28 +185,6 @@ static const char *crsf_status_label(char *imu_progress) {
             return "ESC PWM ERR";
         }
         break;
-    case RUNTIME_FLASH_EXPORT:
-#if DRONE_RTT
-        switch (flash_export_get_state()) {
-        case FLASH_EXPORT_WAIT:
-            return "EXPORT WAIT";
-        case FLASH_EXPORT_BUSY:
-            return "EXPORTING";
-        case FLASH_EXPORT_DONE:
-            return "EXPORT DONE";
-        case FLASH_EXPORT_ERROR:
-            return "EXPORT ERR";
-        case FLASH_EXPORT_ERASE_BUSY:
-            return "ERASING";
-        case FLASH_EXPORT_ERASE_DONE:
-            return "ERASE DONE";
-        case FLASH_EXPORT_ERASE_ERROR:
-            return "ERASE ERR";
-        }
-        break;
-#else
-        return "FLASH N/A";
-#endif
     case RUNTIME_FLASH_ERASE:
         switch (flash_erase_get_state()) {
         case FLASH_ERASE_WAIT:
@@ -252,8 +228,7 @@ static void process_crsf_telemetry(uint32_t now_ms) {
 
 #if APP_TELEMETRY_RTT_ENABLED
 static void process_config_requests(uint32_t now_ms) {
-    if (mode == RUNTIME_BOOT_SELECT || mode == RUNTIME_FLASH_EXPORT ||
-        now_ms - last_config_poll_ms < 20U)
+    if (mode == RUNTIME_BOOT_SELECT || now_ms - last_config_poll_ms < 20U)
         return;
     last_config_poll_ms = now_ms;
     uint32_t id;
@@ -270,7 +245,6 @@ static void process_config_requests(uint32_t now_ms) {
     case RUNTIME_ESC_CALIB:
         config.mode = APP_CONFIG_ESC_CALIB;
         break;
-    case RUNTIME_FLASH_EXPORT:
     case RUNTIME_BOOT_SELECT:
     case RUNTIME_FLASH_ERASE:
         return;
@@ -294,8 +268,7 @@ void runtime_process(void) {
 #endif
 #if APP_TELEMETRY_ENABLED
     const uint32_t now = HAL_GetTick();
-    if (mode != RUNTIME_FLASH_EXPORT &&
-        (uint32_t)(now - last_receiver_ms) >= 50U) {
+    if ((uint32_t)(now - last_receiver_ms) >= 50U) {
         last_receiver_ms = now;
         (void)app_telemetry_write_receiver(&receiver_sample, now);
     }
@@ -306,7 +279,6 @@ void runtime_process(void) {
         static const char *const mode_names[] = {
             [RUNTIME_FLIGHT] = "flight",
             [RUNTIME_ESC_CALIB] = "esc_calib",
-            [RUNTIME_FLASH_EXPORT] = "flash_export",
             [RUNTIME_IMU_CALIB] = "imu_calib",
             [RUNTIME_FLASH_ERASE] = "flash_erase",
         };
@@ -325,14 +297,8 @@ void runtime_process(void) {
             esc_calibration_init();
             return;
         }
-#if DRONE_RTT
-        if (mode == RUNTIME_FLASH_EXPORT) {
-            flash_export_init();
-            return;
-        }
-#endif
         if (mode == RUNTIME_FLASH_ERASE) {
-            flash_erase_init();
+            flash_erase_rc_init();
             return;
         }
         if (mode == RUNTIME_IMU_CALIB) {
@@ -353,13 +319,8 @@ void runtime_process(void) {
     case RUNTIME_IMU_CALIB:
         imu_calibration_process(&command);
         break;
-    case RUNTIME_FLASH_EXPORT:
-#if DRONE_RTT
-        flash_export_process(HAL_GetTick());
-#endif
-        break;
     case RUNTIME_FLASH_ERASE:
-        flash_erase_process(&command, HAL_GetTick());
+        flash_erase_rc_process(&command, HAL_GetTick());
         break;
     case RUNTIME_BOOT_SELECT:
         break;

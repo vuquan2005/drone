@@ -26,38 +26,60 @@ uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 
 ## Xuất telemetry đã ghi trong flash
 
-Dùng firmware bật RTT, reset board với **SD HIGH + SB LOW** và đợi tay
-điều khiển báo `EXPORT WAIT`. Mở `make telemetry`, dừng ghi live nếu
-đang ghi, rồi bấm **Export flash**. Mỗi lượt xuất được lưu vào
-`experiments/raw/export/flash_export_<thời điểm>`. Thư mục ghi live được
-chọn trong **Recording options → Save folder**, mặc định là
-`experiments/raw/telemetry`. Đổi thư mục xuất bằng
-`make telemetry TELEMETRY_ARGS="--export-dir /đường/dẫn"`.
+Cắm ST-LINK qua SWD. Từ gốc repo, nạp ảnh bảo trì `Export` rồi mở công cụ:
 
-Trong lúc xuất, viewer tạm dừng kết nối live và hiển thị lần đọc cùng số
-trang đã nhận. Khi thiếu trang hoặc CRC sai, exporter đọc lại tối đa năm
-lần tính cả lần đầu. Các trang qua kiểm tra CRC từ những lần có cùng
+```sh
+make fw-flash PRESET=Export
+make flash-export
+```
+
+Board khởi động trực tiếp vào chế độ export và chờ lệnh qua RTT.
+Sau khi bảo trì xong, đóng OpenOCD và nạp lại firmware bay bằng preset đã dùng
+trước đó. Lệnh `fw-flash` nạp ảnh vào flash nội STM32. Thao tác xóa
+telemetry trong Viewer tác động lên chip ngoài W25Q128FV.
+
+Bấm **Start OpenOCD** rồi **Export flash**. Cửa sổ quản lý OpenOCD với
+GDB ở `127.0.0.1:3333` và RTT ở cổng 9092/9093. Khi cần kết nối GDB,
+dùng `target extended-remote :3333` và cho CPU chạy trước khi export.
+Dừng phiên debug đang dùng cùng ST-LINK trước khi mở server. **Stop OpenOCD**
+hoặc đóng cửa sổ sẽ dừng server đã mở từ công cụ. Có thể chọn executable và cổng bằng
+`FLASH_EXPORT_ARGS="--openocd /đường/dẫn --gdb-port 0"`, trong đó `0`
+tắt GDB. Dùng `--log-port` và `--data-port` để đổi cổng RTT của công cụ.
+
+Mỗi lượt xuất được lưu vào `experiments/raw/export/flash_export_<thời điểm>`.
+Đổi thư mục xuất bằng `make flash-export FLASH_EXPORT_ARGS="--export-dir /đường/dẫn"`.
+
+Trong lúc xuất, cửa sổ hiển thị lượt thử, lúc nhận `BEGIN` và số trang
+khác `0xFF` đã nhận. **STM32 log (RTT 0)** hiển thị mode, số trang chip đã
+quét và kết quả phía board khi firmware bật log mức INFO. Hai bộ đếm
+có thể khác nhau vì trang trống được lược khỏi kênh DATA. Nếu hết 15 giây
+chưa nhận `BEGIN` đúng ID, thiếu trang hoặc CRC sai, cửa sổ thử lại tối đa
+năm lượt tính cả lượt đầu.
+Các trang qua kiểm tra CRC từ những lần có cùng
 thông tin END được ghép theo địa chỉ. Ảnh chỉ hoàn tất khi đủ số trang
 và khớp CRC của board. **Cancel export** dừng truyền về máy.
+Board ghi `export_end` khi đã đưa gói cuối vào bộ đệm RTT. Viewer báo
+`Flash saved` khi đã nhận đủ dữ liệu, kiểm tra CRC và lưu ảnh.
 
 `flash.bin` là ảnh 16 MiB của chip, giữ cả dữ liệu cũ ở các trang journal
 không nhận diện được. `export.json` tóm tắt kết quả và `export.log` ghi
-thời điểm, số trang, lỗi CRC và kết quả từng lần đọc. Dùng **Open session**
-và chọn thư mục `session_*` để xem CSV và cấu hình đã lưu. Nếu không xác
-nhận được ảnh, exporter giữ `flash.bin.part` và ghi nguyên nhân vào
-`export.log`.
+thời điểm, số trang, lỗi CRC và kết quả từng lần đọc. Tab **Export / erase log**
+hiển thị nội dung file trong lúc chạy. Khi hoàn tất, danh sách hiển thị tổng
+số session, số session gián đoạn và trạng thái từng session. Chọn một mục rồi
+bấm **Open session** để mở dữ liệu đã lưu trong Viewer offline. Lượt xuất
+chưa xác minh giữ `flash.bin.part` và ghi nguyên nhân vào `export.log`.
 
-Sau khi xuất thành công, có thể bấm **Xóa flash sau khi export** và xác nhận
-để giải phóng toàn bộ W25Q128FV. Giữ nguyên board ở chế độ export, dùng firmware
-hỗ trợ lệnh xóa qua RTT và chờ viewer báo đã xóa và xác minh. Viewer kiểm tra
+Sau khi xuất thành công, có thể bấm **Erase flash** và xác nhận
+để giải phóng toàn bộ W25Q128FV. Giữ board chạy ảnh Export và chờ Viewer
+báo đã xóa và xác minh. Viewer kiểm tra
 lại kích thước và CRC của `flash.bin` trước khi gửi lệnh. Board chỉ nhận lệnh
 cho yêu cầu export vừa hoàn tất trong lần khởi động hiện tại. `export.log` ghi
 thời điểm gửi lệnh, thời điểm board xác nhận và kết quả xóa theo ID yêu cầu.
-Nếu kết quả chưa được xác nhận, kiểm tra `ERASE DONE` hoặc `ERASE ERR` trên
-tay điều khiển.
+Nếu kết quả chưa được xác nhận, kiểm tra tab **STM32 log (RTT 0)**.
 
-Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Giữ OpenOCD
-đang chạy với cấu hình RTT, đóng viewer và chạy từ gốc repo:
+Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Mở OpenOCD
+với [cấu hình RTT độc lập](../../firmware/drone/DEBUG.md#dùng-từ-máy-tính),
+giữ cổng 9090/9091 dành cho CLI và chạy từ gốc repo:
 
 ```sh
 python3 tools/rtt/flash_export.py
@@ -69,6 +91,10 @@ CLI dùng cùng thư mục mặc định với viewer. Để lưu vào nơi khá
 `--data-port`.
 
 ## Xem và ghi dữ liệu
+
+Chạy `make telemetry` để xem và ghi telemetry live. Thư mục ghi được chọn
+trong **Recording options → Save folder**, mặc định là
+`experiments/raw/telemetry`.
 
 Viewer hiển thị log có filter, IMU, receiver và rate/mixer. IMU hiển thị
 m/s² và rad/s trong hệ thân FRD. Với firmware mới, receiver hiển thị bốn

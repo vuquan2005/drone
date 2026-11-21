@@ -38,6 +38,22 @@ SCHEMAS = (
 FLOAT_START = {5: 4, 6: 2, 7: 4}
 
 
+def read_flash_session_info(directory):
+    path = Path(directory) / "session.json"
+    try:
+        info = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return None
+    if (
+        not isinstance(info, dict)
+        or type(info.get("session_id")) is not int
+        or info.get("status") not in ("closed", "interrupted")
+        or type(info.get("data_pages")) is not int
+    ):
+        raise ValueError(f"{path}: unsupported flash session metadata")
+    return info
+
+
 def read_session(directory):
     """Return segment snapshots and session-wide log tail; reject malformed rows.
 
@@ -146,7 +162,10 @@ def read_session(directory):
                 except ValueError as error:
                     raise ValueError(f"{config_path.name}:{line_number}: {error}") from error
     if not segments:
-        raise ValueError("No telemetry rows found in this folder")
+        if read_flash_session_info(directory) is None:
+            raise ValueError("No telemetry rows found in this folder")
+        state = segments[1] = TelemetryState()
+        state.rc_snapshots = []
     for segment, points in rate_history.items():
         segments[segment].rate_points = points
     logs = deque(maxlen=2000)

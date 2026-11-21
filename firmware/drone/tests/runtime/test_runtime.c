@@ -276,7 +276,7 @@ static void test_crsf_status(void) {
     reset();
     input.channels[7] = 1811;
     runtime_process();
-    expect_next_status("FLASH N/A");
+    expect_next_status("WAIT SD");
 }
 
 static void test_crsf_imu_calibration(void) {
@@ -503,12 +503,16 @@ int main(void) {
     reset();
     input.channels[2] = input.channels[4] = input.channels[7] = 1811;
     runtime_process();
-    assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT);
+    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
     assert(!runtime_mode_supported() && starts == 0 && processes == 0);
     input.channels[7] = 172;
     input.connected = false;
     runtime_process();
-    assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT && stops == 1);
+    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT && stops == 1);
+    input.channels[2] = input.channels[4] = 172;
+    input.connected = true;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_FLIGHT && starts == 1);
     reset();
     input.channels[2] = input.channels[4] = input.channels[6] =
         input.channels[7] = 1811;

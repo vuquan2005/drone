@@ -7,7 +7,6 @@ typedef enum {
     RUNTIME_BOOT_SELECT,
     RUNTIME_FLIGHT,
     RUNTIME_ESC_CALIB,
-    RUNTIME_FLASH_EXPORT,
     RUNTIME_IMU_CALIB,
     RUNTIME_FLASH_ERASE,
 } runtime_mode_t;
@@ -24,15 +23,16 @@ void runtime_init(void);
  * Requires runtime_init. BOOT_SELECT waits for valid RC. CH7/SB HIGH with
  * CH8/SD HIGH selects FLASH_ERASE and keeps PWM off. Otherwise, CH7/SB HIGH
  * with CH6/SC MIDDLE selects IMU_CALIB. Other CH7 HIGH requests select
- * ESC_CALIB. With CH7 below HIGH, telemetry STREAM selects FLASH_EXPORT and
- * OFF/RECORD select FLIGHT. Arm and throttle are ignored during mode selection.
+ * ESC_CALIB. With CH7 below HIGH, telemetry STREAM keeps BOOT_SELECT with
+ * PWM off and OFF/RECORD select FLIGHT. Arm and throttle are ignored during
+ * selection.
  * After boot selection, CH6/SC remains the flight-mode request in FLIGHT.
  * CH8/SD retains its telemetry request meaning after FLIGHT is selected.
  * Selection latches until reset. ESC_CALIB initializes its own PWM session;
  * IMU_CALIB keeps PWM off and waits for a new RC frame after initializing its
- * sensor. FLASH_ERASE requires a separate RC confirmation. FLASH_EXPORT serves
- * read-only requests with RTT enabled. Flight App initialization only occurs in
- * FLIGHT. RTT receiver telemetry runs during boot selection. CRSF status is
+ * sensor. FLASH_ERASE requires a separate RC confirmation. Flight App
+ * initialization only occurs in FLIGHT. RTT receiver telemetry runs during
+ * boot selection. CRSF status is
  * offered to UART every 500 ms across runtime modes, including boot selection.
  * In FLIGHT, fresh attitude is offered no more than once per 200 ms, with
  * priority for status. FLIGHT init may block on IMU SPI; processing starts on

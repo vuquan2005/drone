@@ -1,9 +1,10 @@
+# %%
 """Build a centered plate with four edge clips. All dimensions are in millimeters."""
 
+from argparse import SUPPRESS, ArgumentParser
 from pathlib import Path
 
 from build123d import Align, Axis, Box, Color, Compound, Pos, Rot, chamfer, export_step, export_stl
-
 
 BASE_SIZE = 73.0
 BASE_THICKNESS = 2.0
@@ -47,7 +48,12 @@ def build_mount():
     clip = wall.fuse(Pos(0, 0, lower_jaw_z) * lower_jaw, Pos(0, 0, upper_jaw_z) * jaw)
 
     supports = []
-    for angle, span in ((0, PLATE_LENGTH), (90, PLATE_WIDTH), (180, PLATE_LENGTH), (270, PLATE_WIDTH)):
+    for angle, span in (
+        (0, PLATE_LENGTH),
+        (90, PLATE_WIDTH),
+        (180, PLATE_LENGTH),
+        (270, PLATE_WIDTH),
+    ):
         arm_start = span / 2 - ARM_OVERLAP
         arm = Pos((arm_start + outer_edge) / 2, 0, plate_z - ARM_THICKNESS) * Box(
             outer_edge - arm_start, CLIP_WIDTH, ARM_THICKNESS, align=bottom_aligned
@@ -60,12 +66,27 @@ def build_mount():
     return mount
 
 
-def main():
+def main(*, preview=True):
     mount = build_mount()
     base = Box(BASE_SIZE, BASE_SIZE, BASE_THICKNESS, align=(Align.CENTER, Align.CENTER, Align.MIN))
     base.label = "73 mm square reference base"
     base.color = Color(0.68, 0.70, 0.72)
     assembly = Compound(label="Clip mount assembly", children=[base, mount])
+
+    if preview:
+        from ocp_vscode import find_and_set_port, get_port, port_check, show
+
+        port = get_port()
+        if port is None or not port_check(port):
+            find_and_set_port()
+            port = get_port()
+            if port is None or not port_check(port):
+                raise SystemExit(
+                    "OCP CAD Viewer is not listening. In VS Code, run "
+                    "'OCP CAD Viewer: Open viewer' and keep its tab open while running this file."
+                )
+        show(assembly, port=port)
+        return
 
     exports = Path(__file__).resolve().parent / "exports"
     exports.mkdir(exist_ok=True)
@@ -75,5 +96,18 @@ def main():
         raise RuntimeError("Could not export the STL mount")
 
 
+# %%
 if __name__ == "__main__":
-    main()
+    # Run Cell shares IPython's namespace and command-line arguments.
+    if "get_ipython" in globals():
+        main()
+    else:
+        parser = ArgumentParser(
+            description=__doc__, epilog="Run without arguments to preview in OCP CAD Viewer."
+        )
+        mode = parser.add_mutually_exclusive_group()
+        mode.add_argument(
+            "--export", action="store_false", dest="preview", help="Export STEP and STL"
+        )
+        mode.add_argument("--preview", action="store_true", help=SUPPRESS)
+        main(preview=parser.parse_args().preview)

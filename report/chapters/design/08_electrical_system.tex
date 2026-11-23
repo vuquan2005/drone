@@ -1,13 +1,13 @@
 % !TEX root = ../../main.tex
-\section{Sơ đồ nguyên lý hệ thống điện của Quadcopter}
+\section{Sơ đồ nguyên lý hệ thống điện của quadrotor}
 \label{sec:design-electrical-system}
 
-Hệ thống điện của Quadcopter được tổ chức thành ba khối chức năng: khối nguồn, khối điều khiển và khối cơ cấu chấp hành.
+Hệ thống điện của quadrotor được tổ chức thành ba khối chức năng: khối nguồn, khối điều khiển và khối cơ cấu chấp hành.
 
 \begin{figure}[H]
 	\centering
 	\input{figures/ch03/electrical_blocks}
-	\caption{Sơ đồ khối chức năng của hệ thống điện Quadcopter.}
+	\caption{Sơ đồ khối chức năng của hệ thống điện quadrotor.}
 	\label{fig:design-electrical-blocks}
 \end{figure}
 
@@ -47,4 +47,4 @@ Khối điều khiển gồm bo STM32F103VET6, BMI160 và bộ thu ELRS, có nhi
 	\label{fig:design-actuator-block-schematic}
 \end{figure}
 
-Khối cơ cấu chấp hành gồm bốn tổ hợp ESC--động cơ--cánh quạt, có nhiệm vụ biến đổi năng lượng điện thành lực đẩy và mômen. Mỗi ESC nhận nguồn pin và lệnh PWM, chuyển mạch ba pha để điều khiển một động cơ A2212/10T 1400KV. Động cơ dẫn động cánh quạt; chênh lệch lực đẩy giữa các cụm tạo mômen điều chỉnh tư thế của Quadcopter.
+Khối cơ cấu chấp hành gồm bốn tổ hợp ESC--động cơ--cánh quạt, có nhiệm vụ biến đổi năng lượng điện thành lực đẩy và mômen. Mỗi ESC nhận nguồn pin và lệnh PWM, chuyển mạch ba pha để điều khiển một động cơ A2212/10T 1400KV. Động cơ dẫn động cánh quạt; chênh lệch lực đẩy giữa các cụm tạo mômen điều chỉnh tư thế của quadrotor.

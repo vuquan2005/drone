@@ -22,12 +22,24 @@ Sau khi nạp, có thể đọc RTT bằng OpenOCD độc lập và mở viewer 
 openocd -f firmware/drone/debug/rtt.cfg
 ```
 
+Dùng `make telemetry-export` để nạp ảnh bảo trì và mở công cụ xuất flash.
+Công cụ mở thêm GDB ở `127.0.0.1:3333`.
+Muốn bật GDB với cấu hình RTT độc lập, chạy:
+
+```sh
+openocd -c 'set DRONE_GDB_PORT 3333' -f firmware/drone/debug/rtt.cfg
+```
+
 Không chạy hai debug server cùng dùng ST-LINK. Xem cách mở viewer, ghi phiên
 và đọc dữ liệu thô tại [tools/rtt/README.md](../../tools/rtt/README.md).
 Nếu không kết nối, kiểm tra nguồn, SWD, quyền USB và probe; nếu không có dữ
 liệu IMU, kiểm tra log và bảo đảm CPU đã Continue.
 
 ## Cấu hình build
+
+Preset `Export` tạo `build/Export/drone.elf` với RTT và log mức INFO.
+`main()` vào vòng lặp bảo trì sau khi khởi tạo HAL, clock, GPIO, DMA và SPI2.
+Nạp lại preset Debug hoặc Release để board chạy firmware bay.
 
 | Tùy chọn                   | Debug mặc định | Release mặc định |
 | -------------------------- | -------------- | ---------------- |

@@ -5,6 +5,7 @@
 #define APP_TELEMETRY_H
 
 #include "app_config.h"
+#include "app_flash_recorder.h"
 #include "app_imu.h"
 #include "app_rate.h"
 #include "app_receiver.h"
@@ -14,7 +15,10 @@
 #define DRONE_TELEMETRY 0
 #endif
 
-#define APP_TELEMETRY_ENABLED (DRONE_RTT && DRONE_TELEMETRY)
+#define APP_TELEMETRY_RTT_ENABLED (DRONE_RTT && DRONE_TELEMETRY)
+#define APP_TELEMETRY_ENABLED (APP_TELEMETRY_RTT_ENABLED || DRONE_FLASH_RECORD)
+
+enum { APP_TELEMETRY_CONFIG_BYTES = 12U + 4U + APP_CONFIG_PAYLOAD_BYTES };
 
 #if APP_TELEMETRY_ENABLED
 /** @brief Reset telemetry counters and discard the pending IMU batch.
@@ -42,10 +46,19 @@ void app_telemetry_queue_imu(const app_imu_sample_t *sample, uint32_t sequence);
  */
 void app_telemetry_process_imu(void);
 
+/** Flush a partial IMU batch belonging to the current recording. */
+void app_telemetry_flush_recording_imu(void);
+
+/** Encode a complete type 10 frame into the caller's buffer. */
+void app_telemetry_encode_config(uint8_t frame[APP_TELEMETRY_CONFIG_BYTES],
+                                 uint32_t id, const app_config_t *config);
+
 /** Poll down-channel 0 for a complete GET_CONFIG request, including partial
  * requests from earlier calls. On success writes the request ID to id.
  * Call in foreground after init, with a non-NULL writable id. */
+#if APP_TELEMETRY_RTT_ENABLED
 bool app_telemetry_poll_config_request(uint32_t *id);
+#endif
 
 /** Try one type 10 response. Config and referenced state must be valid during
  * this foreground call. A full RTT buffer discards the response. */

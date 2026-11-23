@@ -6,6 +6,7 @@
 #include "app_telemetry.h"
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
+#include "flash_erase.h"
 #include "imu_calibration.h"
 #include "main.h"
 #include <stddef.h>
@@ -22,6 +23,8 @@ static uint32_t last_crsf_status_ms;
 static uint32_t last_crsf_attitude_ms;
 #if APP_TELEMETRY_ENABLED
 static uint32_t last_receiver_ms;
+#endif
+#if APP_TELEMETRY_RTT_ENABLED
 static uint32_t last_config_poll_ms;
 #endif
 
@@ -40,6 +43,8 @@ void runtime_init(void) {
     last_crsf_attitude_ms = last_crsf_status_ms;
 #if APP_TELEMETRY_ENABLED
     last_receiver_ms = last_crsf_status_ms;
+#endif
+#if APP_TELEMETRY_RTT_ENABLED
     last_config_poll_ms = last_crsf_status_ms;
 #endif
     APP_LOG_INFO("runtime", "boot_select state=waiting_for_rc");
@@ -47,7 +52,7 @@ void runtime_init(void) {
 
 bool runtime_mode_supported(void) {
     return mode == RUNTIME_FLIGHT || mode == RUNTIME_ESC_CALIB ||
-           mode == RUNTIME_IMU_CALIB;
+           mode == RUNTIME_IMU_CALIB || mode == RUNTIME_FLASH_ERASE;
 }
 
 runtime_mode_t runtime_get_mode(void) {
@@ -70,6 +75,10 @@ static runtime_mode_t select_mode(void) {
     if (!command.valid) {
         return RUNTIME_BOOT_SELECT;
     }
+    if (command.esc_calibration_requested &&
+        command.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM) {
+        return RUNTIME_FLASH_ERASE;
+    }
     if (command.imu_calibration_requested) {
         return RUNTIME_IMU_CALIB;
     }
@@ -77,7 +86,7 @@ static runtime_mode_t select_mode(void) {
         return RUNTIME_ESC_CALIB;
     }
     if (command.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM) {
-        return RUNTIME_FLASH_EXPORT;
+        return RUNTIME_BOOT_SELECT;
     }
     return RUNTIME_FLIGHT;
 }
@@ -156,7 +165,7 @@ static const char *crsf_imu_calibration_label(char *progress) {
 static const char *crsf_status_label(char *imu_progress) {
     switch (mode) {
     case RUNTIME_BOOT_SELECT:
-        return "WAIT RC";
+        return command.valid ? "WAIT SD" : "WAIT RC";
     case RUNTIME_FLIGHT:
         return crsf_flight_status_label();
     case RUNTIME_ESC_CALIB:
@@ -176,8 +185,18 @@ static const char *crsf_status_label(char *imu_progress) {
             return "ESC PWM ERR";
         }
         break;
-    case RUNTIME_FLASH_EXPORT:
-        return "FLASH N/A";
+    case RUNTIME_FLASH_ERASE:
+        switch (flash_erase_get_state()) {
+        case FLASH_ERASE_WAIT:
+            return "ERASE WAIT";
+        case FLASH_ERASE_BUSY:
+            return "ERASING";
+        case FLASH_ERASE_DONE:
+            return "ERASE DONE";
+        case FLASH_ERASE_ERROR:
+            return "ERASE ERR";
+        }
+        break;
     case RUNTIME_IMU_CALIB:
         return crsf_imu_calibration_label(imu_progress);
     }
@@ -207,7 +226,7 @@ static void process_crsf_telemetry(uint32_t now_ms) {
         (void)app_receiver_send_attitude(body_to_ned);
 }
 
-#if APP_TELEMETRY_ENABLED
+#if APP_TELEMETRY_RTT_ENABLED
 static void process_config_requests(uint32_t now_ms) {
     if (mode == RUNTIME_BOOT_SELECT || now_ms - last_config_poll_ms < 20U)
         return;
@@ -226,10 +245,8 @@ static void process_config_requests(uint32_t now_ms) {
     case RUNTIME_ESC_CALIB:
         config.mode = APP_CONFIG_ESC_CALIB;
         break;
-    case RUNTIME_FLASH_EXPORT:
-        config.mode = APP_CONFIG_FLASH_EXPORT;
-        break;
     case RUNTIME_BOOT_SELECT:
+    case RUNTIME_FLASH_ERASE:
         return;
     }
     (void)app_telemetry_write_config(id, &config);
@@ -240,6 +257,15 @@ void runtime_process(void) {
     if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
         (void)app_command_decode(&receiver_sample, &command);
     }
+#if DRONE_FLASH_RECORD
+    if (mode == RUNTIME_FLIGHT) {
+        const bool requested =
+            command.telemetry_mode == APP_COMMAND_TELEMETRY_RECORD;
+        if (command.valid && !requested)
+            app_telemetry_flush_recording_imu();
+        app_flash_recorder_update(command.valid, requested, HAL_GetTick());
+    }
+#endif
 #if APP_TELEMETRY_ENABLED
     const uint32_t now = HAL_GetTick();
     if ((uint32_t)(now - last_receiver_ms) >= 50U) {
@@ -253,8 +279,8 @@ void runtime_process(void) {
         static const char *const mode_names[] = {
             [RUNTIME_FLIGHT] = "flight",
             [RUNTIME_ESC_CALIB] = "esc_calib",
-            [RUNTIME_FLASH_EXPORT] = "flash_export",
             [RUNTIME_IMU_CALIB] = "imu_calib",
+            [RUNTIME_FLASH_ERASE] = "flash_erase",
         };
         if (mode != RUNTIME_BOOT_SELECT)
             APP_LOG_INFO("runtime", "selected mode=%s", mode_names[mode]);
@@ -262,10 +288,17 @@ void runtime_process(void) {
         if (mode == RUNTIME_FLIGHT) {
             /* Initialization can block; poll fresh RC before dispatch. */
             app_init();
+#if DRONE_FLASH_RECORD
+            app_flash_recorder_init(HAL_GetTick());
+#endif
             return;
         }
         if (mode == RUNTIME_ESC_CALIB) {
             esc_calibration_init();
+            return;
+        }
+        if (mode == RUNTIME_FLASH_ERASE) {
+            flash_erase_rc_init();
             return;
         }
         if (mode == RUNTIME_IMU_CALIB) {
@@ -286,13 +319,18 @@ void runtime_process(void) {
     case RUNTIME_IMU_CALIB:
         imu_calibration_process(&command);
         break;
-    case RUNTIME_FLASH_EXPORT:
+    case RUNTIME_FLASH_ERASE:
+        flash_erase_rc_process(&command, HAL_GetTick());
         break;
     case RUNTIME_BOOT_SELECT:
         break;
     }
     app_telemetry_process_imu();
-#if APP_TELEMETRY_ENABLED
+#if DRONE_FLASH_RECORD
+    if (mode == RUNTIME_FLIGHT)
+        app_flash_recorder_process(HAL_GetTick(), app_get_config);
+#endif
+#if APP_TELEMETRY_RTT_ENABLED
     process_config_requests(now);
 #endif
     process_crsf_telemetry(HAL_GetTick());

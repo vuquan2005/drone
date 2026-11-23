@@ -33,6 +33,8 @@ typedef struct {
         yaw;             /**< [-ONE,ONE], deadband rescaled to endpoints. */
     norm_q15_t throttle; /**< [0,ONE], no deadband. Not calibrated thrust. */
     bool arm_requested;  /**< CH5 high only; not an armed state. */
+    bool arm_switch_low; /**< CH5 LOW, used to qualify maintenance confirmation.
+                          */
     app_command_switch_t mode;      /**< CH6/SC: LOW rate, MIDDLE/HIGH tilt. */
     bool esc_calibration_requested; /**< CH7 HIGH level, not an edge or
                                        permission. */

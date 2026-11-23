@@ -33,7 +33,9 @@ CONFIG_MAX_ATTEMPTS = 5
 class Viewer(QtWidgets.QMainWindow):
     def __init__(self, args):
         super().__init__()
-        self.setWindowTitle("Drone · RTT")
+        initial_session = getattr(args, "session", None)
+        self.offline = initial_session is not None
+        self.setWindowTitle("Drone · Saved telemetry" if self.offline else "Drone · RTT")
         self.resize(1100, 820)
         self.telemetry = TelemetryState()
         self.saved_session = None
@@ -142,12 +144,21 @@ class Viewer(QtWidgets.QMainWindow):
         self.timer.timeout.connect(self.refresh)
         self.timer.start(40)
         self.tabs.currentChanged.connect(self.tab_changed)
-        if getattr(args, "record", False):
+        if self.offline:
+            self.pause_streams()
+            endpoints.hide()
+            self.record_button.hide()
+            self.record_options_button.hide()
+            self.load_session(initial_session)
+        elif getattr(args, "record", False):
             QtCore.QTimer.singleShot(0, self.toggle_recording)
 
     def choose_session(self):
+        start = self.output_dir.text()
+        if self.saved_session is not None:
+            start = str(Path(self.load_directory).parent)
         directory = QtWidgets.QFileDialog.getExistingDirectory(
-            self, "Open telemetry session", self.output_dir.text()
+            self, "Open telemetry session", start
         )
         if directory:
             self.load_session(directory)
@@ -174,10 +185,7 @@ class Viewer(QtWidgets.QMainWindow):
             return
         self.load_directory = self.pending_directory
         self.saved_session = segments
-        for stream in (self.log_stream, self.data_stream):
-            stream.paused = True
-            stream.retry.stop()
-            stream.socket.abort()
+        self.pause_streams()
         self.record_button.setEnabled(False)
         self.record_status.hide()
         self.log_panel.clear_log()
@@ -190,7 +198,7 @@ class Viewer(QtWidgets.QMainWindow):
             self.segment_box.addItem(f"Segment {segment}", segment)
         self.segment_box.blockSignals(False)
         self.segment_box.show()
-        self.live_button.show()
+        self.live_button.setVisible(not self.offline)
         self.show_segment()
 
     def show_segment(self, *_):
@@ -226,7 +234,7 @@ class Viewer(QtWidgets.QMainWindow):
         self.statusBar().showMessage(f"Saved session: {self.load_directory} · saved data")
 
     def return_live(self):
-        if self.load_future is not None:
+        if self.offline or self.load_future is not None:
             return
         self.saved_session = None
         self.receiver_panel.set_saved_snapshots([])
@@ -241,6 +249,15 @@ class Viewer(QtWidgets.QMainWindow):
         self.rate_panel.plots[0].setXRange(0, 10, padding=0)
         for plot in self.rate_panel.plots[-2:]:
             plot.setLabel("bottom", "Host time from segment start", units="s")
+        self.resume_streams()
+
+    def pause_streams(self):
+        for stream in (self.log_stream, self.data_stream):
+            stream.paused = True
+            stream.retry.stop()
+            stream.socket.abort()
+
+    def resume_streams(self):
         for stream in (self.log_stream, self.data_stream):
             stream.paused = False
             stream.retry.start(2000)
@@ -346,7 +363,7 @@ class Viewer(QtWidgets.QMainWindow):
             self.output_dir.setText(directory)
 
     def toggle_recording(self):
-        if self.saved_session is not None or self.load_future is not None:
+        if self.offline or self.saved_session is not None or self.load_future is not None:
             return
         if self.recording:
             self.save_config()
@@ -420,11 +437,10 @@ class Viewer(QtWidgets.QMainWindow):
             if self.load_future.done():
                 self.finish_load()
             return
-        if self.saved_session is not None:
+        if self.offline or self.saved_session is not None:
             return
-        self.open_button.setEnabled(
-            not self.recording and (self.writer is None or self.writer.done.is_set())
-        )
+        idle = not self.recording and (self.writer is None or self.writer.done.is_set())
+        self.open_button.setEnabled(idle)
         self.update_record_status()
         state = self.telemetry
         now = time.monotonic()
@@ -484,6 +500,7 @@ def main():
     parser.add_argument("--log-port", type=int, default=9090)
     parser.add_argument("--data-port", type=int, default=9091)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--session", type=Path, help="Open a saved telemetry session offline")
     parser.add_argument(
         "--record", action="store_true", help="Start a recording session immediately"
     )
@@ -495,6 +512,8 @@ def main():
         parser.error("Ports must be between 1 and 65535")
     if args.log_port == args.data_port:
         parser.error("LOG and DATA need different TCP ports")
+    if args.session is not None and args.record:
+        parser.error("--session and --record cannot be used together")
     print("RTT viewer starting", flush=True)
     app = QtWidgets.QApplication([sys.argv[0]])
     viewer = Viewer(args)

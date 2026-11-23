@@ -10,9 +10,12 @@ Gain và ánh xạ thrust → ESC hiện dành cho thử trên bộ gá, chưa h
 Luồng gọi hiện tại: `Core/main` → `runtime` → chế độ trong `App` → `BSP` → driver.
 `main()` khởi tạo HAL, clock, ngoại vi rồi gọi `runtime_init()`; vòng lặp gọi
 `runtime_process()`. Runtime sở hữu receiver và chọn mode một lần sau reset.
-SB HIGH cùng SC MIDDLE chọn IMU_CALIB, các vị trí SC còn lại với SB HIGH chọn
-ESC_CALIB. Khi SB không HIGH, SD STREAM chọn FLASH_EXPORT và các vị trí SD
-còn lại chọn FLIGHT. Trong FLIGHT, SC dành cho chế độ bay.
+SB HIGH cùng SD STREAM chọn FLASH_ERASE. Ở các vị trí SD còn lại, SB HIGH
+cùng SC MIDDLE chọn IMU_CALIB và các vị trí SC còn lại chọn ESC_CALIB.
+Khi SB không HIGH, SD STREAM giữ BOOT_SELECT với PWM tắt, còn các vị trí
+SD khác chọn FLIGHT. Trong FLIGHT, SC dành cho chế độ bay.
+Preset Export dùng `main()` để khởi tạo SPI2, DMA, RTT và chạy vòng lặp
+trong `Maintenance/` để xuất hoặc xóa flash ngoài.
 Chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime poll receiver mỗi lượt, chỉ giải mã command khi frame mới hoặc kết nối
 thay đổi, sở hữu
 RTT/log/telemetry chung và lịch telemetry RC. ESC_CALIB khởi tạo module

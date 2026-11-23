@@ -39,6 +39,9 @@ class Lines:
 
 MAGIC = b"DRT!"
 HEADER = struct.Struct("<4sBBH")
+FLASH_MAGIC = b"DRE!"
+FLASH_HEADER = struct.Struct("<4sBBHII")
+FLASH_PAYLOAD_SIZES = {1: 8, 2: 256, 3: 12, 4: 4, 5: 4}
 IMU_RAW = struct.Struct("<III6hBBHHH")
 IMU_BATCH_FIRST = struct.Struct("<II3sB6h")
 IMU_BATCH_NEXT = struct.Struct("<HB6h")
@@ -150,7 +153,7 @@ IMU_BATCH_SIZES = {
 
 
 class Frames:
-    """Yield CRC-validated (version, type, payload); retain at most 267 bytes."""
+    """Yield validated DRT frames and skip complete DRE export envelopes."""
 
     def __init__(self):
         self.pending = bytearray()
@@ -160,6 +163,22 @@ class Frames:
         self.pending.extend(data)
         while True:
             start = self.pending.find(MAGIC)
+            export = self.pending.find(FLASH_MAGIC)
+            if export >= 0 and (start < 0 or export < start):
+                # A cancelled export can still leave pages queued on RTT DATA.
+                # Its nested telemetry belongs to flash, not the live stream.
+                del self.pending[:export]
+                if len(self.pending) < FLASH_HEADER.size:
+                    return
+                _, version, kind, length, _, _ = FLASH_HEADER.unpack_from(self.pending)
+                if version != 1 or FLASH_PAYLOAD_SIZES.get(kind) != length:
+                    del self.pending[0]
+                    continue
+                size = FLASH_HEADER.size + length + 4
+                if len(self.pending) < size:
+                    return
+                del self.pending[:size]
+                continue
             if start < 0:
                 # Preserve a possible split magic; all other bytes are discarded.
                 self.pending[:] = self.pending[-3:]

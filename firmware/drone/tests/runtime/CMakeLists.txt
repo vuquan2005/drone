@@ -3,8 +3,9 @@ project(runtime_tests C)
 set(CMAKE_C_STANDARD 11)
 enable_testing()
 set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
-add_executable(runtime_tests test_runtime.c ${FIRMWARE_ROOT}/App/Src/runtime.c
-                             ${FIRMWARE_ROOT}/App/Src/app_command.c)
+add_executable(
+    runtime_tests test_runtime.c ${FIRMWARE_ROOT}/App/Src/runtime.c
+                  ${FIRMWARE_ROOT}/App/Src/app_command.c ${FIRMWARE_ROOT}/App/Src/flash_erase.c)
 target_include_directories(
     runtime_tests
     PRIVATE ../logging/mocks ../imu/mocks ${FIRMWARE_ROOT}/Drivers/RTT ${FIRMWARE_ROOT}/App/Inc

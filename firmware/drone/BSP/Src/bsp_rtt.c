@@ -37,6 +37,11 @@ static bsp_rtt_result_t validate_size(bsp_rtt_channel_t channel, size_t size) {
     return BSP_RTT_OK;
 }
 
+bool bsp_rtt_can_write(bsp_rtt_channel_t channel, size_t size) {
+    return validate_size(channel, size) == BSP_RTT_OK &&
+           size <= SEGGER_RTT_GetAvailWriteSpace((unsigned)channel);
+}
+
 bsp_rtt_result_t bsp_rtt_prepare_write(bsp_rtt_channel_t channel, size_t size) {
     bsp_rtt_result_t result = validate_size(channel, size);
     if (result != BSP_RTT_OK) {

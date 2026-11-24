@@ -400,6 +400,14 @@ void flash_export_init(void) {
     exporter.state = FLASH_EXPORT_WAIT;
 }
 
+bool flash_export_poll_boot_request(void) {
+    poll_command();
+    if (exporter.request == LIST_COMMAND)
+        return true;
+    exporter.request = NO_COMMAND;
+    return false;
+}
+
 static void erase_status(uint32_t status) {
     put_u32(exporter.tx + HEADER_BYTES, status);
     prepare_message(MESSAGE_ERASE_STATUS, 4U);

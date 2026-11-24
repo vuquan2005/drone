@@ -180,9 +180,17 @@ def list_sessions(host, control_port, data_port, cancel):
         if cancel.is_set():
             raise InterruptedError("session scan cancelled")
         control.sendall(f"ELISTS{request:08x}".encode("ascii"))
-        return receive_session_list(
-            receive_chunks(data, 180.0, cancel, lambda: started), request, on_begin
-        )
+        try:
+            return receive_session_list(
+                receive_chunks(data, 180.0, cancel, lambda: started), request, on_begin
+            )
+        except TimeoutError as error:
+            if started:
+                raise
+            raise TimeoutError(
+                "No session list BEGIN. Turn off the transmitter, reset STM32, "
+                "restart OpenOCD, and scan again."
+            ) from error
 
 
 def page_checksum(pages):

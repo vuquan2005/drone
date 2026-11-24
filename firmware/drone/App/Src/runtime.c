@@ -9,6 +9,9 @@
 #include "flash_erase.h"
 #include "imu_calibration.h"
 #include "main.h"
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+#include "flash_export.h"
+#endif
 #include <stddef.h>
 
 #define CRSF_STATUS_PERIOD_MS 500U
@@ -36,6 +39,9 @@ void runtime_init(void) {
     /* Establish safe outputs only; the selected mode owns PWM startup. */
     bsp_motor_pwm_stop();
     bsp_rtt_init();
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+    flash_export_init();
+#endif
     app_telemetry_init();
     app_log_init(HAL_GetTick);
     app_receiver_init();
@@ -52,7 +58,8 @@ void runtime_init(void) {
 
 bool runtime_mode_supported(void) {
     return mode == RUNTIME_FLIGHT || mode == RUNTIME_ESC_CALIB ||
-           mode == RUNTIME_IMU_CALIB || mode == RUNTIME_FLASH_ERASE;
+           mode == RUNTIME_IMU_CALIB || mode == RUNTIME_FLASH_ERASE ||
+           mode == RUNTIME_FLASH_EXPORT;
 }
 
 runtime_mode_t runtime_get_mode(void) {
@@ -86,7 +93,11 @@ static runtime_mode_t select_mode(void) {
         return RUNTIME_ESC_CALIB;
     }
     if (command.telemetry_mode == APP_COMMAND_TELEMETRY_STREAM) {
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+        return RUNTIME_FLASH_EXPORT;
+#else
         return RUNTIME_BOOT_SELECT;
+#endif
     }
     return RUNTIME_FLIGHT;
 }
@@ -166,6 +177,8 @@ static const char *crsf_status_label(char *imu_progress) {
     switch (mode) {
     case RUNTIME_BOOT_SELECT:
         return command.valid ? "WAIT SD" : "WAIT RC";
+    case RUNTIME_FLASH_EXPORT:
+        return "EXPORT";
     case RUNTIME_FLIGHT:
         return crsf_flight_status_label();
     case RUNTIME_ESC_CALIB:
@@ -247,6 +260,7 @@ static void process_config_requests(uint32_t now_ms) {
         break;
     case RUNTIME_BOOT_SELECT:
     case RUNTIME_FLASH_ERASE:
+    case RUNTIME_FLASH_EXPORT:
         return;
     }
     (void)app_telemetry_write_config(id, &config);
@@ -266,21 +280,19 @@ void runtime_process(void) {
         app_flash_recorder_update(command.valid, requested, HAL_GetTick());
     }
 #endif
-#if APP_TELEMETRY_ENABLED
-    const uint32_t now = HAL_GetTick();
-    if ((uint32_t)(now - last_receiver_ms) >= 50U) {
-        last_receiver_ms = now;
-        (void)app_telemetry_write_receiver(&receiver_sample, now);
-    }
-#endif
     if (mode == RUNTIME_BOOT_SELECT) {
         mode = select_mode();
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+        if (mode == RUNTIME_BOOT_SELECT && flash_export_poll_boot_request())
+            mode = RUNTIME_FLASH_EXPORT;
+#endif
 #if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
         static const char *const mode_names[] = {
             [RUNTIME_FLIGHT] = "flight",
             [RUNTIME_ESC_CALIB] = "esc_calib",
             [RUNTIME_IMU_CALIB] = "imu_calib",
             [RUNTIME_FLASH_ERASE] = "flash_erase",
+            [RUNTIME_FLASH_EXPORT] = "flash_export",
         };
         if (mode != RUNTIME_BOOT_SELECT)
             APP_LOG_INFO("runtime", "selected mode=%s", mode_names[mode]);
@@ -301,6 +313,10 @@ void runtime_process(void) {
             flash_erase_rc_init();
             return;
         }
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+        if (mode == RUNTIME_FLASH_EXPORT)
+            return;
+#endif
         if (mode == RUNTIME_IMU_CALIB) {
             imu_calibration_init();
             /* The sensor init can outlast the RC snapshot. Require a frame
@@ -309,6 +325,14 @@ void runtime_process(void) {
             return;
         }
     }
+#if APP_TELEMETRY_ENABLED
+    const uint32_t now = HAL_GetTick();
+    if (mode != RUNTIME_FLASH_EXPORT &&
+        (uint32_t)(now - last_receiver_ms) >= 50U) {
+        last_receiver_ms = now;
+        (void)app_telemetry_write_receiver(&receiver_sample, now);
+    }
+#endif
     switch (mode) {
     case RUNTIME_FLIGHT:
         app_process(&command);
@@ -322,6 +346,12 @@ void runtime_process(void) {
     case RUNTIME_FLASH_ERASE:
         flash_erase_rc_process(&command, HAL_GetTick());
         break;
+    case RUNTIME_FLASH_EXPORT:
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+        flash_export_process(HAL_GetTick());
+        process_crsf_telemetry(HAL_GetTick());
+#endif
+        return;
     case RUNTIME_BOOT_SELECT:
         break;
     }

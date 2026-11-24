@@ -60,7 +60,7 @@ batch IMU khi hết chỗ ghi DATA. Có thể đối chiếu sequence trong type
 
 ## Xuất ảnh flash qua RTT v1
 
-Với firmware preset `Export`, host gửi ASCII `EXPORT` nối với đúng 8 chữ
+Trong chế độ FLASH_EXPORT, host gửi ASCII `EXPORT` nối với đúng 8 chữ
 số hex thường của ID yêu cầu trên RTT down-channel 0. Ví dụ
 `EXPORT0000002a`. Firmware trả các bản tin dưới đây trên RTT DATA.
 Mỗi lần yêu cầu mới bắt đầu đọc lại từ trang 0. Bản tin còn tồn trong

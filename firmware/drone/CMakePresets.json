@@ -22,24 +22,12 @@
       }
     },
     {
-      "name": "Export",
-      "inherits": "default",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "DRONE_FLASH_EXPORT_ONLY": "ON",
-        "DRONE_ENABLE_RTT": "ON",
-        "DRONE_LOG_LEVEL": "INFO",
-        "DRONE_ENABLE_TELEMETRY": "OFF",
-        "DRONE_ENABLE_FLASH_RECORD": "OFF"
-      }
-    },
-    {
       "name": "Release",
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "DRONE_DEBUG_FORCE_FLIGHT": "OFF",
-        "DRONE_ENABLE_RTT": "OFF",
+        "DRONE_ENABLE_RTT": "ON",
         "DRONE_LOG_LEVEL": "OFF",
         "DRONE_ENABLE_TELEMETRY": "OFF",
         "DRONE_ENABLE_RATE_CONTROL": "ON"
@@ -54,10 +42,6 @@
     {
       "name": "Release",
       "configurePreset": "Release"
-    },
-    {
-      "name": "Export",
-      "configurePreset": "Export"
     }
   ]
 }

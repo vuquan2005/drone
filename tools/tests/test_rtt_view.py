@@ -196,9 +196,9 @@ class ViewerTests(unittest.TestCase):
                 self.assertIn("set DRONE_GDB_PORT 3333", viewer.server_log.toPlainText())
                 wait_for(servers[0].hasPendingConnections)
                 board = servers[0].nextPendingConnection()
-                board.write(b"[4][I][flash] export_wait preset=Export\n")
+                board.write(b"[4][I][runtime] selected mode=flash_export\n")
                 board.flush()
-                wait_for(lambda: "export_wait preset=Export" in viewer.board_status.text())
+                wait_for(lambda: "selected mode=flash_export" in viewer.board_status.text())
                 wait_for(lambda: all(server.hasPendingConnections() for server in servers))
                 list_control, list_data = [server.nextPendingConnection() for server in servers]
                 wait_for(lambda: list_control.bytesAvailable() >= 14)

@@ -12,10 +12,10 @@ Luồng gọi hiện tại: `Core/main` → `runtime` → chế độ trong `App
 `runtime_process()`. Runtime sở hữu receiver và chọn mode một lần sau reset.
 SB HIGH cùng SD STREAM chọn FLASH_ERASE. Ở các vị trí SD còn lại, SB HIGH
 cùng SC MIDDLE chọn IMU_CALIB và các vị trí SC còn lại chọn ESC_CALIB.
-Khi SB không HIGH, SD STREAM giữ BOOT_SELECT với PWM tắt, còn các vị trí
-SD khác chọn FLIGHT. Trong FLIGHT, SC dành cho chế độ bay.
-Preset Export dùng `main()` để khởi tạo SPI2, DMA, RTT và chạy vòng lặp
-trong `Maintenance/` để xuất hoặc xóa flash ngoài.
+Khi SB không HIGH, SD STREAM chọn FLASH_EXPORT với PWM tắt nếu build có
+RTT, hoặc giữ BOOT_SELECT nếu RTT tắt. Các vị trí SD khác chọn FLIGHT.
+Khi chưa có RC hợp lệ, lệnh ELISTS qua RTT chọn FLASH_EXPORT từ BOOT_SELECT.
+Trong FLIGHT, SC dành cho chế độ bay.
 Chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime poll receiver mỗi lượt, chỉ giải mã command khi frame mới hoặc kết nối
 thay đổi, sở hữu
 RTT/log/telemetry chung và lịch telemetry RC. ESC_CALIB khởi tạo module

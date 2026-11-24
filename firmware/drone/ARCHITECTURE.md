@@ -36,14 +36,16 @@ vào `app_process(command)` ở các lượt sau. App không nhận snapshot tr�
 khởi tạo vì việc khởi tạo IMU có thể blocking.
 
 Runtime chọn mode theo [bảng công tắc RC](README.md#chọn-chế-độ-sau-reset).
-Với SB dưới HIGH, SD STREAM giữ BOOT_SELECT và PWM tắt, còn OFF/RECORD
-chọn FLIGHT. Mode đã chọn giữ đến reset. Preset Export tạo ảnh bảo trì
-có đường chạy riêng từ `main()` đến `Maintenance/` qua SPI2, DMA và RTT.
+Với SB dưới HIGH, SD STREAM chọn FLASH_EXPORT và giữ PWM tắt, còn
+OFF/RECORD chọn FLIGHT. Build tắt RTT giữ BOOT_SELECT khi SD ở STREAM.
+Mode đã chọn giữ đến reset. FLASH_EXPORT gọi module trong `Maintenance/`
+qua runtime.
 `app_get_status()` cung cấp sức khỏe IMU/PWM và trạng thái arm riêng với
 mode. Safety trong App quyết định quyền motor. Runtime poll receiver mỗi lượt; snapshot/command chỉ cập nhật khi có frame RC
 mới hoặc thay đổi kết nối. Timeout và lỗi transport vẫn được kiểm tra mỗi lượt.
 Runtime khởi tạo RTT/log/telemetry
-chung và gửi RC thô; App gửi IMU, rate và thống kê.
+chung và gửi RC thô; App gửi IMU, rate và thống kê. Trong FLASH_EXPORT,
+module xuất flash dùng độc quyền RTT DATA và kênh nhận lệnh RTT.
 `main()` và `Error_Handler()` vẫn thuộc `Core/`.
 
 `app.c` là nơi điều phối, không chứa toàn bộ thuật toán điều khiển. Lớp này

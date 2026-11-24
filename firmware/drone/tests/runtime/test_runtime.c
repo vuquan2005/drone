@@ -11,6 +11,27 @@
 #include <stddef.h>
 #include <string.h>
 
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+#include "flash_export.h"
+
+static unsigned export_inits, export_polls;
+static unsigned boot_request_polls;
+static bool boot_request;
+void bsp_rtt_init(void) {}
+void flash_export_init(void) {
+    export_inits++;
+}
+bool flash_export_poll_boot_request(void) {
+    boot_request_polls++;
+    return boot_request;
+}
+void flash_export_process(uint32_t now_ms) {
+    (void)now_ms;
+    assert(export_inits == 1);
+    export_polls++;
+}
+#endif
+
 static uint32_t tick = 1000U;
 uint32_t HAL_GetTick(void) {
     return tick;
@@ -216,6 +237,11 @@ static void reset(void) {
     disconnect_during_init = false;
     inits = polls = starts = processes = stops = calib_inits = calib_polls = 0;
     imu_calib_inits = imu_calib_polls = 0;
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+    export_inits = export_polls = 0;
+    boot_request_polls = 0;
+    boot_request = false;
+#endif
     flash_op = FLASH_IDLE;
     erase_calls = flash_reads = marker_reads = marker_writes = 0U;
     verify_dirty = false;
@@ -305,7 +331,11 @@ static void test_crsf_status(void) {
     reset();
     input.channels[7] = 1811;
     runtime_process();
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+    expect_next_status("EXPORT");
+#else
     expect_next_status("WAIT SD");
+#endif
 }
 
 static void test_crsf_imu_calibration(void) {
@@ -479,6 +509,26 @@ static void test_manual_erase(void) {
 }
 
 int main(void) {
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+    reset();
+    input.connected = false;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT && boot_request_polls == 1);
+    boot_request = true;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT && boot_request_polls == 2);
+    input.connected = true;
+    runtime_process();
+    assert(export_inits == 1 && export_polls == 1 && boot_request_polls == 2);
+    assert(stops == 1 && starts == 0 && processes == 0 && erase_calls == 0);
+
+    reset();
+    boot_request = true;
+    runtime_process();
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_FLIGHT && boot_request_polls == 0);
+    assert(starts == 1 && processes == 1 && export_polls == 0);
+#endif
     reset();
     available = false;
     runtime_process();
@@ -535,6 +585,17 @@ int main(void) {
     reset();
     input.channels[2] = input.channels[4] = input.channels[7] = 1811;
     runtime_process();
+#if defined(DRONE_RUNTIME_FLASH_EXPORT)
+    assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT &&
+           runtime_mode_supported());
+    assert(export_inits == 1 && export_polls == 0);
+    input.channels[7] = 172;
+    input.connected = false;
+    runtime_process();
+    assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT);
+    assert(export_inits == 1 && export_polls == 1);
+    assert(stops == 1 && starts == 0 && processes == 0 && erase_calls == 0);
+#else
     assert(runtime_get_mode() == RUNTIME_BOOT_SELECT);
     assert(!runtime_mode_supported() && starts == 0 && processes == 0);
     input.channels[7] = 172;
@@ -545,6 +606,7 @@ int main(void) {
     input.connected = true;
     runtime_process();
     assert(runtime_get_mode() == RUNTIME_FLIGHT && starts == 1);
+#endif
     reset();
     input.channels[2] = input.channels[4] = input.channels[6] =
         input.channels[7] = 1811;

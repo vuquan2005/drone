@@ -9,6 +9,7 @@ typedef enum {
     RUNTIME_ESC_CALIB,
     RUNTIME_IMU_CALIB,
     RUNTIME_FLASH_ERASE,
+    RUNTIME_FLASH_EXPORT,
 } runtime_mode_t;
 
 /** Initialize shared RC input and disable motor outputs before selection.
@@ -20,12 +21,15 @@ typedef enum {
 void runtime_init(void);
 
 /** Poll RC once and dispatch the selected mode from serialized foreground.
- * Requires runtime_init. BOOT_SELECT waits for valid RC. CH7/SB HIGH with
- * CH8/SD HIGH selects FLASH_ERASE and keeps PWM off. Otherwise, CH7/SB HIGH
+ * Requires runtime_init. BOOT_SELECT waits for valid RC or an RTT ELISTS
+ * request when runtime export is built in. Valid RC takes priority.
+ * CH7/SB HIGH with CH8/SD HIGH selects FLASH_ERASE and keeps PWM off.
+ * Otherwise, CH7/SB HIGH
  * with CH6/SC MIDDLE selects IMU_CALIB. Other CH7 HIGH requests select
- * ESC_CALIB. With CH7 below HIGH, telemetry STREAM keeps BOOT_SELECT with
- * PWM off and OFF/RECORD select FLIGHT. Arm and throttle are ignored during
- * selection.
+ * ESC_CALIB. With CH7 below HIGH, CH8 HIGH selects FLASH_EXPORT with PWM
+ * off when runtime flash export is built in, or waits in BOOT_SELECT
+ * otherwise. CH8 OFF/RECORD select FLIGHT. Arm and throttle are ignored
+ * during selection.
  * After boot selection, CH6/SC remains the flight-mode request in FLIGHT.
  * CH8/SD retains its telemetry request meaning after FLIGHT is selected.
  * Selection latches until reset. ESC_CALIB initializes its own PWM session;

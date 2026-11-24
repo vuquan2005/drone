@@ -414,7 +414,7 @@
 				)
 			)
 		)
-		(property "Footprint" "DA_Drone:BMI160_Module_2Row_P2.54mm_W10.16mm"
+		(property "Footprint" "DA_Drone:BMI160_Module_7+5_P2.54mm_W10.16mm"
 			(at 0 3.81 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1468,7 +1468,7 @@
 				)
 			)
 		)
-		(property "Footprint" "DA_Drone:STM32_DevKit_P2.54mm_Sockets"
+		(property "Footprint" "DA_Drone:STM32F103VET6_DevKit_P2.54mm_Sockets"
 			(at -1.27 -2.032 0)
 			(show_name no)
 			(do_not_autoplace no)

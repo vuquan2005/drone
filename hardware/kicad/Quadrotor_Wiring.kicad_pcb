@@ -393,7 +393,7 @@
 		(units
 			(unit
 				(name "A")
-				(pins "1" "2" "3" "4" "5" "6" "7" "8")
+				(pins "1" "2" "6" "7" "8" "3" "4" "5")
 			)
 		)
 		(attr through_hole)
@@ -621,7 +621,7 @@
 		(units
 			(unit
 				(name "A")
-				(pins "1" "2" "3" "4" "5" "6" "7" "8")
+				(pins "1" "2" "6" "7" "8" "3" "4" "5")
 			)
 		)
 		(attr through_hole)
@@ -833,23 +833,12 @@
 		(path "/885a91fd-dfb0-589b-86e1-3ef7e082c1cd")
 		(sheetname "/")
 		(sheetfile "Quadrotor_Wiring.kicad_sch")
-		(units
-			(unit
-				(name "A")
-				(pins "PA0" "PA1" "PA2" "PA3" "PA4" "PA5" "PA6" "PA7" "PA8" "PA9" "PA10"
-					"PA11" "PA12" "PA13" "PA14" "PA15" "PB0" "PB1" "PB2" "PB3" "PB4" "PB5"
-					"PB6" "PB7" "PB8" "PB9" "PB10" "PB11" "PB12" "PB13" "PB14" "PB15" "PC0"
-					"PC1" "PC2" "PC3" "PC4" "PC5" "PC6" "PC7" "PC8" "PC9" "PC10" "PC11"
-					"PC12" "PC13" "PC14" "PC15" "VBAT" "5V_1" "5V_2" "GND1" "GND2" "GND3"
-					"GND4" "GND5" "GND6" "GND7" "3V3_1" "3V3_2" "3V3_3" "3V3_4" "SWDIO"
-					"SWCLK" "PD0" "PD1" "PD2" "PD3" "PD4" "PD5" "PD6" "PD7" "PD8" "PD9"
-					"PD10" "PD11" "PD12" "PD13" "PD14" "PD15" "PE0" "PE1" "PE2" "PE3" "PE4"
-					"PE5" "PE6" "PE7" "PE8" "PE9" "PE10" "PE11" "PE12" "PE13" "PE14" "PE15"
-				)
-			)
-		)
 		(attr through_hole)
 		(duplicate_pad_numbers_are_jumpers no)
+		(jumper_pad_groups
+			("3V3_1" "3V3_2" "3V3_3" "3V3_4")
+			("GND1" "GND2" "GND3" "GND4" "GND5" "GND6" "GND7")
+		)
 		(fp_rect
 			(start -1.36 -1.36)
 			(end 3.69 44.54)
@@ -2338,7 +2327,7 @@
 		(units
 			(unit
 				(name "A")
-				(pins "1" "2" "3" "4" "5" "6" "7" "8")
+				(pins "1" "2" "6" "7" "8" "3" "4" "5")
 			)
 		)
 		(attr through_hole)
@@ -2566,7 +2555,7 @@
 		(units
 			(unit
 				(name "A")
-				(pins "1" "2" "3" "4" "5" "6" "7" "8")
+				(pins "1" "2" "6" "7" "8" "3" "4" "5")
 			)
 		)
 		(attr through_hole)

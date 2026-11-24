@@ -50,6 +50,10 @@
 		)
 	)
 	(attr through_hole)
+	(jumper_pad_groups
+		("3V3_1" "3V3_2" "3V3_3" "3V3_4")
+		("GND1" "GND2" "GND3" "GND4" "GND5" "GND6" "GND7")
+	)
 	(duplicate_pad_numbers_are_jumpers no)
 	(fp_rect
 		(start -1.36 -1.36)

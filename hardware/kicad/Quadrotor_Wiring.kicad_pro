@@ -254,7 +254,9 @@
   },
   "libraries": {
     "pinned_footprint_libs": [],
-    "pinned_symbol_libs": []
+    "pinned_symbol_libs": [
+      "DA_Drone"
+    ]
   },
   "meta": {
     "filename": "Quadrotor_Wiring.kicad_pro",

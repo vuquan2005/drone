@@ -8,7 +8,7 @@
 		)
 		(exclude_from_sim no)
 		(in_bom yes)
-		(on_board yes)
+		(on_board no)
 		(in_pos_files yes)
 		(duplicate_pin_numbers_are_jumpers no)
 		(property "Reference" "U"
@@ -31,7 +31,7 @@
 				)
 			)
 		)
-		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
+		(property "Footprint" ""
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -189,7 +189,7 @@
 			(pin power_out line
 				(at -20.32 -7.62 0)
 				(length 5.08)
-				(name "BEC/VCC"
+				(name "BEC"
 					(effects
 						(font
 							(size 1.016 1.016)
@@ -939,17 +939,17 @@
 		)
 		(embedded_fonts no)
 	)
-	(symbol "LM2596_Module"
+	(symbol "ESC_Header"
 		(pin_names
-			(offset 1.016)
+			(offset 0.762)
 		)
 		(exclude_from_sim no)
 		(in_bom yes)
-		(on_board no)
+		(on_board yes)
 		(in_pos_files yes)
 		(duplicate_pin_numbers_are_jumpers no)
-		(property "Reference" "U"
-			(at 0 17.78 0)
+		(property "Reference" "J"
+			(at 0 9.906 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -958,8 +958,8 @@
 				)
 			)
 		)
-		(property "Value" "LM2596_Module"
-			(at 0 15.24 0)
+		(property "Value" "ESC Header"
+			(at 0.508 7.874 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -968,7 +968,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -990,7 +990,7 @@
 				)
 			)
 		)
-		(property "Description" "LM2596 DC-DC converter module."
+		(property "Description" "Three-pin board header for the external ESC harness."
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1001,10 +1001,10 @@
 				)
 			)
 		)
-		(symbol "LM2596_Module_0_1"
+		(symbol "ESC_Header_0_1"
 			(rectangle
-				(start -17.78 12.7)
-				(end 17.78 -12.7)
+				(start -2.54 6.35)
+				(end 2.54 -6.35)
 				(stroke
 					(width 0.254)
 					(type default)
@@ -1014,18 +1014,18 @@
 				)
 			)
 		)
-		(symbol "LM2596_Module_1_1"
-			(pin power_in line
-				(at -22.86 5.08 0)
+		(symbol "ESC_Header_1_1"
+			(pin passive line
+				(at -7.62 5.08 0)
 				(length 5.08)
-				(name "IN+"
+				(name "PWM"
 					(effects
 						(font
 							(size 1.016 1.016)
 						)
 					)
 				)
-				(number "1"
+				(number "6"
 					(effects
 						(font
 							(size 1.016 1.016)
@@ -1033,17 +1033,17 @@
 					)
 				)
 			)
-			(pin power_in line
-				(at -22.86 -5.08 0)
+			(pin passive line
+				(at -7.62 0 0)
 				(length 5.08)
-				(name "IN-"
+				(name "BEC"
 					(effects
 						(font
 							(size 1.016 1.016)
 						)
 					)
 				)
-				(number "2"
+				(number "7"
 					(effects
 						(font
 							(size 1.016 1.016)
@@ -1051,35 +1051,17 @@
 					)
 				)
 			)
-			(pin power_out line
-				(at 22.86 5.08 180)
+			(pin passive line
+				(at -7.62 -5.08 0)
 				(length 5.08)
-				(name "OUT+"
+				(name "GND"
 					(effects
 						(font
 							(size 1.016 1.016)
 						)
 					)
 				)
-				(number "3"
-					(effects
-						(font
-							(size 1.016 1.016)
-						)
-					)
-				)
-			)
-			(pin power_out line
-				(at 22.86 -5.08 180)
-				(length 5.08)
-				(name "OUT-"
-					(effects
-						(font
-							(size 1.016 1.016)
-						)
-					)
-				)
-				(number "4"
+				(number "8"
 					(effects
 						(font
 							(size 1.016 1.016)
@@ -3063,139 +3045,6 @@
 					(effects
 						(font
 							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-		)
-		(embedded_fonts no)
-	)
-	(symbol "ESC_PWM_Header"
-		(pin_names
-			(offset 0.762)
-		)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(duplicate_pin_numbers_are_jumpers no)
-		(property "Reference" "J"
-			(at 0 6.35 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "ESC_PWM_Header"
-			(at 0 3.81 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 0 0 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(hide yes)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(symbol "ESC_PWM_Header_0_1"
-			(rectangle
-				(start -3.81 2.54)
-				(end 3.81 -7.62)
-				(stroke
-					(width 0.254)
-					(type default)
-				)
-				(fill
-					(type background)
-				)
-			)
-		)
-		(symbol "ESC_PWM_Header_1_1"
-			(pin passive line
-				(at -6.35 0 0)
-				(length 2.54)
-				(name "PWM"
-					(effects
-						(font
-							(size 1 1)
-						)
-					)
-				)
-				(number "6"
-					(effects
-						(font
-							(size 1 1)
-						)
-					)
-				)
-			)
-			(pin passive line
-				(at -6.35 -2.54 0)
-				(length 2.54)
-				(name "BEC"
-					(effects
-						(font
-							(size 1 1)
-						)
-					)
-				)
-				(number "7"
-					(effects
-						(font
-							(size 1 1)
-						)
-					)
-				)
-			)
-			(pin passive line
-				(at -6.35 -5.08 0)
-				(length 2.54)
-				(name "GND"
-					(effects
-						(font
-							(size 1 1)
-						)
-					)
-				)
-				(number "8"
-					(effects
-						(font
-							(size 1 1)
 						)
 					)
 				)

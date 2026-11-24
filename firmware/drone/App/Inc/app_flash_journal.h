@@ -104,4 +104,12 @@ bool app_flash_journal_close(uint32_t now_ms);
 bool app_flash_journal_decode(const uint8_t *page, uint32_t index,
                               app_flash_journal_page_t *out);
 
+/** @brief Check the CRC and bounds of a checkpoint in the final sector.
+ * @param page Complete flash page, or NULL.
+ * @param index Physical page index of the supplied bytes.
+ * @return True if the checkpoint envelope is valid. The END is checked
+ * separately.
+ */
+bool app_flash_journal_is_marker(const uint8_t *page, uint32_t index);
+
 #endif

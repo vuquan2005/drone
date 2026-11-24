@@ -91,6 +91,18 @@ CLI dùng cùng thư mục mặc định với viewer. Để lưu vào nơi khá
 `--attempts` và cấu hình kết nối qua `--host`, `--control-port` và
 `--data-port`.
 
+Ảnh bảo trì hỗ trợ xuất trực tiếp theo ID phiên (số trang `BEGIN`) hoặc
+xuất phiên liền trước một ID đã biết. CLI tạo `session.bin` theo địa chỉ
+flash gốc cùng CSV và `session.json` của phiên đã chọn.
+
+```sh
+python3 tools/rtt/flash_export.py --session 180
+python3 tools/rtt/flash_export.py --previous 180
+```
+
+Nếu một phiên thiếu `END`, firmware dò đến khi gặp một phiên khác hoặc
+chạm cuối flash. Lệnh xóa chip yêu cầu một lượt export toàn flash.
+
 ## Xem và ghi dữ liệu
 
 Chạy `make telemetry` để xem và ghi telemetry live. Thư mục ghi được chọn

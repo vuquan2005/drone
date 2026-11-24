@@ -22,23 +22,39 @@ enum {
     ERASE_FAILED = 2U,
 };
 
-typedef enum { NO_COMMAND, EXPORT_COMMAND, ERASE_COMMAND } command_kind_t;
+typedef enum {
+    NO_COMMAND,
+    EXPORT_COMMAND,
+    ERASE_COMMAND,
+    SESSION_COMMAND,
+    PREVIOUS_COMMAND
+} command_kind_t;
 
 static const char export_prefix[] = "EXPORT";
+static const char previous_prefix[] = "EXPREV";
+static const char session_prefix[] = "EXSESS";
 static const char erase_prefix[] = "ERASE!";
 enum { PREFIX_BYTES = sizeof(export_prefix) - 1U };
-_Static_assert(sizeof(export_prefix) == sizeof(erase_prefix),
+_Static_assert(sizeof(export_prefix) == sizeof(erase_prefix) &&
+                   sizeof(export_prefix) == sizeof(session_prefix) &&
+                   sizeof(export_prefix) == sizeof(previous_prefix),
                "RTT command prefixes must have the same length");
 
 static struct {
     flash_export_state_t state;
     enum { PROBE, READ } step;
+    enum { FORWARD, CHECK_ANCHOR, BACKWARD, CHECK_PREVIOUS } direction;
     bool pending;
     command_kind_t command_kind;
     command_kind_t request;
     unsigned command_bytes;
     uint32_t command_id;
     uint32_t active_id;
+    uint32_t command_session;
+    uint32_t next_session;
+    uint32_t session;
+    bool session_export;
+    bool session_finished;
     uint32_t jedec_id;
     uint32_t page;
     uint32_t sent_pages;
@@ -61,16 +77,28 @@ static void poll_command(void) {
     for (size_t i = 0U; i < count; ++i) {
         const uint8_t value = command[i];
         if (exporter.command_bytes < PREFIX_BYTES) {
+            if (exporter.command_bytes == 2U && value == 'S' &&
+                exporter.command_kind == EXPORT_COMMAND) {
+                exporter.command_kind = SESSION_COMMAND;
+            }
+            if (exporter.command_bytes == 3U && value == 'R' &&
+                exporter.command_kind == EXPORT_COMMAND) {
+                exporter.command_kind = PREVIOUS_COMMAND;
+            }
             if (exporter.command_bytes == 1U) {
                 exporter.command_kind =
                     value == 'R' ? ERASE_COMMAND : EXPORT_COMMAND;
             }
-            const char *prefix = exporter.command_kind == ERASE_COMMAND
-                                     ? erase_prefix
-                                     : export_prefix;
+            const char *prefix =
+                exporter.command_kind == ERASE_COMMAND      ? erase_prefix
+                : exporter.command_kind == SESSION_COMMAND  ? session_prefix
+                : exporter.command_kind == PREVIOUS_COMMAND ? previous_prefix
+                                                            : export_prefix;
             if (value == prefix[exporter.command_bytes]) {
-                if (++exporter.command_bytes == PREFIX_BYTES)
+                if (++exporter.command_bytes == PREFIX_BYTES) {
                     exporter.command_id = 0U;
+                    exporter.command_session = 0U;
+                }
             } else {
                 exporter.command_bytes = value == 'E' ? 1U : 0U;
             }
@@ -84,10 +112,21 @@ static void poll_command(void) {
                 exporter.command_bytes = value == 'E' ? 1U : 0U;
                 continue;
             }
-            exporter.command_id = (exporter.command_id << 4U) | digit;
-            if (++exporter.command_bytes == sizeof(command)) {
+            const unsigned id_end = PREFIX_BYTES + REQUEST_ID_HEX_BYTES;
+            if (exporter.command_bytes < id_end) {
+                exporter.command_id = (exporter.command_id << 4U) | digit;
+            } else {
+                exporter.command_session =
+                    (exporter.command_session << 4U) | digit;
+            }
+            const unsigned end = (exporter.command_kind == SESSION_COMMAND ||
+                                  exporter.command_kind == PREVIOUS_COMMAND)
+                                     ? id_end + REQUEST_ID_HEX_BYTES
+                                     : id_end;
+            if (++exporter.command_bytes == end) {
                 exporter.command_bytes = 0U;
                 exporter.next_id = exporter.command_id;
+                exporter.next_session = exporter.command_session;
                 exporter.request = exporter.command_kind;
             }
         }
@@ -111,6 +150,12 @@ static void prepare_message(uint8_t kind, uint16_t size) {
 }
 
 static void start_export(void) {
+    exporter.direction =
+        exporter.request == PREVIOUS_COMMAND ? CHECK_ANCHOR : FORWARD;
+    exporter.session_export = exporter.request == SESSION_COMMAND ||
+                              exporter.request == PREVIOUS_COMMAND;
+    exporter.session_finished = false;
+    exporter.session = exporter.next_session;
     exporter.request = NO_COMMAND;
     exporter.active_id = exporter.next_id;
     exporter.step = PROBE;
@@ -122,6 +167,13 @@ static void start_export(void) {
     put_u32(payload, BSP_FLASH_PAGE_BYTES);
     put_u32(payload + 4, PAGE_COUNT);
     prepare_message(MESSAGE_BEGIN, 8U);
+    if (exporter.session_export) {
+        exporter.page = exporter.session;
+        if (exporter.session >= PAGE_COUNT) {
+            put_u32(payload, BSP_FLASH_INVALID_ARGUMENT);
+            prepare_message(MESSAGE_ERROR, 4U);
+        }
+    }
     APP_LOG_INFO("flash", "export_start request=%08lx total=%lu",
                  (unsigned long)exporter.active_id, (unsigned long)PAGE_COUNT);
 }
@@ -160,17 +212,77 @@ static void send_pending(void) {
     exporter.tx_size = 0U;
 }
 
+static void session_error(void) {
+    put_u32(exporter.tx + HEADER_BYTES, BSP_FLASH_INVALID_ARGUMENT);
+    prepare_message(MESSAGE_ERROR, 4U);
+}
+
+static void previous_page(void) {
+    if (exporter.page == 0U) {
+        session_error();
+    } else {
+        --exporter.page;
+        exporter.direction = BACKWARD;
+    }
+}
+
 static void process_page(void) {
     const uint8_t *payload = exporter.tx + HEADER_BYTES;
+    app_flash_journal_page_t info;
+    const bool valid = app_flash_journal_decode(payload, exporter.page, &info);
+    switch (exporter.direction) {
+    case CHECK_ANCHOR:
+        if (!valid || info.type != APP_FLASH_JOURNAL_BEGIN) {
+            session_error();
+        } else {
+            previous_page();
+        }
+        return;
+    case BACKWARD:
+        if (!valid) {
+            previous_page();
+            return;
+        }
+        exporter.page = exporter.session = info.session_id;
+        exporter.direction = CHECK_PREVIOUS;
+        if (info.type != APP_FLASH_JOURNAL_BEGIN) {
+            return;
+        }
+        /* The backward scan landed on the previous BEGIN itself. */
+        exporter.direction = FORWARD;
+        break;
+    case CHECK_PREVIOUS:
+        if (!valid || info.type != APP_FLASH_JOURNAL_BEGIN) {
+            previous_page();
+            return;
+        }
+        exporter.direction = FORWARD;
+        break;
+    case FORWARD:
+        break;
+    }
+    if (exporter.session_export) {
+        if (exporter.page == exporter.session &&
+            (!valid || info.type != APP_FLASH_JOURNAL_BEGIN)) {
+            session_error();
+            return;
+        }
+        if (valid && info.session_id != exporter.session) {
+            exporter.session_finished = true;
+            return;
+        }
+        if (valid && info.type == APP_FLASH_JOURNAL_END) {
+            exporter.session_finished = true;
+        }
+    }
     size_t i = 0U;
     while (i < BSP_FLASH_PAGE_BYTES && payload[i] == 0xFFU)
         ++i;
-    if (i == BSP_FLASH_PAGE_BYTES) {
+    if (i == BSP_FLASH_PAGE_BYTES || (exporter.session_export && !valid)) {
         advance_page();
         return;
     }
-    app_flash_journal_page_t info;
-    if (!app_flash_journal_decode(payload, exporter.page, &info))
+    if (!valid && !app_flash_journal_is_marker(payload, exporter.page))
         ++exporter.invalid_pages;
     prepare_message(MESSAGE_PAGE, BSP_FLASH_PAGE_BYTES);
     exporter.stream_crc = app_crc32_extend(
@@ -212,7 +324,7 @@ void flash_export_process(uint32_t now_ms) {
     }
     if (exporter.request == ERASE_COMMAND) {
         exporter.request = NO_COMMAND;
-        if (exporter.state == FLASH_EXPORT_DONE &&
+        if (exporter.state == FLASH_EXPORT_DONE && !exporter.session_export &&
             exporter.next_id == exporter.active_id) {
             flash_erase_start(now_ms);
             exporter.state = FLASH_EXPORT_ERASE_BUSY;
@@ -220,7 +332,9 @@ void flash_export_process(uint32_t now_ms) {
             return;
         }
     }
-    if (exporter.request == EXPORT_COMMAND) {
+    if (exporter.request == EXPORT_COMMAND ||
+        exporter.request == SESSION_COMMAND ||
+        exporter.request == PREVIOUS_COMMAND) {
         /* Finish any in-flight SPI transfer before reusing the receive buffer.
          */
         if (exporter.pending && bsp_flash_poll() == BSP_FLASH_PENDING)
@@ -236,10 +350,11 @@ void flash_export_process(uint32_t now_ms) {
         return;
 
     uint8_t *payload = exporter.tx + HEADER_BYTES;
-    if (exporter.page == PAGE_COUNT) {
+    if (exporter.page == PAGE_COUNT || exporter.session_finished) {
         put_u32(payload, exporter.sent_pages);
         put_u32(payload + 4, exporter.invalid_pages);
         put_u32(payload + 8, exporter.stream_crc);
+        exporter.page = PAGE_COUNT;
         prepare_message(MESSAGE_END, 12U);
         return;
     }

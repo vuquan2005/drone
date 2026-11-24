@@ -9,6 +9,7 @@ enum { PAGE_COUNT = BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES };
 static const char *control;
 static bool rtt_available;
 static bool fail_read;
+static bool session_fixture;
 static unsigned erases;
 static unsigned reads;
 static enum { NONE, PROBE, READ } flash_op;
@@ -74,10 +75,37 @@ bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *out,
     return BSP_FLASH_SPI_ERROR;
 }
 
+bsp_flash_result_t bsp_flash_sector_erase_start(uint32_t address) {
+    (void)address;
+    assert(false);
+    return BSP_FLASH_INVALID_ARGUMENT;
+}
+
 bsp_flash_result_t bsp_flash_chip_erase_start(void) {
     assert(flash_op == NONE);
     ++erases;
     return BSP_FLASH_OK;
+}
+
+static void put_u32(uint8_t *bytes, uint32_t value) {
+    for (unsigned i = 0; i < 4U; ++i)
+        bytes[i] = (uint8_t)(value >> (8U * i));
+}
+
+static void make_session_page(void) {
+    const bool end = read_index == 12U;
+    const unsigned payload_size = end ? 12U : 0U;
+    memset(page, 0, 24U + payload_size);
+    memcpy(page, "DRJ!", 4);
+    page[4] = 1U;
+    page[5] = end ? APP_FLASH_JOURNAL_END : APP_FLASH_JOURNAL_BEGIN;
+    page[6] = (uint8_t)payload_size;
+    put_u32(page + 8, read_index);
+    put_u32(page + 12, read_index == 16U ? 16U : 10U);
+    if (end)
+        put_u32(page + 24, APP_FLASH_JOURNAL_STOPPED);
+    put_u32(page + 20,
+            app_crc32_extend(app_crc32(page, 20), page + 24, payload_size));
 }
 
 bsp_flash_result_t bsp_flash_poll(void) {
@@ -91,6 +119,12 @@ bsp_flash_result_t bsp_flash_poll(void) {
     if (fail_read)
         return BSP_FLASH_SPI_ERROR;
     memset(page, 0xFF, BSP_FLASH_PAGE_BYTES);
+    if (session_fixture &&
+        (read_index == 10U || read_index == 12U || read_index == 16U))
+        make_session_page();
+    if (session_fixture && (read_index == 11U || read_index == 15U))
+        page[0] =
+            0U; /* The bad page between BEGIN and END must not stop export. */
     if (erases == 0U && (read_index == 0U || read_index == PAGE_COUNT - 1U))
         page[0] = (uint8_t)read_index ^ 0xA5U;
     return BSP_FLASH_OK;
@@ -185,5 +219,27 @@ int main(void) {
     until(FLASH_EXPORT_ERROR);
     check_frame(8, 0x33U, 1, 0, 8);
     assert(get_u32(check_frame(9, 0x33U, 4, 0, 4)) == BSP_FLASH_SPI_ERROR);
+    flash_export_init();
+    fail_read = false;
+    session_fixture = true;
+    sent = reads = 0;
+    control = "EXSESS000000550000000a";
+    until(FLASH_EXPORT_DONE);
+    assert(reads == 3U && sent == 4U);
+    check_frame(0, 0x55U, 1, 0, 8);
+    check_frame(1, 0x55U, 2, 10, 256);
+    check_frame(2, 0x55U, 2, 12, 256);
+    assert(get_u32(check_frame(3, 0x55U, 3, PAGE_COUNT, 12)) == 2U);
+    control = "ERASE!00000055";
+    flash_export_process(0U);
+    assert(flash_export_get_state() == FLASH_EXPORT_DONE && erases == 1U);
+    sent = reads = 0;
+    control = "EXPREV0000006600000010";
+    flash_export_process(0U);
+    flash_export_process(0U);
+    until(FLASH_EXPORT_DONE);
+    assert(reads == 8U && sent == 4U);
+    check_frame(1, 0x66U, 2, 10, 256);
+    check_frame(2, 0x66U, 2, 12, 256);
     return 0;
 }

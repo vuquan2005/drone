@@ -8,7 +8,7 @@ SPI_HandleTypeDef hspi2;
 static uint32_t tick_ms;
 static bool selected;
 static uint8_t sr1, sr2;
-static unsigned commands, chip_erases;
+static unsigned commands, chip_erases, sector_erases;
 
 uint32_t HAL_GetTick(void) {
     return tick_ms;
@@ -43,6 +43,12 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive_DMA(SPI_HandleTypeDef *spi,
     case 0x06:
         assert(size == 1U && sr1 == 0U);
         sr1 = 2U;
+        break;
+    case 0x20:
+        assert(size == 4U && sr1 == 2U);
+        assert(tx[1] == 0xFFU && tx[2] == 0xF0U && tx[3] == 0U);
+        sr1 = 3U;
+        ++sector_erases;
         break;
     case 0xC7:
         assert(size == 1U && sr1 == 2U);
@@ -95,6 +101,20 @@ int main(void) {
     assert(bsp_flash_poll() == BSP_FLASH_PENDING);
     assert(bsp_flash_poll() == BSP_FLASH_OK);
     assert(bsp_flash_poll() == BSP_FLASH_IDLE);
+
+    assert(bsp_flash_sector_erase_start(1U) == BSP_FLASH_INVALID_ARGUMENT);
+    assert(bsp_flash_sector_erase_start(BSP_FLASH_SIZE_BYTES) ==
+           BSP_FLASH_INVALID_ARGUMENT);
+    assert(bsp_flash_sector_erase_start(BSP_FLASH_SIZE_BYTES -
+                                        BSP_FLASH_SECTOR_BYTES) ==
+           BSP_FLASH_PENDING);
+    for (unsigned i = 0; i < 5U; ++i)
+        assert(bsp_flash_poll() == BSP_FLASH_PENDING);
+    assert(sector_erases == 1U);
+    sr1 = 0U;
+    tick_ms += 50U;
+    assert(bsp_flash_poll() == BSP_FLASH_PENDING);
+    assert(bsp_flash_poll() == BSP_FLASH_OK);
 
     begin_erase();
     tick_ms += BSP_FLASH_CHIP_ERASE_TIMEOUT_MS;

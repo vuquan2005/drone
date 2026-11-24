@@ -436,12 +436,19 @@ def export(
     cancel=None,
     progress=None,
     attempts=MAX_ATTEMPTS,
+    session_id=None,
+    previous_of=None,
 ):
     if attempts < 1:
         raise ValueError("attempts must be positive")
+    if session_id is not None and previous_of is not None:
+        raise ValueError("session and previous are mutually exclusive")
+    selected = session_id if previous_of is None else previous_of
+    if selected is not None and not 0 <= selected < PAGE_COUNT:
+        raise ValueError(f"session ID must be in 0..{PAGE_COUNT - 1}")
     output.mkdir(parents=True, exist_ok=False)
-    partial = output / "flash.bin.part"
-    image_path = output / "flash.bin"
+    image_path = output / ("flash.bin" if selected is None else "session.bin")
+    partial = image_path.with_suffix(".bin.part")
     with (output / "export.log").open("x", encoding="utf-8", buffering=1) as log:
 
         def report(message):
@@ -452,8 +459,22 @@ def export(
         )
         try:
             stats = download(
-                host, control_port, data_port, timeout, partial, cancel, progress, attempts, report
+                host,
+                control_port,
+                data_port,
+                timeout,
+                partial,
+                cancel,
+                progress,
+                attempts,
+                report,
+                session_id,
+                previous_of,
             )
+            if session_id is not None:
+                stats["session_id"] = session_id
+            if previous_of is not None:
+                stats["previous_of"] = previous_of
             partial.rename(image_path)
             with image_path.open("rb") as image:
                 stats.update(decode_sessions(image, output))
@@ -467,7 +488,19 @@ def export(
     return stats
 
 
-def download(host, control_port, data_port, timeout, partial, cancel, progress, attempts, report):
+def download(
+    host,
+    control_port,
+    data_port,
+    timeout,
+    partial,
+    cancel,
+    progress,
+    attempts,
+    report,
+    session_id=None,
+    previous_of=None,
+):
     pages = {}
     manifest = None
     connect_timeout = min(timeout, 5.0) if cancel is not None else timeout
@@ -503,7 +536,13 @@ def download(host, control_port, data_port, timeout, partial, cancel, progress, 
                     ):
                         if cancel is not None and cancel.is_set():
                             raise InterruptedError("flash export cancelled")
-                        control.sendall(f"EXPORT{request:08x}".encode("ascii"))
+                        if previous_of is not None:
+                            command = f"EXPREV{request:08x}{previous_of:08x}"
+                        elif session_id is not None:
+                            command = f"EXSESS{request:08x}{session_id:08x}"
+                        else:
+                            command = f"EXPORT{request:08x}"
+                        control.sendall(command.encode("ascii"))
                         reply = receive_pages(
                             receive_chunks(data, timeout, cancel, lambda: started),
                             request,
@@ -569,6 +608,9 @@ def main():
         help="new directory (default: experiments/raw/export/flash_export_*)",
     )
     parser.add_argument("--attempts", type=int, default=MAX_ATTEMPTS, help="maximum read attempts")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--session", type=int, help="export only this journal session ID")
+    selection.add_argument("--previous", type=int, help="export the session before this ID")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--control-port", type=int, default=9090)
     parser.add_argument("--data-port", type=int, default=9091)
@@ -589,11 +631,16 @@ def main():
             args.timeout,
             output,
             attempts=args.attempts,
+            session_id=args.session,
+            previous_of=args.previous,
         )
     except (OSError, ValueError) as error:
         print(f"Flash export failed: {error} (log: {output / 'export.log'})", file=sys.stderr)
         return 1
-    print(f"Saved 16 MiB to {output / 'flash.bin'} ({stats['sessions']} sessions)")
+    image = output / (
+        "flash.bin" if args.session is None and args.previous is None else "session.bin"
+    )
+    print(f"Saved {image} ({stats['sessions']} sessions)")
     return 0
 
 

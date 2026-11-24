@@ -1,3 +1,4 @@
+#include "app_crc32.h"
 #include "app_flash_journal.h"
 #include "app_log.h"
 #include "app_telemetry.h"
@@ -10,7 +11,7 @@ enum { PAGE_COUNT = BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES };
 
 static uint8_t storage[PAGE_COUNT][BSP_FLASH_PAGE_BYTES];
 static uint8_t pending_page[BSP_FLASH_PAGE_BYTES];
-static enum { IDLE, PROBING, READING, PROGRAMMING } operation;
+static enum { IDLE, PROBING, READING, PROGRAMMING, ERASING } operation;
 static uint32_t *probe_out;
 static uint32_t jedec_id;
 static void *read_out;
@@ -59,6 +60,13 @@ bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *data,
     return BSP_FLASH_PENDING;
 }
 
+bsp_flash_result_t bsp_flash_sector_erase_start(uint32_t address) {
+    assert(operation == IDLE);
+    assert(address == BSP_FLASH_SIZE_BYTES - BSP_FLASH_SECTOR_BYTES);
+    operation = ERASING;
+    return BSP_FLASH_PENDING;
+}
+
 bsp_flash_result_t bsp_flash_poll(void) {
     if (next_error != BSP_FLASH_OK) {
         const bsp_flash_result_t error = next_error;
@@ -76,6 +84,11 @@ bsp_flash_result_t bsp_flash_poll(void) {
         break;
     case READING:
         memcpy(read_out, storage[index_pending], BSP_FLASH_PAGE_BYTES);
+        break;
+    case ERASING:
+        memset(
+            storage[PAGE_COUNT - BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES],
+            0xFF, BSP_FLASH_SECTOR_BYTES);
         break;
     case PROGRAMMING:
         memcpy(storage[index_pending], pending_page, BSP_FLASH_PAGE_BYTES);
@@ -97,7 +110,7 @@ static void process(void) {
 }
 
 static void until(app_flash_journal_state_t target) {
-    uint32_t budget = 2 * PAGE_COUNT + 12;
+    uint32_t budget = 2 * PAGE_COUNT + 100;
     while (state() != target) {
         assert(budget-- != 0U);
         process();
@@ -236,9 +249,95 @@ static void test_recovery(void) {
     assert(app_flash_journal_status().interrupted_sessions == 1);
 }
 
+static void close_empty_session(void) {
+    assert(app_flash_journal_begin(now_ms));
+    until(APP_FLASH_JOURNAL_OPEN);
+    assert(app_flash_journal_close(now_ms));
+    until(APP_FLASH_JOURNAL_READY);
+}
+
+static void test_checkpoint_recovery(void) {
+    const uint32_t marker =
+        PAGE_COUNT - BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES;
+    clean_chip();
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    close_empty_session();
+    close_empty_session();
+    assert(app_flash_journal_is_marker(storage[marker + 1U], marker + 1U));
+
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    assert(app_flash_journal_status().next_page == 4U);
+    assert(app_flash_journal_status().scanned_pages == 18U);
+
+    /* Fall back to the older marker and recover a torn page after the tail. */
+    storage[marker + 1U][16] ^= 1U;
+    storage[4][0] = 0;
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    assert(app_flash_journal_status().next_page == 5U);
+    assert(app_flash_journal_status().ignored_pages == 1U);
+    assert(app_flash_journal_status().scanned_pages < 24U);
+
+    /* A marker with a valid CRC is unusable if its END no longer validates. */
+    storage[marker + 1U][0] ^= 1U; /* A marker can also lose its magic. */
+    storage[1][20] ^= 1U;
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    assert(app_flash_journal_status().next_page == 5U);
+    assert(app_flash_journal_status().scanned_pages >= PAGE_COUNT);
+}
+
+static void test_busy_after_reset(void) {
+    clean_chip();
+    reboot();
+    process();
+    next_error = BSP_FLASH_DEVICE_BUSY;
+    process();
+    assert(state() == APP_FLASH_JOURNAL_SCANNING && operation == IDLE);
+    now_ms += 9U;
+    process();
+    assert(operation == IDLE);
+    ++now_ms;
+    until(APP_FLASH_JOURNAL_READY);
+}
+
+static void test_checkpoint_rotation(void) {
+    const uint32_t slots = BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES;
+    const uint32_t marker = PAGE_COUNT - slots;
+    clean_chip();
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    for (uint32_t i = 0; i <= slots; ++i) {
+        close_empty_session();
+    }
+    assert(app_flash_journal_is_marker(storage[marker], marker));
+    assert(storage[marker + 1U][0] == 0xFFU);
+    assert(decode(1, APP_FLASH_JOURNAL_END).session_id == 0U);
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    assert(app_flash_journal_status().next_page == 2U * (slots + 1U));
+    assert(app_flash_journal_status().scanned_pages == slots + 2U);
+}
+
+static void seed_legacy_tail(void) {
+    const uint32_t index = PAGE_COUNT - 5U;
+    uint8_t *page = storage[index];
+    memset(page, 0, APP_FLASH_JOURNAL_HEADER_BYTES);
+    memcpy(page, "DRJ!", 4);
+    page[4] = 1U;
+    page[5] = APP_FLASH_JOURNAL_BEGIN;
+    page[8] = page[12] = (uint8_t)index;
+    page[9] = page[13] = (uint8_t)(index >> 8U);
+    const uint32_t crc = app_crc32(page, 20U);
+    for (unsigned i = 0; i < 4U; ++i)
+        page[20U + i] = (uint8_t)(crc >> (8U * i));
+}
+
 static void test_full(void) {
     clean_chip();
-    storage[PAGE_COUNT - 5][0] = 0;
+    seed_legacy_tail();
     reboot();
     until(APP_FLASH_JOURNAL_READY);
     assert(app_flash_journal_begin(now_ms));
@@ -255,7 +354,7 @@ static void test_full(void) {
     reboot();
     until(APP_FLASH_JOURNAL_FULL);
     assert(app_flash_journal_status().next_page == PAGE_COUNT);
-    assert(app_flash_journal_status().interrupted_sessions == 0);
+    assert(app_flash_journal_status().interrupted_sessions == 1);
 }
 
 static void test_fault(void) {
@@ -408,7 +507,7 @@ static void test_recorder_fifo_and_sinks(void) {
 
 static void test_recorder_full(void) {
     clean_chip();
-    storage[PAGE_COUNT - 5][0] = 0;
+    seed_legacy_tail();
     recorder_start();
     queue_samples(1, 18); /* Two batches plus one partial. */
     recorder_until(APP_FLASH_JOURNAL_FULL);
@@ -495,12 +594,12 @@ static void test_flash_logs(void) {
     reboot();
     process(); /* Start the probe. */
     process(); /* Complete the probe. */
-    process(); /* Start reading page zero. */
+    process(); /* Start reading the final marker slot. */
     next_error = BSP_FLASH_TIMEOUT;
     process();
     assert(flash_log_level == APP_LOG_LEVEL_ERROR);
     assert(strstr(last_flash_log, "op=read error=timeout") != NULL);
-    assert(strstr(last_flash_log, "page=0 addr=0x000000") != NULL);
+    assert(strstr(last_flash_log, "page=65535 addr=0xffff00") != NULL);
     const unsigned after_fault = flash_log_count;
     process();
     assert(flash_log_count == after_fault);
@@ -516,6 +615,9 @@ static void test_flash_logs(void) {
 int main(void) {
     test_append_and_flush();
     test_recovery();
+    test_checkpoint_recovery();
+    test_checkpoint_rotation();
+    test_busy_after_reset();
     test_full();
     test_fault();
     test_recorder_fifo_and_sinks();

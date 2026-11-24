@@ -6,7 +6,9 @@
 
 #define BSP_FLASH_SIZE_BYTES (16U * 1024U * 1024U)
 #define BSP_FLASH_PAGE_BYTES 256U
+#define BSP_FLASH_SECTOR_BYTES 4096U
 #define BSP_FLASH_JEDEC_ID 0xEF4018U
+#define BSP_FLASH_SECTOR_ERASE_TIMEOUT_MS 400U
 #define BSP_FLASH_CHIP_ERASE_TIMEOUT_MS 201000U
 
 typedef enum {
@@ -65,6 +67,11 @@ bsp_flash_result_t bsp_flash_read_start(uint32_t address, void *out,
  */
 bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *data,
                                            size_t size);
+
+/** @brief Start erasing one 4 KiB sector at an aligned byte address.
+ * @return PENDING on acceptance or an immediate BSP error. Poll to completion.
+ * The caller must verify erased content before use. Foreground only. */
+bsp_flash_result_t bsp_flash_sector_erase_start(uint32_t address);
 
 /** @brief Start erasing the entire external flash.
  * @return PENDING on acceptance, or NOT_PROBED, OPERATION_ACTIVE or a

@@ -16,7 +16,7 @@
 			)
 			(exclude_from_sim no)
 			(in_bom yes)
-			(on_board no)
+			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "U"
@@ -39,7 +39,7 @@
 					)
 				)
 			)
-			(property "Footprint" ""
+			(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -681,139 +681,6 @@
 						(effects
 							(font
 								(size 1.016 1.016)
-							)
-						)
-					)
-				)
-			)
-			(embedded_fonts no)
-		)
-		(symbol "DA_Drone:ESC_PWM_Header"
-			(pin_names
-				(offset 0.762)
-			)
-			(exclude_from_sim no)
-			(in_bom yes)
-			(on_board yes)
-			(in_pos_files yes)
-			(duplicate_pin_numbers_are_jumpers no)
-			(property "Reference" "J"
-				(at 0 6.35 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1 1)
-					)
-				)
-			)
-			(property "Value" "ESC_PWM_Header"
-				(at 0 3.81 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(effects
-					(font
-						(size 1 1)
-					)
-				)
-			)
-			(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1 1)
-					)
-				)
-			)
-			(property "Datasheet" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "Description" ""
-				(at 0 0 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(symbol "ESC_PWM_Header_0_1"
-				(rectangle
-					(start -3.81 2.54)
-					(end 3.81 -7.62)
-					(stroke
-						(width 0.254)
-						(type default)
-					)
-					(fill
-						(type background)
-					)
-				)
-			)
-			(symbol "ESC_PWM_Header_1_1"
-				(pin passive line
-					(at -6.35 0 0)
-					(length 2.54)
-					(name "PWM"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-					(number "6"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -6.35 -2.54 0)
-					(length 2.54)
-					(name "BEC"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-					(number "7"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at -6.35 -5.08 0)
-					(length 2.54)
-					(name "GND"
-						(effects
-							(font
-								(size 1 1)
-							)
-						)
-					)
-					(number "8"
-						(effects
-							(font
-								(size 1 1)
 							)
 						)
 					)
@@ -2868,10 +2735,6 @@
 		(uuid "9b6e3d68-1700-4c2e-a1d9-2986b2dc96c1")
 	)
 	(no_connect
-		(at 245.11 256.54)
-		(uuid "0088e704-89f4-5c04-ab69-c29858976945")
-	)
-	(no_connect
 		(at 162.56 71.12)
 		(uuid "00f78651-5267-58bb-874f-12a0d15bcee0")
 	)
@@ -2950,10 +2813,6 @@
 	(no_connect
 		(at 88.9 38.1)
 		(uuid "3e2b7875-9fee-510c-b5c7-28c0cf36ceb3")
-	)
-	(no_connect
-		(at 367.03 256.54)
-		(uuid "4091bc8f-bf42-53c9-b14a-9e3caabd9a2d")
 	)
 	(no_connect
 		(at 88.9 114.3)
@@ -3152,10 +3011,6 @@
 		(uuid "c2ad0f27-33e1-5b3d-9eb2-3e1a49290dc3")
 	)
 	(no_connect
-		(at 326.39 256.54)
-		(uuid "c396d3c7-950f-587a-8084-3a3106828e8f")
-	)
-	(no_connect
 		(at 162.56 132.08)
 		(uuid "c5d2fa00-54e4-5699-8857-a96011fe642d")
 	)
@@ -3246,16 +3101,6 @@
 			(type default)
 		)
 		(uuid "14ec43da-5519-49e0-ad0e-bace091bcd67")
-	)
-	(wire
-		(pts
-			(xy 279.4 259.08) (xy 285.75 259.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1918ab8e-d13b-5337-846b-d33a210392b5")
 	)
 	(wire
 		(pts
@@ -3379,16 +3224,6 @@
 	)
 	(wire
 		(pts
-			(xy 279.4 254) (xy 285.75 254)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4293e298-c4b8-582c-8f89-561707d24c79")
-	)
-	(wire
-		(pts
 			(xy 345.44 138.43) (xy 345.44 143.51)
 		)
 		(stroke
@@ -3469,16 +3304,6 @@
 	)
 	(wire
 		(pts
-			(xy 360.68 254) (xy 367.03 254)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "69449f14-7fec-5f95-87d4-2ad2deaf0dec")
-	)
-	(wire
-		(pts
 			(xy 287.02 125.73) (xy 281.94 125.73)
 		)
 		(stroke
@@ -3506,26 +3331,6 @@
 			(type default)
 		)
 		(uuid "71163a47-f902-43e4-a35a-960a6f737737")
-	)
-	(wire
-		(pts
-			(xy 360.68 259.08) (xy 367.03 259.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "71a39d8b-4f9c-521e-96eb-0f39686c0785")
-	)
-	(wire
-		(pts
-			(xy 238.76 254) (xy 245.11 254)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "72a673ea-7c28-5f32-8a6b-fda27e4e9951")
 	)
 	(wire
 		(pts
@@ -3569,16 +3374,6 @@
 	)
 	(wire
 		(pts
-			(xy 320.04 259.08) (xy 326.39 259.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "83f89b34-2634-562e-aa37-11c850b7e24b")
-	)
-	(wire
-		(pts
 			(xy 345.44 86.36) (xy 345.44 81.28)
 		)
 		(stroke
@@ -3596,16 +3391,6 @@
 			(type default)
 		)
 		(uuid "89c79b26-bb9d-4f41-94b5-95f442ce94ff")
-	)
-	(wire
-		(pts
-			(xy 238.76 259.08) (xy 245.11 259.08)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8a758560-524c-5725-82e8-6697c1a4a67a")
 	)
 	(wire
 		(pts
@@ -3766,16 +3551,6 @@
 			(type default)
 		)
 		(uuid "bef05294-99d2-4b9a-9743-4ef298713b17")
-	)
-	(wire
-		(pts
-			(xy 279.4 256.54) (xy 285.75 256.54)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c0c89cd7-3f26-576d-b430-81af9f893893")
 	)
 	(wire
 		(pts
@@ -3969,16 +3744,6 @@
 	)
 	(wire
 		(pts
-			(xy 320.04 254) (xy 326.39 254)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "fb87ace0-53a4-5be0-9c2d-34e187b6c0e8")
-	)
-	(wire
-		(pts
 			(xy 345.44 44.45) (xy 345.44 39.37)
 		)
 		(stroke
@@ -4086,16 +3851,6 @@
 			(justify left bottom)
 		)
 		(uuid "3eaef88d-c75d-4f0a-b43d-1b41be545ec2")
-	)
-	(label "ESC1_PWM"
-		(at 238.76 254 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "4206a536-f6df-5b3d-a304-cd1b03d14603")
 	)
 	(label "VBAT_LIPO"
 		(at 281.94 78.74 180)
@@ -4207,16 +3962,6 @@
 		)
 		(uuid "6dadbf89-6e66-4d88-98e7-b40e8283ae30")
 	)
-	(label "ESC4_PWM"
-		(at 360.68 254 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "72519844-ca76-5277-98f3-3eda26812742")
-	)
 	(label "ESC3_PWM"
 		(at 281.94 135.89 180)
 		(effects
@@ -4236,16 +3981,6 @@
 			(justify left bottom)
 		)
 		(uuid "796c96e8-40b4-438f-b963-7d31626fd99d")
-	)
-	(label "ESC3_PWM"
-		(at 320.04 254 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "846e2fc1-958b-53bf-a2dc-0d4205bb9edf")
 	)
 	(label "ESC4_PWM"
 		(at 281.94 177.8 180)
@@ -4276,16 +4011,6 @@
 			(justify right bottom)
 		)
 		(uuid "8b4cf537-8c6d-49c6-a91b-61d8852feb7a")
-	)
-	(label "GND"
-		(at 238.76 259.08 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "9157fdcb-52c0-58f1-8db4-633a38392efc")
 	)
 	(label "STM32_TX_ELRS_RX"
 		(at 176.53 196.85 180)
@@ -4337,16 +4062,6 @@
 		)
 		(uuid "bec075a3-c9f1-459d-b131-fb8686f8b307")
 	)
-	(label "ESC2_PWM"
-		(at 279.4 254 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "c0563c3e-aea3-53b9-b79a-63641951b9c9")
-	)
 	(label "ESC1_PWM"
 		(at 281.94 52.07 180)
 		(effects
@@ -4368,16 +4083,6 @@
 		(uuid "c63d82f7-f63e-41d0-ab5d-9a8029ad9c88")
 	)
 	(label "GND"
-		(at 320.04 259.08 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "c8bf7cb4-120b-5327-99d3-aa1da1c23eef")
-	)
-	(label "GND"
 		(at 281.94 187.96 180)
 		(effects
 			(font
@@ -4396,26 +4101,6 @@
 			(justify right bottom)
 		)
 		(uuid "cc911bde-f78a-45ee-9b52-d21e3fa6daf2")
-	)
-	(label "GND"
-		(at 360.68 259.08 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "cf8a0961-b95a-5088-b473-98293109ab2d")
-	)
-	(label "GND"
-		(at 279.4 259.08 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "d1593e57-2438-54cd-9f2c-cd9d55a8c928")
 	)
 	(label "SPI1_MOSI"
 		(at 39.37 207.01 180)
@@ -4446,16 +4131,6 @@
 			(justify right bottom)
 		)
 		(uuid "e7abed3d-38e5-4b97-bbe2-ca563cc471a5")
-	)
-	(label "+5V"
-		(at 279.4 256.54 180)
-		(effects
-			(font
-				(size 1 1)
-			)
-			(justify right bottom)
-		)
-		(uuid "e910e8ee-5843-5544-a215-3445cd04d94f")
 	)
 	(label "VBAT_LIPO"
 		(at 281.94 36.83 180)
@@ -4699,86 +4374,6 @@
 		)
 	)
 	(symbol
-		(lib_id "DA_Drone:ESC_PWM_Header")
-		(at 251.46 254 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "1316708a-d475-5bb0-990c-d98221f5c0f9")
-		(property "Reference" "J1"
-			(at 251.46 247.65 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "ESC1"
-			(at 251.46 250.19 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
-			(at 251.46 254 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 251.46 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 251.46 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "6"
-			(uuid "3a7dae8e-17a8-5ca1-8acf-a39112b3664d")
-		)
-		(pin "7"
-			(uuid "ae758fbc-0c0e-59a3-becf-c418d45fc352")
-		)
-		(pin "8"
-			(uuid "a584eba7-acdd-51d5-a78e-ea507b954006")
-		)
-		(instances
-			(project "Quadrotor_Wiring"
-				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "J1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "DA_Drone:BLDC_Motor")
 		(at 375.92 133.35 0)
 		(unit 1)
@@ -4855,86 +4450,6 @@
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "M3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "DA_Drone:ESC_PWM_Header")
-		(at 373.38 254 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "35ef0ac1-20b1-587e-8fa5-7a31a323313f")
-		(property "Reference" "J4"
-			(at 373.38 247.65 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "ESC4"
-			(at 373.38 250.19 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
-			(at 373.38 254 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 373.38 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 373.38 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "6"
-			(uuid "52186e5c-9b76-5147-80e6-777359bf7a0b")
-		)
-		(pin "7"
-			(uuid "3071265b-a46a-5d10-8da9-ff01c9995025")
-		)
-		(pin "8"
-			(uuid "922aa407-cfd5-5cd2-ac21-b58eb2e94979")
-		)
-		(instances
-			(project "Quadrotor_Wiring"
-				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "J4")
 					(unit 1)
 				)
 			)
@@ -5032,7 +4547,7 @@
 		(body_style 1)
 		(exclude_from_sim no)
 		(in_bom yes)
-		(on_board no)
+		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "39c99a42-b5a6-55f2-819a-2d537b976665")
@@ -5056,7 +4571,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
 			(at 294.64 97.79 0)
 			(hide yes)
 			(show_name no)
@@ -5117,86 +4632,6 @@
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U3")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "DA_Drone:ESC_PWM_Header")
-		(at 292.1 254 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "6ce38020-76fc-5565-b8ec-a7dd9e71d46c")
-		(property "Reference" "J2"
-			(at 292.1 247.65 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "ESC2"
-			(at 292.1 250.19 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
-			(at 292.1 254 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 292.1 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 292.1 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "6"
-			(uuid "b33ab493-3016-5a9a-a708-c68146aca3bb")
-		)
-		(pin "7"
-			(uuid "50164385-c9c7-5b2c-8ceb-e5aabdc468b2")
-		)
-		(pin "8"
-			(uuid "44fb378e-646d-54ac-b93a-a782e25386c0")
-		)
-		(instances
-			(project "Quadrotor_Wiring"
-				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "J2")
 					(unit 1)
 				)
 			)
@@ -5276,86 +4711,6 @@
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "BT1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "DA_Drone:ESC_PWM_Header")
-		(at 332.74 254 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "7d223dfc-70bb-5712-b6cc-7d7716f1a043")
-		(property "Reference" "J3"
-			(at 332.74 247.65 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Value" "ESC3"
-			(at 332.74 250.19 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
-			(at 332.74 254 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1 1)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 332.74 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 332.74 254 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "6"
-			(uuid "4f6ea3d5-f750-5e60-ab35-399935e03a85")
-		)
-		(pin "7"
-			(uuid "d51ff67d-77d6-548f-b733-918ff4ccb32f")
-		)
-		(pin "8"
-			(uuid "375493d1-57a3-565b-bf25-0c161bda321c")
-		)
-		(instances
-			(project "Quadrotor_Wiring"
-				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "J3")
 					(unit 1)
 				)
 			)
@@ -5699,7 +5054,7 @@
 		(body_style 1)
 		(exclude_from_sim no)
 		(in_bom yes)
-		(on_board no)
+		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "a3a39d04-45df-5237-9f91-e8e5a5cf57a9")
@@ -5723,7 +5078,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
 			(at 294.64 331.47 0)
 			(hide yes)
 			(show_name no)
@@ -5796,7 +5151,7 @@
 		(body_style 1)
 		(exclude_from_sim no)
 		(in_bom yes)
-		(on_board no)
+		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "b322dec9-7b14-5749-88e7-967e5016fdbc")
@@ -5820,7 +5175,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
 			(at 104.14 209.55 0)
 			(hide yes)
 			(show_name no)
@@ -6057,7 +5412,7 @@
 		(body_style 1)
 		(exclude_from_sim no)
 		(in_bom yes)
-		(on_board no)
+		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "ff3ba042-4c73-5762-8a01-1f8e64d884dc")
@@ -6081,7 +5436,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "DA_Drone:ESC_PWM_Header_1x03_P2.54mm_Vertical"
 			(at 447.04 209.55 0)
 			(hide yes)
 			(show_name no)

@@ -330,7 +330,7 @@
 		(at 147.04 75 -90)
 		(descr "Vertical THT header, 2.54 mm pitch, 8=GND (origin), 7=BEC/VCC (5V), 6=PWM")
 		(tags "Through hole pin header THT 1x03 2.54mm single row")
-		(property "Reference" "J2"
+		(property "Reference" "U4"
 			(at 0 -3.45 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -342,7 +342,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC2"
+		(property "Value" "ESC2 / 30 A"
 			(at 0 7.46 90)
 			(layer "F.Fab")
 			(uuid "77c6b870-b3e2-437f-8778-68ac9a77d9cf")
@@ -364,7 +364,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -387,13 +387,13 @@
 				)
 			)
 		)
-		(path "/6ce38020-76fc-5565-b8ec-a7dd9e71d46c")
+		(path "/ff3ba042-4c73-5762-8a01-1f8e64d884dc")
 		(sheetname "/")
 		(sheetfile "Quadrotor_Wiring.kicad_sch")
 		(units
 			(unit
 				(name "A")
-				(pins "6" "7" "8")
+				(pins "1" "2" "3" "4" "5" "6" "7" "8")
 			)
 		)
 		(attr through_hole)
@@ -514,7 +514,7 @@
 			(remove_unused_layers no)
 			(net "/ESC2_PWM")
 			(pinfunction "PWM_6")
-			(pintype "passive")
+			(pintype "input")
 			(uuid "855a7b45-4beb-448e-9af0-79793516916d")
 		)
 		(pad "7" thru_hole circle
@@ -524,8 +524,8 @@
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
 			(net "/+5V")
-			(pinfunction "BEC_7")
-			(pintype "passive")
+			(pinfunction "BEC/VCC_7")
+			(pintype "power_out")
 			(uuid "3ec0c92d-674f-4364-976d-7c1db075e238")
 		)
 		(pad "8" thru_hole rect
@@ -536,7 +536,7 @@
 			(remove_unused_layers no)
 			(net "/GND")
 			(pinfunction "GND_8")
-			(pintype "passive")
+			(pintype "power_in")
 			(uuid "e3a3368a-69c6-4050-a4a4-b6ec164c92f2")
 		)
 		(embedded_fonts no)
@@ -558,7 +558,7 @@
 		(at 147.04 77.6 -90)
 		(descr "Vertical THT header, 2.54 mm pitch, 8=GND (origin), 7=BEC/VCC (5V), 6=PWM")
 		(tags "Through hole pin header THT 1x03 2.54mm single row")
-		(property "Reference" "J3"
+		(property "Reference" "U5"
 			(at 0 -3.45 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -570,7 +570,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC3"
+		(property "Value" "ESC3 / 30 A"
 			(at 0 7.46 90)
 			(layer "F.Fab")
 			(uuid "11ea9eb6-8273-4365-8ad3-44d1f74ab629")
@@ -592,7 +592,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -615,13 +615,13 @@
 				)
 			)
 		)
-		(path "/7d223dfc-70bb-5712-b6cc-7d7716f1a043")
+		(path "/a3a39d04-45df-5237-9f91-e8e5a5cf57a9")
 		(sheetname "/")
 		(sheetfile "Quadrotor_Wiring.kicad_sch")
 		(units
 			(unit
 				(name "A")
-				(pins "6" "7" "8")
+				(pins "1" "2" "3" "4" "5" "6" "7" "8")
 			)
 		)
 		(attr through_hole)
@@ -742,7 +742,7 @@
 			(remove_unused_layers no)
 			(net "/ESC3_PWM")
 			(pinfunction "PWM_6")
-			(pintype "passive")
+			(pintype "input")
 			(uuid "13ee2a8f-c484-436d-a506-060e1f18b1fe")
 		)
 		(pad "7" thru_hole circle
@@ -751,9 +751,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "unconnected-(J3-BEC-Pad7)")
-			(pinfunction "BEC_7")
-			(pintype "passive+no_connect")
+			(net "unconnected-(U5-BEC{slash}VCC-Pad7)")
+			(pinfunction "BEC/VCC_7")
+			(pintype "power_out+no_connect")
 			(uuid "3f38e034-84e3-47e9-8c53-8e7d9593a7ec")
 		)
 		(pad "8" thru_hole rect
@@ -764,7 +764,7 @@
 			(remove_unused_layers no)
 			(net "/GND")
 			(pinfunction "GND_8")
-			(pintype "passive")
+			(pintype "power_in")
 			(uuid "f4fb9aeb-7685-463b-acc9-aa299b93db38")
 		)
 		(embedded_fonts no)
@@ -2275,7 +2275,7 @@
 		(at 147.04 80.2 -90)
 		(descr "Vertical THT header, 2.54 mm pitch, 8=GND (origin), 7=BEC/VCC (5V), 6=PWM")
 		(tags "Through hole pin header THT 1x03 2.54mm single row")
-		(property "Reference" "J4"
+		(property "Reference" "U6"
 			(at 0 -3.45 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -2287,7 +2287,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC4"
+		(property "Value" "ESC4 / 30 A"
 			(at 0 7.46 90)
 			(layer "F.Fab")
 			(uuid "fd349499-cb62-4aee-b776-46c9e6167137")
@@ -2309,7 +2309,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -2332,13 +2332,13 @@
 				)
 			)
 		)
-		(path "/35ef0ac1-20b1-587e-8fa5-7a31a323313f")
+		(path "/b322dec9-7b14-5749-88e7-967e5016fdbc")
 		(sheetname "/")
 		(sheetfile "Quadrotor_Wiring.kicad_sch")
 		(units
 			(unit
 				(name "A")
-				(pins "6" "7" "8")
+				(pins "1" "2" "3" "4" "5" "6" "7" "8")
 			)
 		)
 		(attr through_hole)
@@ -2459,7 +2459,7 @@
 			(remove_unused_layers no)
 			(net "/ESC4_PWM")
 			(pinfunction "PWM_6")
-			(pintype "passive")
+			(pintype "input")
 			(uuid "fc6f5b2e-9a36-42b9-a2bf-6f01c448176e")
 		)
 		(pad "7" thru_hole circle
@@ -2468,9 +2468,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "unconnected-(J4-BEC-Pad7)")
-			(pinfunction "BEC_7")
-			(pintype "passive+no_connect")
+			(net "unconnected-(U6-BEC{slash}VCC-Pad7)")
+			(pinfunction "BEC/VCC_7")
+			(pintype "power_out+no_connect")
 			(uuid "557b6264-c327-44c3-adc4-0a15e2cac5f1")
 		)
 		(pad "8" thru_hole rect
@@ -2481,7 +2481,7 @@
 			(remove_unused_layers no)
 			(net "/GND")
 			(pinfunction "GND_8")
-			(pintype "passive")
+			(pintype "power_in")
 			(uuid "279b2724-07e0-4d93-a1a9-5fc58cbde4c5")
 		)
 		(embedded_fonts no)
@@ -2503,7 +2503,7 @@
 		(at 147.04 72.4 -90)
 		(descr "Vertical THT header, 2.54 mm pitch, 8=GND (origin), 7=BEC/VCC (5V), 6=PWM")
 		(tags "Through hole pin header THT 1x03 2.54mm single row")
-		(property "Reference" "J1"
+		(property "Reference" "U3"
 			(at 0 -3.45 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -2515,7 +2515,7 @@
 				)
 			)
 		)
-		(property "Value" "ESC1"
+		(property "Value" "ESC1 / 30 A"
 			(at 0 7.46 90)
 			(layer "F.Fab")
 			(uuid "0359176d-a706-49bb-9b66-984b9600ee82")
@@ -2537,7 +2537,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Brushless motor speed controller."
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -2560,13 +2560,13 @@
 				)
 			)
 		)
-		(path "/1316708a-d475-5bb0-990c-d98221f5c0f9")
+		(path "/39c99a42-b5a6-55f2-819a-2d537b976665")
 		(sheetname "/")
 		(sheetfile "Quadrotor_Wiring.kicad_sch")
 		(units
 			(unit
 				(name "A")
-				(pins "6" "7" "8")
+				(pins "1" "2" "3" "4" "5" "6" "7" "8")
 			)
 		)
 		(attr through_hole)
@@ -2687,7 +2687,7 @@
 			(remove_unused_layers no)
 			(net "/ESC1_PWM")
 			(pinfunction "PWM_6")
-			(pintype "passive")
+			(pintype "input")
 			(uuid "69a1458e-175c-45f2-a2b3-9457288f2dcf")
 		)
 		(pad "7" thru_hole circle
@@ -2696,9 +2696,9 @@
 			(drill 1)
 			(layers "*.Cu" "*.Mask")
 			(remove_unused_layers no)
-			(net "unconnected-(J1-BEC-Pad7)")
-			(pinfunction "BEC_7")
-			(pintype "passive+no_connect")
+			(net "unconnected-(U3-BEC{slash}VCC-Pad7)")
+			(pinfunction "BEC/VCC_7")
+			(pintype "power_out+no_connect")
 			(uuid "3d7199ea-45db-495b-a9da-f32042436e2e")
 		)
 		(pad "8" thru_hole rect
@@ -2709,7 +2709,7 @@
 			(remove_unused_layers no)
 			(net "/GND")
 			(pinfunction "GND_8")
-			(pintype "passive")
+			(pintype "power_in")
 			(uuid "97c3bb0d-cedc-41db-8ad9-3c14137ecd0d")
 		)
 		(embedded_fonts no)

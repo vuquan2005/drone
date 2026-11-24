@@ -400,6 +400,17 @@ class AttitudeControlPanel(QtWidgets.QWidget):
             self.plots[0].setXRange(end - 10, end, padding=0)
 
 
+# Nominal channel endpoints used by firmware/drone/App/Inc/app_command.h.
+RC_MIN, RC_CENTER, RC_MAX = 172, 992, 1811
+RC_SCALE_LABEL = f"CH1–CH4 scale {RC_MIN}–{RC_MAX} · center {RC_CENTER} · raw values"
+
+
+def stick_position(raw):
+    value = min(RC_MAX, max(RC_MIN, raw))
+    span = RC_CENTER - RC_MIN if value < RC_CENTER else RC_MAX - RC_CENTER
+    return 0.5 + 0.5 * (value - RC_CENTER) / span
+
+
 class ChannelStick(QtWidgets.QWidget):
     """Read-only XY display of two raw channels."""
 
@@ -443,7 +454,10 @@ class ChannelStick(QtWidgets.QWidget):
         )
         if self.values is not None:
             x, y = self.values
-            point = QtCore.QPointF(box.left() + x / 2047 * side, box.bottom() - y / 2047 * side)
+            point = QtCore.QPointF(
+                box.left() + stick_position(x) * side,
+                box.bottom() - stick_position(y) * side,
+            )
             painter.setBrush(color)
             painter.drawEllipse(point, 6, 6)
             label += f"\n{x} / {y}"
@@ -522,7 +536,8 @@ class ReceiverPanel(QtWidgets.QWidget):
         self.rc_bars, self.channel_labels = [], []
         for i in range(16):
             bar = QtWidgets.QProgressBar()
-            bar.setRange(0, 2047)
+            minimum, maximum = (RC_MIN, RC_MAX) if i < 4 else (0, 2047)
+            bar.setRange(minimum, maximum)
             bar.setFormat("—")
             label = QtWidgets.QLabel(f"CH{i + 1}")
             grid.addWidget(label, i % 8, (i // 8) * 2)
@@ -541,7 +556,7 @@ class ReceiverPanel(QtWidgets.QWidget):
         replay_layout.addWidget(self.replay_position)
         self.replay_controls.hide()
         layout.addWidget(self.replay_controls)
-        self.details = QtWidgets.QLabel("Raw CRSF (0–2047)")
+        self.details = QtWidgets.QLabel(RC_SCALE_LABEL)
         self.details.setWordWrap(True)
         self.details.setSizePolicy(
             QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Preferred
@@ -604,10 +619,10 @@ class ReceiverPanel(QtWidgets.QWidget):
             self.rc_status.setText(
                 "No saved RC in this segment" if saved else "RC: waiting for data"
             )
-            self.details.setText("Raw CRSF (0–2047)")
+            self.details.setText(RC_SCALE_LABEL)
             self.switches.hide()
             for bar in self.rc_bars:
-                bar.setValue(0)
+                bar.reset()
                 bar.setFormat("—")
                 bar.setEnabled(False)
             for stick in self.sticks:
@@ -645,9 +660,9 @@ class ReceiverPanel(QtWidgets.QWidget):
         state = ("connected" if connected else "disconnected") if live else "telemetry stale"
         self.rc_status.setText(f"Saved RC: {state}" if saved else f"RC: {state}")
         freshness = "saved" if saved else f"age {age:.1f}s"
-        self.details.setText(f"Raw CRSF (0–2047) · {freshness}")
+        self.details.setText(f"{RC_SCALE_LABEL} · {freshness}")
         for bar, value in zip(self.rc_bars, channels):
-            bar.setValue(value)
+            bar.setValue(min(bar.maximum(), max(bar.minimum(), value)))
             bar.setFormat(str(value))
             bar.setEnabled(live and bool(connected))
         for stick in self.sticks:

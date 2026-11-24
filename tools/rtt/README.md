@@ -126,7 +126,8 @@ trong **Recording options → Save folder**, mặc định là
 
 Viewer hiển thị log có filter, IMU, receiver và rate/mixer. IMU hiển thị
 m/s² và rad/s trong hệ thân FRD. Với firmware mới, receiver hiển thị bốn
-trục CH1–CH4 dạng raw CRSF 0–2047 cùng trạng thái cần gạt SA/SB/SC/SD.
+trục CH1–CH4 trên thang danh định 172–1811, với tâm hình cần gạt ở 992.
+Nhãn hiển thị giá trị raw CRSF cùng trạng thái cần gạt SA/SB/SC/SD.
 Bản ghi RC cũ vẫn hiển thị đủ CH1–CH16. `connected` phản ánh tuổi frame RC
 hợp lệ, còn `telemetry stale`
 chỉ báo snapshot cũ hoặc TCP DATA ngắt. Tab **Rate · FRD** nhận snapshot

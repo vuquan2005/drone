@@ -2701,17 +2701,6 @@
 		)
 		(uuid "cbab3afc-8067-4f6e-a240-793e2b425ac1")
 	)
-	(text "+5V từ BEC của ESC1; +3V3 từ DevKit"
-		(exclude_from_sim no)
-		(at 149.86 24.13 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left)
-		)
-		(uuid "4546f30b-93c7-4c45-951e-f1bbee75b304")
-	)
 	(text "Khối điều khiển"
 		(exclude_from_sim no)
 		(at 19.05 19.05 0)
@@ -2744,18 +2733,6 @@
 			(justify left top)
 		)
 		(uuid "9b6e3d68-1700-4c2e-a1d9-2986b2dc96c1")
-	)
-	(junction
-		(at 339.09 228.6)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "283e5493-291c-4ef0-ab40-ced9d06d82db")
-	)
-	(junction
-		(at 311.15 228.6)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "cb713150-394f-4725-97e0-280463b8530c")
 	)
 	(no_connect
 		(at 163.83 71.12)
@@ -3427,16 +3404,6 @@
 	)
 	(wire
 		(pts
-			(xy 340.36 228.6) (xy 339.09 228.6)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "83dccd30-8640-45c4-b451-a96d4db609af")
-	)
-	(wire
-		(pts
 			(xy 345.44 86.36) (xy 345.44 81.28)
 		)
 		(stroke
@@ -3527,7 +3494,7 @@
 	)
 	(wire
 		(pts
-			(xy 336.55 228.6) (xy 339.09 228.6)
+			(xy 336.55 228.6) (xy 340.36 228.6)
 		)
 		(stroke
 			(width 0)
@@ -3757,23 +3724,13 @@
 	)
 	(wire
 		(pts
-			(xy 309.88 228.6) (xy 311.15 228.6)
+			(xy 309.88 228.6) (xy 313.69 228.6)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
 		(uuid "f6fccc96-6d33-4534-8a90-da07ff4a51cb")
-	)
-	(wire
-		(pts
-			(xy 313.69 228.6) (xy 311.15 228.6)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f7249c6a-34d5-4d11-b67b-8372094d05d0")
 	)
 	(wire
 		(pts

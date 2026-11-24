@@ -1170,8 +1170,8 @@
 				)
 			)
 		)
-		(property "Footprint" ""
-			(at 0 0 0)
+		(property "Footprint" "DA_Drone:STM32_DevKit_P2.54mm_Sockets"
+			(at -1.27 -2.032 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(hide yes)

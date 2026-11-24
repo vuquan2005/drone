@@ -256,6 +256,32 @@ static void close_empty_session(void) {
     until(APP_FLASH_JOURNAL_READY);
 }
 
+static void test_empty_checkpoint(void) {
+    const uint32_t slots = BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES;
+    const uint32_t index = PAGE_COUNT - slots;
+    clean_chip();
+    assert(app_flash_journal_encode_empty_marker(storage[index]) ==
+           index * BSP_FLASH_PAGE_BYTES);
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    assert(app_flash_journal_status().next_page == 0U);
+    assert(app_flash_journal_status().scanned_pages == slots + 1U);
+
+    assert(app_flash_journal_begin(now_ms));
+    until(APP_FLASH_JOURNAL_OPEN);
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    assert(app_flash_journal_status().next_page == 1U);
+    assert(app_flash_journal_status().interrupted_sessions == 1U);
+    assert(app_flash_journal_status().scanned_pages == slots + 2U);
+
+    storage[index][16] ^= 1U;
+    reboot();
+    until(APP_FLASH_JOURNAL_READY);
+    assert(app_flash_journal_status().next_page == 1U);
+    assert(app_flash_journal_status().scanned_pages == PAGE_COUNT);
+}
+
 static void test_checkpoint_recovery(void) {
     const uint32_t marker =
         PAGE_COUNT - BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES;
@@ -615,6 +641,7 @@ static void test_flash_logs(void) {
 int main(void) {
     test_append_and_flush();
     test_recovery();
+    test_empty_checkpoint();
     test_checkpoint_recovery();
     test_checkpoint_rotation();
     test_busy_after_reset();

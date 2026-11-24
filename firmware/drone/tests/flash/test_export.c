@@ -10,7 +10,7 @@ static const char *control;
 static bool rtt_available;
 static bool fail_read;
 static bool session_fixture;
-static unsigned erases;
+static unsigned erases, marker_erases, marker_writes;
 static unsigned reads;
 static enum { NONE, PROBE, READ } flash_op;
 static uint32_t *probe_id;
@@ -68,17 +68,18 @@ bsp_flash_result_t bsp_flash_read_start(uint32_t address, void *out,
 
 bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *out,
                                            size_t size) {
-    (void)address;
-    (void)out;
-    (void)size;
-    assert(false);
-    return BSP_FLASH_SPI_ERROR;
+    assert(erases == 1U && flash_op == NONE);
+    assert(address == BSP_FLASH_SIZE_BYTES - BSP_FLASH_SECTOR_BYTES);
+    assert(size == BSP_FLASH_PAGE_BYTES);
+    assert(app_flash_journal_is_marker(out, address / BSP_FLASH_PAGE_BYTES));
+    ++marker_writes;
+    return BSP_FLASH_OK;
 }
 
 bsp_flash_result_t bsp_flash_sector_erase_start(uint32_t address) {
-    (void)address;
-    assert(false);
-    return BSP_FLASH_INVALID_ARGUMENT;
+    assert(address == BSP_FLASH_SIZE_BYTES - BSP_FLASH_SECTOR_BYTES);
+    ++marker_erases;
+    return BSP_FLASH_OK;
 }
 
 bsp_flash_result_t bsp_flash_chip_erase_start(void) {
@@ -125,7 +126,8 @@ bsp_flash_result_t bsp_flash_poll(void) {
     if (session_fixture && (read_index == 11U || read_index == 15U))
         page[0] =
             0U; /* The bad page between BEGIN and END must not stop export. */
-    if (erases == 0U && (read_index == 0U || read_index == PAGE_COUNT - 1U))
+    if (marker_erases == 0U &&
+        (read_index == 0U || read_index == PAGE_COUNT - 1U))
         page[0] = (uint8_t)read_index ^ 0xA5U;
     return BSP_FLASH_OK;
 }
@@ -142,7 +144,7 @@ static const uint8_t *check_frame(unsigned n, uint32_t id, uint8_t kind,
 }
 
 static void until(flash_export_state_t state) {
-    unsigned budget = 2U * PAGE_COUNT + 32U;
+    unsigned budget = 2U * PAGE_COUNT + 64U;
     while (flash_export_get_state() != state) {
         assert(budget-- != 0U);
         flash_export_process(0U);
@@ -207,7 +209,9 @@ int main(void) {
     control = "EXPORT00000044";
     const unsigned before_verify = reads;
     until(FLASH_EXPORT_ERASE_DONE);
-    assert(erases == 1U && reads - before_verify == PAGE_COUNT);
+    assert(erases == 1U && marker_erases == 1U && marker_writes == 1U);
+    assert(reads - before_verify ==
+           PAGE_COUNT + BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES);
     flash_export_process(0U);
     assert(get_u32(check_frame(7, 0x22U, 5, PAGE_COUNT, 4)) == 1U);
     control = "ERASE!00000022";

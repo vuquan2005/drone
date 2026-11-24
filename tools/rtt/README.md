@@ -77,6 +77,9 @@ lại kích thước và CRC của `flash.bin` trước khi gửi lệnh. Board 
 cho yêu cầu export vừa hoàn tất trong lần khởi động hiện tại. `export.log` ghi
 thời điểm gửi lệnh, thời điểm board xác nhận và kết quả xóa theo ID yêu cầu.
 Nếu kết quả chưa được xác nhận, kiểm tra tab **STM32 log (RTT 0)**.
+Sau khi xóa và xác minh toàn chip, firmware ghi mốc `EMPTY` trong sector cuối
+để Flight có thể bỏ lượt quét toàn chip ngay sau erase. Vì vậy, một bản export
+ngay sau erase có thể chứa trang mốc và vẫn có 0 phiên.
 
 Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Mở OpenOCD
 với [cấu hình RTT độc lập](../../firmware/drone/DEBUG.md#dùng-từ-máy-tính),

@@ -112,4 +112,10 @@ bool app_flash_journal_decode(const uint8_t *page, uint32_t index,
  */
 bool app_flash_journal_is_marker(const uint8_t *page, uint32_t index);
 
+/** @brief Encode a checkpoint for a chip just verified fully erased.
+ * @param page Writable buffer of BSP_FLASH_PAGE_BYTES bytes, non-NULL.
+ * @return Byte address where the caller must program and verify the page.
+ */
+uint32_t app_flash_journal_encode_empty_marker(uint8_t *page);
+
 #endif

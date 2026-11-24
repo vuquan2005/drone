@@ -1,5 +1,6 @@
 #include "accel_calibration.h"
 #include "app.h"
+#include "app_flash_journal.h"
 #include "bsp_flash.h"
 #include "bsp_motor_pwm.h"
 #include "esc_calibration.h"
@@ -34,6 +35,8 @@ static enum { FLASH_IDLE, FLASH_PROBE, FLASH_CHIP_ERASE, FLASH_READ } flash_op;
 static uint32_t *flash_id_out;
 static uint8_t *flash_read_out;
 static uint32_t flash_reads;
+enum { MARKER_PAGES = BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES };
+static unsigned marker_reads, marker_writes;
 static unsigned erase_calls;
 static bool verify_dirty;
 
@@ -51,11 +54,33 @@ bsp_flash_result_t bsp_flash_chip_erase_start(void) {
     return BSP_FLASH_PENDING;
 }
 
+bsp_flash_result_t bsp_flash_sector_erase_start(uint32_t address) {
+    assert(flash_op == FLASH_IDLE && erase_calls == 0U);
+    assert(address == BSP_FLASH_SIZE_BYTES - BSP_FLASH_SECTOR_BYTES);
+    return BSP_FLASH_OK;
+}
+
+bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *data,
+                                           size_t size) {
+    assert(flash_op == FLASH_IDLE && erase_calls == 1U);
+    assert(address == BSP_FLASH_SIZE_BYTES - BSP_FLASH_SECTOR_BYTES);
+    assert(size == BSP_FLASH_PAGE_BYTES);
+    assert(flash_reads == BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES);
+    assert(app_flash_journal_is_marker(data, address / BSP_FLASH_PAGE_BYTES));
+    ++marker_writes;
+    return BSP_FLASH_OK;
+}
+
 bsp_flash_result_t bsp_flash_read_start(uint32_t address, void *out,
                                         size_t size) {
-    assert(flash_op == FLASH_IDLE && erase_calls == 1U);
-    assert(address == flash_reads * BSP_FLASH_PAGE_BYTES &&
-           address < BSP_FLASH_SIZE_BYTES && size == BSP_FLASH_PAGE_BYTES);
+    assert(flash_op == FLASH_IDLE && address < BSP_FLASH_SIZE_BYTES &&
+           size == BSP_FLASH_PAGE_BYTES);
+    if (erase_calls == 0U) {
+        assert(address == BSP_FLASH_SIZE_BYTES - BSP_FLASH_SECTOR_BYTES +
+                              marker_reads * BSP_FLASH_PAGE_BYTES);
+    } else {
+        assert(address == flash_reads * BSP_FLASH_PAGE_BYTES);
+    }
     flash_read_out = out;
     flash_op = FLASH_READ;
     return BSP_FLASH_PENDING;
@@ -70,9 +95,13 @@ bsp_flash_result_t bsp_flash_poll(void) {
         break;
     case FLASH_READ:
         memset(flash_read_out, 0xFF, BSP_FLASH_PAGE_BYTES);
-        if (verify_dirty)
-            flash_read_out[10] = 0U;
-        ++flash_reads;
+        if (erase_calls == 0U) {
+            ++marker_reads;
+        } else {
+            if (verify_dirty)
+                flash_read_out[10] = 0U;
+            ++flash_reads;
+        }
         break;
     default:
         assert(false);
@@ -188,7 +217,7 @@ static void reset(void) {
     inits = polls = starts = processes = stops = calib_inits = calib_polls = 0;
     imu_calib_inits = imu_calib_polls = 0;
     flash_op = FLASH_IDLE;
-    erase_calls = flash_reads = 0U;
+    erase_calls = flash_reads = marker_reads = marker_writes = 0U;
     verify_dirty = false;
     imu_calib_status =
         (imu_calibration_status_t){.state = IMU_CALIBRATION_GYRO};
@@ -428,10 +457,13 @@ static void test_manual_erase(void) {
     input.connected = false;
     input.channels[4] = input.channels[6] = input.channels[7] = 172;
     for (unsigned i = 0;
-         i < 2U * (BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES) + 8U; ++i) {
+         i < 2U * (BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES + MARKER_PAGES) +
+                 12U;
+         ++i) {
         runtime_process();
     }
     assert(flash_reads == BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES);
+    assert(marker_reads == MARKER_PAGES && marker_writes == 1U);
     assert(erase_calls == 1U && stops == 1 && starts == 0 && processes == 0);
     assert(runtime_get_mode() == RUNTIME_FLASH_ERASE);
     expect_next_status("ERASE DONE");
@@ -439,10 +471,10 @@ static void test_manual_erase(void) {
     select_manual_erase();
     confirm_manual_erase();
     verify_dirty = true;
-    for (unsigned i = 0; i < 8U; ++i) {
+    for (unsigned i = 0; i < 2U * MARKER_PAGES + 10U; ++i) {
         runtime_process();
     }
-    assert(erase_calls == 1U && flash_reads == 1U);
+    assert(erase_calls == 1U && flash_reads == 1U && marker_writes == 0U);
     expect_next_status("ERASE ERR");
 }
 

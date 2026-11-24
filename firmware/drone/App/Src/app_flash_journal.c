@@ -232,11 +232,31 @@ static uint32_t marker_crc(const uint8_t *page) {
     return crc_update(UINT32_MAX, page, MARKER_CRC_OFFSET) ^ UINT32_MAX;
 }
 
+static void encode_marker(uint8_t *page, uint32_t end, uint32_t ignored,
+                          uint32_t interrupted) {
+    memset(page, 0xFF, BSP_FLASH_PAGE_BYTES);
+    memcpy(page, marker_magic, sizeof(marker_magic));
+    put_u32(page + 4, end);
+    put_u32(page + 8, ignored);
+    put_u32(page + 12, interrupted);
+    put_u32(page + MARKER_CRC_OFFSET, marker_crc(page));
+}
+
+uint32_t app_flash_journal_encode_empty_marker(uint8_t *page) {
+    encode_marker(page, UINT32_MAX, 0U, 0U);
+    return MARKER_FIRST_PAGE * BSP_FLASH_PAGE_BYTES;
+}
+
 bool app_flash_journal_is_marker(const uint8_t *page, uint32_t index) {
-    return page != NULL && index >= MARKER_FIRST_PAGE && index < PAGE_COUNT &&
-           memcmp(page, marker_magic, sizeof(marker_magic)) == 0 &&
-           get_u32(page + 4) < MARKER_FIRST_PAGE &&
-           get_u32(page + MARKER_CRC_OFFSET) == marker_crc(page);
+    if (page == NULL || index < MARKER_FIRST_PAGE || index >= PAGE_COUNT ||
+        memcmp(page, marker_magic, sizeof(marker_magic)) != 0 ||
+        get_u32(page + MARKER_CRC_OFFSET) != marker_crc(page)) {
+        return false;
+    }
+    const uint32_t end = get_u32(page + 4);
+    return end < MARKER_FIRST_PAGE ||
+           (end == UINT32_MAX && index == MARKER_FIRST_PAGE &&
+            get_u32(page + 8) == 0U && get_u32(page + 12) == 0U);
 }
 
 static void seal_page(app_flash_journal_page_type_t type, uint32_t now_ms) {
@@ -334,7 +354,9 @@ static void start_data_scan(uint32_t now_ms) {
     journal.data_limit =
         journal.marker_enabled ? MARKER_FIRST_PAGE : PAGE_COUNT;
     journal.scan_step = SCAN_DATA;
-    journal.scan_index = journal.fast_scan ? journal.marker_end + 1U : 0U;
+    journal.scan_index = journal.fast_scan && journal.marker_end != UINT32_MAX
+                             ? journal.marker_end + 1U
+                             : 0U;
     if (journal.scan_index == journal.data_limit) {
         finish_scan(now_ms);
     }
@@ -368,8 +390,11 @@ static void scan_marker(uint32_t now_ms) {
             journal.marker_end = get_u32(page + 4);
             journal.marker_ignored = get_u32(page + 8);
             journal.marker_interrupted = get_u32(page + 12);
-            journal.scan_step = SCAN_END;
-            return;
+            if (journal.marker_end != UINT32_MAX) {
+                journal.scan_step = SCAN_END;
+                return;
+            }
+            journal.fast_scan = true;
         }
     }
     advance_marker_scan(now_ms);
@@ -447,12 +472,9 @@ static void save_marker(void) {
         break;
     case SAVE_PROGRAM:
         if (!journal.transfer_pending) {
-            memset(journal.page, 0xFF, sizeof(journal.page));
-            memcpy(journal.page, marker_magic, sizeof(marker_magic));
-            put_u32(journal.page + 4, journal.status.next_page - 1U);
-            put_u32(journal.page + 8, journal.status.ignored_pages);
-            put_u32(journal.page + 12, journal.status.interrupted_sessions);
-            put_u32(journal.page + MARKER_CRC_OFFSET, marker_crc(journal.page));
+            encode_marker(journal.page, journal.status.next_page - 1U,
+                          journal.status.ignored_pages,
+                          journal.status.interrupted_sessions);
         }
         if (check_transfer(journal.transfer_pending
                                ? bsp_flash_poll()

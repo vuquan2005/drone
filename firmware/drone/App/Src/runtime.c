@@ -77,7 +77,6 @@ bool runtime_get_command(app_command_t *out) {
 static runtime_mode_t select_mode(void) {
 #if DRONE_DEBUG_FORCE_FLIGHT
     // return RUNTIME_FLIGHT; // For debugging, force flight mode without RC
-    // input
 #endif
     if (!command.valid) {
         return RUNTIME_BOOT_SELECT;

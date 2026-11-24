@@ -70,6 +70,6 @@ Chạy lệnh từ gốc repository, tuân theo yêu cầu của người dùng 
 
 ### Đồng bộ với main
 
-- Khi bắt đầu công việc có sửa repository và trước khi chuyển PR sang "ready for review", chạy `git fetch origin` nếu quyền cho phép, rồi kiểm tra số commit còn thiếu bằng `git rev-list --count HEAD..origin/main`. Nếu không fetch được, nói rõ kết quả chỉ dựa trên dữ liệu local.
+- Định kỳ chạy `git fetch origin` và kiểm tra commit còn thiếu so với `origin/main`.
 - Nếu còn thiếu commit, nhắc người dùng đồng bộ: gợi ý `git rebase origin/main` cho nhánh cá nhân hoặc `git merge origin/main` cho nhánh nhiều người cùng làm.
 - Chỉ đồng bộ khi người dùng cho phép; kiểm tra working tree trước và giữ nguyên thay đổi chưa commit ngoài phạm vi công việc.

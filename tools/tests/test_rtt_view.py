@@ -154,7 +154,7 @@ class ViewerTests(unittest.TestCase):
 
     def test_flash_view_manages_server_export_erase_and_saved_sessions(self):
         from flash_view import FlashViewer
-        from test_rtt_flash_export import export, journal, message, transfer
+        from test_rtt_flash_export import export, journal, message, session_listing, transfer
         from unittest.mock import patch
 
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -191,14 +191,43 @@ class ViewerTests(unittest.TestCase):
                 self.assertFalse(viewer.export_button.isEnabled())
                 self.assertFalse(viewer.erase_button.isEnabled())
                 viewer.server_button.click()
-                wait_for(viewer.export_button.isEnabled)
+                wait_for(lambda: getattr(viewer, "job_kind", None) == "list")
                 self.assertIn("GDB 127.0.0.1:3333", viewer.server_status.text())
                 self.assertIn("set DRONE_GDB_PORT 3333", viewer.server_log.toPlainText())
                 wait_for(servers[0].hasPendingConnections)
                 board = servers[0].nextPendingConnection()
-                board.write(b"[4][I][flash] export_wait preset=Export\n")
+                board.write(b"[4][I][runtime] selected mode=flash_export\n")
                 board.flush()
-                wait_for(lambda: "export_wait preset=Export" in viewer.board_status.text())
+                wait_for(lambda: "selected mode=flash_export" in viewer.board_status.text())
+                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
+                list_control, list_data = [server.nextPendingConnection() for server in servers]
+                wait_for(lambda: list_control.bytesAvailable() >= 14)
+                command = bytes(list_control.read(14))
+                self.assertTrue(command.startswith(b"ELISTS"))
+                rows = [(2, 2, 48, False), (0, 1, 42, True)]
+                list_data.write(b"".join(session_listing(int(command[6:], 16), rows)))
+                list_data.flush()
+                wait_for(lambda: viewer.job is None)
+                self.assertEqual(viewer.session_count.text(), "2 on board · 1 interrupted")
+                self.assertTrue(viewer.selected_button.isEnabled())
+                viewer.selected_button.click()
+                wait_for(lambda: all(server.hasPendingConnections() for server in servers))
+                selected_control, selected_data = [
+                    server.nextPendingConnection() for server in servers
+                ]
+                wait_for(lambda: selected_control.bytesAvailable() >= 30)
+                command = bytes(selected_control.read(30))
+                self.assertEqual(command[:6], b"EXRANG")
+                self.assertEqual(command[14:], b"0000000200000002")
+                selected_data.write(
+                    b"".join(
+                        transfer(int(command[6:14], 16), [(2, journal(export.BEGIN, 2, 2, 48))])
+                    )
+                )
+                selected_data.flush()
+                wait_for(lambda: viewer.job is None)
+                self.assertTrue((viewer.export_directory / "session.bin").is_file())
+                self.assertFalse(viewer.erase_button.isEnabled())
                 viewer.export_button.click()
                 self.assertFalse(viewer.server_button.isEnabled())
                 self.assertFalse(viewer.erase_button.isEnabled())

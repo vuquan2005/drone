@@ -21,12 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#if defined(DRONE_FLASH_EXPORT_ONLY)
-#include "app_log.h"
-#include "flash_export.h"
-#else
 #include "runtime.h"
-#endif
 
 /* USER CODE END Includes */
 
@@ -104,19 +99,6 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-#if defined(DRONE_FLASH_EXPORT_ONLY)
-  MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_SPI2_Init();
-  bsp_rtt_init();
-  app_log_init(HAL_GetTick);
-  flash_export_init();
-  APP_LOG_INFO("flash", "export_wait preset=Export");
-  for (;;)
-  {
-    flash_export_process(HAL_GetTick());
-  }
-#endif
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -129,7 +111,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
 #if defined(DRONE_FLASH_BOARD_SMOKE)
   flash_board_smoke_run();
-#elif !defined(DRONE_FLASH_EXPORT_ONLY)
+#else
   runtime_init();
 #endif
 
@@ -142,9 +124,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-#if !defined(DRONE_FLASH_EXPORT_ONLY)
     runtime_process();
-#endif
   }
   /* USER CODE END 3 */
 }

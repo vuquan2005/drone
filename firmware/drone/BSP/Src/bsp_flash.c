@@ -12,6 +12,7 @@ enum {
     READ_DATA = 0x03,
     WRITE_ENABLE = 0x06,
     PAGE_PROGRAM = 0x02,
+    SECTOR_ERASE = 0x20,
     CHIP_ERASE = 0xC7,
     SR1_BUSY = 0x01,
     SR1_WEL = 0x02,
@@ -51,7 +52,7 @@ static struct {
     flash_step_t step;
     bsp_flash_result_t fault;
     bool probed;
-    bool erase;
+    enum { NO_ERASE, ERASE_SECTOR, ERASE_CHIP } erase;
     uint32_t transfer_ms;
     uint32_t programmed_ms;
     uint32_t last_poll_ms;
@@ -195,7 +196,7 @@ bsp_flash_result_t bsp_flash_program_start(uint32_t address, const void *data,
     }
     flash.address = address;
     flash.size = size;
-    flash.erase = false;
+    flash.erase = NO_ERASE;
     memcpy(flash.data, data, size);
     return start_transfer(STEP_PROGRAM_READY, READ_SR1, 2);
 }
@@ -205,7 +206,22 @@ bsp_flash_result_t bsp_flash_chip_erase_start(void) {
     if (result != BSP_FLASH_OK) {
         return result;
     }
-    flash.erase = true;
+    flash.erase = ERASE_CHIP;
+    return start_transfer(STEP_PROGRAM_READY, READ_SR1, 2);
+}
+
+bsp_flash_result_t bsp_flash_sector_erase_start(uint32_t address) {
+    if (address >= BSP_FLASH_SIZE_BYTES ||
+        address % BSP_FLASH_SECTOR_BYTES != 0U) {
+        return BSP_FLASH_INVALID_ARGUMENT;
+    }
+    const bsp_flash_result_t result = available(true);
+    if (result != BSP_FLASH_OK) {
+        return result;
+    }
+    flash.address = address;
+    flash.size = 0U;
+    flash.erase = ERASE_SECTOR;
     return start_transfer(STEP_PROGRAM_READY, READ_SR1, 2);
 }
 
@@ -293,8 +309,12 @@ bsp_flash_result_t bsp_flash_poll(void) {
         if ((status & (SR1_BUSY | SR1_WEL)) != SR1_WEL) {
             return finish(BSP_FLASH_WRITE_PROTECTED);
         }
-        return flash.erase ? start_transfer(STEP_PROGRAM, CHIP_ERASE, 1)
-                           : start_addressed(STEP_PROGRAM, PAGE_PROGRAM);
+        if (flash.erase == ERASE_CHIP) {
+            return start_transfer(STEP_PROGRAM, CHIP_ERASE, 1);
+        }
+        return start_addressed(STEP_PROGRAM, flash.erase == ERASE_SECTOR
+                                                 ? SECTOR_ERASE
+                                                 : PAGE_PROGRAM);
     case STEP_PROGRAM:
         flash.programmed_ms = now_ms;
         flash.last_poll_ms = now_ms;
@@ -310,7 +330,9 @@ bsp_flash_result_t bsp_flash_poll(void) {
             return start_addressed(STEP_VERIFY, READ_DATA);
         }
         const uint32_t timeout_ms =
-            flash.erase ? BSP_FLASH_CHIP_ERASE_TIMEOUT_MS : PROGRAM_TIMEOUT_MS;
+            flash.erase == ERASE_CHIP     ? BSP_FLASH_CHIP_ERASE_TIMEOUT_MS
+            : flash.erase == ERASE_SECTOR ? BSP_FLASH_SECTOR_ERASE_TIMEOUT_MS
+                                          : PROGRAM_TIMEOUT_MS;
         if (now_ms - flash.programmed_ms >= timeout_ms) {
             return fail(BSP_FLASH_TIMEOUT);
         }

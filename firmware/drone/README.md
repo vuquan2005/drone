@@ -43,17 +43,21 @@ Tăng ga trước hạn sẽ hủy đếm. Sau khi hết hạn, tay điều khi�
 | HIGH       | Bất kỳ        | HIGH / STREAM                  | `FLASH_ERASE`, chờ xác nhận xóa SPI NOR |
 | HIGH       | MIDDLE        | LOW / OFF hoặc MIDDLE / RECORD | `IMU_CALIB`, hiệu chuẩn gyro và accel   |
 | HIGH       | LOW hoặc HIGH | LOW / OFF hoặc MIDDLE / RECORD | `ESC_CALIB`, hiệu chuẩn ESC             |
-| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `BOOT_SELECT`, PWM tắt, chờ đổi SD      |
+| Không HIGH | Bất kỳ        | HIGH / STREAM                  | `FLASH_EXPORT` qua RTT, PWM tắt         |
 | Không HIGH | Bất kỳ        | LOW / OFF hoặc MIDDLE / RECORD | `FLIGHT`                                |
 
 Xem [cấu hình radio](../Jumper-T20/README.md) cho ánh xạ kênh. Trong
 FLIGHT, SC chọn bộ điều khiển, SB HIGH kích hoạt failsafe và SD MIDDLE yêu
 cầu [ghi telemetry vào SPI NOR](../../protocol/flash-journal.md).
 
-Để nạp ảnh bảo trì và mở công cụ xuất flash, dùng
-[`make telemetry-export`](../../tools/rtt/README.md#xuất-telemetry-đã-ghi-trong-flash).
-Ảnh này chạy từ `main()` và giao tiếp qua RTT. Nạp lại ảnh bay trước khi ghi
-telemetry hoặc chạy chế độ bay.
+Với Debug và Release, đặt SD HIGH, SB LOW hoặc MIDDLE rồi reset board
+với RC hợp lệ. Tay điều khiển báo `EXPORT`. Mở công cụ bằng
+[`make flash-export`](../../tools/rtt/README.md#xuất-telemetry-đã-ghi-trong-flash).
+Để xuất khi không có tay điều khiển, reset board khi receiver không gửi
+RC hợp lệ rồi bấm **Start OpenOCD** trong Viewer. Yêu cầu lấy danh sách
+phiên qua RTT chọn chế độ xuất khi board còn ở `BOOT_SELECT`.
+Để quay lại chế độ bay, đặt SB và SD LOW rồi reset. Với build tắt RTT,
+tổ hợp xuất flash giữ board ở `BOOT_SELECT` cho đến khi đổi SD.
 
 ## Xóa telemetry trên flash ngoài
 

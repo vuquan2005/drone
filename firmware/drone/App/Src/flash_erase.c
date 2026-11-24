@@ -1,4 +1,5 @@
 #include "flash_erase.h"
+#include "app_flash_journal.h"
 #include "app_log.h"
 #include "app_safety.h"
 #include "bsp_flash.h"
@@ -10,8 +11,11 @@ typedef enum {
     WAIT_HIGH,
     HOLD_HIGH,
     PROBE,
+    ERASE_MARKERS,
+    VERIFY_MARKERS,
     ERASE,
     VERIFY,
+    MARK_EMPTY,
     DONE,
     ERROR,
 } erase_step_t;
@@ -94,34 +98,32 @@ static void probe(uint32_t now_ms) {
         return;
     }
     if (transfer_completed(result, "erase_probe")) {
-        maintenance.step = ERASE;
+        /* Clear old checkpoints before chip erase can leave holes in data. */
+        maintenance.address = BSP_FLASH_SIZE_BYTES - BSP_FLASH_SECTOR_BYTES;
+        maintenance.step = ERASE_MARKERS;
         APP_LOG_INFO("flash", "erase_start jedec=0x%06lx",
                      (unsigned long)maintenance.jedec_id);
     }
 }
 
-static void verify(void) {
+static bool verify_page(void) {
     const bsp_flash_result_t result =
         maintenance.pending
             ? bsp_flash_poll()
             : bsp_flash_read_start(maintenance.address, maintenance.page,
                                    sizeof(maintenance.page));
     if (!transfer_completed(result, "erase_verify_read")) {
-        return;
+        return false;
     }
     for (size_t i = 0U; i < sizeof(maintenance.page); ++i) {
         if (maintenance.page[i] != 0xFFU) {
             maintenance.address += i;
             (void)transfer_completed(BSP_FLASH_NOT_ERASED, "erase_verify");
-            return;
+            return false;
         }
     }
     maintenance.address += sizeof(maintenance.page);
-    if (maintenance.address == BSP_FLASH_SIZE_BYTES) {
-        maintenance.step = DONE;
-        APP_LOG_INFO("flash", "erase_done bytes=%lu",
-                     (unsigned long)BSP_FLASH_SIZE_BYTES);
-    }
+    return maintenance.address == BSP_FLASH_SIZE_BYTES;
 }
 
 void flash_erase_rc_process(const app_command_t *command, uint32_t now_ms) {
@@ -141,6 +143,21 @@ void flash_erase_process(uint32_t now_ms) {
     case PROBE:
         probe(now_ms);
         break;
+    case ERASE_MARKERS:
+        if (transfer_completed(
+                maintenance.pending
+                    ? bsp_flash_poll()
+                    : bsp_flash_sector_erase_start(maintenance.address),
+                "erase_markers")) {
+            maintenance.step = VERIFY_MARKERS;
+        }
+        break;
+    case VERIFY_MARKERS:
+        if (verify_page()) {
+            maintenance.address = 0U;
+            maintenance.step = ERASE;
+        }
+        break;
     case ERASE:
         if (transfer_completed(maintenance.pending
                                    ? bsp_flash_poll()
@@ -151,7 +168,23 @@ void flash_erase_process(uint32_t now_ms) {
         }
         break;
     case VERIFY:
-        verify();
+        if (verify_page()) {
+            maintenance.address =
+                app_flash_journal_encode_empty_marker(maintenance.page);
+            maintenance.step = MARK_EMPTY;
+        }
+        break;
+    case MARK_EMPTY:
+        if (transfer_completed(maintenance.pending
+                                   ? bsp_flash_poll()
+                                   : bsp_flash_program_start(
+                                         maintenance.address, maintenance.page,
+                                         sizeof(maintenance.page)),
+                               "erase_mark_empty")) {
+            maintenance.step = DONE;
+            APP_LOG_INFO("flash", "erase_done bytes=%lu",
+                         (unsigned long)BSP_FLASH_SIZE_BYTES);
+        }
         break;
     case DONE:
     case ERROR:

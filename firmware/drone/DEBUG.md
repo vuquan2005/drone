@@ -22,7 +22,8 @@ Sau khi nạp, có thể đọc RTT bằng OpenOCD độc lập và mở viewer 
 openocd -f firmware/drone/debug/rtt.cfg
 ```
 
-Dùng `make telemetry-export` để nạp ảnh bảo trì và mở công cụ xuất flash.
+Dùng `make flash-export` sau khi khởi động board với SD HIGH và SB LOW
+hoặc MIDDLE để xuất flash từ firmware bay.
 Công cụ mở thêm GDB ở `127.0.0.1:3333`.
 Muốn bật GDB với cấu hình RTT độc lập, chạy:
 
@@ -37,21 +38,16 @@ liệu IMU, kiểm tra log và bảo đảm CPU đã Continue.
 
 ## Cấu hình build
 
-Preset `Export` tạo `build/Export/drone.elf` với RTT và log mức INFO.
-`main()` vào vòng lặp bảo trì sau khi khởi tạo HAL, clock, GPIO, DMA và SPI2.
-Nạp lại preset Debug hoặc Release để board chạy firmware bay.
-
 | Tùy chọn                   | Debug mặc định | Release mặc định |
 | -------------------------- | -------------- | ---------------- |
-| `DRONE_ENABLE_RTT`         | ON             | OFF              |
+| `DRONE_ENABLE_RTT`         | ON             | ON               |
 | `DRONE_ENABLE_TELEMETRY`   | ON             | OFF              |
 | `DRONE_LOG_LEVEL`          | INFO           | OFF              |
 | `DRONE_DEBUG_FORCE_FLIGHT` | ON             | OFF              |
 
-Telemetry cần RTT. Debug mặc định vào FLIGHT không qua chọn mode bằng RC;
-tắt `DRONE_DEBUG_FORCE_FLIGHT` khi cần thử chọn mode hoặc calib. Dùng
-`CMakeUserPresets.json` cho cấu hình riêng và kiểm tra preset/task có thể áp
-lại mặc định. Chi tiết chọn mode nằm trong [README](README.md#chọn-chế-độ-sau-reset).
+Telemetry qua RTT cần bật `DRONE_ENABLE_RTT`. Cả Debug và Release hiện dùng
+RC để chọn mode sau reset. Chi tiết chọn mode nằm trong
+[README](README.md#chọn-chế-độ-sau-reset).
 
 ## RTT và Live Watch
 

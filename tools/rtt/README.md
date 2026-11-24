@@ -26,20 +26,29 @@ uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 
 ## Xuất telemetry đã ghi trong flash
 
-Cắm ST-LINK qua SWD và dừng phiên debug đang dùng cùng ST-LINK. Từ gốc repo,
-chạy lệnh sau để nạp ảnh bảo trì `Export` và mở công cụ:
+Cắm ST-LINK qua SWD và dừng phiên debug đang dùng cùng ST-LINK.
+Tắt tay điều khiển rồi reset board để firmware Debug hoặc Release chờ RC.
+Từ gốc repo, mở công cụ:
 
 ```sh
-make telemetry-export
+make flash-export
 ```
 
-Board khởi động trực tiếp vào chế độ export và chờ lệnh qua RTT. Nếu board
-đã chạy ảnh `Export`, dùng `make flash-export` để mở lại công cụ.
-Sau khi bảo trì xong, đóng OpenOCD và nạp lại firmware bay bằng preset đã dùng
-trước đó. Lệnh `telemetry-export` nạp ảnh vào flash nội STM32. Thao tác xóa
-telemetry trong Viewer tác động lên chip ngoài W25Q128FV.
+Sau khi xuất xong, đóng OpenOCD, gạt SB và SD xuống LOW rồi reset để trở
+lại chế độ bay. Thao tác xóa telemetry trong Viewer tác động lên chip
+ngoài W25Q128FV.
 
-Bấm **Start OpenOCD** rồi **Export flash**. Cửa sổ quản lý OpenOCD với
+Bấm **Start OpenOCD**. Viewer gửi lệnh lấy danh sách phiên qua RTT.
+Nếu board còn chờ RC, lệnh này chọn chế độ xuất và firmware giữ PWM tắt.
+Viewer xác nhận kết nối xuất qua phản hồi có ID khớp với yêu cầu.
+Nếu receiver vẫn gửi RC hợp lệ, có thể vào chế độ xuất bằng cách đặt
+SD HIGH, SB LOW hoặc MIDDLE rồi reset với tay điều khiển đang kết nối.
+Danh sách hiển thị ID, số trang và trạng thái của từng phiên. Dùng **Scan sessions** để
+làm mới, rồi chọn phiên và bấm **Export selected** để tải khoảng trang của phiên
+đó. Viewer lưu CSV, thông tin phiên và ảnh `session.bin`.
+Dùng **Export flash** khi cần sao lưu toàn chip vào `flash.bin` trước khi xóa.
+
+Cửa sổ quản lý OpenOCD với
 GDB ở `127.0.0.1:3333` và RTT ở cổng 9092/9093. Khi cần kết nối GDB,
 dùng `target extended-remote :3333` và cho CPU chạy trước khi export.
 **Stop OpenOCD** hoặc đóng cửa sổ sẽ dừng server đã mở từ công cụ.
@@ -48,7 +57,7 @@ Có thể chọn executable và cổng bằng
 tắt GDB. Dùng `--log-port` và `--data-port` để đổi cổng RTT của công cụ.
 
 Mỗi lượt xuất được lưu vào `experiments/raw/export/flash_export_<thời điểm>`.
-Đổi thư mục xuất bằng `make telemetry-export FLASH_EXPORT_ARGS="--export-dir /đường/dẫn"`.
+Đổi thư mục xuất bằng `make flash-export FLASH_EXPORT_ARGS="--export-dir /đường/dẫn"`.
 
 Trong lúc xuất, cửa sổ hiển thị lượt thử, lúc nhận `BEGIN` và số trang
 khác `0xFF` đã nhận. **STM32 log (RTT 0)** hiển thị mode, số trang chip đã
@@ -71,14 +80,19 @@ bấm **Open session** để mở dữ liệu đã lưu trong Viewer offline. L�
 chưa xác minh giữ `flash.bin.part` và ghi nguyên nhân vào `export.log`.
 
 Sau khi xuất thành công, có thể bấm **Erase flash** và xác nhận
-để giải phóng toàn bộ W25Q128FV. Giữ board chạy ảnh Export và chờ Viewer
+để giải phóng toàn bộ W25Q128FV. Giữ board ở chế độ export và chờ Viewer
 báo đã xóa và xác minh. Viewer kiểm tra
 lại kích thước và CRC của `flash.bin` trước khi gửi lệnh. Board chỉ nhận lệnh
 cho yêu cầu export vừa hoàn tất trong lần khởi động hiện tại. `export.log` ghi
 thời điểm gửi lệnh, thời điểm board xác nhận và kết quả xóa theo ID yêu cầu.
 Nếu kết quả chưa được xác nhận, kiểm tra tab **STM32 log (RTT 0)**.
+Sau khi xóa và xác minh toàn chip, firmware ghi mốc `EMPTY` trong sector cuối
+để Flight có thể bỏ lượt quét toàn chip ngay sau erase. Vì vậy, một bản export
+ngay sau erase có thể chứa trang mốc và vẫn có 0 phiên.
 
-Có thể dùng CLI khi cần tự động hóa hoặc chạy không có GUI. Mở OpenOCD
+Có thể dùng CLI sau khi board đã vào FLASH_EXPORT bằng SD HIGH hoặc
+qua Viewer. Nếu dùng Viewer để chọn chế độ, dừng OpenOCD trong Viewer trước
+khi mở phiên OpenOCD riêng và giữ board chạy. Mở OpenOCD
 với [cấu hình RTT độc lập](../../firmware/drone/DEBUG.md#dùng-từ-máy-tính),
 giữ cổng 9090/9091 dành cho CLI và chạy từ gốc repo:
 
@@ -90,6 +104,18 @@ CLI dùng cùng thư mục mặc định với viewer. Để lưu vào nơi khá
 đường dẫn tới thư mục mới. Có thể thay số lần đọc tối đa bằng
 `--attempts` và cấu hình kết nối qua `--host`, `--control-port` và
 `--data-port`.
+
+Chế độ FLASH_EXPORT hỗ trợ xuất trực tiếp theo ID phiên (số trang `BEGIN`) hoặc
+xuất phiên liền trước một ID đã biết. CLI tạo `session.bin` theo địa chỉ
+flash gốc cùng CSV và `session.json` của phiên đã chọn.
+
+```sh
+python3 tools/rtt/flash_export.py --session 180
+python3 tools/rtt/flash_export.py --previous 180
+```
+
+Nếu một phiên thiếu `END`, firmware dò đến khi gặp một phiên khác hoặc
+chạm cuối flash. Lệnh xóa chip yêu cầu một lượt export toàn flash.
 
 ## Xem và ghi dữ liệu
 

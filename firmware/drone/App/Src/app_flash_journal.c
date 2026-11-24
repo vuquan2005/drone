@@ -4,21 +4,43 @@
 
 enum {
     PAGE_COUNT = BSP_FLASH_SIZE_BYTES / BSP_FLASH_PAGE_BYTES,
+    MARKER_FIRST_PAGE =
+        PAGE_COUNT - BSP_FLASH_SECTOR_BYTES / BSP_FLASH_PAGE_BYTES,
+    MARKER_CRC_OFFSET = 16,
     FORMAT_VERSION = 1,
     CRC_OFFSET = 20,
     END_BYTES = 12,
     POWER_UP_MS = 6,
+    PROBE_RETRY_MS = 10,
+    PROBE_BUSY_LIMIT_MS = BSP_FLASH_SECTOR_ERASE_TIMEOUT_MS + 50U,
     PAGE_FLUSH_MS = 100,
     FRAME_OVERHEAD = 12,
 };
 
 static const uint8_t page_magic[] = {'D', 'R', 'J', '!'};
 
+static const uint8_t marker_magic[] = {'D', 'R', 'M', '1'};
+
 static struct {
     app_flash_journal_status_t status;
     bool transfer_pending;
     bool close_requested;
+    bool fast_scan;
+    bool marker_enabled;
+    bool marker_unknown;
+    bool legacy_tail;
+    bool marker_saved;
+    uint32_t scan_index;
+    uint32_t data_limit;
+    uint32_t marker_slot;
+    uint32_t marker_end;
+    uint32_t marker_ignored;
+    uint32_t marker_interrupted;
+    uint32_t verify_index;
+    enum { SCAN_MARKERS, SCAN_END, SCAN_DATA } scan_step;
+    enum { SAVE_NONE, SAVE_ERASE, SAVE_VERIFY, SAVE_PROGRAM } save_step;
     uint32_t powered_ms;
+    uint32_t last_probe_ms;
     uint32_t jedec_id;
     uint32_t session_id;
     uint32_t page_ms;
@@ -152,20 +174,41 @@ static void mark_interrupted(void) {
 }
 
 static void idle_after_session(void) {
-    journal.status.state = PAGE_COUNT - journal.status.next_page < 4U
+    journal.status.state = journal.data_limit - journal.status.next_page < 4U
                                ? APP_FLASH_JOURNAL_FULL
                                : APP_FLASH_JOURNAL_READY;
     if (journal.status.state == APP_FLASH_JOURNAL_FULL) {
-        APP_LOG_WARN("flash", "state=full next_page=%lu free_pages=%lu",
-                     (unsigned long)journal.status.next_page,
-                     (unsigned long)(PAGE_COUNT - journal.status.next_page));
+        APP_LOG_WARN(
+            "flash", "state=full next_page=%lu free_pages=%lu",
+            (unsigned long)journal.status.next_page,
+            (unsigned long)(journal.data_limit - journal.status.next_page));
     }
 }
 
-static void scan_page(uint32_t now_ms) {
+static void finish_scan(uint32_t now_ms) {
     (void)now_ms;
-    const uint32_t index = journal.status.scanned_pages++;
-    if (!page_is_erased(journal.page)) {
+    mark_interrupted();
+    APP_LOG_INFO("telemetry",
+                 "scan_done jedec=0x%06lx elapsed_ms=%lu next_page=%lu "
+                 "ignored_pages=%lu interrupted_sessions=%lu",
+                 (unsigned long)journal.jedec_id,
+                 (unsigned long)(now_ms - journal.powered_ms),
+                 (unsigned long)journal.status.next_page,
+                 (unsigned long)journal.status.ignored_pages,
+                 (unsigned long)journal.status.interrupted_sessions);
+    idle_after_session();
+}
+
+static void scan_page(uint32_t now_ms) {
+    const uint32_t index = journal.scan_index++;
+    if (page_is_erased(journal.page)) {
+        /* A verified END anchors this scan. The writer advances only after a
+         * successful program and faults on a failed write. */
+        if (journal.fast_scan) {
+            finish_scan(now_ms);
+            return;
+        }
+    } else {
         journal.status.next_page = index + 1U;
 
         app_flash_journal_page_t info;
@@ -180,18 +223,40 @@ static void scan_page(uint32_t now_ms) {
             journal.session_id = UINT32_MAX;
         }
     }
-    if (journal.status.scanned_pages == PAGE_COUNT) {
-        mark_interrupted();
-        APP_LOG_INFO("telemetry",
-                     "scan_done jedec=0x%06lx elapsed_ms=%lu next_page=%lu "
-                     "ignored_pages=%lu interrupted_sessions=%lu",
-                     (unsigned long)journal.jedec_id,
-                     (unsigned long)(now_ms - journal.powered_ms),
-                     (unsigned long)journal.status.next_page,
-                     (unsigned long)journal.status.ignored_pages,
-                     (unsigned long)journal.status.interrupted_sessions);
-        idle_after_session();
+    if (journal.scan_index == journal.data_limit) {
+        finish_scan(now_ms);
     }
+}
+
+static uint32_t marker_crc(const uint8_t *page) {
+    return crc_update(UINT32_MAX, page, MARKER_CRC_OFFSET) ^ UINT32_MAX;
+}
+
+static void encode_marker(uint8_t *page, uint32_t end, uint32_t ignored,
+                          uint32_t interrupted) {
+    memset(page, 0xFF, BSP_FLASH_PAGE_BYTES);
+    memcpy(page, marker_magic, sizeof(marker_magic));
+    put_u32(page + 4, end);
+    put_u32(page + 8, ignored);
+    put_u32(page + 12, interrupted);
+    put_u32(page + MARKER_CRC_OFFSET, marker_crc(page));
+}
+
+uint32_t app_flash_journal_encode_empty_marker(uint8_t *page) {
+    encode_marker(page, UINT32_MAX, 0U, 0U);
+    return MARKER_FIRST_PAGE * BSP_FLASH_PAGE_BYTES;
+}
+
+bool app_flash_journal_is_marker(const uint8_t *page, uint32_t index) {
+    if (page == NULL || index < MARKER_FIRST_PAGE || index >= PAGE_COUNT ||
+        memcmp(page, marker_magic, sizeof(marker_magic)) != 0 ||
+        get_u32(page + MARKER_CRC_OFFSET) != marker_crc(page)) {
+        return false;
+    }
+    const uint32_t end = get_u32(page + 4);
+    return end < MARKER_FIRST_PAGE ||
+           (end == UINT32_MAX && index == MARKER_FIRST_PAGE &&
+            get_u32(page + 8) == 0U && get_u32(page + 12) == 0U);
 }
 
 static void seal_page(app_flash_journal_page_type_t type, uint32_t now_ms) {
@@ -240,11 +305,12 @@ static void log_transfer_error(bsp_flash_result_t result) {
             error, (unsigned)result, (unsigned long)journal.jedec_id,
             (unsigned long)BSP_FLASH_JEDEC_ID);
     } else if (journal.status.state == APP_FLASH_JOURNAL_SCANNING) {
+        const uint32_t index = journal.scan_step == SCAN_END
+                                   ? journal.marker_end
+                                   : journal.scan_index;
         APP_LOG_ERROR("flash", "op=read error=%s code=%u page=%lu addr=0x%06lx",
-                      error, (unsigned)result,
-                      (unsigned long)journal.status.scanned_pages,
-                      (unsigned long)(journal.status.scanned_pages *
-                                      BSP_FLASH_PAGE_BYTES));
+                      error, (unsigned)result, (unsigned long)index,
+                      (unsigned long)(index * BSP_FLASH_PAGE_BYTES));
     } else {
         APP_LOG_ERROR(
             "flash",
@@ -268,25 +334,160 @@ static bool check_transfer(bsp_flash_result_t result) {
     return result == BSP_FLASH_OK;
 }
 
+static bool read_page(uint32_t index) {
+    return check_transfer(
+        journal.transfer_pending
+            ? bsp_flash_poll()
+            : bsp_flash_read_start(index * BSP_FLASH_PAGE_BYTES, journal.page,
+                                   sizeof(journal.page)));
+}
+
+static void start_data_scan(uint32_t now_ms) {
+    journal.marker_enabled = !journal.legacy_tail &&
+                             (!journal.marker_unknown || journal.marker_saved);
+    if (!journal.marker_enabled) {
+        journal.fast_scan = false;
+        journal.status.next_page = 0U;
+        journal.status.ignored_pages = 0U;
+        journal.status.interrupted_sessions = 0U;
+    }
+    journal.data_limit =
+        journal.marker_enabled ? MARKER_FIRST_PAGE : PAGE_COUNT;
+    journal.scan_step = SCAN_DATA;
+    journal.scan_index = journal.fast_scan && journal.marker_end != UINT32_MAX
+                             ? journal.marker_end + 1U
+                             : 0U;
+    if (journal.scan_index == journal.data_limit) {
+        finish_scan(now_ms);
+    }
+}
+
+static void advance_marker_scan(uint32_t now_ms) {
+    if (journal.scan_index == MARKER_FIRST_PAGE) {
+        start_data_scan(now_ms);
+    } else {
+        --journal.scan_index;
+    }
+}
+
+static void scan_marker(uint32_t now_ms) {
+    const uint32_t index = journal.scan_index;
+    const uint8_t *page = journal.page;
+    if (!page_is_erased(page)) {
+        if (journal.marker_slot <= index) {
+            journal.marker_slot = index + 1U;
+        }
+        if (!app_flash_journal_is_marker(page, index)) {
+            app_flash_journal_page_t info;
+            if (memcmp(page, marker_magic, sizeof(marker_magic)) != 0) {
+                journal.marker_unknown = true;
+            }
+            if (app_flash_journal_decode(page, index, &info)) {
+                journal.legacy_tail = true;
+            }
+        } else if (!journal.fast_scan) {
+            journal.marker_saved = true;
+            journal.marker_end = get_u32(page + 4);
+            journal.marker_ignored = get_u32(page + 8);
+            journal.marker_interrupted = get_u32(page + 12);
+            if (journal.marker_end != UINT32_MAX) {
+                journal.scan_step = SCAN_END;
+                return;
+            }
+            journal.fast_scan = true;
+        }
+    }
+    advance_marker_scan(now_ms);
+}
+
 static void process_scan(uint32_t now_ms) {
     if (journal.jedec_id != BSP_FLASH_JEDEC_ID) {
-        if ((uint32_t)(now_ms - journal.powered_ms) >= POWER_UP_MS) {
-            (void)check_transfer(
-                journal.transfer_pending
-                    ? bsp_flash_poll()
-                    : bsp_flash_probe_start(&journal.jedec_id));
+        if (journal.transfer_pending) {
+            const bsp_flash_result_t result = bsp_flash_poll();
+            /* The MCU can reset while an external sector erase is still busy.
+             */
+            if (result == BSP_FLASH_DEVICE_BUSY &&
+                now_ms - journal.powered_ms < PROBE_BUSY_LIMIT_MS) {
+                journal.transfer_pending = false;
+                journal.last_probe_ms = now_ms;
+            } else {
+                (void)check_transfer(result);
+            }
+        } else if (now_ms - journal.last_probe_ms >= PROBE_RETRY_MS) {
+            (void)check_transfer(bsp_flash_probe_start(&journal.jedec_id));
         }
         return;
     }
 
-    const uint32_t address =
-        journal.status.scanned_pages * BSP_FLASH_PAGE_BYTES;
-    const bsp_flash_result_t result =
-        journal.transfer_pending
-            ? bsp_flash_poll()
-            : bsp_flash_read_start(address, journal.page, sizeof(journal.page));
-    if (check_transfer(result)) {
+    const uint32_t index =
+        journal.scan_step == SCAN_END ? journal.marker_end : journal.scan_index;
+    if (!read_page(index)) {
+        return;
+    }
+    ++journal.status.scanned_pages;
+    switch (journal.scan_step) {
+    case SCAN_MARKERS:
+        scan_marker(now_ms);
+        break;
+    case SCAN_END: {
+        app_flash_journal_page_t info;
+        if (app_flash_journal_decode(journal.page, index, &info) &&
+            info.type == APP_FLASH_JOURNAL_END) {
+            journal.fast_scan = true;
+            journal.status.next_page = index + 1U;
+            journal.status.ignored_pages = journal.marker_ignored;
+            journal.status.interrupted_sessions = journal.marker_interrupted;
+        }
+        journal.scan_step = SCAN_MARKERS;
+        advance_marker_scan(now_ms);
+        break;
+    }
+    case SCAN_DATA:
         scan_page(now_ms);
+        break;
+    }
+}
+
+static void save_marker(void) {
+    switch (journal.save_step) {
+    case SAVE_ERASE:
+        if (check_transfer(
+                journal.transfer_pending
+                    ? bsp_flash_poll()
+                    : bsp_flash_sector_erase_start(MARKER_FIRST_PAGE *
+                                                   BSP_FLASH_PAGE_BYTES))) {
+            journal.verify_index = MARKER_FIRST_PAGE;
+            journal.save_step = SAVE_VERIFY;
+        }
+        break;
+    case SAVE_VERIFY:
+        if (read_page(journal.verify_index)) {
+            if (!page_is_erased(journal.page)) {
+                (void)check_transfer(BSP_FLASH_VERIFY_FAILED);
+            } else if (++journal.verify_index == PAGE_COUNT) {
+                journal.marker_slot = MARKER_FIRST_PAGE;
+                journal.save_step = SAVE_PROGRAM;
+            }
+        }
+        break;
+    case SAVE_PROGRAM:
+        if (!journal.transfer_pending) {
+            encode_marker(journal.page, journal.status.next_page - 1U,
+                          journal.status.ignored_pages,
+                          journal.status.interrupted_sessions);
+        }
+        if (check_transfer(journal.transfer_pending
+                               ? bsp_flash_poll()
+                               : bsp_flash_program_start(
+                                     journal.marker_slot * BSP_FLASH_PAGE_BYTES,
+                                     journal.page, sizeof(journal.page)))) {
+            ++journal.marker_slot;
+            journal.save_step = SAVE_NONE;
+            idle_after_session();
+        }
+        break;
+    case SAVE_NONE:
+        break;
     }
 }
 
@@ -339,8 +540,13 @@ static void process_write(app_flash_journal_page_type_t type, uint32_t now_ms) {
                                                                     : "stopped",
                      (unsigned long)journal.written_frames,
                      (unsigned long)journal.dropped_frames);
-        idle_after_session();
-    } else if (PAGE_COUNT - journal.status.next_page == 1U) {
+        if (journal.marker_enabled) {
+            journal.save_step =
+                journal.marker_slot == PAGE_COUNT ? SAVE_ERASE : SAVE_PROGRAM;
+        } else {
+            idle_after_session();
+        }
+    } else if (journal.data_limit - journal.status.next_page == 1U) {
         prepare_end(APP_FLASH_JOURNAL_FILLED, now_ms);
     } else if (journal.close_requested) {
         prepare_end(APP_FLASH_JOURNAL_STOPPED, journal.close_ms);
@@ -352,6 +558,9 @@ static void process_write(app_flash_journal_page_type_t type, uint32_t now_ms) {
 void app_flash_journal_init(uint32_t now_ms) {
     memset(&journal, 0, sizeof(journal));
     journal.powered_ms = now_ms;
+    journal.last_probe_ms = now_ms + POWER_UP_MS - PROBE_RETRY_MS;
+    journal.scan_index = PAGE_COUNT - 1U;
+    journal.marker_slot = MARKER_FIRST_PAGE;
     journal.session_id = UINT32_MAX;
     APP_LOG_INFO("telemetry", "scan_start pages=%lu",
                  (unsigned long)PAGE_COUNT);
@@ -375,11 +584,22 @@ void app_flash_journal_process(uint32_t now_ms) {
         process_write(APP_FLASH_JOURNAL_DATA, now_ms);
         break;
     case APP_FLASH_JOURNAL_CLOSING:
-        process_write(APP_FLASH_JOURNAL_END, now_ms);
+        if (journal.save_step == SAVE_NONE) {
+            process_write(APP_FLASH_JOURNAL_END, now_ms);
+        } else {
+            save_marker();
+        }
         break;
     default:
         break;
     }
+}
+
+bool app_flash_journal_abort_scan(void) {
+    if (journal.transfer_pending) {
+        journal.transfer_pending = bsp_flash_poll() == BSP_FLASH_PENDING;
+    }
+    return !journal.transfer_pending;
 }
 
 app_flash_journal_status_t app_flash_journal_status(void) {

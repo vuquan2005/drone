@@ -13,7 +13,7 @@ typedef enum {
 /** Enter the maintenance mode with PWM already disabled. Foreground only. */
 void flash_erase_rc_init(void);
 
-/** Start erase and verification after the caller authorizes it.
+/** Start erase, verification and empty checkpoint after caller authorization.
  * @param now_ms MCU uptime in ms modulo 2^32.
  * @pre PWM is disabled, the caller owns the flash and no SPI transfer is
  * active.
@@ -21,12 +21,13 @@ void flash_erase_rc_init(void);
  */
 void flash_erase_start(uint32_t now_ms);
 
-/** Run one bounded erase or verification step after flash_erase_start().
+/** Run one bounded step after flash_erase_start().
  * @param now_ms MCU uptime in ms modulo 2^32. Foreground only.
  */
 void flash_erase_process(uint32_t now_ms);
 
-/** Qualify a fresh LOW to HIGH SA confirmation, then erase and verify.
+/** Qualify a fresh LOW to HIGH SA confirmation, then erase and write the
+ * verified empty checkpoint.
  * @param command Current decoded RC command, or NULL for invalid RC.
  * @param now_ms MCU uptime in ms modulo 2^32.
  * @note The mode owns the external flash until reset. At most one bounded

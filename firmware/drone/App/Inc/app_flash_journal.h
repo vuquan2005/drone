@@ -104,4 +104,24 @@ bool app_flash_journal_close(uint32_t now_ms);
 bool app_flash_journal_decode(const uint8_t *page, uint32_t index,
                               app_flash_journal_page_t *out);
 
+/** @brief Check the CRC and bounds of a checkpoint in the final sector.
+ * @param page Complete flash page, or NULL.
+ * @param index Physical page index of the supplied bytes.
+ * @return True if the checkpoint envelope is valid. The END is checked
+ * separately.
+ */
+bool app_flash_journal_is_marker(const uint8_t *page, uint32_t index);
+
+/** @brief Encode a checkpoint for a chip just verified fully erased.
+ * @param page Writable buffer of BSP_FLASH_PAGE_BYTES bytes, non-NULL.
+ * @return Byte address where the caller must program and verify the page.
+ */
+uint32_t app_flash_journal_encode_empty_marker(uint8_t *page);
+
+/** @brief Drain the outstanding flash operation before abandoning recovery.
+ * @return True once the caller can hand the flash to another module.
+ * Call only while recovering. Do not resume processing without init.
+ */
+bool app_flash_journal_abort_scan(void);
+
 #endif

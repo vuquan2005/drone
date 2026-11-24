@@ -28,7 +28,8 @@ uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 
 Cắm ST-LINK qua SWD và dừng phiên debug đang dùng cùng ST-LINK.
 Tắt tay điều khiển rồi reset board để firmware Debug hoặc Release chờ RC.
-Từ gốc repo, mở công cụ:
+Bấm **Flash Export…** trong cửa sổ `make telemetry` để mở GUI xuất flash.
+Cũng có thể mở trực tiếp từ gốc repo:
 
 ```sh
 make flash-export

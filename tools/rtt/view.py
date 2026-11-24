@@ -85,6 +85,9 @@ class Viewer(QtWidgets.QMainWindow):
         self.open_button = QtWidgets.QPushButton("Open session…")
         self.open_button.clicked.connect(self.choose_session)
         controls.addWidget(self.open_button)
+        self.flash_export_button = QtWidgets.QPushButton("Flash Export…")
+        self.flash_export_button.clicked.connect(self.open_flash_export)
+        controls.addWidget(self.flash_export_button)
         self.live_button = QtWidgets.QPushButton("Return to live")
         self.live_button.clicked.connect(self.return_live)
         self.live_button.hide()
@@ -152,6 +155,15 @@ class Viewer(QtWidgets.QMainWindow):
             self.load_session(initial_session)
         elif getattr(args, "record", False):
             QtCore.QTimer.singleShot(0, self.toggle_recording)
+
+    def open_flash_export(self):
+        started, _ = QtCore.QProcess.startDetached(
+            sys.executable, [str(Path(__file__).resolve().with_name("flash_view.py"))]
+        )
+        if not started:
+            QtWidgets.QMessageBox.warning(
+                self, "Cannot open Flash Export", "Could not start the Flash Export viewer."
+            )
 
     def choose_session(self):
         start = self.output_dir.text()

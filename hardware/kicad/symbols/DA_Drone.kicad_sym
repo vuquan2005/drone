@@ -404,7 +404,7 @@
 				)
 			)
 		)
-		(property "Value" "BMI2160_Module"
+		(property "Value" "BMI160_Module"
 			(at 0 21.59 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -414,7 +414,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "DA_Drone:BMI2160_Module_2Row_P2.54mm_W10.16mm"
 			(at 0 3.81 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -436,7 +436,7 @@
 				)
 			)
 		)
-		(property "Description" "BMI270 sensor module."
+		(property "Description" "BMI2160_Module, 12-pin IMU module."
 			(at 0 3.81 0)
 			(show_name no)
 			(do_not_autoplace no)

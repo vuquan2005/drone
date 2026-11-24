@@ -393,7 +393,7 @@
 			)
 			(embedded_fonts no)
 		)
-		(symbol "DA_Drone:BMI160"
+		(symbol "DA_Drone:BMI160_Module"
 			(pin_names
 				(offset 1.016)
 			)
@@ -403,7 +403,7 @@
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "U"
-				(at 0 20.32 0)
+				(at 0 24.13 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -412,8 +412,8 @@
 					)
 				)
 			)
-			(property "Value" "BMI160"
-				(at 0 17.78 0)
+			(property "Value" "BMI2160_Module"
+				(at 0 21.59 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -422,8 +422,8 @@
 					)
 				)
 			)
-			(property "Footprint" ""
-				(at 0 0 0)
+			(property "Footprint" "DA_Drone:BMI2160_Module_2Row_P2.54mm_W10.16mm"
+				(at 0 3.81 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -434,7 +434,7 @@
 				)
 			)
 			(property "Datasheet" ""
-				(at 0 0 0)
+				(at 0 3.81 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -444,8 +444,8 @@
 					)
 				)
 			)
-			(property "Description" "GY-BMI160 module, SPI wiring."
-				(at 0 0 0)
+			(property "Description" "BMI2160_Module, 12-pin IMU module."
+				(at 0 3.81 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -455,10 +455,10 @@
 					)
 				)
 			)
-			(symbol "BMI160_0_1"
+			(symbol "BMI160_Module_0_1"
 				(rectangle
 					(start -15.24 15.24)
-					(end 15.24 -25.4)
+					(end 15.24 -10.16)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -468,11 +468,11 @@
 					)
 				)
 			)
-			(symbol "BMI160_1_1"
+			(symbol "BMI160_Module_1_1"
 				(pin power_in line
-					(at 20.32 10.16 180)
+					(at -20.32 10.16 0)
 					(length 5.08)
-					(name "3V3"
+					(name "VIN"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -488,9 +488,9 @@
 					)
 				)
 				(pin power_in line
-					(at 20.32 5.08 180)
+					(at -20.32 7.62 0)
 					(length 5.08)
-					(name "GND"
+					(name "3V3"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -505,10 +505,10 @@
 						)
 					)
 				)
-				(pin bidirectional line
-					(at 20.32 0 180)
+				(pin power_in line
+					(at -20.32 5.08 0)
 					(length 5.08)
-					(name "SA0"
+					(name "GND"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -523,10 +523,10 @@
 						)
 					)
 				)
-				(pin bidirectional line
-					(at 20.32 -5.08 180)
+				(pin input line
+					(at -20.32 0 0)
 					(length 5.08)
-					(name "SDA"
+					(name "SCL/SCLK"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -541,10 +541,10 @@
 						)
 					)
 				)
-				(pin input line
-					(at 20.32 -10.16 180)
+				(pin bidirectional line
+					(at -20.32 -2.54 0)
 					(length 5.08)
-					(name "SCL"
+					(name "SDA/MOSI"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -560,7 +560,7 @@
 					)
 				)
 				(pin input line
-					(at 20.32 -15.24 180)
+					(at -20.32 -5.08 0)
 					(length 5.08)
 					(name "CS"
 						(effects
@@ -577,10 +577,10 @@
 						)
 					)
 				)
-				(pin output line
-					(at 20.32 -20.32 180)
+				(pin bidirectional line
+					(at -20.32 -7.62 0)
 					(length 5.08)
-					(name "INT1"
+					(name "SAO/MISO"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -596,9 +596,9 @@
 					)
 				)
 				(pin bidirectional line
-					(at -20.32 0 0)
+					(at 20.32 10.16 180)
 					(length 5.08)
-					(name "SDX"
+					(name "OCS"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -613,10 +613,10 @@
 						)
 					)
 				)
-				(pin bidirectional line
-					(at -20.32 -5.08 0)
+				(pin output line
+					(at 20.32 5.08 180)
 					(length 5.08)
-					(name "SCX"
+					(name "INT1"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -632,7 +632,7 @@
 					)
 				)
 				(pin output line
-					(at -20.32 -10.16 0)
+					(at 20.32 2.54 180)
 					(length 5.08)
 					(name "INT2"
 						(effects
@@ -642,6 +642,42 @@
 						)
 					)
 					(number "10"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 20.32 -2.54 180)
+					(length 5.08)
+					(name "SCX"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "11"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at 20.32 -5.08 180)
+					(length 5.08)
+					(name "SDX"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "12"
 						(effects
 							(font
 								(size 1.016 1.016)
@@ -1077,42 +1113,6 @@
 				)
 			)
 			(symbol "STM32_DevKit_1_1"
-				(pin passive line
-					(at 10.16 73.66 270)
-					(length 6.35)
-					(name "3V3"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "[3V3_1,3V3_2,3V3_3,3V3_4]"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 73.66 270)
-					(length 6.35)
-					(name "5V"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "[5V_1,5V_2]"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
 				(pin input line
 					(at 38.1 63.5 180)
 					(length 6.35)
@@ -1142,24 +1142,6 @@
 						)
 					)
 					(number "BOOT1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin passive line
-					(at 0 -73.66 90)
-					(length 6.35)
-					(name "GND"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "[GND1,GND2,GND3,GND4,GND5,GND6,GND7]"
 						(effects
 							(font
 								(size 1.27 1.27)
@@ -2661,6 +2643,60 @@
 						)
 					)
 				)
+				(pin passive line
+					(at 10.16 73.66 270)
+					(length 6.35)
+					(name "3V3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "[3V3_1,3V3_2,3V3_3,3V3_4]"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 73.66 270)
+					(length 6.35)
+					(name "5V"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "[5V_1,5V_2]"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 0 -73.66 90)
+					(length 6.35)
+					(name "GND"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "[GND1,GND2,GND3,GND4,GND5,GND6,GND7]"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
 			)
 			(embedded_fonts no)
 		)
@@ -2895,6 +2931,10 @@
 		(uuid "2344f368-b7e2-567c-b4b6-ab7dfe7b97a4")
 	)
 	(no_connect
+		(at 85.09 194.31)
+		(uuid "2660c0b3-acd2-47bd-a930-d78305a20eed")
+	)
+	(no_connect
 		(at 87.63 137.16)
 		(uuid "26da5128-5c71-552a-b399-50a5fbeda40f")
 	)
@@ -2943,7 +2983,7 @@
 		(uuid "47d68362-bc1f-52ac-8094-6f03c6919d02")
 	)
 	(no_connect
-		(at 44.45 204.47)
+		(at 85.09 209.55)
 		(uuid "497dbfcc-96d4-5c14-ac1c-391d43034fdf")
 	)
 	(no_connect
@@ -3059,7 +3099,7 @@
 		(uuid "95e9001b-fa8e-5bd1-83fa-4b10b38c666c")
 	)
 	(no_connect
-		(at 44.45 214.63)
+		(at 85.09 201.93)
 		(uuid "96044447-8487-53d4-ba7a-9d2642cc96ab")
 	)
 	(no_connect
@@ -3123,7 +3163,7 @@
 		(uuid "c157ecc1-6694-512e-998a-3e14a0e137e0")
 	)
 	(no_connect
-		(at 44.45 209.55)
+		(at 85.09 207.01)
 		(uuid "c2ad0f27-33e1-5b3d-9eb2-3e1a49290dc3")
 	)
 	(no_connect
@@ -3159,6 +3199,10 @@
 		(uuid "e3acd6e8-4bcd-5e67-9d4f-2326dc7c16c0")
 	)
 	(no_connect
+		(at 44.45 194.31)
+		(uuid "eccddde8-1d10-4fad-960d-69dee4588af1")
+	)
+	(no_connect
 		(at 163.83 93.98)
 		(uuid "ee45bc57-4dfa-5bc7-b7c9-91a43d86c16f")
 	)
@@ -3171,7 +3215,7 @@
 		(uuid "f9912539-73a4-5c9d-82b2-0737863da36c")
 	)
 	(no_connect
-		(at 85.09 224.79)
+		(at 85.09 199.39)
 		(uuid "fc4c7cc9-8298-517a-af52-5db52e849973")
 	)
 	(no_connect
@@ -3304,7 +3348,7 @@
 	)
 	(wire
 		(pts
-			(xy 85.09 214.63) (xy 90.17 214.63)
+			(xy 44.45 204.47) (xy 39.37 204.47)
 		)
 		(stroke
 			(width 0)
@@ -3354,6 +3398,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 93.98) (xy 87.63 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "43a49276-af42-41b0-b063-b5da794aafb5")
+	)
+	(wire
+		(pts
 			(xy 345.44 138.43) (xy 345.44 143.51)
 		)
 		(stroke
@@ -3374,7 +3428,7 @@
 	)
 	(wire
 		(pts
-			(xy 85.09 204.47) (xy 90.17 204.47)
+			(xy 44.45 212.09) (xy 39.37 212.09)
 		)
 		(stroke
 			(width 0)
@@ -3384,7 +3438,7 @@
 	)
 	(wire
 		(pts
-			(xy 85.09 219.71) (xy 90.17 219.71)
+			(xy 44.45 209.55) (xy 39.37 209.55)
 		)
 		(stroke
 			(width 0)
@@ -3534,7 +3588,7 @@
 	)
 	(wire
 		(pts
-			(xy 85.09 194.31) (xy 90.17 194.31)
+			(xy 44.45 196.85) (xy 39.37 196.85)
 		)
 		(stroke
 			(width 0)
@@ -3664,6 +3718,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 50.8) (xy 87.63 50.8)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "be09b388-4d19-4d12-8d0c-c90401523b40")
+	)
+	(wire
+		(pts
 			(xy 287.02 162.56) (xy 281.94 162.56)
 		)
 		(stroke
@@ -3744,26 +3808,6 @@
 	)
 	(wire
 		(pts
-			(xy 82.55 50.8) (xy 87.63 50.8)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "be09b388-4d19-4d12-8d0c-c90401523b40")
-	)
-	(wire
-		(pts
-			(xy 82.55 93.98) (xy 87.63 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "43a49276-af42-41b0-b063-b5da794aafb5")
-	)
-	(wire
-		(pts
 			(xy 345.44 185.42) (xy 327.66 185.42)
 		)
 		(stroke
@@ -3824,7 +3868,7 @@
 	)
 	(wire
 		(pts
-			(xy 85.09 209.55) (xy 90.17 209.55)
+			(xy 44.45 207.01) (xy 39.37 207.01)
 		)
 		(stroke
 			(width 0)
@@ -3834,7 +3878,7 @@
 	)
 	(wire
 		(pts
-			(xy 85.09 199.39) (xy 90.17 199.39)
+			(xy 44.45 199.39) (xy 39.37 199.39)
 		)
 		(stroke
 			(width 0)
@@ -3893,12 +3937,12 @@
 		(uuid "0960a46b-24e4-4cd9-967a-61ff7bca3319")
 	)
 	(label "+3V3"
-		(at 90.17 194.31 0)
+		(at 39.37 196.85 180)
 		(effects
 			(font
 				(size 1 1)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "1d605311-8484-4b92-ac7b-c2e3b4e7ed01")
 	)
@@ -3923,12 +3967,12 @@
 		(uuid "3560c110-9c52-4d63-990f-a3f3a9a31a1b")
 	)
 	(label "SPI1_MISO"
-		(at 90.17 204.47 0)
+		(at 39.37 212.09 180)
 		(effects
 			(font
 				(size 1 1)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "360e7efd-d0ba-4784-8708-581cf9765fd1")
 	)
@@ -4013,12 +4057,12 @@
 		(uuid "528646ec-cfd3-423b-a781-553bfdbeb014")
 	)
 	(label "GND"
-		(at 90.17 199.39 0)
+		(at 39.37 199.39 180)
 		(effects
 			(font
 				(size 1 1)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "55b2b09f-566d-4d04-b747-a4c9495c00d2")
 	)
@@ -4223,12 +4267,12 @@
 		(uuid "cc911bde-f78a-45ee-9b52-d21e3fa6daf2")
 	)
 	(label "SPI1_MOSI"
-		(at 90.17 209.55 0)
+		(at 39.37 207.01 180)
 		(effects
 			(font
 				(size 1 1)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "dcc3f40d-a964-4bfd-a2dc-3c0a4c7351ea")
 	)
@@ -4243,12 +4287,12 @@
 		(uuid "e6861262-30d2-4547-808b-d41f1455b38f")
 	)
 	(label "IMU_CS"
-		(at 90.17 219.71 0)
+		(at 39.37 209.55 180)
 		(effects
 			(font
 				(size 1 1)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "e7abed3d-38e5-4b97-bbe2-ca563cc471a5")
 	)
@@ -4283,12 +4327,12 @@
 		(uuid "f254df0d-7c80-440a-90eb-eb14e57ca731")
 	)
 	(label "SPI1_SCK"
-		(at 90.17 214.63 0)
+		(at 39.37 204.47 180)
 		(effects
 			(font
 				(size 1 1)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
 		(uuid "faa45b3b-ed85-4db4-9d06-44fcec738220")
 	)
@@ -4303,7 +4347,7 @@
 		(uuid "fe3ad6b5-5853-49ba-867a-86033a90cce7")
 	)
 	(symbol
-		(lib_id "DA_Drone:BMI160")
+		(lib_id "DA_Drone:BMI160_Module")
 		(at 64.77 204.47 0)
 		(unit 1)
 		(body_style 1)
@@ -4323,7 +4367,7 @@
 				)
 			)
 		)
-		(property "Value" "BMI160"
+		(property "Value" "BMI2160_Module"
 			(at 64.77 183.77 0)
 			(hide yes)
 			(show_name no)
@@ -4334,7 +4378,7 @@
 				)
 			)
 		)
-		(property "Footprint" ""
+		(property "Footprint" "DA_Drone:BMI2160_Module_2Row_P2.54mm_W10.16mm"
 			(at 210.82 218.44 0)
 			(hide yes)
 			(show_name no)
@@ -4356,7 +4400,7 @@
 				)
 			)
 		)
-		(property "Description" "GY-BMI160 module, SPI wiring."
+		(property "Description" "BMI2160_Module, 12-pin IMU module."
 			(at 210.82 218.44 0)
 			(hide yes)
 			(show_name no)
@@ -4367,35 +4411,41 @@
 				)
 			)
 		)
-		(pin "1"
+		(pin "2"
 			(uuid "f10bc253-78cf-59a2-ba8e-b5fc40514d3f")
 		)
-		(pin "2"
+		(pin "3"
 			(uuid "18529c47-9303-594b-82d3-da66cb7fa332")
 		)
-		(pin "3"
+		(pin "7"
 			(uuid "a04825db-0464-5efb-a690-00f5354feecf")
 		)
-		(pin "4"
+		(pin "5"
 			(uuid "32307e46-3073-53ec-8855-2ac965442530")
 		)
-		(pin "5"
+		(pin "4"
 			(uuid "a3912ad9-2000-5fb2-b141-baa927b05345")
 		)
 		(pin "6"
 			(uuid "72570013-f74d-5664-95e3-9b4a2a8cee98")
 		)
-		(pin "7"
+		(pin "9"
 			(uuid "fe40c2a9-7f2b-5863-820f-64b72f686a19")
 		)
-		(pin "8"
+		(pin "12"
 			(uuid "13b8ca67-0f87-5a7f-8493-7e17d506939e")
 		)
-		(pin "9"
+		(pin "11"
 			(uuid "6b795687-4c32-5066-b7b1-f5621acbabea")
 		)
 		(pin "10"
 			(uuid "10b52079-3162-5506-aba3-3c7921260fac")
+		)
+		(pin "1"
+			(uuid "f30c5576-e719-4daf-a4ec-f0f4d51097e7")
+		)
+		(pin "8"
+			(uuid "9b9abb71-cf97-47cc-bf8a-2bb436a9a00d")
 		)
 		(instances
 			(project "Quadrotor_Wiring"

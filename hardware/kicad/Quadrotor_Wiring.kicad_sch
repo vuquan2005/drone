@@ -3349,16 +3349,6 @@
 	)
 	(wire
 		(pts
-			(xy 82.55 101.6) (xy 88.9 101.6)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "3e7f2b6a-9f30-4947-aa25-75c3e9fea9c6")
-	)
-	(wire
-		(pts
 			(xy 327.66 133.35) (xy 363.22 133.35)
 		)
 		(stroke
@@ -3399,16 +3389,6 @@
 	)
 	(wire
 		(pts
-			(xy 82.55 93.98) (xy 88.9 93.98)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "43a49276-af42-41b0-b063-b5da794aafb5")
-	)
-	(wire
-		(pts
 			(xy 345.44 138.43) (xy 345.44 143.51)
 		)
 		(stroke
@@ -3416,16 +3396,6 @@
 			(type default)
 		)
 		(uuid "453c11cb-6852-46d3-a8d0-a7fd79c771f2")
-	)
-	(wire
-		(pts
-			(xy 88.9 99.06) (xy 82.55 99.06)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4989ea06-b39d-42a1-9e06-6467c97b8509")
 	)
 	(wire
 		(pts
@@ -3749,6 +3719,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 101.6) (xy 88.9 101.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "bcb967fb-1abf-41ae-b976-b7b20fe86518")
+	)
+	(wire
+		(pts
 			(xy 345.44 59.69) (xy 327.66 59.69)
 		)
 		(stroke
@@ -3799,16 +3779,6 @@
 	)
 	(wire
 		(pts
-			(xy 88.9 96.52) (xy 82.55 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c3d582ba-2d81-44d6-a592-1f204ef07967")
-	)
-	(wire
-		(pts
 			(xy 345.44 123.19) (xy 327.66 123.19)
 		)
 		(stroke
@@ -3816,6 +3786,16 @@
 			(type default)
 		)
 		(uuid "c7aae07b-0f85-40e1-bd6e-4f5686f58ccd")
+	)
+	(wire
+		(pts
+			(xy 82.55 99.06) (xy 88.9 99.06)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "cbf55eca-8851-4ea7-bd7d-94dccd155e5f")
 	)
 	(wire
 		(pts
@@ -3879,6 +3859,16 @@
 	)
 	(wire
 		(pts
+			(xy 82.55 96.52) (xy 88.9 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e0e862cc-d424-449a-994c-a5b1b1fb4a63")
+	)
+	(wire
+		(pts
 			(xy 287.02 104.14) (xy 281.94 104.14)
 		)
 		(stroke
@@ -3906,6 +3896,16 @@
 			(type default)
 		)
 		(uuid "e942bd35-fa5f-4bd8-ade8-166d2e4383f9")
+	)
+	(wire
+		(pts
+			(xy 82.55 93.98) (xy 88.9 93.98)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "eaa8738a-545a-4984-96d1-b37355343f74")
 	)
 	(wire
 		(pts
@@ -4048,7 +4048,7 @@
 		(uuid "360e7efd-d0ba-4784-8708-581cf9765fd1")
 	)
 	(label "ESC4_PWM"
-		(at 82.55 101.6 180)
+		(at 82.55 93.98 180)
 		(effects
 			(font
 				(size 1 1)
@@ -4118,7 +4118,7 @@
 		(uuid "4a9edeb3-f493-49e0-8019-9c42bbb35d4f")
 	)
 	(label "ESC1_PWM"
-		(at 82.55 93.98 180)
+		(at 82.55 101.6 180)
 		(effects
 			(font
 				(size 1 1)
@@ -4168,7 +4168,7 @@
 		(uuid "64a3992f-1612-4885-b003-2f6295c47b6e")
 	)
 	(label "ESC3_PWM"
-		(at 82.55 99.06 180)
+		(at 82.55 96.52 180)
 		(effects
 			(font
 				(size 1 1)
@@ -4388,7 +4388,7 @@
 		(uuid "cb19ef6e-a8c0-4306-9d91-d9817fa0d7c2")
 	)
 	(label "ESC2_PWM"
-		(at 82.55 96.52 180)
+		(at 82.55 99.06 180)
 		(effects
 			(font
 				(size 1 1)

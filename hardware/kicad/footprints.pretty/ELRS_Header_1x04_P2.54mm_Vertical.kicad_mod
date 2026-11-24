@@ -6,8 +6,9 @@
 	(descr "Vertical THT header, 2.54 mm pitch, 4=GND (origin), 3=5V, 2=TX, 1=RX")
 	(tags "Through hole pin header THT 1x04 2.54mm single row")
 	(property "Reference" "REF**"
-		(at 0 -2.38 0)
-		(layer "F.SilkS")
+		(at 0 -3.45 0)
+		(layer "F.Fab")
+		(hide yes)
 		(uuid "7c69ff18-669a-464d-a47a-a8f7320c4a11")
 		(effects
 			(font
@@ -51,7 +52,7 @@
 	)
 	(property "KiLib_Generator" "connector/pin_header_socket"
 		(at 0 0 0)
-		(layer "F.SilkS")
+		(layer "F.Fab")
 		(hide yes)
 		(uuid "2ea86d21-b0c6-4d30-a61a-8a9da8977d08")
 		(effects
@@ -63,69 +64,9 @@
 	)
 	(attr through_hole)
 	(duplicate_pad_numbers_are_jumpers no)
-	(fp_line
-		(start -1.38 -1.38)
-		(end 0 -1.38)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "F.SilkS")
-		(uuid "3c5299bd-1c07-4b16-8fe5-139fe1248174")
-	)
-	(fp_line
-		(start -1.38 0)
-		(end -1.38 -1.38)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "F.SilkS")
-		(uuid "8594f759-1cc8-4f53-af6e-f228689e366e")
-	)
-	(fp_line
-		(start -1.38 3.81)
-		(end -1.38 9)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "F.SilkS")
-		(uuid "fa613833-35a6-4859-90e4-1277ef202629")
-	)
-	(fp_line
-		(start -1.38 3.81)
-		(end 1.38 3.81)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "F.SilkS")
-		(uuid "1ce73c44-ff77-4d80-a7cc-df3c9f6850d5")
-	)
-	(fp_line
-		(start -1.38 9)
-		(end 1.38 9)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "F.SilkS")
-		(uuid "a316dfec-53a2-440f-b6c9-33d32f40975d")
-	)
-	(fp_line
-		(start 1.38 3.81)
-		(end 1.38 9)
-		(stroke
-			(width 0.12)
-			(type solid)
-		)
-		(layer "F.SilkS")
-		(uuid "43c21a5c-f63e-482d-8a24-5bcaedfc663c")
-	)
 	(fp_rect
-		(start -1.77 -1.77)
-		(end 1.77 9.39)
+		(start -1.27 -1.77)
+		(end 1.27 9.39)
 		(stroke
 			(width 0.05)
 			(type solid)
@@ -186,7 +127,7 @@
 	)
 	(fp_text user "GND"
 		(at 2.1 0 0)
-		(layer "F.SilkS")
+		(layer "F.Fab")
 		(uuid "f913bb16-4ffe-462d-92b4-3df47e6f77e5")
 		(effects
 			(font
@@ -198,7 +139,7 @@
 	)
 	(fp_text user "5V"
 		(at 2.1 2.54 0)
-		(layer "F.SilkS")
+		(layer "F.Fab")
 		(uuid "20c54b89-7c0c-4c20-b9be-71162d977b2b")
 		(effects
 			(font
@@ -210,7 +151,7 @@
 	)
 	(fp_text user "TX"
 		(at 2.1 5.08 0)
-		(layer "F.SilkS")
+		(layer "F.Fab")
 		(uuid "25548075-be40-4673-b9c8-7f57ff61a750")
 		(effects
 			(font
@@ -222,7 +163,7 @@
 	)
 	(fp_text user "RX"
 		(at 2.1 7.62 0)
-		(layer "F.SilkS")
+		(layer "F.Fab")
 		(uuid "09f7c300-6303-4fe6-9a32-bea71c7f396c")
 		(effects
 			(font

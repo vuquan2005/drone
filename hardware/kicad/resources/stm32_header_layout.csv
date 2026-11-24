@@ -1,4 +1,4 @@
-GND,GND,,rst,,,,,USB ↑,,,,,,,,GND,GND
+GND,GND,,rst,,,,,,,,,,,,,GND,GND
 VB,3V3,,,,,,,,,,,,,,,3V3,3V3
 5V,5V,,0,boot1,1,,,,,,,,,,,GND,GND
 E0,E1,,0,boot0,1,,,,,,,,,,,B9,B8

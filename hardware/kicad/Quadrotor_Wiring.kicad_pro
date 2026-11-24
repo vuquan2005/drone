@@ -253,7 +253,9 @@
     }
   },
   "libraries": {
-    "pinned_footprint_libs": [],
+    "pinned_footprint_libs": [
+      "DA_Drone"
+    ],
     "pinned_symbol_libs": [
       "DA_Drone"
     ]

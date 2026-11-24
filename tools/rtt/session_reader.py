@@ -122,6 +122,9 @@ def read_session(directory):
                         # Rate CSV has MCU timestamps, unlike the live host-time plot.
                         if state.feed((1, kind, payload), elapsed / 1e6) is None:
                             raise ValueError("invalid telemetry payload")
+                        if kind == 6:
+                            seconds = state.attitude_points[-1][0]
+                            state.attitude_snapshots.append((seconds, state.latest_attitude[2:]))
                         if kind in (3, 8):
                             snapshots = state.rc_snapshots
                             rc_seconds = 0

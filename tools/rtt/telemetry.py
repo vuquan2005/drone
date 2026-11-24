@@ -67,6 +67,7 @@ class TelemetryState:
     def reset_attitude(self):
         self.latest_attitude = self.attitude_received_at = None
         self.attitude_points = deque(maxlen=250)
+        self.attitude_snapshots = []
         self.attitude_start = None
         self.latest_attitude_control = self.attitude_control_received_at = None
         self.attitude_control_points = deque(maxlen=2000)

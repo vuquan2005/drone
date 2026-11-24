@@ -238,6 +238,7 @@ class Viewer(QtWidgets.QMainWindow):
             return
         self.saved_session = None
         self.receiver_panel.set_saved_snapshots([])
+        self.attitude_panel.set_saved_snapshots([])
         self.telemetry = TelemetryState()
         self.log_panel.clear_log()
         self.log_panel.setToolTip("")

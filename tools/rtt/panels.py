@@ -251,14 +251,29 @@ class AttitudePanel(QtWidgets.QWidget):
         graph = pg.PlotWidget(background="w")
         content = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
         self.model = AttitudeModel()
+        self.attitude_snapshots = []
+        self.replay_controls = QtWidgets.QWidget()
+        replay_layout = QtWidgets.QHBoxLayout(self.replay_controls)
+        replay_layout.setContentsMargins(0, 0, 0, 0)
+        self.replay_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.replay_slider.setAccessibleName("Saved attitude snapshot")
+        self.replay_slider.valueChanged.connect(self.show_saved_snapshot)
+        self.replay_position = QtWidgets.QLabel()
+        replay_layout.addWidget(self.replay_slider, 1)
+        replay_layout.addWidget(self.replay_position)
+        self.replay_controls.hide()
         content.addWidget(self.model)
         content.addWidget(graph)
         content.setStretchFactor(0, 1)
         content.setStretchFactor(1, 2)
         layout.addWidget(content, 1)
+        layout.addWidget(self.replay_controls)
         self.status = QtWidgets.QLabel("Waiting for attitude")
         layout.insertWidget(0, self.status)
         self.plot = graph.getPlotItem()
+        self.replay_marker = pg.InfiniteLine(angle=90, pen=pg.mkPen("#555555", width=1))
+        self.replay_marker.hide()
+        self.plot.addItem(self.replay_marker, ignoreBounds=True)
         self.plot.setLabel("left", "Angle (°)")
         self.plot.showGrid(x=True, y=True, alpha=0.2)
         self.plot.addLegend()
@@ -267,18 +282,47 @@ class AttitudePanel(QtWidgets.QWidget):
             for axis, color in zip(("Roll", "Pitch", "Yaw"), AXIS_COLORS)
         ]
 
+    def set_saved_snapshots(self, snapshots):
+        self.attitude_snapshots = snapshots
+        last = max(0, len(snapshots) - 1)
+        with QtCore.QSignalBlocker(self.replay_slider):
+            self.replay_slider.setRange(0, last)
+            self.replay_slider.setValue(last)
+        self.replay_slider.setEnabled(len(snapshots) > 1)
+        self.replay_controls.setVisible(bool(snapshots))
+        self.replay_marker.setVisible(bool(snapshots))
+        if snapshots:
+            self.show_saved_snapshot(last)
+        else:
+            self.replay_position.clear()
+
+    def show_saved_snapshot(self, index):
+        if not self.attitude_snapshots:
+            return
+        seconds, q = self.attitude_snapshots[index]
+        self.show_quaternion(q)
+        self.replay_marker.setValue(seconds)
+        self.replay_position.setText(f"{seconds:.2f}s · {index + 1}/{len(self.attitude_snapshots)}")
+
+    def show_quaternion(self, q):
+        self.model.set_quaternion(q)
+        roll, pitch, yaw = attitude_degrees(q)
+        self.status.setText(f"Roll {roll:+.1f}°    Pitch {pitch:+.1f}°    Yaw {yaw:+.1f}°")
+
     def update_attitude(self, state, now=None):
         saved = now is None
         sample = state.latest_attitude
         age = now - state.attitude_received_at if not saved and sample is not None else 0
-        self.model.set_quaternion(sample[2:] if sample is not None and age <= 0.25 else None)
         if sample is None:
+            self.model.set_quaternion(None)
             self.status.setText("No saved attitude" if saved else "Waiting for attitude")
         elif age > 0.25:
+            self.model.set_quaternion(None)
             self.status.setText(f"Attitude stale · {age:.2f} s")
-        else:
-            roll, pitch, yaw = attitude_degrees(sample[2:])
-            self.status.setText(f"Roll {roll:+.1f}°    Pitch {pitch:+.1f}°    Yaw {yaw:+.1f}°")
+        elif not saved or not state.attitude_snapshots:
+            self.show_quaternion(sample[2:])
+        if saved:
+            self.set_saved_snapshots(state.attitude_snapshots)
         data = np.asarray(state.attitude_points, dtype=float)
         for axis, curve in enumerate(self.curves, 1):
             if data.size:

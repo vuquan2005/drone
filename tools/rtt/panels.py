@@ -14,6 +14,39 @@ AXIS_COLORS = ("#d1495b", "#218739", "#246bc1")
 AXIS_LINE_WIDTH = 1
 
 
+def imu_display_points(series, config):
+    """Apply the segment's FRD calibration to a copy of the plotted samples."""
+    points = np.asarray(series.points, dtype=float)
+    imu = config.get("imu") if config else None
+    calibration = imu.get("calibration") if isinstance(imu, dict) else None
+    if not isinstance(calibration, dict) or calibration.get("frame") != "FRD":
+        return points, "Uncorrected", "Uncorrected"
+    try:
+        gyro_bias = np.asarray(calibration["gyro_bias_radps"], dtype=float)
+        accel_enabled = calibration["accel_enabled"] is True
+        if accel_enabled:
+            accel_bias = np.asarray(calibration["accel_bias_mps2"], dtype=float)
+            matrix = np.asarray(calibration["accel_matrix"], dtype=float)
+            if (
+                accel_bias.shape != (3,)
+                or matrix.shape != (3, 3)
+                or not np.isfinite(accel_bias).all()
+                or not np.isfinite(matrix).all()
+            ):
+                raise ValueError("Invalid accelerometer calibration")
+        if gyro_bias.shape != (3,) or not np.isfinite(gyro_bias).all():
+            raise ValueError("Invalid gyroscope calibration")
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return points, "Uncorrected", "Uncorrected"
+
+    if points.size:
+        points[:, 4:7] -= gyro_bias
+        if accel_enabled:
+            points[:, 1:4] = (points[:, 1:4] - accel_bias) @ matrix.T
+    source = "Flash" if calibration.get("source") == "flash" else "Default"
+    return points, source if accel_enabled else "Uncorrected", source
+
+
 class ImuPanel(pg.GraphicsLayoutWidget):
     def __init__(self):
         super().__init__()
@@ -43,8 +76,10 @@ class ImuPanel(pg.GraphicsLayoutWidget):
             )
         self.plots[1].setXLink(self.plots[0])
 
-    def update_series(self, series, follow=True):
-        points = np.asarray(series.points, dtype=float)
+    def update_series(self, series, config=None, follow=True):
+        points, accel_status, gyro_status = imu_display_points(series, config)
+        self.plots[0].setTitle(f"Acceleration · {accel_status}")
+        self.plots[1].setTitle(f"Gyroscope · {gyro_status}")
         for group, curves in enumerate(self.curves):
             for axis, curve in enumerate(curves):
                 if points.size:

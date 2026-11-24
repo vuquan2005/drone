@@ -205,7 +205,7 @@ class Viewer(QtWidgets.QMainWindow):
         if self.saved_session is None or self.segment_box.currentData() is None:
             return
         state = self.saved_session[self.segment_box.currentData()]
-        self.imu_panel.update_series(state.series, follow=False)
+        self.imu_panel.update_series(state.series, state.config, follow=False)
         self.rate_panel.update_points(state.rate_points, follow=False)
         self.attitude_panel.update_attitude(state)
         self.attitude_control_panel.update_control(state)
@@ -325,6 +325,7 @@ class Viewer(QtWidgets.QMainWindow):
                 return
             if request_id == self.config_request_id and self.telemetry.config is None:
                 self.telemetry.config = config
+                self.dirty = True
                 self.show_config(config, "")
                 self.save_config()
             return
@@ -488,7 +489,7 @@ class Viewer(QtWidgets.QMainWindow):
         )
         if active_panel is self.imu_panel and self.dirty:
             self.dirty = False
-            self.imu_panel.update_series(state.series)
+            self.imu_panel.update_series(state.series, state.config)
 
 
 DEFAULT_OUTPUT = Path(__file__).resolve().parents[2] / "experiments/raw/telemetry"

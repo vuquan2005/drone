@@ -194,7 +194,7 @@
 						)
 					)
 				)
-				(pin passive line
+				(pin power_out line
 					(at -20.32 -7.62 0)
 					(length 5.08)
 					(name "BEC/VCC"
@@ -412,7 +412,7 @@
 					)
 				)
 			)
-			(property "Value" "BMI2160_Module"
+			(property "Value" "BMI160_Module"
 				(at 0 21.59 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -422,7 +422,7 @@
 					)
 				)
 			)
-			(property "Footprint" "DA_Drone:BMI2160_Module_2Row_P2.54mm_W10.16mm"
+			(property "Footprint" "DA_Drone:BMI160_Module_2Row_P2.54mm_W10.16mm"
 				(at 0 3.81 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -444,7 +444,7 @@
 					)
 				)
 			)
-			(property "Description" "BMI2160_Module, 12-pin IMU module."
+			(property "Description" "BMI160_Module, 12-pin IMU module."
 				(at 0 3.81 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -844,7 +844,7 @@
 				)
 			)
 			(symbol "LiPo_Battery_1_1"
-				(pin passive line
+				(pin power_out line
 					(at -10.16 0 0)
 					(length 5.08)
 					(name "+"
@@ -862,7 +862,7 @@
 						)
 					)
 				)
-				(pin passive line
+				(pin power_out line
 					(at 12.7 0 180)
 					(length 5.08)
 					(name "-"
@@ -1113,42 +1113,6 @@
 				)
 			)
 			(symbol "STM32_DevKit_1_1"
-				(pin input line
-					(at 38.1 63.5 180)
-					(length 6.35)
-					(name "BOOT0"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "BOOT0"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
-				(pin input line
-					(at 38.1 60.96 180)
-					(length 6.35)
-					(name "BOOT1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-					(number "BOOT1"
-						(effects
-							(font
-								(size 1.27 1.27)
-							)
-						)
-					)
-				)
 				(pin bidirectional line
 					(at -38.1 63.5 0)
 					(length 6.35)
@@ -2643,7 +2607,7 @@
 						)
 					)
 				)
-				(pin passive line
+				(pin power_out line
 					(at 10.16 73.66 270)
 					(length 6.35)
 					(name "3V3"
@@ -2737,65 +2701,16 @@
 		)
 		(uuid "cbab3afc-8067-4f6e-a240-793e2b425ac1")
 	)
-	(text "ESC2 / 30 A"
+	(text "+5V từ BEC của ESC1; +3V3 từ DevKit"
 		(exclude_from_sim no)
-		(at 307.34 72.24 0)
+		(at 149.86 24.13 0)
 		(effects
 			(font
-				(size 2 2)
+				(size 1.27 1.27)
 			)
+			(justify left)
 		)
-		(uuid "03ef7f75-cea8-4285-9f55-bea0cb2a4325")
-	)
-	(text "BMI160"
-		(exclude_from_sim no)
-		(at 64.77 186.69 0)
-		(effects
-			(font
-				(size 2 2)
-			)
-		)
-		(uuid "1926b67f-754f-46f9-8128-3d85ed771f90")
-	)
-	(text "A2212/10T 1400KV"
-		(exclude_from_sim no)
-		(at 377.19 39.37 0)
-		(effects
-			(font
-				(size 1.8 1.8)
-			)
-		)
-		(uuid "1a2e9ec2-97eb-44ea-b187-814831900a15")
-	)
-	(text "A2212/10T 1400KV"
-		(exclude_from_sim no)
-		(at 377.19 165.1 0)
-		(effects
-			(font
-				(size 1.8 1.8)
-			)
-		)
-		(uuid "3a44b5d9-e432-4f1b-9ef8-926bc34fc12c")
-	)
-	(text "A2212/10T 1400KV"
-		(exclude_from_sim no)
-		(at 377.19 123.19 0)
-		(effects
-			(font
-				(size 1.8 1.8)
-			)
-		)
-		(uuid "60243d61-c52f-4c6f-a228-54e82ab9632b")
-	)
-	(text "ESC3 / 30 A"
-		(exclude_from_sim no)
-		(at 307.34 114.15 0)
-		(effects
-			(font
-				(size 2 2)
-			)
-		)
-		(uuid "7bfd6878-f6a7-44c3-809b-a66d3f79cc5e")
+		(uuid "4546f30b-93c7-4c45-951e-f1bbee75b304")
 	)
 	(text "Khối điều khiển"
 		(exclude_from_sim no)
@@ -2808,16 +2723,6 @@
 		)
 		(uuid "85150a8e-c59a-4d0f-a875-fa736f34169a")
 	)
-	(text "ESC4 / 30 A"
-		(exclude_from_sim no)
-		(at 307.34 156.06 0)
-		(effects
-			(font
-				(size 2 2)
-			)
-		)
-		(uuid "89b4b7bd-23df-44af-b64c-0d7d49727bb4")
-	)
 	(text "Khối nguồn"
 		(exclude_from_sim no)
 		(at 254 204.47 0)
@@ -2828,26 +2733,6 @@
 			(justify left top)
 		)
 		(uuid "8e5372a1-412f-490e-a27a-4ef561e4058a")
-	)
-	(text "ESC1 / 30 A"
-		(exclude_from_sim no)
-		(at 307.34 30.48 0)
-		(effects
-			(font
-				(size 2 2)
-			)
-		)
-		(uuid "91ab7c1e-ce64-4ef9-b13a-c0b391d821b1")
-	)
-	(text "LiPo 3S / 11,1 V"
-		(exclude_from_sim no)
-		(at 323.85 238.76 0)
-		(effects
-			(font
-				(size 2 2)
-			)
-		)
-		(uuid "9708f140-c460-4618-9ab8-42fce1af3019")
 	)
 	(text "Khối cơ cấu chấp hành"
 		(exclude_from_sim no)
@@ -2860,35 +2745,17 @@
 		)
 		(uuid "9b6e3d68-1700-4c2e-a1d9-2986b2dc96c1")
 	)
-	(text "ELRS 2.4 GHz Nano"
-		(exclude_from_sim no)
-		(at 201.93 189.23 0)
-		(effects
-			(font
-				(size 2 2)
-			)
-		)
-		(uuid "db18ee37-807a-47c8-a77c-2ea7c78cd662")
+	(junction
+		(at 339.09 228.6)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "283e5493-291c-4ef0-ab40-ced9d06d82db")
 	)
-	(text "STM32F103VET6 DevKit"
-		(exclude_from_sim no)
-		(at 127 95.25 0)
-		(effects
-			(font
-				(size 2.2 2.2)
-			)
-		)
-		(uuid "e7c9c998-23e5-4ea8-b46d-39fa90550263")
-	)
-	(text "A2212/10T 1400KV"
-		(exclude_from_sim no)
-		(at 377.19 81.28 0)
-		(effects
-			(font
-				(size 1.8 1.8)
-			)
-		)
-		(uuid "ee131d63-c727-41c5-818d-d8e3ea31f82f")
+	(junction
+		(at 311.15 228.6)
+		(diameter 0)
+		(color 0 0 0 0)
+		(uuid "cb713150-394f-4725-97e0-280463b8530c")
 	)
 	(no_connect
 		(at 163.83 71.12)
@@ -3175,20 +3042,12 @@
 		(uuid "c7611618-a0a2-5485-87a4-cea6f7bdc5ea")
 	)
 	(no_connect
-		(at 163.83 38.1)
-		(uuid "cf905bf2-6759-5b81-a4b1-9d61a7d27772")
-	)
-	(no_connect
 		(at 87.63 111.76)
 		(uuid "d329fa03-2700-5b50-a582-10785a62dee4")
 	)
 	(no_connect
 		(at 87.63 68.58)
 		(uuid "d3752184-1f58-5d7a-b59e-963409779ade")
-	)
-	(no_connect
-		(at 163.83 35.56)
-		(uuid "d51fbfc5-eb8e-5a35-8064-4131850c6346")
 	)
 	(no_connect
 		(at 87.63 109.22)
@@ -3248,7 +3107,7 @@
 	)
 	(wire
 		(pts
-			(xy 135.89 25.4) (xy 135.89 20.32)
+			(xy 135.89 25.4) (xy 135.89 24.13)
 		)
 		(stroke
 			(width 0)
@@ -3518,7 +3377,7 @@
 	)
 	(wire
 		(pts
-			(xy 125.73 25.4) (xy 125.73 20.32)
+			(xy 125.73 25.4) (xy 125.73 24.13)
 		)
 		(stroke
 			(width 0)
@@ -3565,6 +3424,16 @@
 			(type default)
 		)
 		(uuid "82804a1f-5a18-45ab-979a-8124991c7e29")
+	)
+	(wire
+		(pts
+			(xy 340.36 228.6) (xy 339.09 228.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "83dccd30-8640-45c4-b451-a96d4db609af")
 	)
 	(wire
 		(pts
@@ -3888,6 +3757,16 @@
 	)
 	(wire
 		(pts
+			(xy 309.88 228.6) (xy 311.15 228.6)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f6fccc96-6d33-4534-8a90-da07ff4a51cb")
+	)
+	(wire
+		(pts
 			(xy 313.69 228.6) (xy 311.15 228.6)
 		)
 		(stroke
@@ -3987,7 +3866,7 @@
 		(uuid "36608b28-7a07-4d17-b2eb-23ff07a8743c")
 	)
 	(label "GND"
-		(at 339.09 228.6 0)
+		(at 340.36 228.6 0)
 		(effects
 			(font
 				(size 1 1)
@@ -4007,7 +3886,7 @@
 		(uuid "3e74002a-71c9-4498-a163-44cbf17845e7")
 	)
 	(label "+5V"
-		(at 125.73 20.32 0)
+		(at 125.73 24.13 0)
 		(effects
 			(font
 				(size 1 1)
@@ -4117,7 +3996,7 @@
 		(uuid "6c816297-7a8d-470b-b0b2-5b63de714d8a")
 	)
 	(label "VBAT_LIPO"
-		(at 311.15 228.6 180)
+		(at 309.88 228.6 180)
 		(effects
 			(font
 				(size 1 1)
@@ -4137,7 +4016,7 @@
 		(uuid "76cf5d90-5ac6-4c56-8917-7ebd10321005")
 	)
 	(label "+3V3"
-		(at 135.89 20.32 0)
+		(at 135.89 24.13 0)
 		(effects
 			(font
 				(size 1 1)
@@ -4367,18 +4246,17 @@
 				)
 			)
 		)
-		(property "Value" "BMI2160_Module"
-			(at 64.77 183.77 0)
-			(hide yes)
+		(property "Value" "BMI160"
+			(at 64.77 186.69 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2 2)
 				)
 			)
 		)
-		(property "Footprint" "DA_Drone:BMI2160_Module_2Row_P2.54mm_W10.16mm"
+		(property "Footprint" "DA_Drone:BMI160_Module_2Row_P2.54mm_W10.16mm"
 			(at 210.82 218.44 0)
 			(hide yes)
 			(show_name no)
@@ -4400,7 +4278,7 @@
 				)
 			)
 		)
-		(property "Description" "BMI2160_Module, 12-pin IMU module."
+		(property "Description" "BMI160_Module, 12-pin IMU module."
 			(at 210.82 218.44 0)
 			(hide yes)
 			(show_name no)
@@ -4477,14 +4355,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_Motor"
-			(at 375.92 74.74 0)
-			(hide yes)
+		(property "Value" "A2212/10T 1400KV"
+			(at 377.19 81.28 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 1.8 1.8)
 				)
 			)
 		)
@@ -4560,14 +4437,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_Motor"
-			(at 375.92 116.65 0)
-			(hide yes)
+		(property "Value" "A2212/10T 1400KV"
+			(at 377.19 123.19 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 1.8 1.8)
 				)
 			)
 		)
@@ -4643,14 +4519,13 @@
 				)
 			)
 		)
-		(property "Value" "SB_Nano_Receiver"
-			(at 201.93 187.77 90)
-			(hide yes)
+		(property "Value" "ELRS 2.4 GHz Nano"
+			(at 201.93 189.23 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2 2)
 				)
 			)
 		)
@@ -4729,14 +4604,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_ESC"
-			(at 307.34 28.83 0)
-			(hide yes)
+		(property "Value" "ESC1 / 30 A"
+			(at 307.34 30.48 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2 2)
 				)
 			)
 		)
@@ -4827,14 +4701,13 @@
 				)
 			)
 		)
-		(property "Value" "LiPo_Battery"
-			(at 324.15 213.6 0)
-			(hide yes)
+		(property "Value" "LiPo 3S / 11,1 V"
+			(at 323.85 238.76 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2 2)
 				)
 			)
 		)
@@ -4907,14 +4780,13 @@
 				)
 			)
 		)
-		(property "Value" "STM32_DevKit"
-			(at 125.73 32 0)
-			(hide yes)
+		(property "Value" "STM32F103VET6 DevKit"
+			(at 127 95.25 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2.2 2.2)
 				)
 			)
 		)
@@ -5209,12 +5081,6 @@
 		(pin "SWCLK"
 			(uuid "67a709b8-36d7-5916-8f5f-a7f93538fb88")
 		)
-		(pin "BOOT0"
-			(uuid "b0fd8525-765a-589e-b9e0-9c7c722f3b4b")
-		)
-		(pin "BOOT1"
-			(uuid "97c96bbc-e3ce-54cb-95ee-c0a45fffeaa2")
-		)
 		(instances
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
@@ -5245,14 +5111,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_ESC"
-			(at 307.34 112.65 0)
-			(hide yes)
+		(property "Value" "ESC3 / 30 A"
+			(at 307.34 114.15 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2 2)
 				)
 			)
 		)
@@ -5343,14 +5208,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_ESC"
-			(at 307.34 154.56 0)
-			(hide yes)
+		(property "Value" "ESC4 / 30 A"
+			(at 307.34 156.06 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2 2)
 				)
 			)
 		)
@@ -5441,14 +5305,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_Motor"
-			(at 375.92 32.83 0)
-			(hide yes)
+		(property "Value" "A2212/10T 1400KV"
+			(at 377.19 39.37 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 1.8 1.8)
 				)
 			)
 		)
@@ -5524,14 +5387,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_Motor"
-			(at 375.92 158.56 0)
-			(hide yes)
+		(property "Value" "A2212/10T 1400KV"
+			(at 377.19 165.1 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 1.8 1.8)
 				)
 			)
 		)
@@ -5607,14 +5469,13 @@
 				)
 			)
 		)
-		(property "Value" "BLDC_ESC"
-			(at 307.34 70.74 0)
-			(hide yes)
+		(property "Value" "ESC2 / 30 A"
+			(at 307.34 72.24 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
 				(font
-					(size 1 1)
+					(size 2 2)
 				)
 			)
 		)

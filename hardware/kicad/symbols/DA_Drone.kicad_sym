@@ -186,7 +186,7 @@
 					)
 				)
 			)
-			(pin passive line
+			(pin power_out line
 				(at -20.32 -7.62 0)
 				(length 5.08)
 				(name "BEC/VCC"
@@ -414,7 +414,7 @@
 				)
 			)
 		)
-		(property "Footprint" "DA_Drone:BMI2160_Module_2Row_P2.54mm_W10.16mm"
+		(property "Footprint" "DA_Drone:BMI160_Module_2Row_P2.54mm_W10.16mm"
 			(at 0 3.81 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -436,7 +436,7 @@
 				)
 			)
 		)
-		(property "Description" "BMI2160_Module, 12-pin IMU module."
+		(property "Description" "BMI160_Module, 12-pin IMU module."
 			(at 0 3.81 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -1246,7 +1246,7 @@
 			)
 		)
 		(symbol "LiPo_Battery_1_1"
-			(pin passive line
+			(pin power_out line
 				(at -10.16 0 0)
 				(length 5.08)
 				(name "+"
@@ -1264,7 +1264,7 @@
 					)
 				)
 			)
-			(pin passive line
+			(pin power_out line
 				(at 12.7 0 180)
 				(length 5.08)
 				(name "-"
@@ -1515,45 +1515,9 @@
 			)
 		)
 		(symbol "STM32_DevKit_1_1"
-			(pin input line
-				(at 38.1 63.5 180)
-				(length 6.35)
-				(name "BOOT0"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "BOOT0"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
-			(pin input line
-				(at 38.1 60.96 180)
-				(length 6.35)
-				(name "BOOT1"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-				(number "BOOT1"
-					(effects
-						(font
-							(size 1.27 1.27)
-						)
-					)
-				)
-			)
 			(pin bidirectional line
-				(at -38.1 63.5 0)
-				(length 6.35)
+				(at -36.83 63.5 0)
+				(length 5.08)
 				(name "A0"
 					(effects
 						(font
@@ -1570,8 +1534,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 60.96 0)
-				(length 6.35)
+				(at -36.83 60.96 0)
+				(length 5.08)
 				(name "A1"
 					(effects
 						(font
@@ -1588,8 +1552,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 58.42 0)
-				(length 6.35)
+				(at -36.83 58.42 0)
+				(length 5.08)
 				(name "A2"
 					(effects
 						(font
@@ -1606,8 +1570,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 55.88 0)
-				(length 6.35)
+				(at -36.83 55.88 0)
+				(length 5.08)
 				(name "A3"
 					(effects
 						(font
@@ -1624,8 +1588,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 53.34 0)
-				(length 6.35)
+				(at -36.83 53.34 0)
+				(length 5.08)
 				(name "A4"
 					(effects
 						(font
@@ -1642,8 +1606,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 50.8 0)
-				(length 6.35)
+				(at -36.83 50.8 0)
+				(length 5.08)
 				(name "A5"
 					(effects
 						(font
@@ -1660,8 +1624,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 48.26 0)
-				(length 6.35)
+				(at -36.83 48.26 0)
+				(length 5.08)
 				(name "A6"
 					(effects
 						(font
@@ -1678,8 +1642,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 45.72 0)
-				(length 6.35)
+				(at -36.83 45.72 0)
+				(length 5.08)
 				(name "A7"
 					(effects
 						(font
@@ -1696,8 +1660,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 43.18 0)
-				(length 6.35)
+				(at -36.83 43.18 0)
+				(length 5.08)
 				(name "A8"
 					(effects
 						(font
@@ -1714,8 +1678,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 40.64 0)
-				(length 6.35)
+				(at -36.83 40.64 0)
+				(length 5.08)
 				(name "A9"
 					(effects
 						(font
@@ -1732,8 +1696,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 38.1 0)
-				(length 6.35)
+				(at -36.83 38.1 0)
+				(length 5.08)
 				(name "A10"
 					(effects
 						(font
@@ -1750,8 +1714,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 35.56 0)
-				(length 6.35)
+				(at -36.83 35.56 0)
+				(length 5.08)
 				(name "A11"
 					(effects
 						(font
@@ -1768,8 +1732,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 33.02 0)
-				(length 6.35)
+				(at -36.83 33.02 0)
+				(length 5.08)
 				(name "A12"
 					(effects
 						(font
@@ -1786,8 +1750,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 30.48 0)
-				(length 6.35)
+				(at -36.83 30.48 0)
+				(length 5.08)
 				(name "A13"
 					(effects
 						(font
@@ -1804,8 +1768,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 27.94 0)
-				(length 6.35)
+				(at -36.83 27.94 0)
+				(length 5.08)
 				(name "A14"
 					(effects
 						(font
@@ -1822,8 +1786,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 25.4 0)
-				(length 6.35)
+				(at -36.83 25.4 0)
+				(length 5.08)
 				(name "A15"
 					(effects
 						(font
@@ -1840,8 +1804,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 20.32 0)
-				(length 6.35)
+				(at -36.83 20.32 0)
+				(length 5.08)
 				(name "B0"
 					(effects
 						(font
@@ -1858,8 +1822,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 17.78 0)
-				(length 6.35)
+				(at -36.83 17.78 0)
+				(length 5.08)
 				(name "B1"
 					(effects
 						(font
@@ -1876,8 +1840,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 15.24 0)
-				(length 6.35)
+				(at -36.83 15.24 0)
+				(length 5.08)
 				(name "B2"
 					(effects
 						(font
@@ -1894,8 +1858,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 12.7 0)
-				(length 6.35)
+				(at -36.83 12.7 0)
+				(length 5.08)
 				(name "B3"
 					(effects
 						(font
@@ -1912,8 +1876,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 10.16 0)
-				(length 6.35)
+				(at -36.83 10.16 0)
+				(length 5.08)
 				(name "B4"
 					(effects
 						(font
@@ -1930,8 +1894,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 7.62 0)
-				(length 6.35)
+				(at -36.83 7.62 0)
+				(length 5.08)
 				(name "B5"
 					(effects
 						(font
@@ -1948,8 +1912,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 5.08 0)
-				(length 6.35)
+				(at -36.83 5.08 0)
+				(length 5.08)
 				(name "B6"
 					(effects
 						(font
@@ -1966,8 +1930,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 2.54 0)
-				(length 6.35)
+				(at -36.83 2.54 0)
+				(length 5.08)
 				(name "B7"
 					(effects
 						(font
@@ -1984,8 +1948,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 0 0)
-				(length 6.35)
+				(at -36.83 0 0)
+				(length 5.08)
 				(name "B8"
 					(effects
 						(font
@@ -2002,8 +1966,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -2.54 0)
-				(length 6.35)
+				(at -36.83 -2.54 0)
+				(length 5.08)
 				(name "B9"
 					(effects
 						(font
@@ -2020,8 +1984,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -5.08 0)
-				(length 6.35)
+				(at -36.83 -5.08 0)
+				(length 5.08)
 				(name "B10"
 					(effects
 						(font
@@ -2038,8 +2002,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -7.62 0)
-				(length 6.35)
+				(at -36.83 -7.62 0)
+				(length 5.08)
 				(name "B11"
 					(effects
 						(font
@@ -2056,8 +2020,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -10.16 0)
-				(length 6.35)
+				(at -36.83 -10.16 0)
+				(length 5.08)
 				(name "B12"
 					(effects
 						(font
@@ -2074,8 +2038,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -12.7 0)
-				(length 6.35)
+				(at -36.83 -12.7 0)
+				(length 5.08)
 				(name "B13"
 					(effects
 						(font
@@ -2092,8 +2056,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -15.24 0)
-				(length 6.35)
+				(at -36.83 -15.24 0)
+				(length 5.08)
 				(name "B14"
 					(effects
 						(font
@@ -2110,8 +2074,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -17.78 0)
-				(length 6.35)
+				(at -36.83 -17.78 0)
+				(length 5.08)
 				(name "B15"
 					(effects
 						(font
@@ -2128,8 +2092,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -22.86 0)
-				(length 6.35)
+				(at -36.83 -22.86 0)
+				(length 5.08)
 				(name "C0"
 					(effects
 						(font
@@ -2146,8 +2110,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -25.4 0)
-				(length 6.35)
+				(at -36.83 -25.4 0)
+				(length 5.08)
 				(name "C1"
 					(effects
 						(font
@@ -2164,8 +2128,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -27.94 0)
-				(length 6.35)
+				(at -36.83 -27.94 0)
+				(length 5.08)
 				(name "C2"
 					(effects
 						(font
@@ -2182,8 +2146,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -30.48 0)
-				(length 6.35)
+				(at -36.83 -30.48 0)
+				(length 5.08)
 				(name "C3"
 					(effects
 						(font
@@ -2200,8 +2164,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -33.02 0)
-				(length 6.35)
+				(at -36.83 -33.02 0)
+				(length 5.08)
 				(name "C4"
 					(effects
 						(font
@@ -2218,8 +2182,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -35.56 0)
-				(length 6.35)
+				(at -36.83 -35.56 0)
+				(length 5.08)
 				(name "C5"
 					(effects
 						(font
@@ -2236,8 +2200,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -38.1 0)
-				(length 6.35)
+				(at -36.83 -38.1 0)
+				(length 5.08)
 				(name "C6"
 					(effects
 						(font
@@ -2254,8 +2218,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -40.64 0)
-				(length 6.35)
+				(at -36.83 -40.64 0)
+				(length 5.08)
 				(name "C7"
 					(effects
 						(font
@@ -2272,8 +2236,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -43.18 0)
-				(length 6.35)
+				(at -36.83 -43.18 0)
+				(length 5.08)
 				(name "C8"
 					(effects
 						(font
@@ -2290,8 +2254,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -45.72 0)
-				(length 6.35)
+				(at -36.83 -45.72 0)
+				(length 5.08)
 				(name "C9"
 					(effects
 						(font
@@ -2308,8 +2272,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -48.26 0)
-				(length 6.35)
+				(at -36.83 -48.26 0)
+				(length 5.08)
 				(name "C10"
 					(effects
 						(font
@@ -2326,8 +2290,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -50.8 0)
-				(length 6.35)
+				(at -36.83 -50.8 0)
+				(length 5.08)
 				(name "C11"
 					(effects
 						(font
@@ -2344,8 +2308,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -53.34 0)
-				(length 6.35)
+				(at -36.83 -53.34 0)
+				(length 5.08)
 				(name "C12"
 					(effects
 						(font
@@ -2362,8 +2326,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -55.88 0)
-				(length 6.35)
+				(at -36.83 -55.88 0)
+				(length 5.08)
 				(name "C13"
 					(effects
 						(font
@@ -2380,8 +2344,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -58.42 0)
-				(length 6.35)
+				(at -36.83 -58.42 0)
+				(length 5.08)
 				(name "C14"
 					(effects
 						(font
@@ -2398,8 +2362,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at -38.1 -60.96 0)
-				(length 6.35)
+				(at -36.83 -60.96 0)
+				(length 5.08)
 				(name "C15"
 					(effects
 						(font
@@ -2416,8 +2380,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 48.26 180)
-				(length 6.35)
+				(at 36.83 48.26 180)
+				(length 5.08)
 				(name "D0"
 					(effects
 						(font
@@ -2434,8 +2398,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 45.72 180)
-				(length 6.35)
+				(at 36.83 45.72 180)
+				(length 5.08)
 				(name "D1"
 					(effects
 						(font
@@ -2452,8 +2416,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 43.18 180)
-				(length 6.35)
+				(at 36.83 43.18 180)
+				(length 5.08)
 				(name "D2"
 					(effects
 						(font
@@ -2470,8 +2434,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 40.64 180)
-				(length 6.35)
+				(at 36.83 40.64 180)
+				(length 5.08)
 				(name "D3"
 					(effects
 						(font
@@ -2488,8 +2452,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 38.1 180)
-				(length 6.35)
+				(at 36.83 38.1 180)
+				(length 5.08)
 				(name "D4"
 					(effects
 						(font
@@ -2506,8 +2470,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 35.56 180)
-				(length 6.35)
+				(at 36.83 35.56 180)
+				(length 5.08)
 				(name "D5"
 					(effects
 						(font
@@ -2524,8 +2488,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 33.02 180)
-				(length 6.35)
+				(at 36.83 33.02 180)
+				(length 5.08)
 				(name "D6"
 					(effects
 						(font
@@ -2542,8 +2506,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 30.48 180)
-				(length 6.35)
+				(at 36.83 30.48 180)
+				(length 5.08)
 				(name "D7"
 					(effects
 						(font
@@ -2560,8 +2524,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 27.94 180)
-				(length 6.35)
+				(at 36.83 27.94 180)
+				(length 5.08)
 				(name "D8"
 					(effects
 						(font
@@ -2578,8 +2542,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 25.4 180)
-				(length 6.35)
+				(at 36.83 25.4 180)
+				(length 5.08)
 				(name "D9"
 					(effects
 						(font
@@ -2596,8 +2560,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 22.86 180)
-				(length 6.35)
+				(at 36.83 22.86 180)
+				(length 5.08)
 				(name "D10"
 					(effects
 						(font
@@ -2614,8 +2578,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 20.32 180)
-				(length 6.35)
+				(at 36.83 20.32 180)
+				(length 5.08)
 				(name "D11"
 					(effects
 						(font
@@ -2632,8 +2596,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 17.78 180)
-				(length 6.35)
+				(at 36.83 17.78 180)
+				(length 5.08)
 				(name "D12"
 					(effects
 						(font
@@ -2650,8 +2614,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 15.24 180)
-				(length 6.35)
+				(at 36.83 15.24 180)
+				(length 5.08)
 				(name "D13"
 					(effects
 						(font
@@ -2668,8 +2632,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 12.7 180)
-				(length 6.35)
+				(at 36.83 12.7 180)
+				(length 5.08)
 				(name "D14"
 					(effects
 						(font
@@ -2686,8 +2650,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 10.16 180)
-				(length 6.35)
+				(at 36.83 10.16 180)
+				(length 5.08)
 				(name "D15"
 					(effects
 						(font
@@ -2704,8 +2668,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 5.08 180)
-				(length 6.35)
+				(at 36.83 5.08 180)
+				(length 5.08)
 				(name "E0"
 					(effects
 						(font
@@ -2722,8 +2686,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 2.54 180)
-				(length 6.35)
+				(at 36.83 2.54 180)
+				(length 5.08)
 				(name "E1"
 					(effects
 						(font
@@ -2740,8 +2704,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 0 180)
-				(length 6.35)
+				(at 36.83 0 180)
+				(length 5.08)
 				(name "E2"
 					(effects
 						(font
@@ -2758,8 +2722,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -2.54 180)
-				(length 6.35)
+				(at 36.83 -2.54 180)
+				(length 5.08)
 				(name "E3"
 					(effects
 						(font
@@ -2776,8 +2740,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -5.08 180)
-				(length 6.35)
+				(at 36.83 -5.08 180)
+				(length 5.08)
 				(name "E4"
 					(effects
 						(font
@@ -2794,8 +2758,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -7.62 180)
-				(length 6.35)
+				(at 36.83 -7.62 180)
+				(length 5.08)
 				(name "E5"
 					(effects
 						(font
@@ -2812,8 +2776,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -10.16 180)
-				(length 6.35)
+				(at 36.83 -10.16 180)
+				(length 5.08)
 				(name "E6"
 					(effects
 						(font
@@ -2830,8 +2794,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -12.7 180)
-				(length 6.35)
+				(at 36.83 -12.7 180)
+				(length 5.08)
 				(name "E7"
 					(effects
 						(font
@@ -2848,8 +2812,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -15.24 180)
-				(length 6.35)
+				(at 36.83 -15.24 180)
+				(length 5.08)
 				(name "E8"
 					(effects
 						(font
@@ -2866,8 +2830,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -17.78 180)
-				(length 6.35)
+				(at 36.83 -17.78 180)
+				(length 5.08)
 				(name "E9"
 					(effects
 						(font
@@ -2884,8 +2848,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -20.32 180)
-				(length 6.35)
+				(at 36.83 -20.32 180)
+				(length 5.08)
 				(name "E10"
 					(effects
 						(font
@@ -2902,8 +2866,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -22.86 180)
-				(length 6.35)
+				(at 36.83 -22.86 180)
+				(length 5.08)
 				(name "E11"
 					(effects
 						(font
@@ -2920,8 +2884,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -25.4 180)
-				(length 6.35)
+				(at 36.83 -25.4 180)
+				(length 5.08)
 				(name "E12"
 					(effects
 						(font
@@ -2938,8 +2902,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -27.94 180)
-				(length 6.35)
+				(at 36.83 -27.94 180)
+				(length 5.08)
 				(name "E13"
 					(effects
 						(font
@@ -2956,8 +2920,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -30.48 180)
-				(length 6.35)
+				(at 36.83 -30.48 180)
+				(length 5.08)
 				(name "E14"
 					(effects
 						(font
@@ -2974,8 +2938,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 -33.02 180)
-				(length 6.35)
+				(at 36.83 -33.02 180)
+				(length 5.08)
 				(name "E15"
 					(effects
 						(font
@@ -2992,8 +2956,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 53.34 180)
-				(length 6.35)
+				(at 36.83 53.34 180)
+				(length 5.08)
 				(name "SWCLK"
 					(effects
 						(font
@@ -3010,8 +2974,8 @@
 				)
 			)
 			(pin bidirectional line
-				(at 38.1 55.88 180)
-				(length 6.35)
+				(at 36.83 55.88 180)
+				(length 5.08)
 				(name "SWDIO"
 					(effects
 						(font
@@ -3028,8 +2992,8 @@
 				)
 			)
 			(pin passive line
-				(at -10.16 73.66 270)
-				(length 6.35)
+				(at -10.16 72.39 270)
+				(length 5.08)
 				(name "VBAT"
 					(effects
 						(font
@@ -3045,9 +3009,9 @@
 					)
 				)
 			)
-			(pin passive line
-				(at 10.16 73.66 270)
-				(length 6.35)
+			(pin power_out line
+				(at 10.16 72.39 270)
+				(length 5.08)
 				(name "3V3"
 					(effects
 						(font
@@ -3064,8 +3028,8 @@
 				)
 			)
 			(pin passive line
-				(at 0 73.66 270)
-				(length 6.35)
+				(at 0 72.39 270)
+				(length 5.08)
 				(name "5V"
 					(effects
 						(font
@@ -3082,8 +3046,8 @@
 				)
 			)
 			(pin passive line
-				(at 0 -73.66 90)
-				(length 6.35)
+				(at 0 -72.39 90)
+				(length 5.08)
 				(name "GND"
 					(effects
 						(font

@@ -45,6 +45,16 @@ def transfer(request, pages, invalid=0, crc_flip=0):
     )
 
 
+def session_listing(request, rows):
+    yield message(export.BEGIN, request, 0, struct.pack("<II", 256, 65536))
+    crc = 0
+    for first, last, uptime, complete in rows:
+        payload = struct.pack("<III", last, uptime, complete)
+        yield message(export.SESSION, request, first, payload)
+        crc = zlib.crc32(export.U32.pack(first) + payload, crc)
+    yield message(export.END, request, export.PAGE_COUNT, struct.pack("<III", len(rows), 0, crc))
+
+
 class FakeSocket:
     def __init__(self, chunks):
         self.chunks = iter(chunks)
@@ -66,6 +76,17 @@ class FakeSocket:
 
 
 class TestFlashExport(unittest.TestCase):
+    def test_session_list_checks_order_count_and_crc(self):
+        rows = [(3, 6, 100, False), (0, 2, 20, True)]
+        frames = list(session_listing(0x22, rows))
+        self.assertEqual(export.receive_session_list(frames, 0x22, lambda: None), rows)
+        with self.assertRaisesRegex(ValueError, "incomplete or corrupt"):
+            export.receive_session_list([frames[0], frames[1], frames[-1]], 0x22, lambda: None)
+        with self.assertRaisesRegex(ValueError, "overlapping"):
+            export.receive_session_list(
+                session_listing(0x22, [(3, 6, 100, False), (0, 3, 20, True)]), 0x22, lambda: None
+            )
+
     def test_fragmented_export_preserves_legacy_pages_and_extracts_sessions(self):
         imu = bytes.fromhex((FIXTURES / "imu_batch_v1.hex").read_text())
         config = bytes.fromhex((FIXTURES / "config_v1.hex").read_text())

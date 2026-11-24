@@ -118,4 +118,10 @@ bool app_flash_journal_is_marker(const uint8_t *page, uint32_t index);
  */
 uint32_t app_flash_journal_encode_empty_marker(uint8_t *page);
 
+/** @brief Drain the outstanding flash operation before abandoning recovery.
+ * @return True once the caller can hand the flash to another module.
+ * Call only while recovering. Do not resume processing without init.
+ */
+bool app_flash_journal_abort_scan(void);
+
 #endif

@@ -595,6 +595,13 @@ void app_flash_journal_process(uint32_t now_ms) {
     }
 }
 
+bool app_flash_journal_abort_scan(void) {
+    if (journal.transfer_pending) {
+        journal.transfer_pending = bsp_flash_poll() == BSP_FLASH_PENDING;
+    }
+    return !journal.transfer_pending;
+}
+
 app_flash_journal_status_t app_flash_journal_status(void) {
     return journal.status;
 }

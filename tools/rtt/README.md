@@ -39,7 +39,13 @@ Sau khi bảo trì xong, đóng OpenOCD và nạp lại firmware bay bằng pres
 trước đó. Lệnh `telemetry-export` nạp ảnh vào flash nội STM32. Thao tác xóa
 telemetry trong Viewer tác động lên chip ngoài W25Q128FV.
 
-Bấm **Start OpenOCD** rồi **Export flash**. Cửa sổ quản lý OpenOCD với
+Bấm **Start OpenOCD** để Viewer lấy danh sách phiên trực tiếp từ board. Danh sách
+hiển thị ID, số trang và trạng thái của từng phiên. Dùng **Scan sessions** để
+làm mới, rồi chọn phiên và bấm **Export selected** để tải khoảng trang của phiên
+đó. Viewer lưu CSV, thông tin phiên và ảnh `session.bin`.
+Dùng **Export flash** khi cần sao lưu toàn chip vào `flash.bin` trước khi xóa.
+
+Cửa sổ quản lý OpenOCD với
 GDB ở `127.0.0.1:3333` và RTT ở cổng 9092/9093. Khi cần kết nối GDB,
 dùng `target extended-remote :3333` và cho CPU chạy trước khi export.
 **Stop OpenOCD** hoặc đóng cửa sổ sẽ dừng server đã mở từ công cụ.

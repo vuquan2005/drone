@@ -8,7 +8,14 @@ from threading import Event
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
-from flash_export import DEFAULT_EXPORT_ROOT, MAX_ATTEMPTS, erase, export, new_export_directory
+from flash_export import (
+    DEFAULT_EXPORT_ROOT,
+    MAX_ATTEMPTS,
+    erase,
+    export,
+    list_sessions,
+    new_export_directory,
+)
 from records import Lines
 from session_reader import read_flash_session_info
 from stream import Stream
@@ -19,9 +26,18 @@ SERVER_READY = b"Drone flash RTT ready"
 NOT_RUNNING = QtCore.QProcess.ProcessState.NotRunning
 
 
-def export_sessions(host, control_port, data_port, directory, cancel, progress):
+def export_sessions(host, control_port, data_port, directory, cancel, progress, selection=None):
+    session_id, last_page = (None, None) if selection is None else selection[:2]
     stats = export(
-        host, control_port, data_port, 180.0, directory, cancel=cancel, progress=progress
+        host,
+        control_port,
+        data_port,
+        180.0,
+        directory,
+        cancel=cancel,
+        progress=progress,
+        session_id=session_id,
+        last_page=last_page,
     )
     sessions = []
     for path in sorted(directory.glob("session_*")):
@@ -80,15 +96,21 @@ class FlashViewer(QtWidgets.QMainWindow):
         session_group = QtWidgets.QGroupBox("Sessions")
         session_layout = QtWidgets.QVBoxLayout(session_group)
         session_controls = QtWidgets.QHBoxLayout()
-        self.session_count = QtWidgets.QLabel("Export flash to find sessions.")
+        self.session_count = QtWidgets.QLabel("Connect to find sessions.")
+        self.scan_button = QtWidgets.QPushButton("Scan sessions")
+        self.scan_button.clicked.connect(self.scan_sessions)
+        self.selected_button = QtWidgets.QPushButton("Export selected")
+        self.selected_button.clicked.connect(self.export_selected)
         self.open_button = QtWidgets.QPushButton("Open session")
         self.open_button.clicked.connect(self.open_session)
         session_controls.addWidget(self.session_count, 1)
+        session_controls.addWidget(self.scan_button)
+        session_controls.addWidget(self.selected_button)
         session_controls.addWidget(self.open_button)
         session_layout.addLayout(session_controls)
         self.sessions = QtWidgets.QListWidget()
         self.sessions.currentItemChanged.connect(self.update_controls)
-        self.sessions.itemActivated.connect(self.open_session)
+        self.sessions.itemActivated.connect(self.activate_session)
         session_layout.addWidget(self.sessions)
         splitter.addWidget(session_group)
         self.logs = QtWidgets.QTabWidget()
@@ -129,13 +151,18 @@ class FlashViewer(QtWidgets.QMainWindow):
         running = self.server.state() != NOT_RUNNING
         idle = self.job is None and not self.closing
         ready = self.server_ready and running and not self.server_stopping
-        exporting = self.job is not None and self.job_kind == "export"
+        exporting = self.job is not None and self.job_kind in ("export", "selected")
+        scanning = self.job is not None and self.job_kind == "list"
+        selected = self.current_session_data()
         self.server_button.setText("Stop OpenOCD" if running else "Start OpenOCD")
         self.server_button.setEnabled(idle and not self.server_stopping)
         self.export_button.setText("Cancel export" if exporting else "Export flash")
         self.export_button.setEnabled((idle and ready) or (exporting and not self.cancel.is_set()))
         self.erase_button.setEnabled(idle and ready and self.export_receipt is not None)
-        self.open_button.setEnabled(not self.closing and self.sessions.currentItem() is not None)
+        self.scan_button.setText("Cancel scan" if scanning else "Scan sessions")
+        self.scan_button.setEnabled((idle and ready) or (scanning and not self.cancel.is_set()))
+        self.selected_button.setEnabled(idle and ready and isinstance(selected, tuple))
+        self.open_button.setEnabled(not self.closing and isinstance(selected, str))
 
     def toggle_server(self):
         if self.server.state() != NOT_RUNNING:
@@ -184,7 +211,12 @@ class FlashViewer(QtWidgets.QMainWindow):
             if line.endswith(b"rtt: No control block found"):
                 self.rtt_block_missing = True
                 self.server_status.setText("RTT block missing · boot STM32 and restart OpenOCD")
-            if line == SERVER_READY and not self.server_stopping and not self.rtt_block_missing:
+            if (
+                line == SERVER_READY
+                and not self.server_ready
+                and not self.server_stopping
+                and not self.rtt_block_missing
+            ):
                 self.server_ready = True
                 gdb = f"GDB {LOCALHOST}:{self.args.gdb_port}" if self.args.gdb_port else "GDB off"
                 self.server_status.setText(
@@ -194,6 +226,8 @@ class FlashViewer(QtWidgets.QMainWindow):
                 self.board_stream.retry.start(2000)
                 self.board_stream.connect()
                 self.update_controls()
+                if self.job is None:
+                    self.scan_sessions()
 
     def disconnect_board_log(self):
         self.board_stream.paused = True
@@ -240,16 +274,52 @@ class FlashViewer(QtWidgets.QMainWindow):
             return
         if not self.server_ready:
             return
+        self.start_export()
+
+    def current_session_data(self):
+        item = self.sessions.currentItem()
+        return None if item is None else item.data(QtCore.Qt.ItemDataRole.UserRole)
+
+    def activate_session(self, *_):
+        if isinstance(self.current_session_data(), tuple):
+            self.export_selected()
+        else:
+            self.open_session()
+
+    def scan_sessions(self):
+        if self.job is not None:
+            if self.job_kind == "list":
+                self.cancel.set()
+                self.update_controls()
+            return
+        if not self.server_ready:
+            return
+        self.export_receipt = None
+        self.cancel = Event()
+        self.job_kind = "list"
+        self.status.setText("Scanning sessions on STM32…")
+        self.job = self.worker.submit(
+            list_sessions, LOCALHOST, self.args.log_port, self.args.data_port, self.cancel
+        )
+        self.update_controls()
+
+    def export_selected(self):
+        selection = self.current_session_data()
+        if self.selected_button.isEnabled() and isinstance(selection, tuple):
+            self.start_export(selection)
+
+    def start_export(self, selection=None):
         self.export_receipt = None
         self.export_directory = new_export_directory(self.args.export_dir)
-        self.sessions.clear()
-        self.session_count.setText("Reading sessions…")
+        if selection is None:
+            self.sessions.clear()
+            self.session_count.setText("Reading sessions…")
         self.log_offset = 0
         self.export_log.clear()
         self.logs.setCurrentWidget(self.export_log)
         self.status.setText("Waiting for STM32 to acknowledge the export request.")
         self.cancel = Event()
-        self.job_kind = "export"
+        self.job_kind = "export" if selection is None else "selected"
         self.job = self.worker.submit(
             export_sessions,
             LOCALHOST,
@@ -258,11 +328,16 @@ class FlashViewer(QtWidgets.QMainWindow):
             self.export_directory,
             self.cancel,
             self.flash_progress.emit,
+            selection,
         )
         self.update_controls()
 
     def update_export_progress(self, attempt, pages):
-        if self.job is not None and self.job_kind == "export" and not self.cancel.is_set():
+        if (
+            self.job is not None
+            and self.job_kind in ("export", "selected")
+            and not self.cancel.is_set()
+        ):
             if pages < 0:
                 progress = "waiting for BEGIN"
             elif pages == 0:
@@ -303,30 +378,44 @@ class FlashViewer(QtWidgets.QMainWindow):
     def poll_job(self):
         if self.job is None:
             return
-        self.read_export_log()
+        if self.job_kind != "list":
+            self.read_export_log()
         if not self.job.done():
             return
         job, self.job = self.job, None
-        self.read_export_log()
+        if self.job_kind != "list":
+            self.read_export_log()
         try:
             result = job.result()
         except InterruptedError:
-            self.session_count.setText("No export completed.")
-            self.status.setText("Flash export cancelled.")
+            self.status.setText(
+                "Session scan cancelled." if self.job_kind == "list" else "Flash export cancelled."
+            )
         except Exception as error:
-            if self.job_kind == "export":
-                self.session_count.setText("No export completed.")
+            if self.job_kind == "list":
+                self.status.setText(f"Session scan failed · {error}")
+            elif self.job_kind in ("export", "selected"):
+                if self.job_kind == "export":
+                    self.session_count.setText("No export completed.")
                 self.status.setText(f"Flash export failed · {error}")
             else:
                 self.status.setText(f"Flash erase failed · {error}")
         else:
-            if self.job_kind == "export":
+            if self.job_kind == "list":
+                if not self.cancel.is_set():
+                    self.show_board_sessions(result)
+            elif self.job_kind in ("export", "selected"):
                 self.show_export(*result)
             elif not self.cancel.is_set():
                 message = "Flash erased and verified."
                 if result is not None:
                     message += f" · Could not write export.log: {result}"
                 self.status.setText(message)
+                for row in reversed(range(self.sessions.count())):
+                    if isinstance(
+                        self.sessions.item(row).data(QtCore.Qt.ItemDataRole.UserRole), tuple
+                    ):
+                        self.sessions.takeItem(row)
         self.update_controls()
         if self.closing:
             QtCore.QTimer.singleShot(0, self.close)
@@ -343,13 +432,32 @@ class FlashViewer(QtWidgets.QMainWindow):
             self.export_log.moveCursor(QtGui.QTextCursor.MoveOperation.End)
             self.export_log.insertPlainText(data.decode(errors="replace"))
 
+    def show_board_sessions(self, sessions):
+        self.sessions.clear()
+        interrupted = sum(not complete for _, _, _, complete in sessions)
+        self.session_count.setText(f"{len(sessions)} on board · {interrupted} interrupted")
+        self.status.setText("Select a session to export." if sessions else "No sessions on STM32.")
+        for session in sessions:
+            begin, last, _, complete = session
+            status = "complete" if complete else "interrupted"
+            item = QtWidgets.QListWidgetItem(
+                f"session_{begin:05d} · {status} · {last - begin + 1} pages"
+            )
+            item.setData(QtCore.Qt.ItemDataRole.UserRole, session)
+            self.sessions.addItem(item)
+        if sessions:
+            self.sessions.setCurrentRow(0)
+
     def show_export(self, stats, sessions):
-        if self.server_ready and not self.cancel.is_set():
+        if self.server_ready and not self.cancel.is_set() and self.job_kind == "export":
             self.export_receipt = stats
-        self.status.setText(f"Flash saved · {self.export_directory}")
-        self.session_count.setText(
-            f"{stats['sessions']} sessions · {stats['interrupted_sessions']} interrupted"
-        )
+        if self.job_kind == "export":
+            self.status.setText(f"Flash saved · {self.export_directory}")
+            self.session_count.setText(
+                f"{stats['sessions']} sessions · {stats['interrupted_sessions']} interrupted"
+            )
+        else:
+            self.status.setText(f"Session saved · {self.export_directory}")
         for path, info in sessions:
             item = QtWidgets.QListWidgetItem(
                 f"{path.name} · {info['status']} · {info['data_pages']} data pages"
@@ -357,18 +465,18 @@ class FlashViewer(QtWidgets.QMainWindow):
             item.setData(QtCore.Qt.ItemDataRole.UserRole, str(path))
             self.sessions.addItem(item)
         if self.sessions.count():
-            self.sessions.setCurrentRow(0)
+            self.sessions.setCurrentRow(self.sessions.count() - len(sessions) if sessions else 0)
 
     def open_session(self, *_):
-        item = self.sessions.currentItem()
-        if item is None:
+        path = self.current_session_data()
+        if not isinstance(path, str):
             return
         started, _ = QtCore.QProcess.startDetached(
             sys.executable,
             [
                 str(Path(__file__).with_name("view.py")),
                 "--session",
-                item.data(QtCore.Qt.ItemDataRole.UserRole),
+                path,
             ],
         )
         if not started:

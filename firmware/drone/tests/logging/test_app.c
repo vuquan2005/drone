@@ -153,6 +153,8 @@ static bool receiver_connected = true;
 static uint16_t receiver_roll = 172U;
 static uint16_t receiver_throttle = 992U;
 static uint16_t receiver_switches[4] = {992U, 992U, 992U, 992U};
+static uint16_t receiver_analog_aux[APP_COMMAND_ANALOG_AUX_COUNT] = {992U, 992U,
+                                                                     992U};
 bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     if (!receiver_test_enabled) {
         return false;
@@ -165,6 +167,9 @@ bool app_receiver_get_sample(app_receiver_sample_t *sample) {
     sample->channels[2] = receiver_throttle;
     for (unsigned i = 0; i < 4U; ++i) {
         sample->channels[i + 4U] = receiver_switches[i];
+    }
+    for (unsigned i = 0; i < APP_COMMAND_ANALOG_AUX_COUNT; ++i) {
+        sample->channels[i + 8U] = receiver_analog_aux[i];
     }
     sample->channels[15] = 1811U;
     sample->last_frame_ms = tick - 10U;
@@ -576,18 +581,32 @@ int main(void) {
     assert(drain(0U, output) == 0U);
     receiver_switches[0] = 172;
     process_app();
+    receiver_analog_aux[0] = 1811U;
+    receiver_analog_aux[1] = 172U;
+    receiver_analog_aux[2] = 1811U;
     receiver_switches[0] = 1811;
     tick++;
     process_app();
     assert(app_get_arm_state() == APP_ARMED);
     drain(0U, output);
     assert(strstr(output, "[I][arm] armed\n") != NULL);
+    const app_rate_config_t *active_rate = app_get_config().rate;
+    assert(active_rate != NULL);
+    assert(active_rate->axis[0].kp == rate_config.axis[0].kp * 1.25f);
+    assert(active_rate->axis[1].kp == rate_config.axis[1].kp * 1.25f);
+    assert(active_rate->axis[2].kp == rate_config.axis[2].kp * 0.75f);
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i)
+        assert(active_rate->max_rate_radps[i] == 2.5f);
+    for (unsigned i = 0; i < APP_COMMAND_ANALOG_AUX_COUNT; ++i)
+        receiver_analog_aux[i] = 992U;
     for (unsigned i = 0; i < 4; ++i)
         assert(motor_pulse[i] == 1000);
 
     tick += APP_ARM_IDLE_TIMEOUT_MS - 1U;
     process_app();
     assert(app_get_arm_state() == APP_ARMED);
+    assert(active_rate->axis[0].kp == rate_config.axis[0].kp * 1.25f);
+    assert(active_rate->max_rate_radps[0] == 2.5f);
     tick++;
     process_app();
     assert(app_get_status(&health) && health.arm_state == APP_DISARMED);
@@ -617,6 +636,10 @@ int main(void) {
     tick++;
     process_app();
     assert(app_get_arm_state() == APP_ARMED);
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        assert(active_rate->axis[i].kp == rate_config.axis[i].kp);
+        assert(active_rate->max_rate_radps[i] == rate_config.max_rate_radps[i]);
+    }
     assert(motor_pulse[0] > 1000 && motor_pulse[0] <= 2000);
     receiver_switches[0] = 172;
     status = BSP_IMU_NO_DATA;

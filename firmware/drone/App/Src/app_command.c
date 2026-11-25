@@ -26,6 +26,10 @@ static norm_q15_t stick(uint16_t raw) {
     return delta < 0 ? -result : result;
 }
 
+static norm_q15_t analog_input(uint16_t raw) {
+    return raw == 0U || raw > 2047U ? 0 : stick(raw);
+}
+
 static app_command_switch_t switch_position(uint16_t raw) {
     if (raw <= (APP_COMMAND_RC_MIN + APP_COMMAND_RC_CENTER) / 2U) {
         return APP_COMMAND_SWITCH_LOW;
@@ -78,6 +82,9 @@ bool app_command_decode(const app_receiver_sample_t *sample,
     case APP_COMMAND_SWITCH_HIGH:
         command->telemetry_mode = APP_COMMAND_TELEMETRY_STREAM;
         break;
+    }
+    for (unsigned i = 0; i < APP_COMMAND_ANALOG_AUX_COUNT; ++i) {
+        command->analog_aux[i] = analog_input(sample->channels[8U + i]);
     }
     command->last_frame_ms = sample->last_frame_ms;
     command->valid = true;

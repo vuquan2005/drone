@@ -147,6 +147,54 @@ mixData:
     speedUp: 0
     speedDown: 0
     name: "Telem"
+  - destCh: 8
+    srcRaw: "SLIDER3"
+    carryTrim: 1
+    mixWarn: 0
+    mltpx: ADD
+    delayPrec: 0
+    speedPrec: 0
+    flightModes: 000000000
+    weight: 100
+    offset: 0
+    swtch: "NONE"
+    delayUp: 0
+    delayDown: 0
+    speedUp: 0
+    speedDown: 0
+    name: "KpRP"
+  - destCh: 9
+    srcRaw: "POT1"
+    carryTrim: 1
+    mixWarn: 0
+    mltpx: ADD
+    delayPrec: 0
+    speedPrec: 0
+    flightModes: 000000000
+    weight: 100
+    offset: 0
+    swtch: "NONE"
+    delayUp: 0
+    delayDown: 0
+    speedUp: 0
+    speedDown: 0
+    name: "KpYaw"
+  - destCh: 10
+    srcRaw: "POT2"
+    carryTrim: 1
+    mixWarn: 0
+    mltpx: ADD
+    delayPrec: 0
+    speedPrec: 0
+    flightModes: 000000000
+    weight: 100
+    offset: 0
+    swtch: "NONE"
+    delayUp: 0
+    delayDown: 0
+    speedUp: 0
+    speedDown: 0
+    name: "MaxRte"
 expoData:
   - mode: 3
     scale: 0

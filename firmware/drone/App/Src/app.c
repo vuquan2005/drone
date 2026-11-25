@@ -22,6 +22,15 @@
 #define ATTITUDE_MAX_ANGLE_RAD (25.0f * 0.01745329252f)
 #define GRAVITY_MIN_MPS2 7.85f
 #define GRAVITY_MAX_MPS2 11.77f
+#define RATE_ROLL_KP 0.1f
+#define RATE_PITCH_KP 0.1f
+#define RATE_YAW_KP 0.1f
+#define RATE_OUTPUT_LIMIT 1.0f
+#define RATE_ROLL_MAX_RADPS 2.0f
+#define RATE_PITCH_MAX_RADPS 2.0f
+#define RATE_YAW_MAX_RADPS 2.0f
+#define RATE_PERIOD_US 2000U
+#define RATE_TRIM_FRACTION 0.25f
 
 _Static_assert(BSP_IMU_ODR_HZ >= MAHONY_HZ && BSP_IMU_ODR_HZ % MAHONY_HZ == 0U,
                "Mahony updates require an integer IMU decimation factor");
@@ -47,6 +56,7 @@ static struct {
 } tilt_target;
 static app_command_t command;
 static app_rate_t rate;
+static app_rate_config_t base_rate_config;
 static bool imu_initialized;
 static bool imu_calibration_from_flash;
 static bool imu_available;
@@ -158,7 +168,10 @@ bool app_configure_rate(const app_rate_config_t *config) {
             app_motor_stop();
         }
     }
-    return app_rate_configure(&rate, config);
+    if (!app_rate_configure(&rate, config))
+        return false;
+    base_rate_config = rate.config;
+    return true;
 }
 
 bool app_get_rate_result(mixer_result_t *result) {
@@ -351,6 +364,23 @@ static inline void log_arm_result(app_arm_state_t previous,
 }
 #endif
 
+static float rate_trim_scale(norm_q15_t trim) {
+    return 1.0f + RATE_TRIM_FRACTION * trim / NORM_Q15_ONE;
+}
+
+static void apply_rate_trim(void) {
+    const float roll_pitch_scale = rate_trim_scale(command.analog_aux[0]);
+    const float yaw_scale = rate_trim_scale(command.analog_aux[1]);
+    const float rate_scale = rate_trim_scale(command.analog_aux[2]);
+    const float kp_scale[RATE_AXIS_COUNT] = {roll_pitch_scale, roll_pitch_scale,
+                                             yaw_scale};
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        rate.config.axis[i].kp = base_rate_config.axis[i].kp * kp_scale[i];
+        rate.config.max_rate_radps[i] =
+            base_rate_config.max_rate_radps[i] * rate_scale;
+    }
+}
+
 static void process_motor(void) {
     const app_arm_state_t previous = safety.state;
     const uint32_t now_ms = HAL_GetTick();
@@ -359,6 +389,8 @@ static void process_motor(void) {
                           rate.configured && !rate_failed, pwm_ready, now_ms);
     if (previous != safety.state &&
         (previous == APP_ARMED || safety.state == APP_ARMED)) {
+        if (safety.state == APP_ARMED)
+            apply_rate_trim();
         app_rate_reset(&rate);
     }
     norm_q15_t output[APP_MOTOR_COUNT] = {0};
@@ -472,11 +504,12 @@ void app_init(void) {
     /* Bench gains only; motor permission is owned by the arm/failsafe state.
      */
     const app_rate_config_t rate_config = {
-        .axis = {{.kp = 0.1f, .output_limit = 1.0f},
-                 {.kp = 0.1f, .output_limit = 1.0f},
-                 {.kp = 0.1f, .output_limit = 1.0f}},
-        .max_rate_radps = {2.0f, 2.0f, 2.0f},
-        .period_us = 2000U};
+        .axis = {{.kp = RATE_ROLL_KP, .output_limit = RATE_OUTPUT_LIMIT},
+                 {.kp = RATE_PITCH_KP, .output_limit = RATE_OUTPUT_LIMIT},
+                 {.kp = RATE_YAW_KP, .output_limit = RATE_OUTPUT_LIMIT}},
+        .max_rate_radps = {RATE_ROLL_MAX_RADPS, RATE_PITCH_MAX_RADPS,
+                           RATE_YAW_MAX_RADPS},
+        .period_us = RATE_PERIOD_US};
     if (app_configure_rate(&rate_config)) {
         APP_LOG_INFO("rate", "configured");
     } else {

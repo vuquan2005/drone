@@ -16,6 +16,17 @@ Hai tệp YAML ghi phiên bản `2.11.0`:
 | CH6  | Mode - chế độ bay          | SC    |
 | CH7  | Calib - ESC hoặc IMU       | SB    |
 | CH8  | Telem - ghi/xuất telemetry | SD    |
+| CH9  | Kp rate roll và pitch      | SL    |
+| CH10 | Kp rate yaw                | S1    |
+| CH11 | Giới hạn rate cả ba trục   | S2    |
+
+EdgeTX 2.11 lưu các nguồn SL, S1, S2 trong mixer lần lượt là
+`SLIDER3`, `POT1`, `POT2`. Dùng `250Hz` và `Wide` với cấu hình ELRS
+hiện tại, hoặc chọn `100Hz Full` và `12ch Mixed` để truyền ba kênh ở
+độ phân giải 10 bit. Kiểm tra từng biến trở trên Channel Monitor của
+EdgeTX và đối chiếu CH9–CH11 trên STM32 trước khi thử trên bộ gá.
+Xem [cấu hình kênh ELRS](https://www.expresslrs.org/software/switch-config/)
+và [cách firmware áp dụng hệ số](../drone/README.md#chỉnh-vòng-rate-từ-tay-điều-khiển).
 
 Khi khởi động, SD HIGH cùng SB HIGH chọn chế độ chờ xác nhận xóa flash.
 Với SD ở LOW hoặc MIDDLE, SB HIGH cùng SC ở giữa chọn hiệu chuẩn IMU.

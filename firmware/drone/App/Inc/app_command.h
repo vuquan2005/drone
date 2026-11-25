@@ -8,6 +8,7 @@
 #define APP_COMMAND_RC_CENTER INT32_C(992)
 #define APP_COMMAND_RC_MAX INT32_C(1811)
 #define APP_COMMAND_DEADBAND INT32_C(10)
+#define APP_COMMAND_ANALOG_AUX_COUNT 3U
 
 /** Raw switch position; flight-mode behavior is assigned by the flight App. */
 typedef enum {
@@ -40,7 +41,9 @@ typedef struct {
                                        permission. */
     bool imu_calibration_requested; /**< CH7 HIGH with CH6 MIDDLE. */
     app_command_telemetry_mode_t
-        telemetry_mode;     /**< CH8 LOW/MIDDLE/HIGH = OFF/RECORD/STREAM. */
+        telemetry_mode; /**< CH8 LOW/MIDDLE/HIGH = OFF/RECORD/STREAM. */
+    norm_q15_t
+        analog_aux[APP_COMMAND_ANALOG_AUX_COUNT]; /**< CH9–CH11, [-ONE,ONE]. */
     uint32_t last_frame_ms; /**< Receiver HAL tick; wraps modulo 2^32. */
     bool valid;
 } app_command_t;
@@ -48,7 +51,9 @@ typedef struct {
 /** Map a receiver snapshot without hardware access, clocks or retained state.
  * CH1/2/3/4 = roll/pitch/throttle/yaw, CH5/6/7/8 = SA/SC/SB/SD.
  * Assumes nominal endpoints 172/992/1811; clips extended travel within the
- * CRSF 11-bit range. Values >2047 in any used channel invalidate the command.
+ * CRSF 11-bit range. Values >2047 in CH1–CH8 invalidate the command.
+ * CH9–CH11 use the stick deadband. A zero or out-of-range raw auxiliary
+ * channel gives neutral trim.
  * Switch LOW/HIGH start at the midpoints between MIN/CENTER/MAX; arm is true
  * only in HIGH. CH7 HIGH sets the ESC request; CH7 HIGH with CH6 MIDDLE also
  * sets the IMU request, which takes priority at boot. CH8 LOW/MIDDLE/HIGH

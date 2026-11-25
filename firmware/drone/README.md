@@ -224,6 +224,22 @@ CH7 calib và CH8 telemetry. Endpoint và chiều stick cần xác nhận trên 
 board; hợp đồng giải mã nằm trong [app_command.h](App/Inc/app_command.h).
 Cần đo timing receiver trên board, đặc biệt khi đọc SPI gặp lỗi.
 
+### Chỉnh vòng rate từ tay điều khiển
+
+Bộ giải mã đưa CH9–CH11 vào `analog_aux` dưới dạng Q15 có dấu.
+Trong FLIGHT, CH9 nhân Kp của roll và pitch theo cùng một hệ số, CH10 nhân
+Kp của yaw và CH11 nhân giới hạn tốc độ quay đặt của cả ba trục, kể cả
+giới hạn roll/pitch
+khi bộ điều khiển góc tạo điểm đặt. Ở giữa hành trình dùng hệ số gốc,
+hai đầu tương ứng 75% và 125%. Với cấu hình bộ gá mặc định,
+Kp mỗi trục nằm trong 0,075–0,125, giới hạn rate nằm trong 1,5–2,5 rad/s
+và chu kỳ danh định là 2 ms.
+
+Chỉnh khi disarm. STM32 lấy giá trị tại lần chuyển sang ARMED thành công
+và giữ suốt lần arm đó. Mỗi lần arm tính lại từ cấu hình gốc trong RAM.
+Các giá trị chỉnh qua RC không ghi vào flash. Xem
+[bảng kênh Jumper T20](../Jumper-T20/README.md).
+
 Runtime gửi trạng thái qua CRSF Flight Mode (`0x21`) mỗi 500 ms. Trên Jumper
 T20, đặt `Telem Ratio` của ELRS thành `Std` và dùng **Telemetry → Discover New**
 trong EdgeTX để tìm cảm biến `FM`. Trong FLIGHT, `FM` hiển thị `DISARMED`,

@@ -1,0 +1,50 @@
+% !TEX root = ../../main.tex
+\section{Sơ đồ nguyên lý hệ thống điện của quadrotor}
+\label{sec:design-electrical-system}
+
+Hệ thống điện của quadrotor được tổ chức thành ba khối chức năng: khối nguồn, khối điều khiển và khối cơ cấu chấp hành.
+
+\begin{figure}[H]
+	\centering
+	\input{figures/ch03/electrical_blocks}
+	\caption{Sơ đồ khối chức năng của hệ thống điện quadrotor.}
+	\label{fig:design-electrical-blocks}
+\end{figure}
+
+\subsection{Khối nguồn}
+\label{subsec:design-power-block}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth]{figures/ch03/power-block.png}
+	\caption{Sơ đồ nguyên lý khối nguồn.}
+	\label{fig:design-power-block-schematic}
+\end{figure}
+
+Khối nguồn có nhiệm vụ cung cấp và phân phối năng lượng cho hệ thống. Pin LiPo 3S cấp trực tiếp cho bốn ESC; LM2596 tạo đường 5 V cho bo STM32 và bộ thu ELRS. Cảm biến BMI160 sử dụng đường 3,3 V trên bo. Các khối dùng chung GND làm mức điện áp tham chiếu cho nguồn và tín hiệu.
+
+\clearpage
+\subsection{Khối điều khiển}
+\label{subsec:design-control-block}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=116.25bp 186.75bp 78bp 56.25bp,clip,width=\linewidth,height=17.5cm,keepaspectratio]{figures/ch03/control-block.png}
+	\caption{Sơ đồ nguyên lý khối điều khiển.}
+	\label{fig:design-control-block-schematic}
+\end{figure}
+
+Khối điều khiển gồm bo STM32F103VET6, BMI160 và bộ thu ELRS, có nhiệm vụ tiếp nhận lệnh, thu nhận trạng thái chuyển động và tạo lệnh điều khiển. BMI160 cung cấp gia tốc, vận tốc góc qua SPI; bộ thu truyền lệnh người vận hành qua UART. STM32 xử lý dữ liệu và xuất bốn tín hiệu PWM đến các ESC.
+
+\clearpage
+\subsection{Khối cơ cấu chấp hành}
+\label{subsec:design-actuator-block}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=\linewidth,height=17.5cm,keepaspectratio]{figures/ch03/actuator-block.png}
+	\caption{Sơ đồ nguyên lý khối cơ cấu chấp hành.}
+	\label{fig:design-actuator-block-schematic}
+\end{figure}
+
+Khối cơ cấu chấp hành gồm bốn tổ hợp ESC--động cơ--cánh quạt, có nhiệm vụ biến đổi năng lượng điện thành lực đẩy và mômen. Mỗi ESC nhận nguồn pin và lệnh PWM, chuyển mạch ba pha để điều khiển một động cơ A2212/10T 1400KV. Động cơ dẫn động cánh quạt; chênh lệch lực đẩy giữa các cụm tạo mômen điều chỉnh tư thế của quadrotor.

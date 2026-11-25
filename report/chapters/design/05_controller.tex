@@ -1,0 +1,155 @@
+% !TEX root = ../../main.tex
+\subsection{Thiết kế điều khiển cân bằng và phân bổ lệnh động cơ}
+\label{sec:design-controller}
+
+\subsubsection{Thiết kế vòng góc và vòng vận tốc góc}
+
+Bộ điều khiển sử dụng cấu trúc P ở vòng góc và PID ở vòng vận tốc góc đã trình bày trong \secref{sec:background-control}. Hai kênh roll và pitch dùng cùng cấu trúc nhưng có tham số riêng theo $J_x$ và $J_y$. Giá trị đặt được giới hạn trước khi đưa vào vòng góc; vận tốc góc đặt tiếp tục được giới hạn theo khả năng đáp ứng của hệ động lực.
+
+Đối với khảo sát ban đầu gần tư thế nằm ngang, chọn giới hạn góc đặt $\phi_{\max}=\theta_{\max}=10^\circ\approx0{,}1745$ rad và giới hạn vận tốc góc đặt $p_{\max}=q_{\max}=60^\circ$/s $\approx1{,}0472$ rad/s. Đây là giới hạn tham chiếu của thiết kế, không phải biên độ tư thế đã được kiểm chứng. Tín hiệu chuẩn hóa $\rho_\phi,\rho_\theta\in[-1,1]$ từ bộ thu được chuyển thành
+\begin{equation}
+	\phi_d=\phi_{\max}\rho_\phi,\qquad
+	\theta_d=\theta_{\max}\rho_\theta.
+	\label{eq:design-angle-reference}
+\end{equation}
+Khi khảo sát tự cân bằng, hai tham chiếu này bằng không. Tổng lực đẩy nền được tạo từ kênh ga và đưa riêng vào khâu phân bổ.
+
+Tham số vòng trong được xác định trước trên mô hình từ mômen đến vận tốc góc $G_j(s)=1/(J_j s)$. Để có bộ tham số khởi tạo rõ ràng, trước hết đặt $K_{D,j}=0$ và tổng hợp hai thành phần P, I của cấu trúc PID. Bỏ qua giới hạn và động lực học cơ cấu chấp hành, hàm truyền kín vận tốc góc là
+\begin{equation}
+	\frac{\Nu_j(s)}{\Nu_{j,d}(s)}
+	=\frac{K_{P,j}s+K_{I,j}}
+	{J_j s^2+K_{P,j}s+K_{I,j}}.
+	\label{eq:design-rate-closed-loop}
+\end{equation}
+Ở đây, $\Nu_j$, $\Nu_{j,d}$ lần lượt là biến đổi Laplace của vận tốc góc và vận tốc góc đặt. So sánh mẫu số chuẩn hóa với $s^2+2\zeta_\nu\omega_\nu s+\omega_\nu^2$ cho
+\begin{equation}
+	K_{P,j}=2\zeta_\nu\omega_\nu J_j,\qquad
+	K_{I,j}=\omega_\nu^2J_j.
+	\label{eq:design-rate-gain-selection}
+\end{equation}
+Chọn ban đầu $\zeta_\nu=0{,}9$ và $\omega_\nu=20$ rad/s, tương ứng $K_{P,j}=36J_j$, $K_{I,j}=400J_j$ khi thay số theo SI. Các hệ số có đơn vị như đã xác lập trong \secref{sec:background-control}. Do hàm truyền kín có một điểm không, $\zeta_\nu$ đặc trưng cho cặp cực được chọn và không trực tiếp quyết định độ quá điều chỉnh của toàn đáp ứng.
+
+Khi vòng vận tốc góc bám đủ nhanh, mô hình gần đúng của vòng góc là một khâu tích phân với hệ số hồi tiếp $K_\chi$, $\chi\in\{\phi,\theta\}$. Chọn $K_\phi=K_\theta=4$ s$^{-1}$ để vòng ngoài chậm hơn thang động học đã chọn cho vòng trong. Khi bỏ qua sai lệch bám vận tốc góc, hằng số thời gian vòng góc xấp xỉ $1/K_\chi=0{,}25$ s. Tỉ số $\omega_\nu/K_\chi=5$ chỉ là cơ sở phân tách ban đầu; đáp ứng toàn hệ còn chịu ảnh hưởng của điểm không, bộ lọc, độ trễ và động cơ.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Bộ tham số khởi tạo cho tính toán điều khiển.}
+	\label{tab:design-controller-initial-parameters}
+	\begin{tabularx}{\linewidth}{|C{3.6cm}|C{3.0cm}|Y|}
+		\hline
+		\textbf{Tham số}          & \textbf{Giá trị}   & \textbf{Ý nghĩa}                               \\
+		\hline
+		$K_\phi$, $K_\theta$      & 4 s$^{-1}$         & Hệ số P của hai vòng góc                       \\
+		\hline
+		$\omega_\nu$, $\zeta_\nu$ & 20 rad/s; 0,9      & Tham số cực vòng vận tốc góc danh định         \\
+		\hline
+		$K_{P,x}$, $K_{P,y}$      & $36J_x$; $36J_y$   & Tính theo quán tính từng trục, dùng đơn vị SI  \\
+		\hline
+		$K_{I,x}$, $K_{I,y}$      & $400J_x$; $400J_y$ & Tính theo quán tính từng trục, dùng đơn vị SI  \\
+		\hline
+		$K_{D,x}$, $K_{D,y}$      & 0 ban đầu          & Giữ nhánh D trong cấu trúc để khảo sát bổ sung \\
+		\hline
+		Giới hạn góc đặt          & $\pm10^\circ$      & Đổi sang rad trước khi tính toán               \\
+		\hline
+		Giới hạn vận tốc đặt      & $\pm60^\circ$/s    & Đổi sang rad/s trước khi tính toán             \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Nhánh D tác động lên tín hiệu đo theo~\eqref{eq:background-filtered-derivative}. Nếu bổ sung $K_{D,j}>0$, chọn khởi tạo $T_f=0{,}01$ s, tương ứng hệ số lọc vi phân $\beta=0{,}8$ ở chu kỳ 2,5 ms. Bộ tham số sau khi thay đổi nhánh D phải được đánh giá lại trên mô hình có lọc và cơ cấu chấp hành; quan hệ đặt cực trong~\eqref{eq:design-rate-gain-selection} áp dụng cho trường hợp khởi tạo $K_D=0$.
+
+\subsubsection{Phân bổ lực đẩy theo cấu hình F450 chữ X}
+
+Thứ tự rôto và chiều quay tuân theo quy ước của \charef{chap:background}. Phương án gán bốn kênh PWM được xác định trong \tref{tab:design-motor-assignment}. Việc gán vị trí là thông số tích hợp giữa bộ phân bổ và đầu ra; bốn kênh PWM hiện có mới xác định thứ tự ngoại vi.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Phương án gán vị trí rôto cho các kênh PWM, nhìn từ trên xuống.}
+	\label{tab:design-motor-assignment}
+	\begin{tabularx}{\linewidth}{|C{1.2cm}|Y|C{2.0cm}|C{2.3cm}|C{2.0cm}|}
+		\hline
+		\textbf{Rôto} & \textbf{Vị trí} & \textbf{Chiều quay} & \textbf{Kênh} & \textbf{Chân} \\
+		\hline
+		1             & Trước trái      & CW                  & TIM4 CH1      & PB6           \\
+		\hline
+		2             & Trước phải      & CCW                 & TIM4 CH2      & PB7           \\
+		\hline
+		3             & Sau phải        & CW                  & TIM4 CH3      & PB8           \\
+		\hline
+		4             & Sau trái        & CCW                 & TIM4 CH4      & PB9           \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Trong phạm vi hai kênh cân bằng, đặt $\tau_z^*=0$. Thay $a\approx0{,}1591$ m vào~\eqref{eq:background-inverse-allocation}, tách lực đẩy thành phần nền và phần vi sai:
+\begin{equation}
+	\begin{aligned}
+		\delta_1     & =\frac{\tau_x^*+\tau_y^*}{4a},   &
+		\delta_2     & =\frac{-\tau_x^*+\tau_y^*}{4a},    \\
+		\delta_3     & =\frac{-\tau_x^*-\tau_y^*}{4a},  &
+		\delta_4     & =\frac{\tau_x^*-\tau_y^*}{4a},     \\
+		f_i^*        & =\frac{T}{4}+\delta_i,\qquad     &
+		\frac{1}{4a} & \approx1{,}571\ \mathrm{m^{-1}}.
+	\end{aligned}
+	\label{eq:design-roll-pitch-allocation}
+\end{equation}
+Các $\delta_i$ có đơn vị N và tổng bằng không. Với mômen roll dương, lực đẩy rôto 1, 4 tăng và rôto 2, 3 giảm; với mômen pitch dương, rôto 1, 2 tăng và rôto 3, 4 giảm. Khi $\hat\phi>0$, $\phi_d=0$ và thân gần đứng yên, bộ điều khiển phải yêu cầu mômen roll âm, tức là tăng phía phải so với phía trái. Đây là quan hệ dấu để kiểm tra phản hồi âm từ cảm biến tới động cơ.
+
+Nếu giữ nguyên tổng lực đẩy và các rôto có cùng giới hạn $f_{\min}$, $f_{\max}$, miền mômen roll--pitch khả thi thỏa
+\begin{equation}
+	|\tau_x^*|+|\tau_y^*|
+	\leq4a\min\left(\frac{T}{4}-f_{\min},
+	f_{\max}-\frac{T}{4}\right).
+	\label{eq:design-feasible-torque}
+\end{equation}
+Quan hệ này cho thấy dự trữ điều khiển giảm khi lực đẩy nền tiến gần một trong hai giới hạn. Tổng lực đẩy được giới hạn trong $[4f_{\min},4f_{\max}]$ trước phép phân bổ.
+
+\subsubsection{Xử lý giới hạn và chống bão hòa tích phân}
+
+Thiết kế chọn ưu tiên giữ tỉ lệ mômen roll--pitch, chấp nhận điều chỉnh lực đẩy nền trong miền khả dụng. Gọi $\delta_{\max}=\max_i\delta_i$ và $\delta_{\min}=\min_i\delta_i$. Khi độ chênh lệch yêu cầu vượt dải lực của một rôto, hệ số giảm chung được tính:
+\begin{equation}
+	\gamma=
+	\begin{cases}
+		1, & \delta_{\max}=\delta_{\min}, \\
+		\min\left(1,\dfrac{f_{\max}-f_{\min}}
+		{\delta_{\max}-\delta_{\min}}\right),
+		   & \delta_{\max}>\delta_{\min}.
+	\end{cases}
+	\label{eq:design-allocation-scaling}
+\end{equation}
+Sau khi nhân $\delta_i$ với $\gamma$, khoảng giá trị nền khả thi luôn không rỗng. Chọn lực đẩy nền gần nhất với $T/4$:
+\begin{equation}
+	\begin{aligned}
+		f_c     & =\operatorname{sat}_{
+				[f_{\min}-\gamma\delta_{\min},\
+		f_{\max}-\gamma\delta_{\max}]}\left(\frac{T}{4}\right), \\
+		f_{i,a} & =f_c+\gamma\delta_i.
+	\end{aligned}
+	\label{eq:design-allocation-collective}
+\end{equation}
+Với các cụm động lực giống nhau theo mô hình, lệnh sau xử lý cho $T_a=4f_c$, $\tau_{x,a}=\gamma\tau_x^*$ và $\tau_{y,a}=\gamma\tau_y^*$. Khi $\gamma=1$, mômen yêu cầu được giữ và chỉ thay đổi lực đẩy nền nếu cần. Khi $\gamma<1$, hai mômen giảm cùng tỉ lệ. Phương án này cụ thể hóa cách dịch lực đẩy chung trong \secref{sec:background-allocation}, thay vì cắt độc lập từng lệnh và làm thay đổi tùy ý quan hệ giữa hai trục.
+
+Thông tin mômen khả dụng theo mô hình được trả về vòng vận tốc góc để cập nhật tích phân có điều kiện theo~\eqref{eq:background-conditional-integration}. Trình tự tại mẫu $k$ là tính mômen từ $I_j[k]$, phân bổ và giới hạn, rồi xác định $I_j[k+1]$. Trạng thái tích phân được chặn đối xứng; chọn ban đầu $I_{j,\max}=0{,}2\tau_{j,\lim}$, với $\tau_{j,\lim}=2a(f_{\max}-f_{\min})$ là mômen cực đại một trục trong mô hình đối xứng khi được phép thay đổi lực đẩy nền. Giới hạn và phản hồi bão hòa được dùng đồng thời.
+
+Khi chưa cho phép chạy hoặc khi mất dữ liệu phản hồi, trạng thái tích phân được đưa về không. Nếu khâu chuyển lệnh động cơ có thêm giới hạn, mômen đưa về cơ chế chống bão hòa phải được tính lại từ bộ lệnh cuối cùng. Giá trị này phản ánh mômen khả dụng theo mô hình, chưa bao gồm sai lệch do động lực học và đặc tính thực của bốn cụm.
+
+\subsubsection{Chuyển lực đẩy thành độ rộng xung ESC}
+
+Để giữ đầu ra bộ điều khiển theo đơn vị mômen, mỗi cụm được mô tả bằng đặc tính tĩnh
+\begin{equation}
+	f_i=\mathcal F_i(u_i,V_b),\qquad
+	u_i=\mathcal F_i^{-1}(f_{i,a},V_b),\qquad
+	0\leq u_i\leq1,
+	\label{eq:design-force-command-map}
+\end{equation}
+trong đó $u_i$ là lệnh chuẩn hóa, $V_b$ là điện áp pin. Quan hệ nghịch được dùng trong miền đơn điệu của đặc tính lực đẩy, có thể biểu diễn bằng bảng tra và nội suy. Bảng đặc tính gắn với đúng động cơ A2212, cánh 9 inch, ESC và điều kiện nguồn; đường kính cánh đơn lẻ không xác định được quan hệ này.
+
+Sau khi có $u_i$, độ rộng xung được tính theo dải giao tiếp đã cấu hình:
+\begin{equation}
+	t_{\mathrm{pulse},i}
+	=1000+1000u_i\quad[\mu\mathrm s].
+	\label{eq:design-command-to-pwm}
+\end{equation}
+Kết quả được làm tròn theo độ phân giải 1 $\mu$s và ghi vào thanh ghi so sánh. Khi hệ thống chưa được cho phép chạy, khối quản lý trạng thái chọn lệnh dừng thay cho lệnh lực đẩy nền. Các đại lượng $f_{\min}$, $f_{\max}$ được xác định theo miền vận hành của đường đặc tính, bao gồm mức quay nền nếu sử dụng.
+
+Trong phân tích đáp ứng, mô hình bậc nhất của động cơ trong~\eqref{eq:background-motor-lag} được ghép với vòng điều khiển để xét ảnh hưởng của hằng số thời gian $T_m$. Bộ hệ số đặt cực chỉ dùng mô hình quán tính của thân nên là điểm khởi đầu tính toán; bộ hệ số vận hành được lựa chọn sau khi xét dữ liệu lực đẩy, thời gian đáp ứng và độ trễ toàn chuỗi.

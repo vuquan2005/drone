@@ -63,6 +63,36 @@ report/
 - Nếu bản Markdown đối chiếu vẫn còn trong workspace và thuộc phạm vi công việc, đồng bộ với nội dung báo cáo. Không tự tạo lại file người dùng đã xóa.
 - Trước commit, xem `git status`, `git diff` và chạy `git diff --check`; chỉ đưa vào commit các thay đổi thuộc công việc được yêu cầu.
 
+<<<<<<< HEAD
+=======
+## Cấu trúc
+
+```text
+report/
+├── main.tex          # Điều phối thứ tự các phần của báo cáo
+├── metadata.tex      # Thông tin đề tài, giảng viên và sinh viên
+├── frontmatter/      # Bìa, mở đầu, cảm ơn và các danh mục
+├── chapters/         # Nội dung các chương
+├── appendices/       # Phụ lục
+├── figures/          # Hình và sơ đồ; template/ chứa tài nguyên bìa
+├── bibliography/     # Tài liệu được trích dẫn trong báo cáo
+├── styles/           # Định dạng và các lệnh dùng chung
+├── latexmkrc         # Cấu hình biên dịch
+└── .chktexrc         # Quy tắc kiểm tra LaTeX
+```
+
+## Nguyên tắc
+
+- Viết nội dung trong từng chương; thêm hoặc bớt chương tại `main.tex`.
+- Sửa thông tin bìa trong `metadata.tex`, định dạng chung trong `styles/thesis.sty`.
+- Dùng tên file tiếng Anh, chữ thường, không có khoảng trắng và đường dẫn tương đối.
+- Đặt hình trong `figures/`; chia thư mục theo chủ đề khi có nhiều hình.
+- Lưu nguồn trích dẫn trong `bibliography/references.bib`. Khi lấy nguồn từ [thư viện nghiên cứu](../docs/references/papers/references.bib), giữ nguyên khóa BibTeX và cập nhật thông tin nhất quán ở cả hai nơi.
+- Dùng nhãn và tham chiếu tự động cho hình, bảng, công thức; thay hết placeholder trước khi nộp.
+- Giữ kết quả biên dịch trong `build/`; thư mục này được bỏ qua trong Git.
+- Chạy `make clean` từ gốc repository để xóa `report/build/` (gồm PDF) cùng toàn bộ build và cache CMake của firmware. Build lại báo cáo bằng LaTeX Workshop hoặc `make report`.
+
+>>>>>>> 2de828bf6febe553487e7abf1dc3b1354a36a7e9
 ## Biên dịch
 
 Từ thư mục gốc dự án:

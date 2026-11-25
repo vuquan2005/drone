@@ -4,6 +4,52 @@
 % Topic: Modeling, Identification, Control Strategies, and Trajectory Planning
 %
 % General control and inertial-sensing sources used by the report:
+@article{mahony2008nonlinear,
+  author  = {Mahony, Robert and Hamel, Tarek and Pflimlin, Jean-Michel},
+  title   = {Nonlinear Complementary Filters on the Special Orthogonal Group},
+  journal = {IEEE Transactions on Automatic Control},
+  volume  = {53},
+  number  = {5},
+  pages   = {1203--1218},
+  year    = {2008},
+  doi     = {10.1109/TAC.2008.923738}
+}
+
+@inproceedings{hamel2006attitude,
+  author       = {Hamel, Tarek and Mahony, Robert},
+  title        = {Attitude Estimation on {SO(3)} Based on Direct Inertial Measurements},
+  booktitle    = {Proceedings of the 2006 IEEE International Conference on Robotics and Automation},
+  pages        = {2170--2175},
+  year         = {2006},
+  organization = {IEEE},
+  doi          = {10.1109/ROBOT.2006.1642025}
+}
+
+@techreport{fisher2010inclination,
+  author      = {Fisher, Christopher J.},
+  title       = {Using an Accelerometer for Inclination Sensing},
+  institution = {Analog Devices},
+  type        = {Application Note},
+  number      = {AN-1057},
+  year        = {2010},
+  note        = {Rev. 0},
+  url         = {https://www.analog.com/en/resources/app-notes/an-1057.html}
+}
+
+@misc{vectornavAttitudeRepresentations,
+  author       = {{VectorNav Technologies}},
+  title        = {Inertial Navigation Primer: Attitude Representations},
+  howpublished = {\newline\url{https://www.vectornav.com/resources/inertial-navigation-primer/math-fundamentals/math-attituderep}},
+  note         = {Truy cập ngày 26/11/2026}
+}
+
+@misc{betaflight452Mahony,
+  author       = {{Betaflight}},
+  title        = {{Betaflight 4.5.2: IMU Attitude Estimation, imu.c}},
+  howpublished = {\newline\url{https://github.com/betaflight/betaflight/blob/4.5.2/src/main/flight/imu.c}},
+  note         = {Mã nguồn hàm imuMahonyAHRSupdate. Truy cập ngày 26/11/2026}
+}
+
 @book{astrom2021feedback,
   author    = {{\AA}str{\"o}m, Karl Johan and Murray, Richard M.},
   title     = {Feedback Systems: An Introduction for Scientists and Engineers},

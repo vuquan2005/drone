@@ -2,8 +2,6 @@
 \section{Cơ sở đo lường và ước lượng tư thế}
 \label{sec:background-estimation}
 
-Mô hình chuyển động cho thấy góc roll, pitch và vận tốc góc là những đại lượng phản ánh trạng thái quay của quadrotor. Các đại lượng phản hồi này được xác định từ tín hiệu cảm biến. Đơn vị đo lường quán tính (IMU) gồm gia tốc kế ba trục và con quay hồi chuyển ba trục cung cấp dữ liệu cho phép ước lượng tư thế; các cảm biến này không trực tiếp đo góc roll và pitch~\cite{chovancova2014mathematical}.
-
 \subsection{Đặc trưng đo lường của cảm biến quán tính}
 \label{subsec:background-imu}
 
@@ -33,21 +31,20 @@ Con quay hồi chuyển đo các thành phần vận tốc góc quanh ba trục 
 
 Trước khi kết hợp hai nguồn đo, dữ liệu cần được quy đổi sang đơn vị vật lý và thống nhất về hệ trục. Với con quay hồi chuyển, một cách ước lượng sai lệch điểm không là lấy trung bình $N$ mẫu khi cảm biến đứng yên:
 \begin{equation}
-    \widehat{\mathbf b}_\omega
+    \widehat{\mathbf b}_{\omega,0}
     =\frac{1}{N}\sum_{k=1}^{N}\symbf\omega_m[k],
     \qquad
     \symbf\omega_c[k]
-    =\symbf\omega_m[k]-\widehat{\mathbf b}_\omega.
+    =\symbf\omega_m[k]-\widehat{\mathbf b}_{\omega,0}.
     \label{eq:background-gyro-bias-correction}
 \end{equation}
-Trong đó, $\symbf\omega_c$ là vận tốc góc sau hiệu chỉnh. Khoảng lấy mẫu phải tương ứng với trạng thái không quay để giá trị trung bình chủ yếu phản ánh sai lệch cảm biến. Số mẫu $N$ quyết định thời gian hiệu chỉnh và mức giảm ảnh hưởng của nhiễu ngẫu nhiên. Do sai lệch điểm không còn phụ thuộc nhiệt độ, phép hiệu chỉnh ban đầu chỉ giảm sai số tại điều kiện thực hiện.
+Trong đó, $\widehat{\mathbf b}_{\omega,0}$ là sai lệch xác định khi khởi tạo và $\symbf\omega_c$ là vận tốc góc sau hiệu chỉnh. Khoảng lấy mẫu phải tương ứng với trạng thái không quay để giá trị trung bình chủ yếu phản ánh sai lệch cảm biến. Số mẫu $N$ quyết định thời gian hiệu chỉnh và mức giảm ảnh hưởng của nhiễu ngẫu nhiên. Do sai lệch điểm không còn phụ thuộc nhiệt độ, phép hiệu chỉnh ban đầu chỉ giảm sai số tại điều kiện thực hiện.
 
 Với gia tốc kế, hiệu chỉnh tập trung vào sai lệch điểm không và hệ số tỷ lệ của từng trục, dựa trên các tư thế tĩnh đã biết. Tín hiệu ở trạng thái đứng yên vẫn chứa thông tin về trọng lực, nên không thể đồng loạt đưa giá trị trung bình của cả ba trục về không. Chẳng hạn, tại tư thế nằm ngang theo quy ước đang sử dụng, thành phần theo $z_B$ phải có giá trị lý tưởng $-g$. Giữ đúng thành phần này là điều kiện để suy ra phương trọng lực và góc nghiêng.
 
 Rung động của cụm động cơ--cánh quạt có thể tạo các thành phần tần số cao trên tín hiệu IMU. Bộ lọc thông thấp giúp giảm ảnh hưởng của chúng nhưng đồng thời làm chậm biến thiên tín hiệu phản hồi. Mức lọc phải phù hợp với chuyển động cần theo dõi; tăng mức lọc quá nhiều có thể làm bộ điều khiển phản ứng chậm trước thay đổi tư thế. Lọc nhiễu và hiệu chỉnh sai lệch điểm không là hai chức năng khác nhau trong quá trình xử lý dữ liệu.
 
 Trong các biểu thức rời rạc, $T_s$ là chu kỳ cập nhật thuật toán, tính bằng giây. Góc sử dụng radian, vận tốc góc sử dụng radian trên giây, còn gia tốc sử dụng mét trên giây bình phương. Dữ liệu gia tốc kế và con quay hồi chuyển cần tương ứng về thời điểm lấy mẫu để phép kết hợp phản ánh cùng một trạng thái chuyển động.
-% Cần bổ sung: hướng lắp IMU, thông số quy đổi tín hiệu, điều kiện hiệu chỉnh và chu kỳ cập nhật thực tế.
 
 \subsection{Xác định góc roll và pitch từ gia tốc kế}
 \label{subsec:background-accelerometer-angles}
@@ -74,3 +71,147 @@ Gọi $a_x$, $a_y$, $a_z$ là các thành phần gia tốc riêng sau hiệu ch�
 Hàm $\operatorname{atan2}$ xét dấu của hai đối số để xác định góc. Các dấu âm trong biểu thức roll xuất phát từ quy ước gia tốc riêng và hệ trục đã chọn. Các góc $\phi_a$, $\theta_a$ là thông tin tham chiếu từ phương trọng lực, với điều kiện gia tốc chuyển động không chi phối tín hiệu đo.
 
 Phương trọng lực không thay đổi khi thân quay quanh phương thẳng đứng, nên gia tốc kế không xác định được góc hướng yaw. Tích phân con quay có thể theo dõi biến thiên hướng trong thời gian ngắn nhưng vẫn chịu trôi góc. Với bài toán cân bằng roll và pitch đang khảo sát, góc nghiêng và vận tốc góc thân là các đại lượng phản hồi cho hai vòng điều khiển.
+
+\subsection{Bộ lọc bổ sung phi tuyến Mahony}
+\label{subsec:background-mahony}
+
+Bộ lọc Mahony kết hợp khả năng theo dõi chuyển động nhanh của con quay với thông tin phương trọng lực từ gia tốc kế. Bộ quan sát được xây dựng trên nhóm các ma trận quay $\mathrm{SO}(3)=\{R\in\mathbb{R}^{3\times3}:R^{\mathsf T}R=I,\det R=1\}$. Trong các dạng trực tiếp, thụ động và tường minh do Mahony và cộng sự đề xuất, dạng tường minh tính sai lệch ngay từ các vectơ đo, không cần dựng một tư thế tức thời từ cảm biến~\cite{mahony2008nonlinear}. Dạng này được xét cho BMI160 sáu trục trong đề tài.
+
+\subsubsection{Biểu diễn tư thế bằng quaternion}
+
+Tư thế được biểu diễn bằng quaternion đơn vị $\mathbf q$, với thành phần vô hướng đứng trước:
+\begin{equation}
+    \mathbf q=\begin{bmatrix}q_0&\mathbf q_v^T\end{bmatrix}^T,
+    \qquad
+    \mathbf q_v=\begin{bmatrix}q_1&q_2&q_3\end{bmatrix}^T,
+    \qquad \|\mathbf q\|=1.
+    \label{eq:background-quaternion}
+\end{equation}
+Quaternion $\mathbf q$ biểu diễn cùng phép quay từ $B$ sang $E$ như ma trận $R$ trong~\eqref{eq:background-rotation-matrix}; ký hiệu in đậm phân biệt nó với vận tốc góc pitch $q$. Với góc quay $\gamma$ quanh trục đơn vị $\mathbf u$, ta có $q_0=\cos(\gamma/2)$ và $\mathbf q_v=\mathbf u\sin(\gamma/2)$. Biểu diễn này tránh điểm kỳ dị Euler khi cập nhật tư thế; ràng buộc chuẩn đơn vị được duy trì trong tính toán~\cite{vectornavAttitudeRepresentations}.
+
+Tích Hamilton của hai quaternion $\mathbf u_q=[u_0,\mathbf u_v^T]^T$ và $\mathbf v_q=[v_0,\mathbf v_v^T]^T$ được quy ước:
+\begin{equation}
+    \mathbf u_q\otimes\mathbf v_q=
+    \begin{bmatrix}
+        u_0v_0-\mathbf u_v^T\mathbf v_v\\
+        u_0\mathbf v_v+v_0\mathbf u_v+\mathbf u_v\times\mathbf v_v
+    \end{bmatrix}.
+    \label{eq:background-hamilton-product}
+\end{equation}
+Với vận tốc góc biểu diễn trong hệ thân, động học quaternion có dạng
+\begin{equation}
+    \dot{\mathbf q}=\frac12\mathbf q\otimes
+        \begin{bmatrix}0\\\symbf\omega\end{bmatrix}.
+    \label{eq:background-quaternion-kinematics}
+\end{equation}
+Quan hệ này cập nhật đồng thời chuyển động quanh ba trục, thay vì đồng nhất riêng $p$, $q$, $r$ với đạo hàm các góc Euler~\cite{mahony2008nonlinear}.
+
+\subsubsection{Sai lệch phương trọng lực và luật hiệu chỉnh}
+
+Từ gia tốc riêng đã hiệu chỉnh và chuyển về hệ thân, vectơ đơn vị theo hướng trọng lực được xác định khi $\|\mathbf f_B\|>0$:
+\begin{equation}
+    \mathbf v_a=-\frac{\mathbf f_B}{\|\mathbf f_B\|},
+    \qquad
+    \hat{\mathbf v}_a=\hat R^T\mathbf e_3,
+    \qquad \mathbf e_3=\begin{bmatrix}0&0&1\end{bmatrix}^T.
+    \label{eq:background-mahony-directions}
+\end{equation}
+Dấu âm xuất phát từ mô hình gia tốc riêng~\eqref{eq:background-specific-force}. Trong điều kiện gần tĩnh, $\mathbf v_a$ xấp xỉ phương xuống đo được, còn $\hat{\mathbf v}_a$ là phương xuống dự đoán từ tư thế ước lượng. Với quaternion $\hat{\mathbf q}$, phương dự đoán được tính trực tiếp:
+\begin{equation}
+    \hat{\mathbf v}_a=
+    \begin{bmatrix}
+        2(\hat q_1\hat q_3-\hat q_0\hat q_2)\\
+        2(\hat q_0\hat q_1+\hat q_2\hat q_3)\\
+        1-2(\hat q_1^2+\hat q_2^2)
+    \end{bmatrix}.
+    \label{eq:background-mahony-predicted-gravity}
+\end{equation}
+
+Sai lệch dùng để hiệu chỉnh là tích có hướng giữa phương đo và phương dự đoán~\cite{hamel2006attitude}:
+\begin{equation}
+    \mathbf e=w_a\left(\mathbf v_a\times\hat{\mathbf v}_a\right),
+    \qquad 0\leq w_a\leq1.
+    \label{eq:background-mahony-error}
+\end{equation}
+Trọng số $w_a$ thể hiện mức tin cậy vào tham chiếu gia tốc kế. Khi hai phương trùng nhau, $\mathbf e=\mathbf0$; khi lệch một góc nhỏ, độ lớn tích có hướng xấp xỉ góc lệch tính bằng radian. Thứ tự hai vectơ trong~\eqref{eq:background-mahony-error} đi cùng dấu phản hồi trong luật sau.
+
+Gọi $\hat{\mathbf b}_r$ là ước lượng sai lệch con quay còn lại sau hiệu chỉnh tĩnh. Bộ lọc dùng vận tốc $\symbf\omega_c$ từ~\eqref{eq:background-gyro-bias-correction} và cập nhật:
+\begin{equation}
+    \begin{aligned}
+        \symbf\omega_o&=\symbf\omega_c-\hat{\mathbf b}_r+k_P\mathbf e,\\
+        \dot{\hat{\mathbf b}}_r&=-k_I\mathbf e,\\
+        \dot{\hat{\mathbf q}}&=\frac12\hat{\mathbf q}\otimes
+            \begin{bmatrix}0\\\symbf\omega_o\end{bmatrix}.
+    \end{aligned}
+    \label{eq:background-mahony-observer}
+\end{equation}
+Ở đây, $k_P>0$ tạo hiệu chỉnh tư thế tức thời, còn $k_I\geq0$ điều chỉnh ước lượng sai lệch con quay; khi $k_I=0$, nhánh thích nghi bị tắt. Hai hệ số này thuộc bộ ước lượng, khác với các hệ số PID vận tốc góc. Tổng sai lệch được bù là $\widehat{\mathbf b}_{\omega,0}+\hat{\mathbf b}_r$, nên $\hat{\mathbf b}_r$ chỉ biểu diễn phần dư. Cấu trúc được minh họa trên \fref{fig:background-mahony-filter}.
+
+\begin{figure}[htbp]
+    \centering
+    \resizebox{\linewidth}{!}{\input{figures/ch02/mahony_filter.tex}}
+    \caption{Cấu trúc bộ lọc Mahony sáu trục, xây dựng theo~\cite{hamel2006attitude,mahony2008nonlinear}.}
+    \label{fig:background-mahony-filter}
+\end{figure}
+
+\subsubsection{Cập nhật rời rạc và xác định góc nghiêng}
+
+Gọi $\Delta t_k$ là khoảng thời gian giữa hai mẫu hợp lệ liên tiếp, tính bằng giây. Với phương pháp Euler tiến, trạng thái được cập nhật từ các giá trị tại mẫu $k$:
+\begin{equation}
+    \begin{aligned}
+        \hat{\mathbf b}_{r,k+1}
+            &=\hat{\mathbf b}_{r,k}-k_I\mathbf e_k\Delta t_k,\\
+        \mathbf q^*_{k+1}
+            &=\hat{\mathbf q}_k+\frac{\Delta t_k}{2}\hat{\mathbf q}_k
+                \otimes\begin{bmatrix}0\\\symbf\omega_{o,k}\end{bmatrix},\\
+        \hat{\mathbf q}_{k+1}
+            &=\frac{\mathbf q^*_{k+1}}{\|\mathbf q^*_{k+1}\|}.
+    \end{aligned}
+    \label{eq:background-mahony-discrete}
+\end{equation}
+Chuẩn hóa sau tích phân hạn chế sai lệch chuẩn do tính toán số. Mỗi mẫu mới tạo một lần cập nhật; $\Delta t_k$ phản ánh thời gian của chuỗi mẫu thay vì mặc định bằng chu kỳ danh định khi có mất mẫu. Cấu trúc tích phân quaternion và chuẩn hóa cũng xuất hiện trong bộ lọc Mahony của Betaflight~\cite{betaflight452Mahony}.
+
+Khi khởi tạo ở trạng thái gần tĩnh, các góc $\phi_a$, $\theta_a$ trong~\eqref{eq:background-accelerometer-angles} xác định độ nghiêng ban đầu; yaw được chọn bằng không làm mốc tương đối. Trong quá trình hoạt động, góc roll và pitch lấy từ quaternion đơn vị:
+\begin{equation}
+    \begin{aligned}
+        \hat\phi&=\operatorname{atan2}
+            \left(2(\hat q_0\hat q_1+\hat q_2\hat q_3),
+            1-2(\hat q_1^2+\hat q_2^2)\right),\\
+        \hat\theta&=\arcsin
+            \left(\operatorname{sat}_{[-1,1]}
+            \!\left[2(\hat q_0\hat q_2-\hat q_1\hat q_3)\right]\right).
+    \end{aligned}
+    \label{eq:background-mahony-euler-output}
+\end{equation}
+Phép giới hạn đối số của $\arcsin$ xử lý sai số làm tròn. Thuật toán vẫn giữ trạng thái quaternion khi tính góc cho vòng điều khiển. Vận tốc $\symbf\omega_o$ có thành phần sửa sai của bộ quan sát; tín hiệu vận tốc góc vật lý cho vòng trong lấy từ con quay đã bù sai lệch và lọc phù hợp, tương ứng $\symbf\omega_c-\hat{\mathbf b}_r$ trước khi cộng $k_P\mathbf e$.
+
+\subsubsection{Ý nghĩa hệ số lọc và điều kiện áp dụng}
+
+Để giải thích tính bổ sung, xét một trục nghiêng ở lân cận tư thế nằm ngang, $w_a=1$, $k_I=0$ và ước lượng bias dư được đặt bằng không. Gọi $\eta$ là góc thật, $\eta_a$ là góc tham chiếu từ gia tốc kế, $\hat\eta$ là góc ước lượng và $\omega_c$ là vận tốc góc đã hiệu chỉnh trên trục đang xét. Tuyến tính hóa~\eqref{eq:background-mahony-observer} cho
+\begin{equation}
+    \dot{\hat\eta}=\omega_c+k_P(\eta_a-\hat\eta).
+    \label{eq:background-mahony-local-model}
+\end{equation}
+Với điều kiện đầu bằng không, biến đổi Laplace thu được
+\begin{equation}
+    \hat\eta(s)=\frac{s}{s+k_P}\frac{\omega_c(s)}{s}
+        +\frac{k_P}{s+k_P}\eta_a(s).
+    \label{eq:background-mahony-complementary}
+\end{equation}
+Hai hàm truyền tác động lên góc tích phân con quay và góc gia tốc kế có tổng bằng một. Nhánh con quay giữ biến thiên nhanh, còn nhánh gia tốc kế hiệu chỉnh thành phần chậm. Trong mô hình cục bộ này, hằng số thời gian $\tau\approx1/k_P$ và tần số chuyển tiếp $f_c\approx k_P/(2\pi)$. Chẳng hạn, $k_P=2\ \mathrm{s^{-1}}$ cho $\tau\approx0{,}5$ s; đây là quan hệ minh họa, không phải thông số đã xác định bằng thực nghiệm.
+
+Khi $k_I>0$, xét sai lệch con quay thực là hằng, bỏ qua nhiễu và gia tốc chuyển động để $\eta_a\approx\eta$. Tuyến tính hóa cùng luật thích nghi cho sai số góc $\delta=\hat\eta-\eta$:
+\begin{equation}
+    \ddot\delta+k_P\dot\delta+k_I\delta=0,
+    \qquad
+    \omega_n=\sqrt{k_I},\qquad
+    \zeta=\frac{k_P}{2\sqrt{k_I}}.
+    \label{eq:background-mahony-local-error}
+\end{equation}
+Theo cách định nghĩa sai lệch đang dùng, $k_P$ có đơn vị $\mathrm{s^{-1}}$, $k_I$ có đơn vị $\mathrm{s^{-2}}$, còn $\hat{\mathbf b}_r$ có đơn vị rad/s. Tăng $k_P$ làm quá trình sửa góc nhanh hơn nhưng tăng ảnh hưởng của gia tốc kế; tăng $k_I$ làm thay đổi tốc độ học sai lệch con quay. Các quan hệ trên chỉ áp dụng cho trục nghiêng quan sát được, góc nhỏ và trọng số bằng một.
+
+Gia tốc tịnh tiến, gia tốc hướng tâm và rung động làm giảm độ tin cậy của phương trọng lực suy ra từ gia tốc kế~\cite{fisher2010inclination}. Ví dụ, xét cảm biến giữ nguyên tư thế và chịu gia tốc ngang $0{,}2g$, không có gia tốc đứng. Từ~\eqref{eq:background-specific-force}, độ lớn lực riêng bằng $g\sqrt{1+0{,}2^2}\approx1{,}020g$ nhưng phương tham chiếu lệch $\arctan(0{,}2)\approx11{,}3^\circ$. Vì vậy, điều kiện độ lớn gần $g$ chỉ là một tiêu chí đánh giá, không đủ để loại hết ảnh hưởng chuyển động.
+
+Khi gia tốc kế không cung cấp tham chiếu phù hợp, giảm $w_a$ làm giảm cả phản hồi P và cập nhật bias trong~\eqref{eq:background-mahony-observer}; với $w_a=0$, bộ lọc tiếp tục tích phân con quay và giữ bias đang ước lượng. Trong triển khai thực tế, nhánh thích nghi còn có thể bị giới hạn khi quay nhanh để tránh học sai lệch do chuyển động. Betaflight sử dụng kiểm tra độ lớn gia tốc và điều kiện tốc độ quay cho mục đích này~\cite{betaflight452Mahony}.
+
+Với BMI160 sáu trục, tham chiếu trọng lực ràng buộc độ nghiêng nhưng không xác định yaw tuyệt đối. Khi đứng yên, thành phần bias dọc phương trọng lực cũng không quan sát được từ gia tốc kế; việc ước lượng đầy đủ bias còn phụ thuộc chuyển động đủ kích thích~\cite{hamel2006attitude}. Do đó, bộ lọc được sử dụng để tạo phản hồi roll, pitch cho bài toán cân bằng, còn heading tuyệt đối đòi hỏi thêm nguồn tham chiếu hướng.

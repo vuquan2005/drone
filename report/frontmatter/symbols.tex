@@ -6,6 +6,7 @@
     \textbf{Ký hiệu} & \textbf{Ý nghĩa và đơn vị} \\
     $E$, $B$ & Hệ tọa độ quán tính cục bộ và hệ tọa độ thân \\
     $R$ & Ma trận chuyển tọa độ từ hệ $B$ sang hệ $E$ \\
+    $\mathbf q$ & Quaternion đơn vị, thành phần vô hướng đứng trước \\
     $\phi,\theta,\psi$ & Góc roll, pitch, yaw (rad) \\
     $p,q,r$ & Vận tốc góc theo ba trục thân (rad/s) \\
     $\Omega_i$ & Tốc độ góc rôto thứ $i$ (rad/s) \\
@@ -18,9 +19,11 @@
     $d_x,d_y,d_z$ & Các thành phần mômen nhiễu tổng hợp (N$\cdot$m) \\
     $m$, $g$ & Khối lượng (kg) và gia tốc trọng trường (m/s$^2$) \\
     $T_s$ & Chu kỳ lấy mẫu hoặc cập nhật thuật toán (s) \\
+    $\Delta t_k$ & Khoảng thời gian giữa hai mẫu hợp lệ liên tiếp (s) \\
+    $\mathbf f_B$ & Gia tốc riêng trong hệ thân (m/s$^2$) \\
+    $\widehat{\mathbf b}_{\omega,0}$, $\hat{\mathbf b}_r$ & Bias con quay hiệu chỉnh ban đầu và bias dư ước lượng (rad/s) \\
+    $k_P$, $k_I$ & Hệ số Mahony, lần lượt có đơn vị s$^{-1}$ và s$^{-2}$ \\
     $K_\phi,K_\theta$ & Hệ số tỉ lệ của vòng góc (s$^{-1}$) \\
     $K_{P,j},K_{I,j},K_{D,j}$ & Các hệ số PID vận tốc góc của kênh $j$ \\
     $\kappa$ & Tỉ số $c_Q/c_T$ (m) \\
-    $\varepsilon_\chi$ & Dải sai lệch cho phép của góc $\chi$ (rad) \\
-    $M_{p,\chi}$, $t_{s,\chi}$ & Độ quá điều chỉnh (\%) và thời gian xác lập (s) \\
 \end{tabular}

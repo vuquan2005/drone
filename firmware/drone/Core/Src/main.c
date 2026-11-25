@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "runtime.h"
+#include "status_led.h"
 
 /* USER CODE END Includes */
 
@@ -112,6 +113,7 @@ int main(void)
 #if defined(DRONE_FLASH_BOARD_SMOKE)
   flash_board_smoke_run();
 #else
+  status_led_startup(HAL_GetTick());
   runtime_init();
 #endif
 
@@ -383,14 +385,25 @@ static void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(STATUS_LED_GPIO_Port, STATUS_LED_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(IMU_CS_GPIO_Port, IMU_CS_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(FLASH_CS_GPIO_Port, FLASH_CS_Pin, GPIO_PIN_SET);
+
+  /*Configure GPIO pin : STATUS_LED_Pin */
+  GPIO_InitStruct.Pin = STATUS_LED_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(STATUS_LED_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : IMU_CS_Pin */
   GPIO_InitStruct.Pin = IMU_CS_Pin;

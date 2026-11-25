@@ -16,14 +16,41 @@ STM32F103VET6 có Flash 512 KiB, RAM 64 KiB; HSE 8 MHz, PLL ×9, CPU 72 MHz.
 Cấu hình CubeMX nằm tại [drone.ioc](drone.ioc). Xác nhận mã chip, nguồn,
 mức tín hiệu và wiring trên board thực tế trước khi nạp hoặc cấp nguồn ESC.
 
-| Thiết bị          | Kết nối STM32             | Cấu hình                      |
-| ----------------- | ------------------------- | ----------------------------- |
-| IMU BMI160/BMI270 | SPI1: PA5/PA6/PA7, CS PA4 | SPI mode 0, 9 MHz             |
-| Receiver ELRS     | TX → PA3, RX ← PA2        | USART2, CRSF 420000 baud, 8N1 |
-| ESC               | PB6/PB7/PB8/PB9           | TIM4 PWM 400 Hz, 1000–2000 µs |
+| Thiết bị          | Kết nối STM32             | Cấu hình                           |
+| ----------------- | ------------------------- | ---------------------------------- |
+| IMU BMI160/BMI270 | SPI1: PA5/PA6/PA7, CS PA4 | SPI mode 0, 9 MHz                  |
+| Receiver ELRS     | TX → PA3, RX ← PA2        | USART2, CRSF 420000 baud, 8N1      |
+| ESC               | PB6/PB7/PB8/PB9           | TIM4 PWM 400 Hz, 1000–2000 µs      |
+| LED trạng thái    | PE3 (`STATUS_LED`)        | GPIO output push-pull, bật mức cao |
 
 Thứ tự chân không trùng thứ tự motor: xem [PWM ESC](#pwm-esc).
 Nối chung GND và tháo cánh trước khi thử motor.
+
+## LED trạng thái trên PE3
+
+CubeMX cấu hình `STATUS_LED` trên PE3 với mức ban đầu `LOW`. Nếu dùng LED
+rời, đấu từ PE3 qua điện trở nối tiếp và LED xuống GND. Xem cấu hình chân
+trong [drone.ioc](drone.ioc).
+
+| Trạng thái                    | Mẫu LED                     |
+| ----------------------------- | --------------------------- |
+| Khởi động                     | Sáng 250 ms, rồi tắt 150 ms |
+| Chờ RC ở `BOOT_SELECT`        | Sáng 100 ms mỗi 2 giây      |
+| `DISARMED`                    | Sáng 500 ms, tắt 500 ms     |
+| `ARMED`                       | Sáng liên tục               |
+| Hiệu chuẩn, xóa hoặc xuất log | Hai nháy dài                |
+| Failsafe do mất RC            | Hai nháy ngắn               |
+| Lỗi IMU                       | Ba nháy ngắn                |
+| Lỗi PWM đầu ra motor          | Bốn nháy ngắn               |
+| Failsafe khác                 | Năm nháy ngắn               |
+
+Nháy dài sáng 350 ms, cách nhau 200 ms. Nháy ngắn sáng 120 ms, cách nhau
+120 ms. Sau nháy cuối của mỗi cụm, LED tắt 1.200 ms rồi lặp lại. Nếu nhiều
+lỗi xảy ra cùng lúc, thứ tự ưu tiên là PWM, IMU, mất RC rồi đến lỗi khác.
+
+Xung boot bắt đầu sau `MX_GPIO_Init()` và trước `runtime_init()`. Runtime
+cập nhật LED theo tick, nên xung boot có thể kéo dài nếu quá trình khởi tạo
+giữ vòng lặp quá 250 ms. Bản build `DRONE_FLASH_BOARD_SMOKE` bỏ qua xung boot.
 
 ## Chọn chế độ sau reset
 

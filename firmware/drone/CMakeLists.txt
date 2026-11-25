@@ -102,6 +102,8 @@ target_sources(
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
             BSP/Src/bsp_motor_pwm.c
+            BSP/Src/bsp_status_led.c
+            App/Src/status_led.c
             App/Src/runtime.c
             App/Src/esc_calibration.c
             App/Src/imu_calibration.c

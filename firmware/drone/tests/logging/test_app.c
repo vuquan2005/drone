@@ -7,6 +7,7 @@
 #include "bsp_board.h"
 #include "bsp_motor_pwm.h"
 #include "bsp_rtt.h"
+#include "bsp_status_led.h"
 #include "flash_erase.h"
 #include "imu_calibration.h"
 #include "imu_calibration_store.h"
@@ -85,6 +86,10 @@ bool bsp_motor_pwm_set_all_us(
     memcpy(motor_pulse, pulse_us, sizeof(motor_pulse));
     return true;
 }
+void bsp_status_led_write(bool on) {
+    (void)on;
+}
+
 void bsp_motor_pwm_stop(void) {
     pwm_stops++;
 }

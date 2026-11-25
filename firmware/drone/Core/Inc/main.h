@@ -59,6 +59,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define STATUS_LED_Pin GPIO_PIN_3
+#define STATUS_LED_GPIO_Port GPIOE
 #define RECEIVER_TX_Pin GPIO_PIN_2
 #define RECEIVER_TX_GPIO_Port GPIOA
 #define RECEIVER_RX_Pin GPIO_PIN_3

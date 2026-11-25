@@ -9,6 +9,7 @@
 #include "flash_erase.h"
 #include "imu_calibration.h"
 #include "main.h"
+#include "status_led.h"
 #if defined(DRONE_RUNTIME_FLASH_EXPORT)
 #include "flash_export.h"
 #endif
@@ -266,7 +267,7 @@ static void process_config_requests(uint32_t now_ms) {
 }
 #endif
 
-void runtime_process(void) {
+static void process_mode(void) {
     if (app_receiver_update_sample(&receiver_sample, &receiver_sequence)) {
         (void)app_command_decode(&receiver_sample, &command);
     }
@@ -363,4 +364,31 @@ void runtime_process(void) {
     process_config_requests(now);
 #endif
     process_crsf_telemetry(HAL_GetTick());
+}
+
+static status_led_pattern_t select_led_pattern(void) {
+    if (mode == RUNTIME_BOOT_SELECT)
+        return STATUS_LED_WAITING;
+    if (mode != RUNTIME_FLIGHT)
+        return STATUS_LED_MAINTENANCE;
+
+    app_status_t status;
+    if (!app_get_status(&status))
+        return STATUS_LED_OTHER_FAULT;
+    if (!status.motor_ready || status.safety_reason == APP_SAFETY_PWM)
+        return STATUS_LED_MOTOR_FAULT;
+    if (!status.imu_initialized || status.safety_reason == APP_SAFETY_IMU ||
+        (status.arm_state == APP_FAILSAFE && !status.imu_ready))
+        return STATUS_LED_IMU_FAULT;
+    if (status.arm_state == APP_FAILSAFE) {
+        return status.safety_reason == APP_SAFETY_RC ? STATUS_LED_RC_LOSS
+                                                     : STATUS_LED_OTHER_FAULT;
+    }
+    return status.arm_state == APP_ARMED ? STATUS_LED_ARMED
+                                         : STATUS_LED_DISARMED;
+}
+
+void runtime_process(void) {
+    process_mode();
+    status_led_update(select_led_pattern(), HAL_GetTick());
 }

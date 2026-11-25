@@ -6,9 +6,10 @@ set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
 include(${FIRMWARE_ROOT}/cmake/imu.cmake)
 foreach(test_target IN ITEMS runtime_tests runtime_export_tests)
     add_executable(
-        ${test_target} test_runtime.c ${FIRMWARE_ROOT}/App/Src/runtime.c
-                       ${FIRMWARE_ROOT}/App/Src/app_command.c ${FIRMWARE_ROOT}/App/Src/flash_erase.c
-                       ${FIRMWARE_ROOT}/App/Src/app_flash_journal.c)
+        ${test_target}
+        test_runtime.c ${FIRMWARE_ROOT}/App/Src/runtime.c ${FIRMWARE_ROOT}/App/Src/status_led.c
+        ${FIRMWARE_ROOT}/App/Src/app_command.c ${FIRMWARE_ROOT}/App/Src/flash_erase.c
+        ${FIRMWARE_ROOT}/App/Src/app_flash_journal.c)
     target_include_directories(
         ${test_target}
         PRIVATE ../logging/mocks ../imu/mocks ${FIRMWARE_ROOT}/Drivers/RTT ${FIRMWARE_ROOT}/App/Inc

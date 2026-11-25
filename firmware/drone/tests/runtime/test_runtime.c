@@ -3,10 +3,12 @@
 #include "app_flash_journal.h"
 #include "bsp_flash.h"
 #include "bsp_motor_pwm.h"
+#include "bsp_status_led.h"
 #include "esc_calibration.h"
 #include "flash_erase.h"
 #include "imu_calibration.h"
 #include "runtime.h"
+#include "status_led.h"
 #include <assert.h>
 #include <stddef.h>
 #include <string.h>
@@ -190,6 +192,12 @@ bool app_receiver_send_attitude(const float body_to_ned[4]) {
     attitude_attempts++;
     return true;
 }
+static bool status_led_on;
+
+void bsp_status_led_write(bool on) {
+    status_led_on = on;
+}
+
 void bsp_motor_pwm_stop(void) {
     stops++;
 }
@@ -210,7 +218,7 @@ void app_process(const app_command_t *command) {
     }
 }
 bool app_get_status(app_status_t *status) {
-    assert(status != NULL && starts == 1 && processes != 0);
+    assert(status != NULL && starts == 1);
     *status = flight_status;
     return true;
 }
@@ -247,8 +255,10 @@ static void reset(void) {
     verify_dirty = false;
     imu_calib_status =
         (imu_calibration_status_t){.state = IMU_CALIBRATION_GYRO};
-    flight_status =
-        (app_status_t){.imu_initialized = true, .arm_state = APP_DISARMED};
+    flight_status = (app_status_t){.imu_initialized = true,
+                                   .imu_ready = true,
+                                   .motor_ready = true,
+                                   .arm_state = APP_DISARMED};
     calib_state = ESC_CALIBRATION_READY;
     status_attempts = 0;
     status_label[0] = '\0';
@@ -267,6 +277,51 @@ static void expect_next_status(const char *expected) {
     runtime_process();
     assert(status_attempts == previous_attempts + 1U);
     assert(strcmp(status_label, expected) == 0);
+}
+
+static void test_status_led(void) {
+    tick = UINT32_MAX - 100U;
+    reset();
+    input.connected = false;
+    status_led_startup(tick);
+    assert(status_led_on);
+    tick += 249U;
+    runtime_process();
+    assert(status_led_on);
+    tick++;
+    runtime_process();
+    assert(!status_led_on);
+    tick += 150U;
+    runtime_process();
+    assert(status_led_on);
+    tick += 100U;
+    runtime_process();
+    assert(!status_led_on);
+
+    input.connected = true;
+    runtime_process();
+    assert(status_led_on);
+    tick += 500U;
+    runtime_process();
+    assert(!status_led_on);
+    flight_status.arm_state = APP_ARMED;
+    runtime_process();
+    assert(status_led_on);
+
+    /* PWM takes priority when RC and IMU also fail. */
+    input.connected = false;
+    flight_status.motor_ready = false;
+    flight_status.imu_ready = false;
+    runtime_process();
+    for (unsigned pulse = 0; pulse < 4U; ++pulse) {
+        assert(status_led_on);
+        tick += 120U;
+        runtime_process();
+        assert(!status_led_on);
+        tick += pulse == 3U ? 1200U : 120U;
+        runtime_process();
+    }
+    assert(status_led_on);
 }
 
 static void test_crsf_status(void) {
@@ -513,10 +568,12 @@ int main(void) {
     reset();
     input.connected = false;
     runtime_process();
-    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT && boot_request_polls == 1);
+    assert(runtime_get_mode() == RUNTIME_BOOT_SELECT &&
+           boot_request_polls == 1);
     boot_request = true;
     runtime_process();
-    assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT && boot_request_polls == 2);
+    assert(runtime_get_mode() == RUNTIME_FLASH_EXPORT &&
+           boot_request_polls == 2);
     input.connected = true;
     runtime_process();
     assert(export_inits == 1 && export_polls == 1 && boot_request_polls == 2);
@@ -675,5 +732,6 @@ int main(void) {
     test_crsf_imu_calibration();
     test_crsf_attitude();
     test_manual_erase();
+    test_status_led();
     return 0;
 }

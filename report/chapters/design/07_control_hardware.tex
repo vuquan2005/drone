@@ -2,7 +2,7 @@
 \section{Phần điều khiển}
 \label{sec:design-control}
 
-Phần điều khiển gồm vi điều khiển STM32F103VET6, cảm biến quán tính BMI160, mạch thu tín hiệu ELRS 2,4 GHz và tay điều khiển Jumper T20 V2. Các thiết bị phối hợp để thu nhận trạng thái chuyển động, tiếp nhận lệnh người vận hành và tạo tín hiệu điều khiển đến ESC.
+Phần điều khiển gồm vi điều khiển STM32F103VET6, cảm biến quán tính BMI160, module cảm biến 9 trục BNO055, mạch thu tín hiệu ELRS 2,4 GHz và tay điều khiển Jumper T20 V2. Các thiết bị phối hợp để thu nhận trạng thái chuyển động, tiếp nhận lệnh người vận hành và tạo tín hiệu điều khiển đến ESC.
 
 \subsection{Vi điều khiển STM32F103VET6}
 
@@ -80,6 +80,48 @@ Module BMI160 trong \fref{fig:control-bmi160} đưa các chân nguồn và tín 
 \end{table}
 
 Trong bảng, $g$ biểu thị gia tốc trọng trường. Các dải đo là khả năng cấu hình của cảm biến; việc lựa chọn dải cụ thể phụ thuộc biên độ chuyển động khảo sát. Các mức điện áp nêu trên áp dụng cho IC BMI160; điện áp tại chân cấp nguồn của module phụ thuộc mạch nguồn tích hợp trên module.
+
+\clearpage
+\subsection{Module cảm biến 9 trục BNO055}
+\label{subsec:control-bno055}
+
+BNO055 của Bosch Sensortec tích hợp gia tốc kế, con quay hồi chuyển và từ kế, mỗi loại ba trục. Bộ xử lý tích hợp thực hiện hợp nhất dữ liệu cảm biến, cho phép xuất trực tiếp tư thế dưới dạng quaternion hoặc góc Euler~\cite{boschBno055Datasheet}.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[height=4.8cm]{figures/ch03/cambien9truc.png}
+	\caption{Module CJMCU-055 sử dụng cảm biến BNO055.}
+	\label{fig:control-bno055}
+\end{figure}
+
+Module trong \fref{fig:control-bno055} đưa các chân nguồn và tín hiệu ra ngoài để kết nối với vi điều khiển. Ký hiệu hướng trục trên bo hỗ trợ xác định chiều lắp và quy đổi dữ liệu về hệ trục thân của quadrotor.
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số chính của IC cảm biến BNO055~\cite{boschBno055Datasheet}.}
+	\label{tab:control-bno055-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Thành phần cảm biến & Gia tốc kế, con quay hồi chuyển và từ kế; mỗi loại ba trục \\
+		\hline
+		Đầu ra tư thế & Quaternion và góc Euler \\
+		\hline
+		Dải đo gia tốc lựa chọn được & $\pm2g$, $\pm4g$, $\pm8g$, $\pm16g$ \\
+		\hline
+		Dải đo vận tốc góc lựa chọn được & $\pm125$, $\pm250$, $\pm500$, $\pm1000$, $\pm2000\ ^\circ$/s \\
+		\hline
+		Giao tiếp với vi điều khiển & I\textsuperscript{2}C hoặc UART \\
+		\hline
+		Điện áp nguồn VDD của IC & 2,4--3,6 V \\
+		\hline
+		Điện áp giao tiếp VDDIO của IC & 1,7--3,6 V \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Các mức điện áp trong bảng áp dụng cho IC BNO055. Điện áp cấp tại chân VCC của module phụ thuộc mạch nguồn tích hợp trên bo.
 
 \clearpage
 \subsection{Mạch thu tín hiệu ELRS 2,4 GHz dạng Nano}

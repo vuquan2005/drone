@@ -2,7 +2,7 @@
 \section{Phần cứng bay và nguồn}
 \label{sec:design-hardware}
 
-Phần cứng bay và nguồn gồm khung F450, pin LiPo 3S, mạch hạ áp LM2596 cùng bốn tổ hợp ESC--động cơ--cánh quạt. Nhóm này đảm nhiệm liên kết cơ khí, cấp năng lượng và tạo lực đẩy.
+Phần cứng bay và nguồn gồm khung F450, pin LiPo 3S cùng bốn tổ hợp ESC--động cơ--cánh quạt. Nhóm này đảm nhiệm liên kết cơ khí, cấp năng lượng và tạo lực đẩy. Nguồn 5 V cho phần điều khiển được lấy từ mạch BEC tích hợp của ESC2.
 
 \subsection{Bộ khung F450}
 
@@ -72,43 +72,6 @@ Pin trong \fref{fig:hardware-lipo-battery} có cấu hình 3S1P, gồm ba cell n
 Điện áp pin thay đổi theo mức nạp và tải. Hệ số 90C là thông tin ghi nhãn, chưa phân biệt mức xả liên tục và ngắn hạn; khả năng cấp dòng thực tế phụ thuộc đặc tính của pin và điều kiện sử dụng.
 
 \clearpage
-\subsection{Mạch hạ áp LM2596}
-
-Mạch hạ áp LM2596 biến đổi điện áp từ pin thành mức nguồn thấp hơn để cấp cho khối điều khiển.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[trim=0 55bp 0 58bp,clip,width=0.55\linewidth]{figures/ch03/lm2596-buck-converter.png}
-	\caption{Mạch hạ áp điều chỉnh dùng IC LM2596S-ADJ.}
-	\label{fig:hardware-lm2596-module}
-\end{figure}
-
-Module trong \fref{fig:hardware-lm2596-module} gồm IC LM2596S-ADJ, cuộn cảm, diode, tụ lọc và biến trở điều chỉnh điện áp đầu ra. Trong phương án cấp nguồn, đầu ra của mạch được đặt ở 5 V để cấp cho bo điều khiển; tầng nguồn trên bo tạo mức 3,3 V cho các khối logic tương ứng.
-
-\begin{table}[H]
-	\centering
-	\caption{Thông số IC LM2596 và mức nguồn lựa chọn~\cite{tiLm2596}.}
-	\label{tab:hardware-buck-specifications}
-	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
-		\hline
-		\textbf{Thông số} & \textbf{Giá trị} \\
-		\hline
-		Nguyên lý biến đổi & Hạ áp chuyển mạch (buck) \\
-		\hline
-		Dải điện áp đầu vào của IC & 4,5--40 V \\
-		\hline
-		Tần số chuyển mạch của IC & 150 kHz \\
-		\hline
-		Dòng đầu ra của IC & Đến 3 A theo điều kiện thiết kế của nhà sản xuất \\
-		\hline
-		Nguồn sử dụng trong đề tài & Đầu vào từ pin LiPo 3S; đầu ra đặt 5 V \\
-		\hline
-	\end{tabularx}
-\end{table}
-
-Các giới hạn điện áp và dòng nêu trên là thông số của IC. Khả năng làm việc liên tục của module còn phụ thuộc tụ điện, cuộn cảm, diode và điều kiện tản nhiệt.
-
-\clearpage
 \subsection{Bộ điều tốc ESC 30 A}
 
 Hệ thống sử dụng bốn ESC, mỗi ESC điều khiển một động cơ không chổi than. ESC nhận nguồn một chiều từ pin và chuyển mạch ba pha để cấp điện cho động cơ, đồng thời tiếp nhận lệnh PWM từ vi điều khiển.
@@ -142,6 +105,8 @@ Hệ thống sử dụng bốn ESC, mỗi ESC điều khiển một động cơ 
 \end{table}
 
 Giá trị 30 A trong \tref{tab:hardware-esc-specifications} được lấy từ nhãn ESC; dòng cho phép liên tục và dải xung điều khiển phụ thuộc phiên bản ESC và điều kiện làm việc của thiết bị.
+
+Trong cấu hình sử dụng, mạch BEC (Battery Eliminator Circuit) của ESC2 cung cấp đường 5 V cho bo điều khiển STM32 và bộ thu ELRS. Tầng nguồn trên bo STM32 tạo mức 3,3 V cho BMI160 và BNO055. Chỉ đầu ra BEC của ESC2 được nối vào đường 5 V; đầu ra BEC của các ESC còn lại không kết nối. Cách phân phối nguồn này được thể hiện trong \secref{sec:design-electrical-system}.
 
 \clearpage
 \subsection{Động cơ không chổi than A2212/10T 1400KV}

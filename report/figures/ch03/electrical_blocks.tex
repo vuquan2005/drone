@@ -6,16 +6,17 @@
 				minimum height=1.45cm},
 		every node/.style={align=center}
 	]
-	\node[block,text width=5.0cm] (power) at (6.25,2.3)
-	{\textbf{Khối nguồn}\\Pin LiPo 3S, LM2596};
+	\node[block,text width=5.0cm] (power) at (6.25,2.7)
+	{\textbf{Khối nguồn}\\Pin LiPo 3S};
 	\node[block,text width=4.8cm] (control) at (2.6,0)
-	{\textbf{Khối điều khiển}\\STM32F103VET6, BMI160\\Bộ thu ELRS};
+	{\textbf{Khối điều khiển}\\STM32F103VET6\\BMI160, BNO055, bộ thu ELRS};
 	\node[block,text width=4.6cm] (actuators) at (10.0,0)
 	{\textbf{Khối cơ cấu chấp hành}\\Bốn ESC, động cơ\\và cánh quạt};
 
-	\draw[->] (power.west) -| node[pos=0.7,left] {5 V} (control.north);
 	\draw[->] (power.east) -| node[pos=0.7,right] {Nguồn pin 3S} (actuators.north);
 	\draw[->,dashed] (control.east) -- node[above] {PWM} (actuators.west);
-	\node[font=\fontsize{10}{12}\selectfont] at (6.25,-1.65)
+	\draw[->] (actuators.south) -- ++(0,-0.65)
+	-| node[pos=0.25,below] {5 V từ BEC của ESC2} (control.south);
+	\node[font=\fontsize{10}{12}\selectfont] at (6.25,-2.6)
 	{Đường liền: cấp nguồn; đường nét đứt: tín hiệu điều khiển.\\Ba khối dùng chung GND.};
 \end{tikzpicture}

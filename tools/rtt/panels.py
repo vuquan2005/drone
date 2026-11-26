@@ -4,8 +4,47 @@ from collections import deque
 import re
 
 import numpy as np
-from PySide6 import QtGui, QtWidgets
+from PySide6 import QtCore, QtGui, QtWidgets
 import pyqtgraph as pg
+
+from records import RcCompact
+from telemetry import attitude_degrees
+
+AXIS_COLORS = ("#d1495b", "#218739", "#246bc1")
+AXIS_LINE_WIDTH = 1
+
+
+def imu_display_points(series, config):
+    """Apply the segment's FRD calibration to a copy of the plotted samples."""
+    points = np.asarray(series.points, dtype=float)
+    imu = config.get("imu") if config else None
+    calibration = imu.get("calibration") if isinstance(imu, dict) else None
+    if not isinstance(calibration, dict) or calibration.get("frame") != "FRD":
+        return points, "Uncorrected", "Uncorrected"
+    try:
+        gyro_bias = np.asarray(calibration["gyro_bias_radps"], dtype=float)
+        accel_enabled = calibration["accel_enabled"] is True
+        if accel_enabled:
+            accel_bias = np.asarray(calibration["accel_bias_mps2"], dtype=float)
+            matrix = np.asarray(calibration["accel_matrix"], dtype=float)
+            if (
+                accel_bias.shape != (3,)
+                or matrix.shape != (3, 3)
+                or not np.isfinite(accel_bias).all()
+                or not np.isfinite(matrix).all()
+            ):
+                raise ValueError("Invalid accelerometer calibration")
+        if gyro_bias.shape != (3,) or not np.isfinite(gyro_bias).all():
+            raise ValueError("Invalid gyroscope calibration")
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return points, "Uncorrected", "Uncorrected"
+
+    if points.size:
+        points[:, 4:7] -= gyro_bias
+        if accel_enabled:
+            points[:, 1:4] = (points[:, 1:4] - accel_bias) @ matrix.T
+    source = "Flash" if calibration.get("source") == "flash" else "Default"
+    return points, source if accel_enabled else "Uncorrected", source
 
 
 class ImuPanel(pg.GraphicsLayoutWidget):
@@ -13,68 +52,624 @@ class ImuPanel(pg.GraphicsLayoutWidget):
         super().__init__()
         self.setBackground("w")
         self.plots, self.curves = [], []
-        for index, (title, unit) in enumerate((("Acceleration", "m/s²"), ("Gyroscope", "rad/s"))):
+        groups = (
+            ("Acceleration", "m/s²", ("X", "Y", "Z")),
+            ("Gyroscope", "rad/s", ("Roll", "Pitch", "Yaw")),
+        )
+        for index, (title, unit, labels) in enumerate(groups):
             plot = self.addPlot(row=index, col=0, title=title)
             plot.setLabel("left", unit)
             plot.getAxis("left").enableAutoSIPrefix(False)
-            plot.setLabel("bottom", "MCU time from session start", units="s")
+            plot.setLabel("bottom", "Elapsed time", units="s")
             plot.showGrid(x=True, y=True, alpha=0.2)
             plot.addLegend()
             self.plots.append(plot)
             self.curves.append(
                 [
-                    plot.plot(name=axis, pen=pg.mkPen(color, width=1), connect="finite")
-                    for axis, color in zip("XYZ", ("#d1495b", "#218739", "#246bc1"))
+                    plot.plot(
+                        name=label,
+                        pen=pg.mkPen(color, width=AXIS_LINE_WIDTH),
+                        connect="finite",
+                    )
+                    for label, color in zip(labels, AXIS_COLORS)
                 ]
             )
         self.plots[1].setXLink(self.plots[0])
 
-    def update_series(self, series):
-        points = np.asarray(series.points, dtype=float)
+    def update_series(self, series, config=None, follow=True):
+        points, accel_status, gyro_status = imu_display_points(series, config)
+        self.plots[0].setTitle(f"Acceleration · {accel_status}")
+        self.plots[1].setTitle(f"Gyroscope · {gyro_status}")
         for group, curves in enumerate(self.curves):
             for axis, curve in enumerate(curves):
                 if points.size:
                     curve.setData(points[:, 0], points[:, 1 + group * 3 + axis])
                 else:
                     curve.setData([], [])
-        if points.size:
+        if points.size and follow:
             end = max(10, points[-1, 0])
             self.plots[0].setXRange(end - 10, end, padding=0)
 
 
-class ReceiverPanel(QtWidgets.QWidget):
+class RatePanel(QtWidgets.QWidget):
+    """Plots exist before the first snapshot; invalid samples break traces."""
+
     def __init__(self):
         super().__init__()
-        layout = QtWidgets.QGridLayout(self)
-        self.rc_status = QtWidgets.QLabel("RC: waiting for type 3 frames")
-        layout.addWidget(self.rc_status, 0, 0, 1, 4)
-        self.rc_bars = []
+        layout = QtWidgets.QVBoxLayout(self)
+        self.status = QtWidgets.QLabel("Waiting for rate telemetry")
+        self.status.setWordWrap(True)
+        layout.addWidget(self.status)
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graph.setBackground("w")
+        layout.addWidget(self.graph)
+        self.curves = []
+        self.plots = []
+        colors = (*AXIS_COLORS, "#8f50aa")
+        groups = [
+            (
+                axis,
+                "rad/s",
+                row,
+                0,
+                [("Setpoint", 1 + row, colors[row]), ("Gyro", 4 + row, "#333333")],
+            )
+            for row, axis in enumerate(("Roll", "Pitch", "Yaw"))
+        ]
+        groups += [
+            (
+                "PID",
+                "normalized",
+                0,
+                1,
+                [(axis, 7 + i, colors[i]) for i, axis in enumerate(("Roll", "Pitch", "Yaw"))],
+            ),
+            (
+                "Mixer thrust",
+                "normalized",
+                1,
+                1,
+                [(f"M{i+1}", 10 + i, colors[i]) for i in range(4)],
+            ),
+            (
+                "Allocation residual",
+                "normalized",
+                2,
+                1,
+                [(axis, 14 + i, colors[i]) for i, axis in enumerate(("Roll", "Pitch", "Yaw"))],
+            ),
+        ]
+        for title, unit, row, col, traces in groups:
+            plot = self.graph.addPlot(row=row, col=col, title=title)
+            plot.setLabel("left", unit)
+            plot.getAxis("left").enableAutoSIPrefix(False)
+            if row == 2:
+                plot.setLabel("bottom", "Elapsed time", units="s")
+            plot.showGrid(x=True, y=True, alpha=0.2)
+            plot.addLegend()
+            plot.setXRange(0, 10, padding=0)
+            for name, column, color in traces:
+                self.curves.append(
+                    (
+                        plot.plot(
+                            name=name,
+                            pen=pg.mkPen(color, width=AXIS_LINE_WIDTH),
+                            connect="finite",
+                        ),
+                        column,
+                    )
+                )
+            if self.plots:
+                plot.setXLink(self.plots[0])
+            self.plots.append(plot)
+
+    def setText(self, text):
+        self.status.setText(text)
+
+    def text(self):
+        return self.status.text()
+
+    def update_points(self, points, follow=True):
+        data = np.asarray(points, dtype=float)
+        for curve, column in self.curves:
+            curve.setData(data[:, 0], data[:, column]) if data.size else curve.setData([], [])
+        if data.size and follow:
+            end = max(10, data[-1, 0])
+            self.plots[0].setXRange(end - 10, end, padding=0)
+
+
+class AttitudeModel(pg.PlotWidget):
+    """Orthographic view of body FRD in an NED reference frame."""
+
+    # Screen right and screen up, expressed in NED.
+    camera = np.array(((0.6, 0.8, 0), (0.4, -0.3, -np.sqrt(0.75))))
+
+    def __init__(self):
+        super().__init__()
+        self.setBackground("w")
+        self.setMinimumSize(220, 220)
+        self.setAspectLocked()
+        self.setRange(xRange=(-1.2, 1.2), yRange=(-1.2, 1.2), padding=0)
+        self.disableAutoRange()
+        self.setMouseEnabled(x=False, y=False)
+        self.setMenuEnabled(False)
+        self.hideButtons()
+        self.hideAxis("left")
+        self.hideAxis("bottom")
+
+        # Fixed NED reference plane, projected with the same orthographic camera.
+        grid_extent = 0.75
+        grid_down = 0.72
+        self.grid = []
+        grid_pen = pg.mkPen("#e8edf2", width=0.7)
+        for offset in np.linspace(-grid_extent, grid_extent, 9):
+            for points in (
+                ((offset, -grid_extent, grid_down), (offset, grid_extent, grid_down)),
+                ((-grid_extent, offset, grid_down), (grid_extent, offset, grid_down)),
+            ):
+                projected = np.asarray(points) @ self.camera.T
+                self.grid.append(self.plot(*projected.T, pen=grid_pen))
+
+        self.axes = []
+        for name, color in (
+            ("X · Forward", AXIS_COLORS[0]),
+            ("Y · Right", AXIS_COLORS[1]),
+            ("Z · Down", AXIS_COLORS[2]),
+        ):
+            line = self.plot(pen=pg.mkPen(color, width=AXIS_LINE_WIDTH))
+            label = pg.TextItem(name, color=color, anchor=(0.5, 0.5))
+            self.addItem(label)
+            self.axes.append((line, label))
+        self.set_quaternion(None)
+
+    def set_quaternion(self, q):
+        items = tuple(item for pair in self.axes for item in pair)
+        for item in items:
+            item.setVisible(q is not None)
+        if q is None:
+            return
+
+        w, x, y, z = np.asarray(q) / np.linalg.norm(q)
+        body_to_ned = np.array(
+            (
+                (1 - 2 * (y * y + z * z), 2 * (x * y - w * z), 2 * (x * z + w * y)),
+                (2 * (x * y + w * z), 1 - 2 * (x * x + z * z), 2 * (y * z - w * x)),
+                (2 * (x * z - w * y), 2 * (y * z + w * x), 1 - 2 * (x * x + y * y)),
+            )
+        )
+        body_to_screen = self.camera @ body_to_ned
+        for axis, (line, label) in enumerate(self.axes):
+            tip_x, tip_y = body_to_screen[:, axis]
+            line.setData([0, tip_x], [0, tip_y])
+            label.setPos(tip_x * 1.15, tip_y * 1.15)
+
+
+class AttitudePanel(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QtWidgets.QVBoxLayout(self)
+        graph = pg.PlotWidget(background="w")
+        content = QtWidgets.QSplitter(QtCore.Qt.Orientation.Horizontal)
+        self.model = AttitudeModel()
+        self.attitude_snapshots = []
+        self.replay_controls = QtWidgets.QWidget()
+        replay_layout = QtWidgets.QHBoxLayout(self.replay_controls)
+        replay_layout.setContentsMargins(0, 0, 0, 0)
+        self.replay_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.replay_slider.setAccessibleName("Saved attitude snapshot")
+        self.replay_slider.valueChanged.connect(self.show_saved_snapshot)
+        self.replay_position = QtWidgets.QLabel()
+        replay_layout.addWidget(self.replay_slider, 1)
+        replay_layout.addWidget(self.replay_position)
+        self.replay_controls.hide()
+        content.addWidget(self.model)
+        content.addWidget(graph)
+        content.setStretchFactor(0, 1)
+        content.setStretchFactor(1, 2)
+        layout.addWidget(content, 1)
+        layout.addWidget(self.replay_controls)
+        self.status = QtWidgets.QLabel("Waiting for attitude")
+        layout.insertWidget(0, self.status)
+        self.plot = graph.getPlotItem()
+        self.replay_marker = pg.InfiniteLine(angle=90, pen=pg.mkPen("#555555", width=1))
+        self.replay_marker.hide()
+        self.plot.addItem(self.replay_marker, ignoreBounds=True)
+        self.plot.setLabel("left", "Angle (°)")
+        self.plot.showGrid(x=True, y=True, alpha=0.2)
+        self.plot.addLegend()
+        self.curves = [
+            self.plot.plot(name=axis, pen=pg.mkPen(color, width=AXIS_LINE_WIDTH), connect="finite")
+            for axis, color in zip(("Roll", "Pitch", "Yaw"), AXIS_COLORS)
+        ]
+
+    def set_saved_snapshots(self, snapshots):
+        self.attitude_snapshots = snapshots
+        last = max(0, len(snapshots) - 1)
+        with QtCore.QSignalBlocker(self.replay_slider):
+            self.replay_slider.setRange(0, last)
+            self.replay_slider.setValue(last)
+        self.replay_slider.setEnabled(len(snapshots) > 1)
+        self.replay_controls.setVisible(bool(snapshots))
+        self.replay_marker.setVisible(bool(snapshots))
+        if snapshots:
+            self.show_saved_snapshot(last)
+        else:
+            self.replay_position.clear()
+
+    def show_saved_snapshot(self, index):
+        if not self.attitude_snapshots:
+            return
+        seconds, q = self.attitude_snapshots[index]
+        self.show_quaternion(q)
+        self.replay_marker.setValue(seconds)
+        self.replay_position.setText(f"{seconds:.2f}s · {index + 1}/{len(self.attitude_snapshots)}")
+
+    def show_quaternion(self, q):
+        self.model.set_quaternion(q)
+        roll, pitch, yaw = attitude_degrees(q)
+        self.status.setText(f"Roll {roll:+.1f}°    Pitch {pitch:+.1f}°    Yaw {yaw:+.1f}°")
+
+    def update_attitude(self, state, now=None):
+        saved = now is None
+        sample = state.latest_attitude
+        age = now - state.attitude_received_at if not saved and sample is not None else 0
+        if sample is None:
+            self.model.set_quaternion(None)
+            self.status.setText("No saved attitude" if saved else "Waiting for attitude")
+        elif age > 0.25:
+            self.model.set_quaternion(None)
+            self.status.setText(f"Attitude stale · {age:.2f} s")
+        elif not saved or not state.attitude_snapshots:
+            self.show_quaternion(sample[2:])
+        if saved:
+            self.set_saved_snapshots(state.attitude_snapshots)
+        data = np.asarray(state.attitude_points, dtype=float)
+        for axis, curve in enumerate(self.curves, 1):
+            if data.size:
+                curve.setData(data[:, 0], data[:, axis])
+            else:
+                curve.setData([], [])
+        self.plot.setLabel("bottom", "Elapsed time", units="s")
+        if saved:
+            self.plot.enableAutoRange()
+        else:
+            end = max(10, data[-1, 0]) if data.size else 10
+            self.plot.setXRange(end - 10, end, padding=0)
+
+
+class AttitudeControlPanel(QtWidgets.QWidget):
+    def __init__(self):
+        super().__init__()
+        layout = QtWidgets.QVBoxLayout(self)
+        self.status = QtWidgets.QLabel()
+        layout.addWidget(self.status)
+        self.graph = pg.GraphicsLayoutWidget()
+        self.graph.setBackground("w")
+        layout.addWidget(self.graph, 1)
+        self.plots, self.curves = [], []
+        groups = (
+            ("Roll", "°", (("Target", AXIS_COLORS[0]), ("Estimated", "#333333"))),
+            ("Pitch", "°", (("Target", AXIS_COLORS[1]), ("Estimated", "#333333"))),
+            ("Tilt error", "2 × quaternion vector", (("X", AXIS_COLORS[0]), ("Y", AXIS_COLORS[1]))),
+            ("Rate request", "rad/s", (("X", AXIS_COLORS[0]), ("Y", AXIS_COLORS[1]))),
+        )
+        for index, (title, unit, traces) in enumerate(groups):
+            plot = self.graph.addPlot(row=index // 2, col=index % 2, title=title)
+            plot.setLabel("left", unit)
+            plot.getAxis("left").enableAutoSIPrefix(False)
+            if index >= 2:
+                plot.setLabel("bottom", "Elapsed time", units="s")
+            plot.showGrid(x=True, y=True, alpha=0.2)
+            plot.addLegend()
+            self.curves.extend(
+                plot.plot(name=name, pen=pg.mkPen(color, width=AXIS_LINE_WIDTH), connect="finite")
+                for name, color in traces
+            )
+            if self.plots:
+                plot.setXLink(self.plots[0])
+            self.plots.append(plot)
+        self.status.setText("Waiting for attitude control (SC MIDDLE/HIGH)")
+
+    def update_control(self, state, now=None):
+        sample = state.latest_attitude_control
+        if sample is None:
+            self.status.setText(
+                "No saved attitude control"
+                if now is None
+                else "Waiting for attitude control (SC MIDDLE/HIGH)"
+            )
+        elif now is not None and now - state.attitude_control_received_at > 0.25:
+            self.status.setText("No recent attitude control samples")
+        else:
+            _, control_us, estimate_us, flags = sample[:4]
+            estimate_age_ms = (control_us - estimate_us) % 2**32 / 1000
+            source = "Saved" if now is None else "Live"
+            status = "valid" if flags else "invalid correction"
+            self.status.setText(f"{source} · {status} · estimate age {estimate_age_ms:.2f} ms")
+        data = np.asarray(state.attitude_control_points, dtype=float)
+        for column, curve in enumerate(self.curves, 1):
+            if data.size:
+                curve.setData(data[:, 0], data[:, column])
+            else:
+                curve.setData([], [])
+        if now is None:
+            for plot in self.plots:
+                plot.enableAutoRange()
+        else:
+            end = max(10, data[-1, 0]) if data.size else 10
+            self.plots[0].setXRange(end - 10, end, padding=0)
+
+
+# Nominal channel endpoints used by firmware/drone/App/Inc/app_command.h.
+RC_MIN, RC_CENTER, RC_MAX = 172, 992, 1811
+RC_SCALE_LABEL = f"CH1–CH4 scale {RC_MIN}–{RC_MAX} · center {RC_CENTER} · raw values"
+
+
+def stick_position(raw):
+    value = min(RC_MAX, max(RC_MIN, raw))
+    span = RC_CENTER - RC_MIN if value < RC_CENTER else RC_MAX - RC_CENTER
+    return 0.5 + 0.5 * (value - RC_CENTER) / span
+
+
+class ChannelStick(QtWidgets.QWidget):
+    """Read-only XY display of two raw channels."""
+
+    def __init__(self, horizontal, vertical, horizontal_name, vertical_name):
+        super().__init__()
+        self.horizontal, self.vertical = horizontal, vertical
+        self.horizontal_name, self.vertical_name = horizontal_name, vertical_name
+        self.values = None
+        self.active = False
+        self.setMinimumSize(150, 160)
+        self.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding
+        )
+
+    def set_channels(self, values, active):
+        self.values, self.active = values, active
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+        palette = self.palette()
+        color = palette.color(QtGui.QPalette.ColorRole.Text)
+        if not self.active:
+            color.setAlpha(100)
+        painter.setPen(QtGui.QPen(color, 1))
+        side = max(1, min(self.width() - 28, self.height() - 60))
+        box = QtCore.QRectF((self.width() - side) / 2, 12, side, side)
+        painter.drawRect(box)
+        painter.drawLine(
+            QtCore.QPointF(box.center().x(), box.top()),
+            QtCore.QPointF(box.center().x(), box.bottom()),
+        )
+        painter.drawLine(
+            QtCore.QPointF(box.left(), box.center().y()),
+            QtCore.QPointF(box.right(), box.center().y()),
+        )
+        label = (
+            f"{self.horizontal_name} CH{self.horizontal} ↔ / "
+            f"{self.vertical_name} CH{self.vertical} ↕"
+        )
+        if self.values is not None:
+            x, y = self.values
+            point = QtCore.QPointF(
+                box.left() + stick_position(x) * side,
+                box.bottom() - stick_position(y) * side,
+            )
+            painter.setBrush(color)
+            painter.drawEllipse(point, 6, 6)
+            label += f"\n{x} / {y}"
+        else:
+            label += "\n— / —"
+        painter.drawText(
+            QtCore.QRectF(0, box.bottom() + 6, self.width(), 42),
+            QtCore.Qt.AlignmentFlag.AlignCenter,
+            label,
+        )
+
+
+class ReceiverPanel(QtWidgets.QWidget):
+    SWITCH_COLORS = {
+        "—": "#edf0f4",
+        "LOW": "#e2e8f0",
+        "MIDDLE": "#cde5fc",
+        "HIGH": "#cdeed9",
+    }
+
+    def __init__(self):
+        super().__init__()
+        layout = QtWidgets.QVBoxLayout(self)
+        self.rc_status = QtWidgets.QLabel("RC: waiting for data")
+        layout.addWidget(self.rc_status)
+        self.switches = QtWidgets.QWidget()
+        self.switch_layout = QtWidgets.QGridLayout(self.switches)
+        self.switch_layout.setContentsMargins(0, 0, 0, 0)
+        self.switch_layout.setHorizontalSpacing(12)
+        self.switch_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft)
+        self.switch_columns = 0
+        self.switch_boxes, self.switch_values = [], []
+        for name, description in (
+            ("SA", "CH5 · Arm request"),
+            ("SB", "CH7 · Calibration request"),
+            ("SC", "CH6 · Mode switch"),
+            ("SD", "CH8 · Telemetry"),
+        ):
+            box = QtWidgets.QWidget()
+            box.setToolTip(description)
+            box_layout = QtWidgets.QHBoxLayout(box)
+            box_layout.setContentsMargins(0, 0, 0, 0)
+            box_layout.addWidget(QtWidgets.QLabel(name))
+            value = QtWidgets.QLabel()
+            value.setAccessibleName(f"{name} · {description}")
+            value.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+            font = value.font()
+            font.setBold(True)
+            value.setFont(font)
+            width = max(
+                value.fontMetrics().horizontalAdvance(state) for state in self.SWITCH_COLORS
+            )
+            value.setMinimumWidth(width + 12)
+            box_layout.addWidget(value)
+            self.switch_boxes.append(box)
+            self.switch_values.append(value)
+        self.switches.hide()
+        layout.addWidget(self.switches)
+        body = QtWidgets.QHBoxLayout()
+        layout.addLayout(body, 1)
+        self.stick_group = QtWidgets.QWidget()
+        stick_layout = QtWidgets.QHBoxLayout(self.stick_group)
+        stick_layout.setContentsMargins(0, 0, 0, 0)
+        # Jumper T20 DA-Drone channel mapping: firmware/Jumper-T20/README.md.
+        self.sticks = [
+            ChannelStick(4, 3, "Yaw", "Throttle"),
+            ChannelStick(1, 2, "Roll", "Pitch"),
+        ]
+        for stick in self.sticks:
+            stick_layout.addWidget(stick)
+        body.addWidget(self.stick_group, 1)
+        self.bar_group = QtWidgets.QWidget()
+        grid = self.bar_layout = QtWidgets.QGridLayout(self.bar_group)
+        grid.setContentsMargins(0, 0, 0, 0)
+        body.addWidget(self.bar_group, 1)
+        self.rc_bars, self.channel_labels = [], []
         for i in range(16):
             bar = QtWidgets.QProgressBar()
-            bar.setRange(0, 2047)
+            minimum, maximum = (RC_MIN, RC_MAX) if i < 4 else (0, 2047)
+            bar.setRange(minimum, maximum)
             bar.setFormat("—")
-            layout.addWidget(QtWidgets.QLabel(f"CH{i + 1}"), i % 8 + 1, (i // 8) * 2)
-            layout.addWidget(bar, i % 8 + 1, (i // 8) * 2 + 1)
+            label = QtWidgets.QLabel(f"CH{i + 1}")
+            grid.addWidget(label, i % 8, (i // 8) * 2)
+            grid.addWidget(bar, i % 8, (i // 8) * 2 + 1)
+            self.channel_labels.append(label)
             self.rc_bars.append(bar)
+        self.rc_snapshots = []
+        self.replay_controls = QtWidgets.QWidget()
+        replay_layout = QtWidgets.QHBoxLayout(self.replay_controls)
+        replay_layout.setContentsMargins(0, 0, 0, 0)
+        self.replay_slider = QtWidgets.QSlider(QtCore.Qt.Orientation.Horizontal)
+        self.replay_slider.setAccessibleName("Saved receiver snapshot")
+        self.replay_slider.valueChanged.connect(self.show_saved_snapshot)
+        self.replay_position = QtWidgets.QLabel()
+        replay_layout.addWidget(self.replay_slider, 1)
+        replay_layout.addWidget(self.replay_position)
+        self.replay_controls.hide()
+        layout.addWidget(self.replay_controls)
+        self.details = QtWidgets.QLabel(RC_SCALE_LABEL)
+        self.details.setWordWrap(True)
+        self.details.setSizePolicy(
+            QtWidgets.QSizePolicy.Policy.Ignored, QtWidgets.QSizePolicy.Policy.Preferred
+        )
+        layout.addWidget(self.details)
+        self.channel_count = 16
+        self.wide = None
+        self.update_responsive()
 
-    def update_sample(self, sample, age, data_connected):
-        if sample is None:
-            self.rc_status.setText("RC: waiting for type 3 frames")
-            for bar in self.rc_bars:
-                bar.setValue(0)
-                bar.setFormat("—")
+    def set_saved_snapshots(self, snapshots):
+        self.rc_snapshots = snapshots
+        self.replay_slider.blockSignals(True)
+        self.replay_slider.setRange(0, max(0, len(snapshots) - 1))
+        self.replay_slider.setValue(max(0, len(snapshots) - 1))
+        self.replay_slider.setEnabled(len(snapshots) > 1)
+        self.replay_slider.blockSignals(False)
+        self.replay_controls.setVisible(bool(snapshots))
+        if snapshots:
+            self.show_saved_snapshot(self.replay_slider.value())
         else:
-            seq, ms, last_ms, connected, *channels = sample
-            live = age < 0.5 and data_connected
-            state = ("connected" if connected else "disconnected") if live else "telemetry stale"
+            self.replay_position.clear()
+
+    def show_saved_snapshot(self, index):
+        if not self.rc_snapshots:
+            return
+        seconds, sample = self.rc_snapshots[index]
+        self.update_sample(sample, 0, True, saved=True)
+        self.replay_position.setText(f"{seconds:.2f}s · {index + 1}/{len(self.rc_snapshots)}")
+
+    def update_responsive(self):
+        switch_columns = 4 if self.width() >= 480 else 2
+        if switch_columns != self.switch_columns:
+            self.switch_columns = switch_columns
+            for index, box in enumerate(self.switch_boxes):
+                row, column = divmod(index, switch_columns)
+                self.switch_layout.addWidget(box, row, column)
+
+        wide = self.width() >= 850 and self.height() >= 280
+        self.stick_group.setVisible(wide)
+        if wide != self.wide:
+            self.wide = wide
+            start, rows = (4, 6) if wide else (0, 8)
+            for index in range(start, 16):
+                row, col = (index - start) % rows, ((index - start) // rows) * 2
+                self.bar_layout.addWidget(self.channel_labels[index], row, col)
+                self.bar_layout.addWidget(self.rc_bars[index], row, col + 1)
+        self.bar_group.setVisible(not wide or self.channel_count > 4)
+        for index, (label, bar) in enumerate(zip(self.channel_labels, self.rc_bars)):
+            visible = index < self.channel_count and (index >= 4 or not wide)
+            label.setVisible(visible)
+            bar.setVisible(visible)
+        self.details.setVisible(self.width() >= 600 and self.height() >= 300)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.update_responsive()
+
+    def update_sample(self, sample, age, data_connected, saved=False):
+        if sample is None:
             self.rc_status.setText(
-                f"RC: {state} · snapshot #{seq}, age {age:.1f}s · "
-                f"last RC frame age at MCU snapshot {(ms - last_ms) % 2**32}ms · raw CRSF"
+                "No saved RC in this segment" if saved else "RC: waiting for data"
             )
-            for bar, value in zip(self.rc_bars, channels):
-                bar.setValue(value)
-                bar.setFormat(str(value))
-                bar.setEnabled(live and bool(connected))
+            self.details.setText(RC_SCALE_LABEL)
+            self.switches.hide()
+            for bar in self.rc_bars:
+                bar.reset()
+                bar.setFormat("—")
+                bar.setEnabled(False)
+            for stick in self.sticks:
+                stick.set_channels(None, False)
+            return
+        live = age < 0.5 and data_connected
+        compact = isinstance(sample, RcCompact)
+        if compact:
+            flags = sample.flags
+            connected = bool(flags & 1)
+            channels = sample[3:-1]
+            states = ("—",) * 4
+            if live and connected:
+                positions = ("LOW", "MIDDLE", "HIGH")
+                states = (
+                    "HIGH" if flags & 2 else "LOW",
+                    "HIGH" if flags & 4 else "LOW",
+                    positions[(flags >> 3) & 3],
+                    positions[(flags >> 5) & 3],
+                )
+            for label, state in zip(self.switch_values, states):
+                if label.text() != state:
+                    label.setText(state)
+                    label.setStyleSheet(
+                        f"background-color: {self.SWITCH_COLORS[state]}; color: #152238;"
+                        " border-radius: 4px; padding: 2px 6px;"
+                    )
+        else:
+            _, _, _, connected, *channels = sample
+        self.switches.setVisible(compact)
+        if len(channels) != self.channel_count:
+            self.channel_count = len(channels)
+            self.update_responsive()
+        self.switches.setEnabled(live and bool(connected))
+        state = ("connected" if connected else "disconnected") if live else "telemetry stale"
+        self.rc_status.setText(f"Saved RC: {state}" if saved else f"RC: {state}")
+        freshness = "saved" if saved else f"age {age:.1f}s"
+        self.details.setText(f"{RC_SCALE_LABEL} · {freshness}")
+        for bar, value in zip(self.rc_bars, channels):
+            bar.setValue(min(bar.maximum(), max(bar.minimum(), value)))
+            bar.setFormat(str(value))
+            bar.setEnabled(live and bool(connected))
+        for stick in self.sticks:
+            stick.set_channels(
+                (channels[stick.horizontal - 1], channels[stick.vertical - 1]),
+                live and bool(connected),
+            )
 
 
 class StatsLabel(QtWidgets.QLabel):

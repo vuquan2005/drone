@@ -9,7 +9,10 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "rtt"))
-from session_writer import COLUMNS, STATS_COLUMNS, SessionWriter
+from session_reader import read_session
+from records import Frames
+from telemetry import TelemetryState
+from session_writer import IMU_RAW_COLUMNS, STATS_COLUMNS, SessionWriter
 
 
 class SessionWriterTests(unittest.TestCase):
@@ -24,7 +27,26 @@ class SessionWriterTests(unittest.TestCase):
             self.addCleanup(self.finish, writer)
             stamp = writer.directory.name.removeprefix("telemetry_")
             self.assertRegex(stamp, r"^\d{8}_\d{6}(?:_\d{2,})?$")
-            self.assertTrue(writer.submit("csv", (2, 17, 123456, 42, -1, 2, 3, 4, 5, 6)))
+            self.assertTrue(
+                writer.submit(
+                    "imu_raw", (2, 17, 123456, 42, -1, 2, 3, 4, 5, 6, 16, 2, 2000, 400, 400)
+                )
+            )
+            fixture = Path(__file__).resolve().parents[2] / "protocol/fixtures/attitude_v1.hex"
+            (frame,) = Frames().feed(bytes.fromhex(fixture.read_text()))
+            kind, attitude = TelemetryState().feed(frame, 0)
+            self.assertEqual(kind, "attitude")
+            self.assertTrue(writer.submit(kind, (2, *attitude)))
+            control_fixture = fixture.with_name("attitude_control_v1.hex")
+            (frame,) = Frames().feed(bytes.fromhex(control_fixture.read_text()))
+            kind, control = TelemetryState().feed(frame, 0)
+            self.assertEqual(kind, "attitude_control")
+            self.assertTrue(writer.submit(kind, (2, *control)))
+            rc_fixture = fixture.with_name("rc_compact_v1.hex")
+            (frame,) = Frames().feed(bytes.fromhex(rc_fixture.read_text()))
+            kind, rc = TelemetryState().feed(frame, 0)
+            self.assertEqual(kind, "rc_compact")
+            self.assertTrue(writer.submit(kind, (2, *rc)))
             self.assertTrue(writer.submit("stats", (2, 1, 1234, 17, 3, 0, 225, 224, 1, 0, 0)))
             self.assertTrue(writer.submit("log", b"[1][I][imu] ready\n"))
             self.assertTrue(writer.submit("raw", b"\x00\xff\x10"))
@@ -35,14 +57,18 @@ class SessionWriterTests(unittest.TestCase):
             self.assertEqual(
                 set(p.name for p in writer.directory.iterdir()),
                 {
-                    f"imu_{stamp}.csv",
+                    f"imu_raw_{stamp}.csv",
                     f"rtt_stats_{stamp}.csv",
                     f"rc_{stamp}.csv",
+                    f"receiver_compact_{stamp}.csv",
+                    f"rate_{stamp}.csv",
+                    f"attitude_{stamp}.csv",
+                    f"attitude_control_{stamp}.csv",
                     f"events_{stamp}.log",
                     f"data_{stamp}.hex",
                 },
             )
-            with (writer.directory / f"imu_{stamp}.csv").open(newline="") as f:
+            with (writer.directory / f"imu_raw_{stamp}.csv").open(newline="") as f:
                 rows = list(csv.reader(f))
             with (writer.directory / f"rtt_stats_{stamp}.csv").open(newline="") as f:
                 stats_rows = list(csv.reader(f))
@@ -50,8 +76,36 @@ class SessionWriterTests(unittest.TestCase):
             self.assertEqual(
                 stats_rows[1], ["2", "1", "1234", "17", "3", "0", "225", "224", "1", "0", "0"]
             )
-            self.assertEqual(rows[0], list(COLUMNS))
-            self.assertEqual(rows[1], ["2", "17", "123456", "42", "-1", "2", "3", "4", "5", "6"])
+            segments, _ = read_session(writer.directory)
+            self.assertEqual(segments[2].latest_attitude, attitude)
+            self.assertAlmostEqual(segments[2].attitude_points[-1][1], 73.7398, places=3)
+            self.assertEqual(segments[2].latest_attitude_control, control)
+            self.assertEqual(segments[2].latest_rc, rc)
+            self.assertEqual(segments[2].rc_snapshots, [(0, rc)])
+            self.assertEqual(segments[2].attitude_control_points[-1][-2:], (0.5, -0.25))
+            self.assertFalse(list(writer.directory.glob("imu_[0-9]*.csv")))
+            self.assertFalse(writer.submit("csv", (1,) * 10))
+            self.assertEqual(rows[0], list(IMU_RAW_COLUMNS))
+            self.assertEqual(
+                rows[1],
+                [
+                    "2",
+                    "17",
+                    "123456",
+                    "42",
+                    "-1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "16",
+                    "2",
+                    "2000",
+                    "400",
+                    "400",
+                ],
+            )
             self.assertEqual(
                 (writer.directory / f"events_{stamp}.log").read_bytes(), b"[1][I][imu] ready\n"
             )
@@ -69,7 +123,7 @@ class SessionWriterTests(unittest.TestCase):
             writer = SessionWriter(root)
             self.finish(writer)
             self.assertEqual(writer.directory.name, "telemetry_20261113_151530")
-            self.assertTrue((writer.directory / "imu_20261113_151530.csv").is_file())
+            self.assertTrue((writer.directory / "imu_raw_20261113_151530.csv").is_file())
 
     def test_raw_hex_round_trip_across_chunks(self):
         with tempfile.TemporaryDirectory() as root:
@@ -87,12 +141,12 @@ class SessionWriterTests(unittest.TestCase):
             clock.now.return_value.astimezone.return_value.strftime.return_value = "fixed"
             writer = SessionWriter(root)
             self.finish(writer)
-            original = next(writer.directory.glob("imu_*.csv")).read_bytes()
+            original = next(writer.directory.glob("imu_raw_*.csv")).read_bytes()
             second = SessionWriter(root)
             self.finish(second)
             self.assertEqual(second.directory.name, "telemetry_fixed_01")
-            self.assertTrue((second.directory / "imu_fixed_01.csv").is_file())
-            self.assertEqual(next(writer.directory.glob("imu_*.csv")).read_bytes(), original)
+            self.assertTrue((second.directory / "imu_raw_fixed_01.csv").is_file())
+            self.assertEqual(next(writer.directory.glob("imu_raw_*.csv")).read_bytes(), original)
             self.assertFalse(any(writer.directory.glob("*.hex")))
 
     def test_queue_overflow_is_separate_from_transport(self):
@@ -110,9 +164,21 @@ class SessionWriterTests(unittest.TestCase):
                 self.assertTrue(writer.submit("log", b"first\n"))
                 self.assertTrue(entered.wait(2))
                 self.assertTrue(writer.submit("log", b"second\n"))
-                self.assertFalse(writer.submit("csv", (1,) * 10))
+                self.assertFalse(writer.submit("imu_raw", (1,) * 10))
                 self.assertEqual(
-                    writer.dropped, {"csv": 1, "stats": 0, "rc": 0, "log": 0, "raw": 0}
+                    writer.dropped,
+                    {
+                        "imu_raw": 1,
+                        "stats": 0,
+                        "rc": 0,
+                        "rc_compact": 0,
+                        "rate": 0,
+                        "attitude": 0,
+                        "attitude_control": 0,
+                        "log": 0,
+                        "raw": 0,
+                        "config": 0,
+                    },
                 )
             finally:
                 release.set()

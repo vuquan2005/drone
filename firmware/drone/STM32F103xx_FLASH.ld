@@ -56,8 +56,14 @@ ENTRY(Reset_Handler)
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 64K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 512K
+FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 508K
+IMU_FLASH (r)   : ORIGIN = 0x0807F000, LENGTH = 4K
 }
+
+/* Two reserved 2 KiB pages. No loadable section occupies them. */
+__imu_flash_start__ = ORIGIN(IMU_FLASH);
+__imu_flash_end__ = ORIGIN(IMU_FLASH) + LENGTH(IMU_FLASH);
+ASSERT(ORIGIN(FLASH) + LENGTH(FLASH) == ORIGIN(IMU_FLASH), "IMU flash overlaps firmware")
 
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM) + LENGTH(RAM);    /* end of RAM */

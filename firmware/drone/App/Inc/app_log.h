@@ -16,9 +16,11 @@
 #define DRONE_LOG_LEVEL APP_LOG_LEVEL_OFF
 #endif
 
+#define APP_LOG_ENABLED(level) (DRONE_RTT && DRONE_LOG_LEVEL >= (level))
+
 typedef uint32_t (*app_log_clock_t)(void);
 
-#if DRONE_RTT && DRONE_LOG_LEVEL > APP_LOG_LEVEL_OFF
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_ERROR)
 /** @brief Set the millisecond uptime provider after initializing RTT.
  * @param clock_ms Non-NULL foreground clock callback, e.g. HAL_GetTick.
  * NULL disables logging until initialized with a clock. Does not reset RTT.
@@ -47,25 +49,25 @@ static inline void app_log_init(app_log_clock_t clock_ms) {
 }
 #endif
 
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_ERROR
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_ERROR)
 #define APP_LOG_ERROR(tag, ...)                                                \
     ((void)app_log_write(APP_LOG_LEVEL_ERROR, tag, __VA_ARGS__))
 #else
 #define APP_LOG_ERROR(...) ((void)0)
 #endif
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_WARN
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_WARN)
 #define APP_LOG_WARN(tag, ...)                                                 \
     ((void)app_log_write(APP_LOG_LEVEL_WARN, tag, __VA_ARGS__))
 #else
 #define APP_LOG_WARN(...) ((void)0)
 #endif
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_INFO
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_INFO)
 #define APP_LOG_INFO(tag, ...)                                                 \
     ((void)app_log_write(APP_LOG_LEVEL_INFO, tag, __VA_ARGS__))
 #else
 #define APP_LOG_INFO(...) ((void)0)
 #endif
-#if DRONE_RTT && DRONE_LOG_LEVEL >= APP_LOG_LEVEL_DEBUG
+#if APP_LOG_ENABLED(APP_LOG_LEVEL_DEBUG)
 #define APP_LOG_DEBUG(tag, ...)                                                \
     ((void)app_log_write(APP_LOG_LEVEL_DEBUG, tag, __VA_ARGS__))
 #else

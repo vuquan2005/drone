@@ -16,6 +16,12 @@ void bsp_rtt_init(void) {
                                             SEGGER_RTT_MODE_NO_BLOCK_SKIP) == 0;
 }
 
+size_t bsp_rtt_read_control(void *output, size_t capacity) {
+    if (!initialized || output == NULL || capacity == 0U)
+        return 0U;
+    return SEGGER_RTT_ReadNoLock(0U, output, (unsigned)capacity);
+}
+
 static bsp_rtt_result_t validate_size(bsp_rtt_channel_t channel, size_t size) {
     if (channel != BSP_RTT_LOG && channel != BSP_RTT_DATA) {
         return BSP_RTT_INVALID_ARGUMENT;
@@ -29,6 +35,11 @@ static bsp_rtt_result_t validate_size(bsp_rtt_channel_t channel, size_t size) {
         return BSP_RTT_TOO_LARGE;
     }
     return BSP_RTT_OK;
+}
+
+bool bsp_rtt_can_write(bsp_rtt_channel_t channel, size_t size) {
+    return validate_size(channel, size) == BSP_RTT_OK &&
+           size <= SEGGER_RTT_GetAvailWriteSpace((unsigned)channel);
 }
 
 bsp_rtt_result_t bsp_rtt_prepare_write(bsp_rtt_channel_t channel, size_t size) {

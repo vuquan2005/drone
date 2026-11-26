@@ -1,14 +1,28 @@
 # Firmware drone
 
-Project STM32F103VET6 này hiện có khung ứng dụng và đọc BMI270;
+Project STM32F103VET6 này hiện có khung ứng dụng và đọc IMU;
 nhận RC qua CRSF và xuất PWM ESC qua TIM4. Mixer Quad X độc lập HAL đã có
-trong `Control/`; điều khiển motor từ RC và arm/failsafe chưa triển khai.
+trong `Control/`; App nối RC → rate PID → mixer → PWM với arm/failsafe.
+Gain và ánh xạ thrust → ESC hiện dành cho thử trên bộ gá, chưa hiệu chuẩn bay.
 
 ## Kiến trúc cơ bản
 
-Luồng gọi hiện tại: `Core/main` → `App` → `BSP` → driver → callback HAL.
-`main()` khởi tạo HAL, clock, ngoại vi rồi gọi `app_init()`; vòng lặp gọi
-`app_process()`.
+Luồng gọi hiện tại: `Core/main` → `runtime` → chế độ trong `App` → `BSP` → driver.
+`main()` khởi tạo HAL, clock, ngoại vi rồi gọi `runtime_init()`; vòng lặp gọi
+`runtime_process()`. Runtime sở hữu receiver và chọn mode một lần sau reset.
+SB HIGH cùng SD STREAM chọn FLASH_ERASE. Ở các vị trí SD còn lại, SB HIGH
+cùng SC MIDDLE chọn IMU_CALIB và các vị trí SC còn lại chọn ESC_CALIB.
+Khi SB không HIGH, SD STREAM chọn FLASH_EXPORT với PWM tắt nếu build có
+RTT, hoặc giữ BOOT_SELECT nếu RTT tắt. Các vị trí SD khác chọn FLIGHT.
+Khi chưa có RC hợp lệ, lệnh ELISTS qua RTT chọn FLASH_EXPORT từ BOOT_SELECT.
+Trong FLIGHT, SC dành cho chế độ bay.
+Chỉ FLIGHT gọi `app_init()`/`app_process(command)`. Runtime poll receiver mỗi lượt, chỉ giải mã command khi frame mới hoặc kết nối
+thay đổi, sở hữu
+RTT/log/telemetry chung và lịch telemetry RC. ESC_CALIB khởi tạo module
+`esc_calibration` riêng, sở hữu PWM. IMU_CALIB đo bias gyro, hiệu chuẩn accel
+sáu mặt và lưu chung bộ hệ số vào hai trang flash dành riêng, giữ PWM tắt.
+Cả hai mode giữ đến reset. App không tự poll/giải mã receiver;
+`app_get_status()` cung cấp health riêng với mode.
 
 | Thành phần                     | Trách nhiệm                                                              |
 | ------------------------------ | ------------------------------------------------------------------------ |
@@ -42,7 +56,7 @@ phần cứng ở `Control/Inc/`.
   Chỉ format mã tự viết, tránh đổi định dạng mã CubeMX và driver upstream.
 - Theo cách đặt tên hiện có: tệp, hàm và biến dùng `snake_case`, kiểu tự định
   nghĩa có hậu tố `_t`, macro và giá trị enum dùng `UPPER_SNAKE_CASE`.
-  API module mang tiền tố tương ứng như `app_imu_`, `bsp_bmi270_`.
+  API module mang tiền tố tương ứng như `app_imu_`, `bsp_imu_`.
 - Khai báo API công khai trong `Inc/`, triển khai trong `Src/`; hàm và trạng
   thái chỉ dùng nội bộ tệp để `static`. Dùng `const` cho dữ liệu chỉ đọc và
   kiểu số nguyên có độ rộng rõ ràng cho thanh ghi, giao thức và bộ đếm.

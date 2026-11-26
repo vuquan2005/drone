@@ -3,9 +3,10 @@
 #include "main.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 static DMA_HandleTypeDef dma;
-UART_HandleTypeDef huart1 = {.hdmarx = &dma};
+UART_HandleTypeDef huart2 = {.hdmarx = &dma, .gState = HAL_UART_STATE_READY};
 static uint16_t rx_length;
 static uint16_t rx_position;
 static uint8_t *rx_target;
@@ -13,6 +14,9 @@ static uint32_t tick;
 static uint32_t mask;
 static HAL_StatusTypeDef next_result;
 static unsigned aborts;
+static unsigned tx_starts;
+static const uint8_t *tx_source;
+static uint16_t tx_length;
 // TODO: Add a frame with distinct channel values through the full receiver
 // path; reversing App channel order still passes with all channels at 992.
 static const uint8_t frame[] = {0xc8, 0x18, 0x16, 0xe0, 0x03, 0x1f, 0xf8,
@@ -32,15 +36,15 @@ void __set_PRIMASK(uint32_t value) {
     mask = value;
 }
 void HAL_NVIC_SetPriority(int irq, int priority, int subpriority) {
-    assert((irq == USART1_IRQn || irq == DMA1_Channel5_IRQn) && priority == 5 &&
+    assert((irq == USART2_IRQn || irq == DMA1_Channel6_IRQn) && priority == 5 &&
            subpriority == 0);
 }
 void HAL_NVIC_EnableIRQ(int irq) {
-    assert(irq == USART1_IRQn || irq == DMA1_Channel5_IRQn);
+    assert(irq == USART2_IRQn || irq == DMA1_Channel6_IRQn);
 }
 HAL_StatusTypeDef HAL_UARTEx_ReceiveToIdle_DMA(UART_HandleTypeDef *uart,
                                                uint8_t *byte, uint16_t length) {
-    assert(uart == &huart1 && length == 64);
+    assert(uart == &huart2 && length == 64);
     if (next_result == HAL_OK) {
         rx_target = byte;
         rx_length = length;
@@ -51,8 +55,18 @@ HAL_StatusTypeDef HAL_UARTEx_ReceiveToIdle_DMA(UART_HandleTypeDef *uart,
     return next_result;
 }
 HAL_StatusTypeDef HAL_UART_AbortReceive(UART_HandleTypeDef *uart) {
-    assert(uart == &huart1);
+    assert(uart == &huart2);
     aborts++;
+    return HAL_OK;
+}
+HAL_StatusTypeDef HAL_UART_Transmit_IT(UART_HandleTypeDef *uart,
+                                       const uint8_t *data, uint16_t length) {
+    assert(uart == &huart2 && uart->gState == HAL_UART_STATE_READY &&
+           mask == 1U);
+    tx_starts++;
+    tx_source = data;
+    tx_length = length;
+    uart->gState = HAL_UART_STATE_BUSY_TX;
     return HAL_OK;
 }
 static void send(uint8_t byte) {
@@ -60,7 +74,7 @@ static void send(uint8_t byte) {
     rx_target[rx_position++] = byte;
     dma.remaining = rx_length - rx_position;
     if (rx_position == rx_length / 2 || rx_position == rx_length)
-        HAL_UARTEx_RxEventCallback(&huart1, rx_position);
+        HAL_UARTEx_RxEventCallback(&huart2, rx_position);
     if (rx_position == rx_length) {
         rx_position = 0;
         dma.remaining = rx_length;
@@ -69,8 +83,45 @@ static void send(uint8_t byte) {
 static void send_frame(void) {
     for (unsigned i = 0; i < sizeof(frame); i++)
         send(frame[i]);
-    HAL_UARTEx_RxEventCallback(&huart1, rx_position);
+    HAL_UARTEx_RxEventCallback(&huart2, rx_position);
 }
+
+static void test_transmit(void) {
+    static const uint8_t armed[] = {0xc8, 0x08, 0x21, 'A',  'R',
+                                    'M',  'E',  'D',  0x00, 0xeb};
+    const float level[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    const uint8_t attitude[] = {0xc8, 0x08, 0x1e, 0x00, 0x00,
+                                0x00, 0x00, 0x00, 0x00, 0x30};
+    assert(!app_receiver_send_flight_mode(""));
+    assert(app_receiver_send_flight_mode("ARMED"));
+    assert(tx_starts == 1 && tx_length == sizeof(armed) && mask == 0);
+    assert(!app_receiver_send_flight_mode("FAILSAFE"));
+    assert(!app_receiver_send_attitude(level));
+    assert(tx_starts == 1 && memcmp(tx_source, armed, sizeof(armed)) == 0);
+
+    app_receiver_sample_t sample;
+    send_frame();
+    assert(app_receiver_get_sample(&sample) && sample.connected);
+    HAL_UART_ErrorCallback(&huart2);
+    assert(!app_receiver_send_flight_mode("FAILSAFE"));
+    assert(memcmp(tx_source, armed, sizeof(armed)) == 0);
+    assert(app_receiver_get_sample(&sample) && !sample.connected);
+
+    huart2.gState = HAL_UART_STATE_READY;
+    huart2.ErrorCode = 8U;
+    assert(!app_receiver_send_flight_mode("FAILSAFE"));
+    assert(tx_starts == 1 && huart2.ErrorCode == 8U && mask == 0);
+    HAL_UART_ErrorCallback(&huart2);
+    assert(app_receiver_send_flight_mode("FAILSAFE"));
+    assert(tx_starts == 2);
+
+    huart2.gState = HAL_UART_STATE_READY;
+    assert(app_receiver_send_attitude(level));
+    assert(tx_starts == 3 && tx_length == sizeof(attitude));
+    assert(!app_receiver_send_flight_mode("DISARMED"));
+    assert(memcmp(tx_source, attitude, sizeof(attitude)) == 0);
+}
+
 int main(void) {
     app_receiver_sample_t sample;
     app_receiver_init();
@@ -98,18 +149,18 @@ int main(void) {
     // DMA events with a pending UART error must not publish data.
     // TODO: Send a complete valid frame under the pending error and poll before
     // ErrorCallback; this single byte does not expose a missing RX error guard.
-    huart1.ErrorCode = 8;
+    huart2.ErrorCode = 8;
     send(0xc8);
-    HAL_UARTEx_RxEventCallback(&huart1, rx_position);
-    assert(huart1.ErrorCode == 8);
+    HAL_UARTEx_RxEventCallback(&huart2, rx_position);
+    assert(huart2.ErrorCode == 8);
     unsigned previous_aborts = aborts;
-    HAL_UART_ErrorCallback(&huart1);
+    HAL_UART_ErrorCallback(&huart2);
     assert(aborts == previous_aborts + 1);
     assert(app_receiver_get_sample(&sample) && !sample.connected);
     send_frame();
     assert(app_receiver_get_sample(&sample) && sample.connected);
     next_result = HAL_ERROR;
-    HAL_UART_ErrorCallback(&huart1);
+    HAL_UART_ErrorCallback(&huart2);
     assert(app_receiver_get_sample(&sample) && !sample.connected);
     next_result = HAL_OK;
     app_receiver_poll();
@@ -134,9 +185,9 @@ int main(void) {
     for (unsigned i = 0; i < 200; i++) {
         send((uint8_t)i);
         if (i % 7 == 0 || i == 199) {
-            HAL_UARTEx_RxEventCallback(&huart1, rx_position);
+            HAL_UARTEx_RxEventCallback(&huart2, rx_position);
             // A delayed HT callback after IDLE must not replay bytes.
-            HAL_UARTEx_RxEventCallback(&huart1, 32);
+            HAL_UARTEx_RxEventCallback(&huart2, 32);
         }
     }
     for (unsigned i = 0; i < 200; i++) {
@@ -144,5 +195,33 @@ int main(void) {
         assert(byte == (uint8_t)i);
     }
     assert(bsp_receiver_read(&byte, &timestamp) == BSP_RECEIVER_EMPTY);
+    /* Cached snapshots: new frames, not timestamp differences, drive updates.
+     */
+    app_receiver_init();
+    sample = (app_receiver_sample_t){0};
+    uint32_t sequence = 0;
+    assert(!app_receiver_update_sample(NULL, &sequence));
+    assert(!app_receiver_update_sample(&sample, NULL));
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    tick = UINT32_MAX - 50U;
+    send_frame();
+    assert(app_receiver_update_sample(&sample, &sequence));
+    assert(sequence == 1 && sample.connected);
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    send_frame(); /* Same millisecond, still a distinct RC frame. */
+    assert(app_receiver_update_sample(&sample, &sequence) && sequence == 2);
+    tick = 48U;
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    tick = 49U;
+    assert(app_receiver_update_sample(&sample, &sequence) && !sample.connected);
+    assert(sequence == 2 && !app_receiver_update_sample(&sample, &sequence));
+    send_frame();
+    assert(app_receiver_update_sample(&sample, &sequence) && sample.connected);
+    HAL_UART_ErrorCallback(&huart2);
+    assert(app_receiver_update_sample(&sample, &sequence) && !sample.connected);
+    assert(!app_receiver_update_sample(&sample, &sequence));
+    send_frame();
+    assert(app_receiver_update_sample(&sample, &sequence) && sample.connected);
+    test_transmit();
     puts("Receiver tests passed");
 }

@@ -3,16 +3,17 @@ project(imu_tests C)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 enable_testing()
-
 set(FIRMWARE_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/../..)
-add_executable(
-    imu_tests
-    test_imu.c ${FIRMWARE_ROOT}/BSP/Src/bsp_bmi270.c ${FIRMWARE_ROOT}/BSP/Src/bsp_board.c
-    ${FIRMWARE_ROOT}/App/Src/app_imu.c ${FIRMWARE_ROOT}/Drivers/BMI270/bmi2.c
-    ${FIRMWARE_ROOT}/Drivers/BMI270/bmi270.c)
-target_include_directories(
-    imu_tests PRIVATE mocks ${FIRMWARE_ROOT}/BSP/Inc ${FIRMWARE_ROOT}/App/Inc
-                      ${FIRMWARE_ROOT}/Drivers/BMI270 ${FIRMWARE_ROOT}/Core/Inc)
-target_compile_options(imu_tests PRIVATE -Wall -Wextra -Werror -UNDEBUG)
-target_link_libraries(imu_tests PRIVATE m)
-add_test(NAME imu_tests COMMAND imu_tests)
+include(${FIRMWARE_ROOT}/cmake/imu.cmake)
+foreach(sensor IN ITEMS BMI160 BMI270)
+    string(TOLOWER "${sensor}" backend)
+    set(TARGET imu_${backend}_tests)
+    add_executable(${TARGET} test_imu_${backend}.c ${FIRMWARE_ROOT}/BSP/Src/bsp_board.c
+                             ${FIRMWARE_ROOT}/App/Src/app_imu.c)
+    drone_imu_sources(${TARGET} ${sensor})
+    target_include_directories(${TARGET} PRIVATE mocks ${FIRMWARE_ROOT}/BSP/Inc
+                                                 ${FIRMWARE_ROOT}/App/Inc ${FIRMWARE_ROOT}/Core/Inc)
+    target_compile_options(${TARGET} PRIVATE -Wall -Wextra -Werror -UNDEBUG)
+    target_link_libraries(${TARGET} PRIVATE m)
+    add_test(NAME ${TARGET} COMMAND ${TARGET})
+endforeach()

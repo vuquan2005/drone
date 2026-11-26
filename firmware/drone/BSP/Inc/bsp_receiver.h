@@ -10,8 +10,8 @@ typedef enum {
     BSP_RECEIVER_DISCONTINUITY
 } bsp_receiver_result_t;
 
-/** @brief Start/restart board USART1 circular DMA/IDLE reception after HAL UART
- * init.
+/** @brief Start/restart board receiver circular DMA/IDLE reception after HAL
+ * UART init.
  * @return Whether reception started. Call in foreground only. */
 bool bsp_receiver_init(void);
 /** @brief Pop a byte and its DMA event HAL millisecond tick, or report lost
@@ -24,5 +24,14 @@ bool bsp_receiver_init(void);
  * @return A discontinuity flushes queued bytes after overflow/UART error.
  * Nonblocking, foreground only. Also retries failed receive requests. */
 bsp_receiver_result_t bsp_receiver_read(uint8_t *byte, uint32_t *timestamp_ms);
+
+/** @brief Copy a frame into the USART2 TX buffer and start interrupt-driven
+ * transmission alongside RX DMA.
+ * @param frame Readable bytes for this call only. Must be non-NULL.
+ * @param length Frame size in bytes, from 1 to 64.
+ * @return True if TX started. Invalid input, busy TX or a pending UART error
+ * returns false without queuing a frame. Call after init, serialized in
+ * foreground only. Does not wait for transmission. */
+bool bsp_receiver_try_send(const uint8_t *frame, uint8_t length);
 
 #endif

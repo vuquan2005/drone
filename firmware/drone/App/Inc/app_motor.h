@@ -18,7 +18,9 @@ bool app_motor_init(void);
 /**
  * @brief Queue four normalized ESC commands for the same PWM frame.
  * @param command_norm Non-NULL array of four Q15 values in [0,NORM_Q15_ONE],
- * ordered by PWM channel 1..4 (PB6..PB9), not by airframe motor position.
+ * ordered by airframe motor M1..M4, matching mixer_result_t.motor:
+ * M1 = PB8 / TIM4 CH3, M2 = PB9 / TIM4 CH4,
+ * M3 = PB6 / TIM4 CH1, M4 = PB7 / TIM4 CH2.
  * Values are dimensionless ESC commands, not thrust or RPM fractions:
  * 0 maps to 1000 us, NORM_Q15_ONE to 2000 us. Conversion uses only integers,
  * rounding to the nearest microsecond (half upward).

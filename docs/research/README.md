@@ -15,7 +15,6 @@ không phải mô tả tính năng đã có trong firmware.
 | [Thuật toán mixer và giải bão hòa](control/02_THUAT_TOAN_MIXER_VA_GIAI_BAO_HOA.md)               | Các cách phân bổ lệnh motor                                                                                 |
 | [Khuyến nghị thiết kế bộ điều khiển](control/03_KHUYEN_NGHI_THIET_KE_BO_DIEU_KHIEN_QUADROTOR.md) | Gợi ý từ khảo sát                                                                                           |
 | [Kiến trúc điều khiển quadrotor](control/quadrotor_control_architecture.md)                      | Tài liệu diễn giải bổ sung                                                                                  |
-| [Nghiên cứu mixer từ các dự án](MIXER_NGHIEN_CUU_TU_CAC_DU_AN.md)                                | Khảo sát mixer và dẫn chiếu mã nguồn                                                                        |
 | [Hai cách chuyển lực sang PWM/DShot](HAI_CACH_CHUYEN_LUC_SANG_PWM_DSHOT.md)                      | Giao diện SI và chuẩn hóa, mô hình nghịch lực–lệnh, đối chiếu mã nguồn và ví dụ số                          |
 | [Lấy mẫu, lọc IMU và lịch điều khiển quadrotor](IMU_LOC_UOC_LUONG_TU_THE_VA_LICH_DIEU_KHIEN.md)  | Hiện trạng BMI270, float, ODR, lọc và giảm tần số, lịch rate/attitude; giới thiệu lựa chọn ước lượng tư thế |
 

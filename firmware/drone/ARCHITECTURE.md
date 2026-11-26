@@ -2,7 +2,7 @@
 
 ## Quyết định và phạm vi
 
-Firmware tổ chức theo các lớp `Core → App → BSP → Drivers`; `App` gọi
+Firmware tổ chức theo các lớp `Core → runtime → chế độ trong App → BSP → Drivers`; `App` gọi
 thư viện nội bộ `Control/` qua API độc lập HAL để thực hiện tính toán.
 Phạm vi là điều khiển tư thế và tốc độ góc cho quadrotor dùng STM32.
 Kiểm chứng bằng kiểm thử nhỏ trên máy tính và đo trên board/bộ gá.
@@ -17,6 +17,7 @@ tiến độ thuộc kế hoạch hoặc issue; kết quả đo thuộc `experim
 | Thành phần                     | Trách nhiệm                                                                           |
 | ------------------------------ | ------------------------------------------------------------------------------------- |
 | `Core/`                        | HAL, clock, khởi tạo ngoại vi và vector ngắt do CubeMX quản lý                        |
+| `App/runtime`                  | Receiver, giải mã command, chọn mode lúc boot và dịch vụ log/telemetry chung          |
 | `App/app.c`                    | Điều phối khởi tạo, lịch thực thi và trạng thái ứng dụng                              |
 | `App/app_imu`                  | Lấy mẫu IMU, đổi sang SI, theo dõi kết quả đọc và tuổi dữ liệu                        |
 | `App/app_receiver`, `App/crsf` | Giải mã CRSF, kiểm tra tuổi khung và cung cấp dữ liệu RC                              |
@@ -27,10 +28,25 @@ tiến độ thuộc kế hoạch hoặc issue; kết quả đo thuộc `experim
 
 ## Điểm gọi ứng dụng và ranh giới module
 
-`main()` giữ thứ tự khởi tạo HAL, clock, peripheral rồi gọi `app_init()` một
-lần; vòng `while (1)` gọi `app_process()`. Các lời gọi App nằm trong vùng
-`USER CODE` để CubeMX giữ lại khi generate. `main()` và `Error_Handler()`
-vẫn thuộc `Core/`; `app.c` không cần cung cấp bản thay thế.
+`main()` giữ thứ tự khởi tạo HAL, clock, peripheral rồi gọi `runtime_init()` một
+lần; vòng `while (1)` gọi `runtime_process()`. Các lời gọi nằm trong vùng
+`USER CODE` để CubeMX giữ lại khi generate. Runtime sở hữu receiver và command,
+chọn mode một lần sau reset. Chỉ FLIGHT khởi tạo App rồi truyền command mới nhất
+vào `app_process(command)` ở các lượt sau. App không nhận snapshot trước khi
+khởi tạo vì việc khởi tạo IMU có thể blocking.
+
+Runtime chọn mode theo [bảng công tắc RC](README.md#chọn-chế-độ-sau-reset).
+Với SB dưới HIGH, SD STREAM chọn FLASH_EXPORT và giữ PWM tắt, còn
+OFF/RECORD chọn FLIGHT. Build tắt RTT giữ BOOT_SELECT khi SD ở STREAM.
+Mode đã chọn giữ đến reset. FLASH_EXPORT gọi module trong `Maintenance/`
+qua runtime.
+`app_get_status()` cung cấp sức khỏe IMU/PWM và trạng thái arm riêng với
+mode. Safety trong App quyết định quyền motor. Runtime poll receiver mỗi lượt; snapshot/command chỉ cập nhật khi có frame RC
+mới hoặc thay đổi kết nối. Timeout và lỗi transport vẫn được kiểm tra mỗi lượt.
+Runtime khởi tạo RTT/log/telemetry
+chung và gửi RC thô; App gửi IMU, rate và thống kê. Trong FLASH_EXPORT,
+module xuất flash dùng độc quyền RTT DATA và kênh nhận lệnh RTT.
+`main()` và `Error_Handler()` vẫn thuộc `Core/`.
 
 `app.c` là nơi điều phối, không chứa toàn bộ thuật toán điều khiển. Lớp này
 sử dụng lời gọi hàm, không tạo task, hàng đợi hay cấp phát động. Chi phí
@@ -77,7 +93,7 @@ module App tương ứng, tránh dồn mọi hành vi vào một tệp.
 
 | Công việc  | App                                                          | Control                               | BSP                                   |
 | ---------- | ------------------------------------------------------------ | ------------------------------------- | ------------------------------------- |
-| IMU        | Lấy mẫu, đổi SI, kiểm tra tuổi dữ liệu, điều phối hiệu chuẩn | Tính/áp dụng bias, đổi trục và lọc    | Giao tiếp và cấu hình BMI270          |
+| IMU        | Lấy mẫu, đổi SI, kiểm tra tuổi dữ liệu, điều phối hiệu chuẩn | Tính/áp dụng bias, đổi trục và lọc    | Giao tiếp và cấu hình IMU             |
 | Tư thế     | Cung cấp mẫu/`dt`, quản lý khởi tạo và sức khỏe              | Toán quaternion và estimator          | Không tính tư thế                     |
 | Điều khiển | RC, tham chiếu, lịch chạy và chuyển trạng thái               | PID rate/attitude và mixer            | Không tính lệnh điều khiển bay        |
 | Motor      | Chế độ thử, quyền output và xử lý lỗi                        | Trộn lệnh và xử lý giới hạn chuẩn hóa | Phát PWM hoặc DShot theo cấu hình ESC |
@@ -148,7 +164,7 @@ flowchart TB
   trục body. Throttle và lệnh từng motor dùng thang chuẩn hóa `[0, 1]`.
   Ghi rõ thứ tự thành phần quaternion và chiều phép quay trong API trước khi
   triển khai estimator/controller; dùng cùng quy ước trong test và phép đo.
-- Mẫu thô theo hệ trục package BMI270; dữ liệu đưa vào vòng rate và estimator
+- Mẫu thô theo hệ trục package IMU; dữ liệu đưa vào vòng rate và estimator
   phải được hiệu chuẩn bias và chuyển sang hệ trục body.
 - `psi_dot_cmd` là đạo hàm heading Euler, không mặc định bằng tốc độ quay
   quanh Z body khi drone nghiêng. Tích phân heading rate thành heading đặt,
@@ -156,10 +172,10 @@ flowchart TB
   đúng sang body và tránh tính hai lần cùng thành phần.
 - Khởi tạo heading đặt từ tư thế hiện tại khi arm hoặc chuyển chế độ. Chỉ
   đồng bộ lại theo chính sách rõ ràng, không ghi đè heading đặt bằng heading
-  đo ở mỗi chu kỳ. BMI270 đơn lẻ không cung cấp tham chiếu heading tuyệt đối;
+  đo ở mỗi chu kỳ. IMU đơn lẻ không cung cấp tham chiếu heading tuyệt đối;
   heading hold vẫn chịu trôi yaw.
 - Dữ liệu chung cần có thời điểm mẫu, trạng thái hợp lệ và quy tắc quá hạn.
-  Bộ đếm thời gian BMI270 là 24-bit; cần xử lý tràn và xác định quan hệ với thời
+  Bộ đếm thời gian IMU là 24-bit; cần xử lý tràn và xác định quan hệ với thời
   gian MCU trước khi dùng để tính `dt` hoặc kiểm tra tuổi mẫu.
 
 ### Mixer, giới hạn và anti-windup

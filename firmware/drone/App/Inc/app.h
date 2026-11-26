@@ -5,22 +5,75 @@
 #ifndef APP_H
 #define APP_H
 
-/**
- * @brief Initialize application state and attempt to initialize the board IMU.
- * @pre HAL, clocks and board peripherals have been initialized.
- * @note Call from the foreground before app_process. May block during sensor
- * initialization. Calling again resets samples and counters and retries init.
- * The current implementation stores IMU status internally without reporting it
- * to the caller; unconfigured wiring leaves the IMU inactive.
+#include "app_command.h"
+#include "app_config.h"
+#include "app_rate.h"
+#include "app_safety.h"
+
+/** Flight health snapshot; readiness alone does not grant motor permission. */
+typedef struct {
+    bool imu_initialized; /**< Result of the IMU initialization in app_init. */
+    bool imu_ready;   /**< A successful IMU read is no older than 20000 us. */
+    bool motor_ready; /**< PWM initialized and no output failure latched. */
+    app_arm_state_t arm_state;
+    app_safety_reason_t safety_reason; /**< Stored fault or idle expiry. */
+} app_status_t;
+
+/** Return the applied FLIGHT configuration after app_init(). Read the
+ * referenced settings in the same foreground iteration. */
+app_config_t app_get_config(void);
+
+/** Initialize flight state, attitude and rate control, PWM and IMU; starts
+ * DISARMED.
+ * Requires initialized board peripherals and shared logging/telemetry services
+ * (normally runtime_init). Foreground only; IMU initialization may block.
+ * Call once on entry to FLIGHT. Failed IMU init is not retried automatically.
+ * PWM starts at minimum pulse; initialization does not grant arm permission.
  */
 void app_init(void);
 
-/**
- * @brief Poll application modules once from the foreground loop.
- * @pre app_init has completed.
- * @note Call repeatedly from one context, never from an ISR. May block on SPI.
- * Does not schedule a fixed polling rate or recover failed IMU initialization.
+/** Process flight command, IMU, controller, safety and motor output once.
+ * @param command Fresh normalized command supplied by runtime; NULL or invalid
+ * clears the stored command. Input is copied, no pointer is retained.
+ * Requires app_init; serialized foreground only, never ISR. May block on SPI.
+ * Caller owns decoding and freshness checks; no receiver I/O occurs here.
+ * Does not schedule a fixed polling rate or retry failed IMU initialization.
  */
-void app_process(void);
+void app_process(const app_command_t *command);
+
+/** Copy flight health; false only for NULL output. Requires app_init.
+ * No I/O except reading the MCU clock for IMU age. Serialized foreground only.
+ * IMU readiness is false until the first successful read and after read errors
+ * or timeout. The initialization result stays fixed until the next app_init.
+ * Motor readiness does not imply ARMED or a valid mixer result.
+ */
+bool app_get_status(app_status_t *status);
+
+/** @brief Copy the latest Mahony estimate if it is at most 20 ms old.
+ * @param body_to_ned Writable quaternion (w,x,y,z), body FRD to NED with
+ * arbitrary initial heading.
+ * @return True on success. On failure the output is unchanged.
+ */
+bool app_get_attitude(float body_to_ned[4]);
+
+/** Configure the flight rate controller and mixer after app_init.
+ * Initialization uses bench gains when DRONE_RATE_CONTROL is enabled (Debug and
+ * Release presets), otherwise leaves it disabled. Invalid config disables it.
+ * Same contract as app_rate_configure; serialized foreground access only. This
+ * disarms and revokes the previous OFF token. period_us sets minimum spacing
+ * between consumed IMU samples; faster IMU samples are skipped until due, using
+ * the latest available sample. No catch-up steps or gyro decimation filter are
+ * provided.
+ */
+bool app_configure_rate(const app_rate_config_t *config);
+
+/** Copy latest mixer result; false for NULL or no valid calculation. Output is
+ * zero after reset/errors; it may contain a previous sample between IMU polls.
+ * Call after app_process in the same foreground context. No motor I/O. */
+bool app_get_rate_result(mixer_result_t *result);
+
+/** Return current arm state after app_process; serialized foreground only.
+ * No I/O. app_init starts DISARMED; invalid health enters FAILSAFE. */
+app_arm_state_t app_get_arm_state(void);
 
 #endif

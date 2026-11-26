@@ -1,0 +1,113 @@
+#include "app_rate.h"
+#include <math.h>
+#include <stddef.h>
+
+void app_rate_reset(app_rate_t *state) {
+    if (state == NULL)
+        return;
+    rate_controller_reset(&state->controller);
+    state->mixer = (mixer_result_t){0};
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        state->residual[i] = 0.0f;
+        state->setpoint_radps[i] = 0.0f;
+        state->gyro_frd_radps[i] = 0.0f;
+        state->output[i] = 0.0f;
+    }
+    state->dt_us = 0;
+    state->previous_us = 0;
+    state->have_time = false;
+    state->valid = false;
+}
+
+bool app_rate_configure(app_rate_t *state, const app_rate_config_t *config) {
+    if (state == NULL)
+        return false;
+    *state = (app_rate_t){0};
+    if (config == NULL || config->period_us == 0 || config->period_us > 20000U)
+        return false;
+    rate_controller_t probe = {0};
+    float zero[RATE_AXIS_COUNT] = {0}, output[RATE_AXIS_COUNT];
+    if (!rate_controller_step(&probe, config->axis, zero, zero, 0.001f, zero,
+                              output))
+        return false;
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        if (!isfinite(config->max_rate_radps[i]) ||
+            config->max_rate_radps[i] <= 0.0f)
+            return false;
+    }
+    state->config = *config;
+    state->configured = true;
+    return true;
+}
+
+bool app_rate_step(app_rate_t *state, const app_command_t *command,
+                   const float gyro_frd_radps[RATE_AXIS_COUNT],
+                   uint32_t time_us) {
+    return app_rate_step_with_tilt(state, command, NULL, gyro_frd_radps,
+                                   time_us);
+}
+
+bool app_rate_step_with_tilt(app_rate_t *state, const app_command_t *command,
+                             const float tilt_rate_radps[2],
+                             const float gyro_frd_radps[RATE_AXIS_COUNT],
+                             uint32_t time_us) {
+    if (state == NULL)
+        return false;
+    state->valid = false;
+    if (!state->configured || command == NULL || !command->valid ||
+        gyro_frd_radps == NULL || command->throttle < 0 ||
+        command->throttle > NORM_Q15_ONE)
+        goto fail;
+    const norm_q15_t stick[RATE_AXIS_COUNT] = {command->roll, command->pitch,
+                                               command->yaw};
+    float target[RATE_AXIS_COUNT], gyro[RATE_AXIS_COUNT],
+        output[RATE_AXIS_COUNT];
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        if (stick[i] < -NORM_Q15_ONE || stick[i] > NORM_Q15_ONE ||
+            !isfinite(gyro_frd_radps[i]))
+            goto fail;
+        const float limit = state->config.max_rate_radps[i];
+        if (tilt_rate_radps != NULL && i < 2U) {
+            if (!isfinite(tilt_rate_radps[i]))
+                goto fail;
+            target[i] = fmaxf(-limit, fminf(limit, tilt_rate_radps[i]));
+        } else {
+            target[i] = ((float)stick[i] / NORM_Q15_ONE) * limit;
+        }
+        gyro[i] = gyro_frd_radps[i];
+    }
+    if (!state->have_time) {
+        state->previous_us = time_us;
+        state->have_time = true;
+        return false;
+    }
+    const uint32_t elapsed_us = time_us - state->previous_us;
+    if (elapsed_us == 0 || elapsed_us > 20000U)
+        goto fail;
+    state->previous_us = time_us;
+    if (!rate_controller_step(&state->controller, state->config.axis, target,
+                              gyro, elapsed_us * 1e-6f, state->residual,
+                              output))
+        goto fail;
+    const mixer_command_t request = {.throttle = (float)command->throttle /
+                                                 NORM_Q15_ONE,
+                                     .roll = output[0],
+                                     .pitch = output[1],
+                                     .yaw = output[2]};
+    if (!mixer_quad_x(&request, &state->mixer))
+        goto fail;
+    state->residual[0] = (float)state->mixer.residual.roll / NORM_Q15_ONE;
+    state->residual[1] = (float)state->mixer.residual.pitch / NORM_Q15_ONE;
+    state->residual[2] = (float)state->mixer.residual.yaw / NORM_Q15_ONE;
+    for (unsigned i = 0; i < RATE_AXIS_COUNT; ++i) {
+        state->setpoint_radps[i] = target[i];
+        state->gyro_frd_radps[i] = gyro[i];
+        state->output[i] = output[i];
+    }
+    state->dt_us = elapsed_us;
+    state->valid = true;
+    return true;
+fail:
+    app_rate_reset(state);
+    return false;
+}

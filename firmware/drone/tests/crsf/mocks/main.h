@@ -7,11 +7,14 @@ typedef struct {
 typedef struct {
     DMA_HandleTypeDef *hdmarx;
     uint32_t ErrorCode;
+    uint32_t gState;
 } UART_HandleTypeDef;
 typedef enum { HAL_OK, HAL_ERROR, HAL_BUSY } HAL_StatusTypeDef;
 #define HAL_UART_ERROR_NONE 0U
-#define USART1_IRQn 37
-#define DMA1_Channel5_IRQn 15
+#define HAL_UART_STATE_READY 0x20U
+#define HAL_UART_STATE_BUSY_TX 0x21U
+#define USART2_IRQn 38
+#define DMA1_Channel6_IRQn 16
 #define __HAL_DMA_GET_COUNTER(dma) ((dma)->remaining)
 #define __HAL_UART_CLEAR_OREFLAG(uart) ((void)(uart))
 uint32_t HAL_GetTick(void);
@@ -23,6 +26,8 @@ void HAL_NVIC_EnableIRQ(int irq);
 HAL_StatusTypeDef HAL_UARTEx_ReceiveToIdle_DMA(UART_HandleTypeDef *uart,
                                                uint8_t *byte, uint16_t length);
 HAL_StatusTypeDef HAL_UART_AbortReceive(UART_HandleTypeDef *uart);
+HAL_StatusTypeDef HAL_UART_Transmit_IT(UART_HandleTypeDef *uart,
+                                       const uint8_t *data, uint16_t length);
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *uart, uint16_t size);
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *uart);
 #endif

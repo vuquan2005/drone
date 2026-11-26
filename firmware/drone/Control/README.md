@@ -80,3 +80,42 @@ lượng tử hóa, giới hạn motor, ưu tiên roll/pitch, biên yaw và đ�
 toàn miền. Test PWM kiểm tra truyền đầu ra mixer sang thanh ghi timer bằng
 HAL mô phỏng, giả định ánh xạ motor/kênh và lực đẩy/lệnh ESC đồng nhất chỉ
 trong fixture. Timing và đáp ứng lực đẩy cần đo trên board/bộ gá.
+
+## Bộ điều khiển rate
+
+`rate_controller_step()` trong `Inc/rate_controller.h` cung cấp PID ba trục
+độc lập HAL, xuất roll/pitch/yaw chuẩn hóa cho `mixer_quad_x()`. Module đã
+được thêm vào build firmware, chưa nối vào `app_process()` hoặc xuất ESC.
+Không có gain mặc định đã hiệu chỉnh cho khung drone.
+
+Đầu vào là setpoint và gyro rad/s trong hệ FRD. `app_imu` xuất trực tiếp FRD theo ánh xạ gá
+`[-X, +Y, -Z]`; không đổi dấu lại ở rate controller hoặc mixer. `dt_s` là
+thời gian thực giữa hai mẫu mới, đơn vị giây, trong `(0; 0,02]`. App phải
+bỏ mẫu đầu để thiết lập timestamp, dùng phép trừ `uint32_t` để xử lý tràn
+`t_read_us`, reset khi disarm/lỗi IMU hoặc khoảng mẫu quá dài. Timestamp này
+là thời điểm đọc, nên cần đo jitter trên board trước khi chọn lịch chạy.
+
+D lấy trên gyro để tránh xung khi đổi setpoint, lọc thông thấp backward Euler
+với hằng số thời gian `d_filter_tau_s`. Mẫu đầu sau reset có D bằng 0.
+I có giới hạn riêng, ngừng tăng theo hướng bão hòa đầu ra hoặc mixer; vẫn cho
+phép tích phân theo hướng thoát bão hòa. Truyền residual roll/pitch/yaw của
+mixer chu kỳ trước, chia `NORM_Q15_ONE` sang float; chu kỳ đầu truyền ba số 0.
+Đây là phản hồi phân bổ lệnh, chưa mô tả bão hòa cơ học của motor/ESC.
+Đầu vào lỗi trả `false`, xóa output và reset trạng thái.
+
+Để đóng vòng trên board còn cần hiệu chuẩn bias gyro, chọn gain và giới hạn
+rate, cấu hình RC, arm/failsafe, ánh xạ motor và đường đặc tính thrust–ESC.
+App chỉ gọi bộ điều khiển khi có mẫu gyro mới; không dùng lại mẫu cũ để tích
+phân. Khi mất RC/IMU phải xử lý dừng qua App trước khi cho phép xuất motor.
+
+Kiểm thử thuật toán và dấu lệnh với mixer trên máy tính:
+
+```sh
+cmake -S firmware/drone/tests/rate -B /tmp/drone-rate-tests
+cmake --build /tmp/drone-rate-tests
+ctest --test-dir /tmp/drone-rate-tests --output-on-failure
+```
+
+Các test kiểm tra P ba trục, D trên phép đo, lọc D, tích phân theo thời gian,
+giới hạn I, chống tích lũy do giới hạn đầu ra/phân bổ, reset và dữ liệu lỗi.
+Chưa kiểm chứng timing hoặc đáp ứng điều khiển trên board/bộ gá.

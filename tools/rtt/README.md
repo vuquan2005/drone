@@ -1,151 +1,193 @@
 # Công cụ RTT
 
-Chạy các lệnh từ gốc repository. Cần Make, Python 3.10+, uv và OpenOCD
-đang phục vụ RTT; nhóm dependency GUI là `rtt`:
+Viewer nhận log và telemetry theo đường firmware → RTT RAM → OpenOCD/SWD →
+TCP. Cần Python 3.10+, uv, OpenOCD và các dependency GUI. Chạy từ gốc repo:
 
 ```sh
 uv sync --locked --group rtt
+make telemetry
 ```
 
-Capture, decoder, trạng thái telemetry và session writer chỉ dùng thư viện
-chuẩn Python; viewer/test GUI dùng NumPy, PySide6-Essentials và pyqtgraph.
+Cách nạp firmware và chạy OpenOCD xem [debug](../../firmware/drone/DEBUG.md#dùng-từ-máy-tính).
+Launch VS Code **Drone: OpenOCD + RTT** tự mở viewer; nhấn Continue tại
+`app_process` để nhận dữ liệu. Viewer chờ và tự nối lại nếu RTT chưa sẵn sàng.
+LOG channel 0 mặc định dùng TCP 9090, DATA channel 1 dùng 9091. Có thể đổi:
 
-## Luồng dữ liệu
+```sh
+make telemetry TELEMETRY_ARGS="--host 127.0.0.1 --log-port 9090 --data-port 9091"
+```
 
-Luồng dữ liệu: firmware → RTT RAM → OpenOCD qua SWD → TCP → công cụ host.
-Cách nạp/chạy OpenOCD xem [hướng dẫn debug](../../firmware/drone/DEBUG.md#dùng-từ-máy-tính).
-Cấu hình VS Code **Drone: OpenOCD + RTT** tự mở viewer trong lúc khởi động
-debug. Khi dừng tại `app_process`, nhấn Continue để nhận dữ liệu. Viewer
-giữ cửa sổ sau khi dừng debug và tự nối lại khi RTT có sẵn. Đóng cửa sổ
-để kết thúc task; có thể mở thủ công bằng `make telemetry`.
-
-Chỉ cấu hình OpenOCD + RTT tự mở viewer; ST-LINK GDB không cung cấp RTT TCP.
-Task nền chờ dòng `RTT viewer ready` sau khi Qt khởi tạo, nên không chặn
-khởi động debugger trong suốt thời gian viewer chạy.
-
-| File trong `tools/rtt/` | Chức năng                                                                            |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| `capture_raw.py`        | Chuyển nguyên byte từ một TCP port ra stdout                                         |
-| `records.py`            | Framing log/binary, schema wire và lịch sử IMU                                       |
-| `stream.py`             | Kết nối TCP Qt, nhận theo batch và tự nối lại                                        |
-| `telemetry.py`          | Xác thực payload, snapshot RC/stats và segment khi nối lại/reset; không phụ thuộc Qt |
-| `panels.py`             | Widget đồ thị IMU, thanh RC, thống kê và log có filter                               |
-| `view.py`               | Điểm chạy CLI, ghép cửa sổ và điều phối stream/recording                             |
-| `session_writer.py`     | Worker ghi CSV, log và raw tùy chọn                                                  |
-
-LOG channel 0 dùng port 9090; DATA channel 1 dùng port 9091 trong cả launch
-VS Code và OpenOCD độc lập. GUI hiển thị cả log và plot; không mở thêm terminal
-RTT của extension. CH1 dùng [telemetry binary v1](../../protocol/telemetry.md).
-
-Launch giữ RTT setup của Cortex-Debug với danh sách decoder rỗng. Vì không còn
-terminal decoder để kích hoạt retry của extension, OpenOCD thử `rtt start` khi
-CPU halt, gồm điểm dừng `app_process` sau khởi tạo RTT. Giữ `runToEntryPoint`
-này để khởi động luồng dữ liệu trước khi Continue.
-
-Đọc thô không cần nhóm GUI:
+Đọc byte thô không cần dependency GUI:
 
 ```sh
 uv run tools/rtt/capture_raw.py --port 9091 > /tmp/imu.bin
 uv run tools/rtt/capture_raw.py --port 9090 > /tmp/drone-rtt.log
 ```
 
-## Xem log và đồ thị RTT
+## Xuất telemetry đã ghi trong flash
 
-Sau khi chạy OpenOCD và Continue firmware:
+Cắm ST-LINK qua SWD và dừng phiên debug đang dùng cùng ST-LINK.
+Tắt tay điều khiển rồi reset board để firmware Debug hoặc Release chờ RC.
+Bấm **Flash Export…** trong cửa sổ `make telemetry` để mở GUI xuất flash.
+Cũng có thể mở trực tiếp từ gốc repo:
 
 ```sh
-make telemetry
-# Đổi địa chỉ/cổng khi cần
-make telemetry TELEMETRY_ARGS="--host 127.0.0.1 --log-port 9090 --data-port 9091"
+make flash-export
 ```
 
-Có thể gọi trực tiếp `uv run --group rtt tools/rtt/view.py`;
-dùng `UV=/path/to/uv` để chỉ định executable cho Make.
+Sau khi xuất xong, đóng OpenOCD, gạt SB và SD xuống LOW rồi reset để trở
+lại chế độ bay. Thao tác xóa telemetry trong Viewer tác động lên chip
+ngoài W25Q128FV.
 
-- Log tô màu E/W/I/D, lọc mức/tag, giữ tối đa 2000 dòng; Clear chỉ xóa trên UI.
-- Plot accel (m/s²) và gyro (rad/s) giữ 10 giây theo thời gian MCU, tối đa
-  20000 điểm, vẽ 25 lần/giây. Gap sequence được ngắt nét.
-- Tab **Receiver · RC** hiển thị CH1–CH16 dạng thanh và số raw CRSF
-  (0–2047), cập nhật danh định 20 Hz. Di chuyển từng cần/công tắc để kiểm
-  tra mapping. Không gán sẵn chức năng kênh và không đổi raw thành µs.
-  `connected` phản ánh frame RC hợp lệ mới hơn 100 ms; khi disconnected
-  giữ số cuối và làm mờ thanh. `telemetry stale` nghĩa là không có snapshot
-  mới trong 0,5 s hoặc TCP DATA ngắt, chưa kết luận được trạng thái RC.
-  Cần nạp firmware mới có telemetry type 3; Debug bật telemetry mặc định.
-- Status hiển thị kết nối, tốc độ nhận host, gap/lỗi frame và thống kê MCU
-  type 2 kèm tuổi snapshot. Tốc độ nhận host chịu ảnh hưởng TCP, không phải
-  phép đo chính xác tần số lấy mẫu.
-- Tự nối lại mỗi 2 giây. Nối lại DATA hoặc nghi reset bắt đầu segment mới,
-  xóa plot và không đếm gap qua ranh giới; tổng counter host vẫn giữ.
-  Không có dữ liệu thì giữ plot cuối.
+Bấm **Start OpenOCD**. Viewer gửi lệnh lấy danh sách phiên qua RTT.
+Nếu board còn chờ RC, lệnh này chọn chế độ xuất và firmware giữ PWM tắt.
+Viewer xác nhận kết nối xuất qua phản hồi có ID khớp với yêu cầu.
+Nếu receiver vẫn gửi RC hợp lệ, có thể vào chế độ xuất bằng cách đặt
+SD HIGH, SB LOW hoặc MIDDLE rồi reset với tay điều khiển đang kết nối.
+Danh sách hiển thị ID, số trang và trạng thái của từng phiên. Dùng **Scan sessions** để
+làm mới, rồi chọn phiên và bấm **Export selected** để tải khoảng trang của phiên
+đó. Viewer lưu CSV, thông tin phiên và ảnh `session.bin`.
+Dùng **Export flash** khi cần sao lưu toàn chip vào `flash.bin` trước khi xóa.
 
-Decoder xử lý tràn 32 bit theo modulo; lùi sequence/thời gian hơn nửa miền
-được coi là nghi reset. Chưa có boot ID nên reset sớm hoặc gián đoạn dài có
-thể không nhận diện chắc chắn. Frame lỗi bị bỏ và tìm lại đầu frame;
-type/version chưa hỗ trợ được đếm unknown. Không hỗ trợ CSV `IMU1` cũ.
+Cửa sổ quản lý OpenOCD với
+GDB ở `127.0.0.1:3333` và RTT ở cổng 9092/9093. Khi cần kết nối GDB,
+dùng `target extended-remote :3333` và cho CPU chạy trước khi export.
+**Stop OpenOCD** hoặc đóng cửa sổ sẽ dừng server đã mở từ công cụ.
+Có thể chọn executable và cổng bằng
+`FLASH_EXPORT_ARGS="--openocd /đường/dẫn --gdb-port 0"`, trong đó `0`
+tắt GDB. Dùng `--log-port` và `--data-port` để đổi cổng RTT của công cụ.
 
-## Ghi phiên CSV, text log và raw
+Mỗi lượt xuất được lưu vào `experiments/raw/export/flash_export_<thời điểm>`.
+Đổi thư mục xuất bằng `make flash-export FLASH_EXPORT_ARGS="--export-dir /đường/dẫn"`.
 
-Chọn thư mục gốc rồi **Start recording** / **Stop recording**, hoặc chạy:
+Trong lúc xuất, cửa sổ hiển thị lượt thử, lúc nhận `BEGIN` và số trang
+khác `0xFF` đã nhận. **STM32 log (RTT 0)** hiển thị mode, số trang chip đã
+quét và kết quả phía board khi firmware bật log mức INFO. Hai bộ đếm
+có thể khác nhau vì trang trống được lược khỏi kênh DATA. Nếu hết 15 giây
+chưa nhận `BEGIN` đúng ID, thiếu trang hoặc CRC sai, cửa sổ thử lại tối đa
+năm lượt tính cả lượt đầu.
+Các trang qua kiểm tra CRC từ những lần có cùng
+thông tin END được ghép theo địa chỉ. Ảnh chỉ hoàn tất khi đủ số trang
+và khớp CRC của board. **Cancel export** dừng truyền về máy.
+Board ghi `export_end` khi đã đưa gói cuối vào bộ đệm RTT. Viewer báo
+`Flash saved` khi đã nhận đủ dữ liệu, kiểm tra CRC và lưu ảnh.
+
+`flash.bin` là ảnh 16 MiB của chip, giữ cả dữ liệu cũ ở các trang journal
+không nhận diện được. `export.json` tóm tắt kết quả và `export.log` ghi
+thời điểm, số trang, lỗi CRC và kết quả từng lần đọc. Tab **Export / erase log**
+hiển thị nội dung file trong lúc chạy. Khi hoàn tất, danh sách hiển thị tổng
+số session, số session gián đoạn và trạng thái từng session. Chọn một mục rồi
+bấm **Open session** để mở dữ liệu đã lưu trong Viewer offline. Lượt xuất
+chưa xác minh giữ `flash.bin.part` và ghi nguyên nhân vào `export.log`.
+
+Sau khi xuất thành công, có thể bấm **Erase flash** và xác nhận
+để giải phóng toàn bộ W25Q128FV. Giữ board ở chế độ export và chờ Viewer
+báo đã xóa và xác minh. Viewer kiểm tra
+lại kích thước và CRC của `flash.bin` trước khi gửi lệnh. Board chỉ nhận lệnh
+cho yêu cầu export vừa hoàn tất trong lần khởi động hiện tại. `export.log` ghi
+thời điểm gửi lệnh, thời điểm board xác nhận và kết quả xóa theo ID yêu cầu.
+Nếu kết quả chưa được xác nhận, kiểm tra tab **STM32 log (RTT 0)**.
+Sau khi xóa và xác minh toàn chip, firmware ghi mốc `EMPTY` trong sector cuối
+để Flight có thể bỏ lượt quét toàn chip ngay sau erase. Vì vậy, một bản export
+ngay sau erase có thể chứa trang mốc và vẫn có 0 phiên.
+
+Có thể dùng CLI sau khi board đã vào FLASH_EXPORT bằng SD HIGH hoặc
+qua Viewer. Nếu dùng Viewer để chọn chế độ, dừng OpenOCD trong Viewer trước
+khi mở phiên OpenOCD riêng và giữ board chạy. Mở OpenOCD
+với [cấu hình RTT độc lập](../../firmware/drone/DEBUG.md#dùng-từ-máy-tính),
+giữ cổng 9090/9091 dành cho CLI và chạy từ gốc repo:
+
+```sh
+python3 tools/rtt/flash_export.py
+```
+
+CLI dùng cùng thư mục mặc định với viewer. Để lưu vào nơi khác, truyền
+đường dẫn tới thư mục mới. Có thể thay số lần đọc tối đa bằng
+`--attempts` và cấu hình kết nối qua `--host`, `--control-port` và
+`--data-port`.
+
+Chế độ FLASH_EXPORT hỗ trợ xuất trực tiếp theo ID phiên (số trang `BEGIN`) hoặc
+xuất phiên liền trước một ID đã biết. CLI tạo `session.bin` theo địa chỉ
+flash gốc cùng CSV và `session.json` của phiên đã chọn.
+
+```sh
+python3 tools/rtt/flash_export.py --session 180
+python3 tools/rtt/flash_export.py --previous 180
+```
+
+Nếu một phiên thiếu `END`, firmware dò đến khi gặp một phiên khác hoặc
+chạm cuối flash. Lệnh xóa chip yêu cầu một lượt export toàn flash.
+
+## Xem và ghi dữ liệu
+
+Chạy `make telemetry` để xem và ghi telemetry live. Thư mục ghi được chọn
+trong **Recording options → Save folder**, mặc định là
+`experiments/raw/telemetry`.
+
+Viewer hiển thị log có filter, IMU, receiver và rate/mixer. IMU hiển thị
+m/s² và rad/s trong hệ thân FRD. Với firmware mới, receiver hiển thị bốn
+trục CH1–CH4 trên thang danh định 172–1811, với tâm hình cần gạt ở 992.
+Nhãn hiển thị giá trị raw CRSF cùng trạng thái cần gạt SA/SB/SC/SD.
+Bản ghi RC cũ vẫn hiển thị đủ CH1–CH16. `connected` phản ánh tuổi frame RC
+hợp lệ, còn `telemetry stale`
+chỉ báo snapshot cũ hoặc TCP DATA ngắt. Tab **Rate · FRD** nhận snapshot
+20 Hz, không phải mọi bước PID. Tab **Attitude** hiển thị mô hình quadrotor với ba trục thân và đồ thị roll, pitch
+và yaw tương đối từ quaternion Mahony (tối đa 20 Hz). Bản ghi
+`attitude_*.csv` lưu quaternion gốc để xem lại. **Diagnostics** hiển thị counter host, MCU
+và lỗi ghi; tốc độ nhận host không phải phép đo chính xác tần số lấy mẫu.
+
+Tab **Attitude Control** hiển thị góc đặt và góc ước lượng roll/pitch, sai số
+nghiêng X/Y trong hệ thân và tốc độ góc lệnh trước giới hạn rate. Với SC
+MIDDLE/HIGH, firmware thử gửi một bản tin cho mỗi lần tính vòng attitude
+(danh định 100 Hz). Đồ thị dùng thời gian MCU, ngắt nét khi thiếu số thứ tự
+hoặc khoảng cách giữa hai bản tin vượt 50 ms. Bản ghi `attitude_control_*.csv` hỗ trợ xem
+lại trong viewer.
+
+Mở **Recording options**, chọn thư mục và **Start recording**; có thể bật
+**Save raw hex**. Hoặc chạy:
 
 ```sh
 make telemetry TELEMETRY_ARGS="--record --raw"
 make telemetry TELEMETRY_ARGS="--record --output-dir /tmp/drone-sessions"
 ```
 
-Mặc định lưu tại `experiments/raw/telemetry/` (Git ignore). Mỗi Start tạo
-phiên mới theo giờ địa phương `YYYYMMDD_HHMMSS`; trùng giây thêm `_01`,
-`_02`,… vào thư mục và tên file, không ghi đè:
+Mặc định mỗi phiên được lưu riêng trong `experiments/raw/telemetry/` (Git
+ignore), gồm `imu_raw_*.csv`, `receiver_compact_*.csv` (RC mới), `rc_*.csv` (RC cũ),
+`rate_*.csv`, `rtt_stats_*.csv`,
+`attitude_*.csv`, `attitude_control_*.csv`, `events_*.log` và `data_*.hex` nếu bật
+raw. Viewer đọc cả type 4 và type 9. IMU CSV giữ một dòng mỗi mẫu, gồm
+counts gốc, timestamp, range, ODR và mã ánh xạ trục. Với type 9, viewer điền
+cấu hình cố định theo đặc tả. Raw hex giữ byte DATA trước decode. Log được ghi kể cả
+khi bị filter trên UI. Queue ghi đầy hoặc lỗi ghi có thể làm phiên thiếu dữ
+liệu; kiểm tra writer drops và trạng thái recording trước khi phân tích.
 
-```text
-telemetry_20261113_151530/
-├── imu_20261113_151530.csv
-├── rc_20261113_151530.csv
-├── rtt_stats_20261113_151530.csv
-├── events_20261113_151530.log
-└── data_20261113_151530.hex   # nếu chọn Save raw hex
-```
+Tab **Configuration** hiển thị cấu hình IMU và các vòng điều khiển. Viewer
+yêu cầu snapshot qua cổng LOG khi hai kết nối RTT sẵn sàng. Firmware trả
+snapshot qua cổng DATA. Viewer lưu một dòng mỗi segment trong `config.jsonl`
+khi bật recording, kể cả khi snapshot đã đến trước lúc bấm ghi. Dùng trường
+`segment` để ghép với CSV và `config_sha256` để đối chiếu giữa các phiên.
+Nếu phiên thiếu snapshot, tab này sẽ báo thiếu cấu hình khi mở lại.
 
-- IMU CSV giữ số nguyên trên wire và đơn vị trong header; plot đổi sang SI.
-- RC CSV giữ `segment,sequence,uptime_ms,last_frame_ms,connected,ch1_raw,…,ch16_raw`;
-  là snapshot mỗi 50 ms, gồm cả trạng thái disconnected, không ghi mọi frame RC.
-- Stats CSV giữ snapshot MCU theo [schema type 2](../../protocol/telemetry.md#rtt-statistics-v1-type-2).
-- Log giữ mọi dòng nhận trong lúc recording, kể cả dòng bị filter trên UI.
-- Raw là text hex của toàn bộ byte DATA trước decode, kể cả frame lỗi/dở
-  hoặc type chưa hỗ trợ; tối đa 16 byte/dòng. Khôi phục bằng
-  `bytes.fromhex(text)`. `capture_raw.py` xuất binary nguyên gốc.
+Chọn **Open session…** và thư mục phiên để xem dữ liệu đã lưu, **Segment** để
+chọn đoạn, hoặc **Return to live** để nối lại. Viewer không sửa file nguồn;
+không mở phiên khi đang ghi. Log hiển thị tối đa 2000 dòng cuối và không đồng
+bộ theo segment; các đồ thị không có trục thời gian chung. File chỉ có log
+chưa được hỗ trợ.
 
-Header IMU CSV:
+## Diễn giải dữ liệu
 
-```text
-segment,sequence,t_read_us,sensor_time_ticks,ax_mmps2,ay_mmps2,az_mmps2,gx_mradps,gy_mradps,gz_mradps
-```
+Segment tăng khi DATA nối lại hoặc nghi reset; không so gap qua ranh giới này.
+Thiếu boot ID nên không phải mọi reset đều được phát hiện. Trong cùng segment,
+hiệu `t_read_us` modulo 2^32 giữa sequence liên tiếp cho biết khoảng cách đọc
+MCU, không trực tiếp đo jitter lấy mẫu cảm biến. Tách gap khỏi thống kê và
+đối chiếu `imu_tx_full` cùng writer drops. Với type 9, mỗi lần RTT bỏ một
+frame có thể làm thiếu tối đa 8 mẫu. Chi tiết frame, đơn vị, ánh xạ trục
+và counter nằm trong [đặc tả telemetry](../../protocol/telemetry.md).
 
-`segment` bắt đầu từ 1 ở kết nối DATA đầu tiên của viewer, tăng khi nối lại
-hoặc nghi reset; Start/Stop recording không tăng segment. CSV chỉ chứa mẫu
-hợp lệ, không điền mẫu giả vào gap. LOG và DATA không bảo đảm thứ tự liên kênh.
+Viewer không hỗ trợ telemetry IMU type 1 hoặc CSV `IMU1` cũ; dùng phiên bản
+công cụ trước đó nếu cần xem lại. Type chưa hỗ trợ được đếm là unknown.
 
-Recording độc lập filter và lịch sử plot, chỉ lưu dữ liệu nhận từ lúc Start.
-Queue giới hạn 4096 mục; đầy thì bỏ mục mới và báo writer drops riêng theo
-IMU/stats/RC/log/raw. Lỗi mở/ghi file báo **Recording ERROR** và ngừng ghi;
-UI tiếp tục nhận/vẽ. File có thể chưa đầy đủ khi lỗi xảy ra.
-
-Stop hoặc đóng cửa sổ chờ worker ghi hết queue, flush và đóng file;
-ổ đĩa treo có thể kéo dài thời gian chờ. Không fsync từng mẫu; kill process
-hoặc mất điện có thể mất phần chưa ghi bền. Recording không phục hồi dữ liệu
-đã bị bỏ trước đó.
-
-## Đọc timing từ CSV IMU
-
-Trong cùng segment, dùng hiệu `t_read_us` modulo 2^32 giữa các sequence
-liên tiếp để xem jitter đọc MCU; tách gap khỏi thống kê jitter. Timestamp
-này không đo trực tiếp jitter acquisition hoặc thời gian giao dịch SPI.
-
-Đối chiếu gap với chênh lệch `imu_tx_full` trong stats CSV, dùng snapshot
-baseline phù hợp và không so qua reset/segment. Gap sequence, RTT full và
-writer drops là các chỉ số khác nhau; xem [ngữ nghĩa counter](../../protocol/telemetry.md#rtt-statistics-v1-type-2).
-
-## Kiểm thử RTT
+## Kiểm thử
 
 Parser và writer không cần Qt/board; test GUI dùng TCP localhost giả lập:
 

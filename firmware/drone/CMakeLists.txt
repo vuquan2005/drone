@@ -48,11 +48,24 @@ endif()
 option(DRONE_ENABLE_TELEMETRY "Build binary IMU, statistics and RC telemetry over RTT"
        ${DRONE_RTT_DEFAULT})
 
+option(DRONE_DEBUG_FORCE_FLIGHT "Enter FLIGHT without waiting for RC boot selection" OFF)
+
+option(DRONE_ENABLE_FLASH_RECORD "Record flight telemetry to external SPI flash" ON)
+
+option(DRONE_FLASH_BOARD_SMOKE "Run only the SWD SPI flash board check" OFF)
+
+option(DRONE_ENABLE_RATE_CONTROL "Configure rate controller with initial bench gains" ON)
+option(DRONE_ENABLE_BENCH_IDLE_DISARM "Disarm after 5 s of low throttle on the bench" ON)
+
 # Enable CMake support for ASM and C languages
 enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
+set_property(
+    TARGET ${CMAKE_PROJECT_NAME}
+    APPEND
+    PROPERTY LINK_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/STM32F103xx_FLASH.ld)
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -65,28 +78,63 @@ target_compile_definitions(STM32_Drivers PRIVATE USER_VECT_TAB_ADDRESS)
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE # Add user defined library search paths
 )
 
-# Add user sources to executable when needed:
+target_sources(${CMAKE_PROJECT_NAME} PRIVATE BSP/Src/bsp_flash.c App/Src/app_flash_journal.c
+                                             App/Src/flash_erase.c)
+
+if(DRONE_ENABLE_RTT)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE Maintenance/Src/flash_export.c)
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE Maintenance/Inc)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RUNTIME_FLASH_EXPORT=1)
+endif()
+
+include(cmake/imu.cmake)
+drone_imu_sources(${CMAKE_PROJECT_NAME} ${DRONE_IMU})
 target_sources(
     ${CMAKE_PROJECT_NAME}
-    PRIVATE Control/Src/mixer.c
-            Drivers/BMI270/bmi2.c
-            Drivers/BMI270/bmi270.c
-            BSP/Src/bsp_bmi270.c
+    PRIVATE Control/Src/attitude_controller.c
+            Control/Src/mixer.c
+            Control/Src/rate_controller.c
+            Control/Src/mahony.c
+            Control/Src/gyro_bias.c
+            Control/Src/accel_calibration.c
             BSP/Src/bsp_board.c
+            BSP/Src/bsp_imu_flash.c
             BSP/Src/bsp_time.c
             BSP/Src/bsp_receiver.c
-            BSP/Src/bsp_pwm.c
+            BSP/Src/bsp_motor_pwm.c
+            BSP/Src/bsp_status_led.c
+            App/Src/status_led.c
+            App/Src/runtime.c
+            App/Src/esc_calibration.c
+            App/Src/imu_calibration.c
+            App/Src/imu_calibration_store.c
+            App/Src/app_config.c
             App/Src/app.c
+            App/Src/app_rate.c
+            App/Src/app_safety.c
+            App/Src/app_command.c
             App/Src/app_imu.c
             App/Src/app_motor.c
             App/Src/app_receiver.c
             App/Src/crsf.c)
+if(DRONE_ENABLE_FLASH_RECORD)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_flash_recorder.c)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_FLASH_RECORD=1)
+endif()
+if(DRONE_ENABLE_FLASH_RECORD OR (DRONE_ENABLE_RTT AND DRONE_ENABLE_TELEMETRY))
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_telemetry.c)
+endif()
+
+if(DRONE_FLASH_BOARD_SMOKE)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE tests/flash/board_smoke.c)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_FLASH_BOARD_SMOKE=1)
+endif()
 
 # Add include paths
 target_include_directories(
     ${CMAKE_PROJECT_NAME}
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Drivers/BMI270 ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc
-            ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc ${CMAKE_CURRENT_SOURCE_DIR}/Control/Inc)
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/BSP/Inc ${CMAKE_CURRENT_SOURCE_DIR}/App/Inc
+            ${CMAKE_CURRENT_SOURCE_DIR}/Control/Inc)
 
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RTT=$<BOOL:${DRONE_ENABLE_RTT}>)
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_LOG_LEVEL=${DRONE_LOG_LEVEL_VALUE})
@@ -98,11 +146,8 @@ if(DRONE_ENABLE_RTT)
         target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_log.c)
     endif()
     if(DRONE_ENABLE_TELEMETRY)
-        target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/app_telemetry.c)
+        target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_TELEMETRY=1)
     endif()
-endif()
-if(DRONE_ENABLE_RTT AND DRONE_ENABLE_TELEMETRY)
-    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_TELEMETRY=1)
 endif()
 
 # Add user project symbols (macros) when needed:
@@ -114,3 +159,12 @@ list(REMOVE_ITEM CMAKE_C_IMPLICIT_LINK_LIBRARIES ob)
 # Add linked libraries
 target_link_libraries(${CMAKE_PROJECT_NAME} stm32cubemx # Add user defined libraries
 )
+
+target_compile_definitions(${CMAKE_PROJECT_NAME}
+                           PRIVATE DRONE_RATE_CONTROL=$<BOOL:${DRONE_ENABLE_RATE_CONTROL}>)
+if(NOT DRONE_ENABLE_BENCH_IDLE_DISARM)
+    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE APP_ARM_IDLE_TIMEOUT_MS=0U)
+endif()
+
+target_compile_definitions(${CMAKE_PROJECT_NAME}
+                           PRIVATE DRONE_DEBUG_FORCE_FLIGHT=$<BOOL:${DRONE_DEBUG_FORCE_FLIGHT}>)

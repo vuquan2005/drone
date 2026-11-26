@@ -109,7 +109,7 @@ fp-info-cache
 /firmware/**/compile_commands.json
 
 # Local reference repositories
-/docs/external/repos/
+/docs/external/repos
 
 # Local reference metadata, PDF sync state and extracted images
 /docs/references/**/*.jpeg
@@ -119,7 +119,7 @@ fp-info-cache
 
 # Large or intermediate experiment data
 /experiments/processed/*
-/experiments/raw/*
+/experiments/raw
 
 # KiCad manufacturing and rendered outputs (keep editable design sources)
 /hardware/kicad/**/gerber/

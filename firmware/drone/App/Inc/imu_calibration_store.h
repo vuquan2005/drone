@@ -1,0 +1,20 @@
+#ifndef IMU_CALIBRATION_STORE_H
+#define IMU_CALIBRATION_STORE_H
+
+#include "app_imu.h"
+
+/** Load the newest valid v3 record for the given chip ID, board map and ranges.
+ * Output must be non-NULL. False leaves it untouched. Serialized foreground
+ * only.
+ */
+bool imu_calibration_load(uint8_t chip_id, app_imu_calibration_t *calibration);
+
+/** Save gyro bias and the full accelerometer correction as v3.
+ * Input must be non-NULL. Returns false on invalid data or flash failure.
+ * Preserves the previous compatible copy until the new copy is finalized.
+ * Blocking foreground only. Motor outputs must be disabled.
+ */
+bool imu_calibration_save(uint8_t chip_id,
+                          const app_imu_calibration_t *calibration);
+
+#endif

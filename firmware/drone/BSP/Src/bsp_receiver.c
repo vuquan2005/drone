@@ -1,10 +1,21 @@
 #include "bsp_receiver.h"
 #include "main.h"
+#include <string.h>
 
-extern UART_HandleTypeDef huart1;
+/* Board mapping: keep in sync with drone.ioc and CubeMX IRQ handlers.
+ * Pin labels RECEIVER_TX/RX describe the STM32 side of the connection.
+ * Both IRQs share producer state and must use the same preemption priority. */
+#define RECEIVER_UART_HANDLE huart2
+#define RECEIVER_UART_IRQn USART2_IRQn
+#define RECEIVER_RX_DMA_IRQn DMA1_Channel6_IRQn
+#define RECEIVER_IRQ_PRIORITY 5U
+
+/* Owned and initialized by CubeMX before bsp_receiver_init(). */
+extern UART_HandleTypeDef RECEIVER_UART_HANDLE;
 
 #define RX_CAPACITY 256U
 #define DMA_CAPACITY 64U
+#define TX_CAPACITY 64U
 
 typedef struct {
     uint32_t timestamp_ms;
@@ -18,10 +29,11 @@ static volatile bool discontinuity;
 static volatile bool retry_rx;
 static uint8_t dma_buffer[DMA_CAPACITY];
 static uint16_t dma_position;
+static uint8_t tx_buffer[TX_CAPACITY];
 
 static void start_rx(void) {
     dma_position = 0;
-    retry_rx = HAL_UARTEx_ReceiveToIdle_DMA(&huart1, dma_buffer,
+    retry_rx = HAL_UARTEx_ReceiveToIdle_DMA(&RECEIVER_UART_HANDLE, dma_buffer,
                                             DMA_CAPACITY) != HAL_OK;
     if (retry_rx) {
         discontinuity = true;
@@ -31,15 +43,15 @@ static void start_rx(void) {
 bool bsp_receiver_init(void) {
     uint32_t primask = __get_PRIMASK();
     __disable_irq();
-    (void)HAL_UART_AbortReceive(&huart1);
-    __HAL_UART_CLEAR_OREFLAG(&huart1);
+    (void)HAL_UART_AbortReceive(&RECEIVER_UART_HANDLE);
+    __HAL_UART_CLEAR_OREFLAG(&RECEIVER_UART_HANDLE);
     head = tail = 0;
     discontinuity = false;
-    HAL_NVIC_SetPriority(USART1_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(USART1_IRQn);
+    HAL_NVIC_SetPriority(RECEIVER_UART_IRQn, RECEIVER_IRQ_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(RECEIVER_UART_IRQn);
     // Both callbacks share producer state and must not preempt each other.
-    HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 5, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
+    HAL_NVIC_SetPriority(RECEIVER_RX_DMA_IRQn, RECEIVER_IRQ_PRIORITY, 0);
+    HAL_NVIC_EnableIRQ(RECEIVER_RX_DMA_IRQn);
     start_rx();
     bool started = !retry_rx;
     __set_PRIMASK(primask);
@@ -67,9 +79,28 @@ bsp_receiver_result_t bsp_receiver_read(uint8_t *byte, uint32_t *timestamp_ms) {
     return result;
 }
 
+bool bsp_receiver_try_send(const uint8_t *frame, uint8_t length) {
+    if (frame == NULL || length == 0U || length > sizeof(tx_buffer))
+        return false;
+
+    UART_HandleTypeDef *uart = &RECEIVER_UART_HANDLE;
+    const uint32_t primask = __get_PRIMASK();
+    __disable_irq();
+    bool started = false;
+    /* HAL_UART_GetState also includes RX DMA state. HAL_UART_Transmit_IT
+     * clears ErrorCode, so let a pending RX error finish before starting TX. */
+    if (uart->gState == HAL_UART_STATE_READY &&
+        uart->ErrorCode == HAL_UART_ERROR_NONE) {
+        memcpy(tx_buffer, frame, length);
+        started = HAL_UART_Transmit_IT(uart, tx_buffer, length) == HAL_OK;
+    }
+    __set_PRIMASK(primask);
+    return started;
+}
+
 void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {
     (void)size;
-    if (huart != &huart1) {
+    if (huart != &RECEIVER_UART_HANDLE) {
         return;
     }
     if (huart->ErrorCode != HAL_UART_ERROR_NONE || retry_rx) {
@@ -97,7 +128,7 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) {
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart) {
-    if (huart == &huart1) {
+    if (huart == &RECEIVER_UART_HANDLE) {
         discontinuity = true;
         (void)HAL_UART_AbortReceive(huart);
         __HAL_UART_CLEAR_OREFLAG(huart);

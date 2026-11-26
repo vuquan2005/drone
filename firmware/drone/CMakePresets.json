@@ -14,9 +14,11 @@
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "DRONE_DEBUG_FORCE_FLIGHT": "ON",
         "DRONE_ENABLE_RTT": "ON",
         "DRONE_LOG_LEVEL": "INFO",
-        "DRONE_ENABLE_TELEMETRY": "ON"
+        "DRONE_ENABLE_TELEMETRY": "ON",
+        "DRONE_ENABLE_RATE_CONTROL": "ON"
       }
     },
     {
@@ -24,9 +26,11 @@
       "inherits": "default",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "DRONE_ENABLE_RTT": "OFF",
+        "DRONE_DEBUG_FORCE_FLIGHT": "OFF",
+        "DRONE_ENABLE_RTT": "ON",
         "DRONE_LOG_LEVEL": "OFF",
-        "DRONE_ENABLE_TELEMETRY": "OFF"
+        "DRONE_ENABLE_TELEMETRY": "OFF",
+        "DRONE_ENABLE_RATE_CONTROL": "ON"
       }
     }
   ],

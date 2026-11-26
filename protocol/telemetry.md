@@ -8,14 +8,14 @@ CH0 dùng log text `[ms][E/W/I/D][tag] message\n`; CH1 dùng frame binary
 Tất cả số nhiều byte dùng little-endian. Không gửi trực tiếp layout `struct`
 C, không có padding hoặc byte kết thúc newline.
 
-| Offset | Số byte | Trường         | Quy ước                                                      |
-| ------ | ------- | -------------- | ------------------------------------------------------------ |
-| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                 |
-| 4      | 1       | version        | `1`                                                          |
-| 5      | 1       | type           | `1`: IMU; `2`: thống kê RTT; `3`: RC                         |
-| 6      | 2       | payload_length | uint16, không tính header/CRC; IMU = 36, stats = 40, RC = 48 |
-| 8      | N       | payload        | Theo version và type                                         |
-| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                 |
+| Offset | Số byte | Trường         | Quy ước                                                                                                                                                                                       |
+| ------ | ------- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0      | 4       | magic          | ASCII `DRT!` = `44 52 54 21`                                                                                                                                                                  |
+| 4      | 1       | version        | `1`                                                                                                                                                                                           |
+| 5      | 1       | type           | `1` ngừng dùng, `2` thống kê RTT, `3` RC cũ, `4` IMU raw cũ, `5` rate cũ, `6` tư thế, `7` vòng attitude cũ, `8` RC gọn, `9` IMU raw gộp, `10` cấu hình, `11` rate gọn, `12` vòng attitude gọn |
+| 6      | 2       | payload_length | uint16. Type 2–8 lần lượt có 40, 48, 32, 80, 24, 56, 21 byte. Type 9 có 24–129 byte theo số mẫu. Type 10–12 lần lượt có 208, 54, 50 byte.                                                     |
+| 8      | N       | payload        | Theo version và type                                                                                                                                                                          |
+| 8+N    | 4       | crc32          | CRC của toàn bộ header và payload, gồm magic                                                                                                                                                  |
 
 CRC-32/ISO-HDLC: reflected polynomial `0xEDB88320`, init `0xFFFFFFFF`,
 xorout `0xFFFFFFFF`, không xor dữ liệu đầu vào ngoài thuật toán chuẩn.
@@ -30,51 +30,109 @@ sau; một header giả có length hợp lệ có thể làm chậm đồng bộ
 frame giới hạn. Khi nối lại TCP, xóa phần frame dở. Frame version/type chưa
 biết nhưng CRC hợp lệ được bỏ nguyên frame và đếm unknown.
 
-## IMU v1, type 1
+## Mã type 1 đã ngừng dùng
 
-Payload 36 byte, frame 48 byte. Bảng offset dưới đây tính từ đầu payload:
+Type 1 (IMU SI cũ) đã bỏ hỗ trợ. Không tái sử dụng mã này. Frame type 1 có
+CRC hợp lệ được bỏ qua và đếm unknown; viewer không đọc `imu_*.csv` cũ.
+Các log gốc được giữ nguyên; có thể dùng phiên bản công cụ trước thay đổi này
+nếu cần xem lại dữ liệu lịch sử.
 
-| Offset | Kiểu   | Tên               | Ý nghĩa / đơn vị                             |
-| ------ | ------ | ----------------- | -------------------------------------------- |
-| 0      | uint32 | sequence          | Số lần MCU đọc thành công; mẫu đầu = 1       |
-| 4      | uint32 | t_read_us         | Uptime MCU tại lúc đọc thành công, µs        |
-| 8      | uint32 | sensor_time_ticks | Clock cảm biến 24 bit, 8 bit cao phải bằng 0 |
-| 12     | int32  | ax_mmps2          | Gia tốc X, mm/s²                             |
-| 16     | int32  | ay_mmps2          | Gia tốc Y, mm/s²                             |
-| 20     | int32  | az_mmps2          | Gia tốc Z, mm/s²                             |
-| 24     | int32  | gx_mradps         | Vận tốc góc X, mrad/s                        |
-| 28     | int32  | gy_mradps         | Vận tốc góc Y, mrad/s                        |
-| 32     | int32  | gz_mradps         | Vận tốc góc Z, mrad/s                        |
+## IMU raw cũ v1, type 4
 
-Số nguyên có dấu dùng bù hai. Encoder nhân mẫu SI float với 1000, cắt phần
-thập phân về phía 0. Từ chối NaN, vô cực hoặc kết quả ngoài int32; không clamp.
-Trục theo package cảm biến, chưa hiệu chuẩn/xoay trục. Timestamp được chụp
-sau đọc BSP, không phải thời điểm cảm biến acquisition hoặc host nhận.
-Giữ nguyên clock cảm biến, không mở rộng tràn hoặc đồng bộ hai clock.
+Viewer đọc type 4 từ firmware cũ. Payload 32 byte, frame 44 byte. Đây là số đếm IMU nguyên gốc, chưa đổi đơn
+vị, hiệu chuẩn, lọc hoặc ánh xạ hệ trục. Offset tính từ đầu payload:
 
-Sequence và timestamp MCU tràn modulo 2^32; clock cảm biến tràn modulo
-2^24. Sequence tăng kể cả khi frame bị RTT từ chối, nhưng không đếm mẫu cảm
-biến bị ghi đè trước khi MCU đọc. Một writer foreground, không retry;
-thiếu chỗ thì bỏ nguyên frame mới và tăng counter đầy CH1. Tốc độ danh định
-400 Hz tương ứng 19200 byte/s cho IMU; cần đo khả năng truyền trên board.
+| Offset | Kiểu     | Trường                 | Ý nghĩa                                                          |
+| ------ | -------- | ---------------------- | ---------------------------------------------------------------- |
+| 0      | uint32   | sequence               | Bộ đếm lần đọc IMU thành công được chọn để ghi RTT               |
+| 4      | uint32   | t_read_us              | Uptime MCU sau đọc BSP, µs; không phải acquisition time          |
+| 8      | uint32   | sensor_time_ticks      | Clock cảm biến 24 bit, 8 bit cao bằng 0                          |
+| 12     | int16[3] | ax_raw, ay_raw, az_raw | Số đếm accel XYZ theo trục cảm biến                              |
+| 18     | int16[3] | gx_raw, gy_raw, gz_raw | Số đếm gyro XYZ theo trục cảm biến                               |
+| 24     | uint8    | accel_range_g          | Biên dương full scale, hiện tại 16 g                             |
+| 25     | uint8    | axis_map               | `1`: gá cũ → FLU `[X, -Y, -Z]`; `2`: gá mới → FRD `[-X, +Y, -Z]` |
+| 26     | uint16   | gyro_range_dps         | Biên dương full scale, hiện tại 2000 °/s                         |
+| 28     | uint16   | accel_odr_hz           | ODR cấu hình accel, hiện tại 800 Hz                              |
+| 30     | uint16   | gyro_odr_hz            | ODR cấu hình gyro, hiện tại 800 Hz                               |
+
+Số int16 dùng bù hai, bao gồm đủ miền [-32768, 32767]. Firmware lấy trực tiếp
+counts từ cùng lần đọc tạo mẫu SI trong App, không dựng lại raw từ float.
+Metadata lặp trong từng frame để host nối giữa phiên vẫn tự chuyển đổi được.
+Các trường range/ODR phản ánh cấu hình cố định BSP; nếu đổi cấu hình sensor
+phải cập nhật các hằng BSP tương ứng.
+
+Bên nhận đổi `accel = raw * accel_range_g * 9.80665 / 32768` (m/s²),
+`gyro = raw * gyro_range_dps * pi / (180 * 32768)` (rad/s), rồi áp dụng
+ánh xạ tương ứng cho cả hai vector. Với `axis_map=2`, viewer đổi sensor →
+thân FRD bằng `[-X, +Y, -Z]`. FRD có X tiến, Y phải, Z xuống.
+Viewer luôn hiển thị type 4 theo FRD: map 2 dùng `[-X, +Y, -Z]`; map 1 cũ
+được đổi tiếp từ FLU sang FRD, tương đương `[+X, +Y, +Z]` từ sensor.
+Giữ nguyên nghĩa map 1 để đọc log cũ; không áp cách gá mới cho log cũ.
+Đổi sang kiểu rộng/float trước khi đảo dấu để giữ đúng raw -32768.
+Vận tốc góc dương theo quy tắc bàn tay phải: roll nghiêng phải, pitch ngẩng
+lên, yaw quay phải khi nhìn từ trên. Khi đứng yên đúng chiều, accel Z ≈ −g.
+CSV raw giữ nguyên counts và metadata, không đảo dấu.
+
+Decoder từ chối sai kích thước, sensor time ngoài 24 bit, accel range ngoài
+{2, 4, 8, 16}, gyro range ngoài {125, 250, 500, 1000, 2000}, ODR bằng 0 hoặc
+axis_map chưa hỗ trợ. Timestamp được chụp sau đọc BSP, không phải thời điểm
+cảm biến acquisition hoặc host nhận. Clock cảm biến không được mở rộng tràn
+hoặc đồng bộ với clock MCU.
+
+Sequence và timestamp MCU tràn modulo 2^32; clock cảm biến tràn modulo 2^24.
+Sequence tăng kể cả khi frame bị RTT từ chối. Counter chỉ đếm lần thử ghi,
+bao gồm mẫu bị từ chối trước khi encode, và không đo số mẫu bị ghi đè trước
+khi MCU đọc. Khi thiếu chỗ, writer bỏ nguyên frame mới và tăng counter đầy CH1.
+
+## IMU raw gộp v1, type 9
+
+Firmware gửi 1–8 mẫu thô mỗi frame trong FLIGHT và IMU_CALIB. Với `n` mẫu,
+payload có `9 + 15 × n` byte, toàn frame có `21 + 15 × n` byte. Frame đủ 8
+mẫu dài 141 byte, tương ứng 14.100 B/s khi MCU đọc đủ 800 mẫu/s.
+
+| Offset payload | Kiểu     | Trường            | Ý nghĩa                             |
+| -------------: | -------- | ----------------- | ----------------------------------- |
+|              0 | uint32   | sequence          | Số thứ tự mẫu đầu                   |
+|              4 | uint32   | t_read_us         | Uptime MCU khi đọc xong mẫu đầu, µs |
+|              8 | uint24   | sensor_time_ticks | Clock cảm biến của mẫu đầu          |
+|             11 | uint8    | sample_count      | Số mẫu trong nhóm, 1–8              |
+|             12 | int16[6] | axes              | Accel XYZ rồi gyro XYZ của mẫu đầu  |
+
+Mỗi mẫu tiếp theo chiếm 15 byte từ offset payload `24 + 15 × i`, với `i = 0`
+cho mẫu thứ hai. `uint16` đầu là độ chênh `t_read_us` theo µs, `uint8` sau là
+độ chênh `sensor_time_ticks` theo tick, đều so với mẫu liền trước. Sáu `int16`
+cuối là accel XYZ rồi gyro XYZ. Viewer tăng `sequence` mỗi mẫu, cộng delta và
+lấy modulo 2^32 cho `sequence` và `t_read_us`, modulo 2^24 cho clock cảm biến.
+
+Type 9 quy định accel ±16 g, gyro ±2000 °/s, ODR accel và gyro 800 Hz và
+`axis_map=2` (sensor → FRD `[-X, +Y, -Z]`). Firmware kiểm tra các hằng cấu
+hình lúc build. Viewer dùng các giá trị cố định để đổi đơn vị và điền cùng
+schema `imu_raw_*.csv` của type 4, mỗi mẫu một dòng.
+
+Firmware đưa mỗi lần đọc thành công vào nhóm. Sequence đếm cả các mẫu bị RTT
+bỏ. Firmware gửi nhóm khi đủ 8 mẫu hoặc khi foreground thấy mẫu đầu đã chờ ít
+nhất 10 ms. Nếu sequence gián đoạn, delta MCU vượt `uint16` hoặc delta cảm biến
+vượt 255 tick, firmware gửi nhóm hiện tại và dùng mẫu mới làm mốc tuyệt đối.
+Mỗi lần buffer đầy bỏ nguyên nhóm và tăng `imu_tx_full` một lần. Khoảng trống
+sequence phía host tính theo số mẫu.
 
 ## RTT statistics v1, type 2
 
 Payload 40 byte, frame 52 byte. Tất cả trường uint32 little-endian, offset từ
 đầu payload; các counter tràn modulo 2^32 và reset khi `app_init()`:
 
-| Offset | Trường            | Ý nghĩa                                                                     |
-| ------ | ----------------- | --------------------------------------------------------------------------- |
-| 0      | sequence          | Số lần thử gửi thống kê, đầu tiên = 1; tăng dù frame bị bỏ                  |
-| 4      | uptime_ms         | Uptime MCU lúc chụp thống kê, ms, không phải timestamp IMU                  |
-| 8      | imu_samples       | Tổng số lần đọc IMU thành công, cũng là sequence IMU mới nhất               |
-| 12     | imu_read_errors   | Tổng lỗi đọc driver IMU; không đếm NO_DATA hoặc lỗi init                    |
-| 16     | rtt_log_full      | Bản ghi CH0 bị BSP bỏ vì đầy                                                |
-| 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU, stats và RC                            |
-| 24     | imu_tx_full       | Chỉ frame IMU bị bỏ vì đầy                                                  |
-| 28     | stats_tx_full     | Chỉ frame thống kê bị bỏ vì đầy                                             |
-| 32     | imu_tx_rejected   | IMU bị từ chối vì nguyên nhân khác FULL (kể cả dữ liệu encode không hợp lệ) |
-| 36     | stats_tx_rejected | Stats bị từ chối vì nguyên nhân khác FULL                                   |
+| Offset | Trường            | Ý nghĩa                                                                    |
+| ------ | ----------------- | -------------------------------------------------------------------------- |
+| 0      | sequence          | Số lần thử gửi thống kê, đầu tiên = 1; tăng dù frame bị bỏ                 |
+| 4      | uptime_ms         | Uptime MCU lúc chụp thống kê, ms, không phải timestamp IMU                 |
+| 8      | imu_samples       | Tổng số lần đọc IMU thành công                                             |
+| 12     | imu_read_errors   | Tổng lỗi đọc driver IMU; không đếm NO_DATA hoặc lỗi init                   |
+| 16     | rtt_log_full      | Bản ghi CH0 bị BSP bỏ vì đầy                                               |
+| 20     | rtt_data_full     | Frame CH1 bị BSP bỏ vì đầy, gồm IMU, stats và RC                           |
+| 24     | imu_tx_full       | Số frame IMU bị bỏ vì đầy. Type 9 chứa tối đa 8 mẫu mỗi frame              |
+| 28     | stats_tx_full     | Chỉ frame thống kê bị bỏ vì đầy                                            |
+| 32     | imu_tx_rejected   | Số frame IMU bị từ chối vì nguyên nhân khác FULL, cộng số mẫu không hợp lệ |
+| 36     | stats_tx_rejected | Stats bị từ chối vì nguyên nhân khác FULL                                  |
 
 App thử gửi mỗi khoảng 1000 ms trong foreground, kể cả khi IMU lỗi hoặc
 NO_DATA; không retry/gửi bù. Lịch dùng hiệu uint32 qua tick wrap; poll bị
@@ -88,9 +146,10 @@ làm mất tổng lịch sử. `rtt_data_full` không đồng nghĩa số mẫu 
 mất trên host. Khi chưa có snapshot làm baseline, chưa quy được chính xác
 counter tích lũy vào một khoảng CSV; các frame stats cũng có thể bị mất.
 
-## Receiver v1, type 3
+## Receiver cũ v1, type 3
 
-Payload 48 byte, frame 60 byte. Offset tính từ đầu payload:
+Viewer hỗ trợ bản ghi cũ dạng payload 48 byte, frame 60 byte. Offset tính từ
+đầu payload:
 
 | Offset | Kiểu       | Tên           | Ý nghĩa                                                    |
 | ------ | ---------- | ------------- | ---------------------------------------------------------- |
@@ -100,7 +159,7 @@ Payload 48 byte, frame 60 byte. Offset tính từ đầu payload:
 | 12     | uint32     | connected     | 0 hoặc 1; trạng thái freshness từ receiver                 |
 | 16     | uint16[16] | channels      | CH1–CH16, raw CRSF 11 bit (0–2047)                         |
 
-App thử gửi snapshot mỗi 50 ms (20 Hz, khoảng 1200 byte/s), độc lập IMU;
+Firmware cũ thử gửi mỗi 50 ms (20 Hz, khoảng 1200 B/s), độc lập IMU;
 không retry hoặc gửi bù. Đây là snapshot để quan sát, không ghi mọi frame RC.
 Sequence và timestamp tràn modulo 2^32. `connected` yêu cầu frame hợp lệ
 mới hơn 100 ms, và không có gián đoạn transport chưa phục hồi; không phải
@@ -116,11 +175,77 @@ Counter type 2 giữ schema cũ; RC làm tăng tổng `rtt_data_full` khi đầy
 không tăng `imu_tx_full` hoặc `stats_tx_full`. Gap sequence RC trong CSV
 cho biết snapshot bị thiếu, không đo số frame UART/radio mất.
 
+## Receiver gọn v1, type 8
+
+Payload 21 byte, frame 33 byte. Firmware thử gửi mỗi 50 ms (tối đa 660 B/s).
+Sequence, timestamp và điều kiện `connected` theo quy ước type 3.
+
+| Offset | Kiểu      | Trường          | Ý nghĩa                                                                               |
+| ------ | --------- | --------------- | ------------------------------------------------------------------------------------- |
+| 0      | uint32    | sequence        | Số lần thử gửi RC từ init, đầu = 1                                                    |
+| 4      | uint32    | uptime_ms       | HAL tick khi phát snapshot RC, ms                                                     |
+| 8      | uint32    | last_frame_ms   | HAL tick lúc nhận frame RC hợp lệ gần nhất, ms                                        |
+| 12     | uint16[4] | ch1_raw–ch4_raw | Roll, pitch, throttle, yaw theo cấu hình Jumper T20. Giá trị raw CRSF 11 bit (0–2047) |
+| 20     | uint8     | flags           | Kết nối và trạng thái cần gạt từ bộ giải mã lệnh RC                                   |
+
+| Bit | Ý nghĩa                                 |
+| --- | --------------------------------------- |
+| 0   | `connected`                             |
+| 1   | SA/CH5 HIGH, yêu cầu arm                |
+| 2   | SB/CH7 HIGH, yêu cầu calibration        |
+| 3–4 | SC/CH6: `0` LOW, `1` MIDDLE, `2` HIGH   |
+| 5–6 | SD/CH8: `0` OFF, `1` RECORD, `2` STREAM |
+| 7   | Dự trữ, bằng 0                          |
+
+Khi mất kết nối, firmware gửi `flags=0` và giữ bốn giá trị trục cuối. Khi
+khởi động, các trục bằng 0 cho đến khi nhận RC. Các bit cần gạt ghi yêu cầu
+từ tay điều khiển. Trạng thái arm thực tế và các lần failsafe được ghi qua
+log. CSV `receiver_compact_*.csv` giữ nguyên bốn kênh raw và byte `flags`.
+
+## Cấu hình v1, type 10
+
+Viewer gửi `GET_CONFIG` trên RTT down-channel 0 qua TCP 9090. Lệnh gồm byte
+ASCII `C` và một `uint32` little-endian làm ID yêu cầu. Khi đã chọn chế độ
+và khởi tạo xong, firmware thử trả lời trên CH1. Payload gồm lại ID yêu cầu
+4 byte rồi cấu hình 204 byte. Toàn frame dài 220 byte. Firmware chỉ gửi khi
+có yêu cầu. Viewer thử lại khi hết thời gian chờ và chỉ nhận bản trả lời
+có đúng ID cho segment đang kết nối.
+
+Offset dưới đây tính từ byte đầu của **204 byte cấu hình**. Số thực dùng
+IEEE-754 binary32 little-endian. Bộ mã hóa `app_config_encode()` dùng được
+cho nơi lưu trữ khác bằng cùng layout, không cần ID yêu cầu RTT.
+
+| Offset | Kiểu      | Nội dung                                                                                                                                                                                                               |
+| -----: | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|      0 | uint8     | Flags theo thứ tự bit 0–3. IMU đã init, calib từ flash, hiệu chỉnh accel đang bật, rate PID đã cấu hình.                                                                                                               |
+|      1 | uint8     | Chế độ `1` FLIGHT, `2` ESC_CALIB, `3` FLASH_EXPORT, `4` IMU_CALIB.                                                                                                                                                     |
+|      2 | uint8[2]  | `chip_id`, `axis_map`                                                                                                                                                                                                  |
+|      4 | uint16[4] | ODR accel và gyro theo Hz, full scale accel theo g và gyro theo °/s                                                                                                                                                    |
+|     12 | uint8[12] | Mã driver theo thứ tự ODR accel/gyro, range accel/gyro, bộ lọc BW/BWP accel/gyro, nguồn accel/gyro, hiệu năng lọc accel/gyro, hiệu năng nhiễu gyro và advanced power save. `255` là trường không áp dụng cho model đó. |
+|     24 | float[3]  | Bias gyro được áp dụng, FRD rad/s                                                                                                                                                                                      |
+|     36 | float[3]  | Bias accel, FRD m/s²                                                                                                                                                                                                   |
+|     48 | float[9]  | Ma trận hiệu chỉnh accel 3×3 theo hàng, không thứ nguyên                                                                                                                                                               |
+|     84 | uint32[2] | Chu kỳ rate tối thiểu và timeout IMU, µs                                                                                                                                                                               |
+|     92 | uint16[2] | Tần số danh định Mahony và attitude, Hz                                                                                                                                                                                |
+|     96 | float[6]  | `kp` Mahony theo 1/s, `ki` Mahony theo 1/s², `kp` attitude theo 1/s, tilt tối đa theo rad, hai ngưỡng trọng lực Mahony theo m/s²                                                                                       |
+|    120 | float[21] | 7 trường cho từng trục roll, pitch, yaw, theo thứ tự `kp` s/rad, `ki` 1/rad, `kd` s²/rad, giới hạn tích phân, giới hạn ngõ ra, hằng số lọc D theo s và rate tối đa theo rad/s                                          |
+
+Các mã BW/BWP lưu chế độ bộ lọc và oversampling theo model từ cấu hình
+driver đã áp dụng. Các mã này được lấy từ cấu hình driver khi init.
+Trong IMU_CALIB, snapshot mô tả mẫu đo hiệu chuẩn, với hiệu chỉnh accel
+và rate PID tắt. Nhóm IMU hoặc rate không có thì các byte tương ứng bằng 0
+và viewer hiển thị `null`.
+
+Khi ghi phiên, viewer lưu một dòng `config.jsonl` cho mỗi segment có cấu
+hình. Dòng chứa cùng `segment` với CSV, tên trường kèm đơn vị và SHA-256 của
+204 byte cấu hình để đối chiếu các phiên. ID yêu cầu không nằm trong hash.
+Fixture [CONFIG v1](fixtures/config_v1.hex) dùng chung cho C và viewer.
+
 ## Mã nguồn và kiểm thử
 
-- Encoder: `firmware/drone/App/Src/app_telemetry.c`; API `app_telemetry_write_imu()`, compile option `DRONE_ENABLE_TELEMETRY`.
+- Encoder `firmware/drone/App/Src/app_telemetry.c`, API `app_telemetry_queue_imu()` và `app_telemetry_process_imu()`, tùy chọn `DRONE_ENABLE_TELEMETRY`.
 - Framing và decoder: `tools/rtt/records.py`; không phụ thuộc UI.
-- Fixture chung: [IMU](fixtures/imu_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
+- Fixture chung [IMU raw gộp](fixtures/imu_batch_v1.hex), [IMU raw gá cũ](fixtures/imu_raw_v1.hex), [IMU raw FRD 400 Hz](fixtures/imu_raw_frd_v1.hex), [IMU raw FRD 800 Hz](fixtures/imu_raw_frd_800hz_v1.hex), [thống kê RTT](fixtures/rtt_stats_v1.hex), [RC](fixtures/rc_v1.hex).
   Test C so output byte-for-byte; Python kiểm tra framing, CRC và giá trị
   trường theo cùng fixture.
 
@@ -130,3 +255,126 @@ của type đã có mà giữ nguyên version. Sequence riêng theo từng loạ
 rộng. CH1 có thể xen kẽ các type khác tần số; host phân loại theo type.
 
 Chưa có boot ID; host không thể luôn phân biệt reset với tràn/gián đoạn dài.
+
+## Rate preview cũ v1 — type 5
+
+Viewer đọc dữ liệu Rate từ firmware cũ. Type 5 có payload 80 byte và toàn
+frame 92 byte. Số nguyên và IEEE-754 binary32 đều little-endian.
+
+| Offset payload | Kiểu       | Nội dung                                                        |
+| -------------- | ---------- | --------------------------------------------------------------- |
+| 0              | uint32     | Sequence lần gửi thử, gồm lần RTT từ chối; reset khi App init   |
+| 4              | uint32     | Timestamp đọc IMU cuối được controller tiêu thụ, µs modulo 2^32 |
+| 8              | uint32     | dt giữa hai mẫu controller tiêu thụ, µs                         |
+| 12             | uint32     | Flags: bit 0 configured, bit 1 valid; bit còn lại bằng 0        |
+| 16             | float32[3] | Setpoint roll/pitch/yaw body FRD, rad/s                         |
+| 28             | float32[3] | Gyro roll/pitch/yaw body FRD, rad/s                             |
+| 40             | float32[3] | Output PID chuẩn hóa, [-1,1]                                    |
+| 52             | float32[4] | M1–M4 lực đẩy chuẩn hóa, [0,1]                                  |
+| 68             | float32[3] | Residual requested-minus-achieved roll/pitch/yaw                |
+
+Giữa các bước rate, snapshot giữ kết quả trước đó. Khi reset do RC/IMU lỗi,
+động học, timestamp và output bằng 0, valid tắt nhưng configured giữ nguyên.
+Timestamp có thể lùi về 0 khi reset: host chỉ dùng sequence để nhận diện
+bản tin trùng/lùi. Tuổi snapshot trên GUI tính theo thời gian host nhận;
+không thay thế kiểm tra độ mới IMU trong firmware. Các lần mất bản tin thuộc
+counter DATA chung; chưa có counter drop riêng type 5.
+
+Fixture đọc dữ liệu cũ nằm tại `protocol/fixtures/rate_v1.hex`.
+
+## Rate preview gọn v1 — type 11
+
+Firmware gửi snapshot tối đa 20 Hz khi rate đã được cấu hình. Payload có
+54 byte và toàn frame có 66 byte, tương ứng tối đa 1.320 B/s. Sequence và
+timestamp dùng cùng quy ước type 5. Số nguyên và IEEE-754 binary32 đều
+little-endian.
+
+| Offset payload | Kiểu       | Nội dung                                                                      |
+| -------------: | ---------- | ----------------------------------------------------------------------------- |
+|              0 | uint32     | Sequence lần thử gửi                                                          |
+|              4 | uint32     | Timestamp đọc IMU cuối đã tiêu thụ, µs modulo 2^32                            |
+|              8 | uint16     | `dt_us`, từ 1 đến 20.000 nếu hợp lệ, bằng 0 khi kết quả chưa có hoặc đã reset |
+|             10 | float32[3] | Setpoint roll/pitch/yaw theo thân FRD, rad/s                                  |
+|             22 | float32[3] | Gyro roll/pitch/yaw theo thân FRD, rad/s                                      |
+|             34 | float32[3] | Output PID chuẩn hóa, từ −1 đến +1                                            |
+|             46 | uint16[4]  | M1–M4 Q15, giá trị từ 0 đến 32.768                                            |
+
+Khi `dt_us=0`, firmware ghi 0 cho setpoint, gyro, output và motor. Timestamp
+có thể chứa mốc IMU đầu tiên sau reset. Viewer khôi phục `flags=1` khi
+`dt_us=0`, hoặc `flags=3` khi `dt_us>0`, và ghi schema `rate_*.csv` hiện tại.
+Motor chuẩn hóa bằng giá trị Q15 chia cho 32.768.
+
+Viewer khôi phục residual theo các bước dưới đây. Quy tắc này cố định cho
+type 11 và sử dụng thứ tự motor M1–M4:
+
+1. `requested_q15` bằng output PID nhân 32.768 rồi làm tròn đến số nguyên
+   gần nhất. Khi nằm đúng giữa hai số nguyên, làm tròn ra xa 0.
+2. `achieved_q15` bằng tổng các giá trị motor nhân dấu tương ứng, rồi chia 2
+   và cắt phần lẻ về phía 0. Dấu theo từng trục là `[-1,-1,+1,+1]` cho roll,
+   `[+1,-1,-1,+1]` cho pitch và `[+1,-1,+1,-1]` cho yaw.
+3. `residual` bằng `(requested_q15 - achieved_q15) / 32768`.
+
+Fixture [Rate gọn](fixtures/rate_compact_v1.hex) dùng chung cho encoder C và
+decoder Python.
+
+## Tư thế Mahony v1, type 6
+
+Payload 24 byte, frame 36 byte, cùng header và CRC32 với các type khác.
+Firmware gửi tối đa 20 Hz trên CH1 khi ước lượng còn mới.
+
+| Offset | Kiểu        | Nội dung                                                                                 |
+| ------ | ----------- | ---------------------------------------------------------------------------------------- |
+| 0      | uint32      | Sequence riêng, tăng theo mỗi lần thử gửi                                                |
+| 4      | uint32      | Timestamp đọc mẫu dùng để ước lượng, µs modulo 2^32                                      |
+| 8      | float32 × 4 | Quaternion đơn vị theo thứ tự `w, x, y, z`, quay từ FRD sang NED với yaw ban đầu quy ước |
+
+Viewer đổi quaternion thành roll, pitch và yaw tương đối theo độ. CSV
+`attitude_*.csv` giữ nguyên quaternion và timestamp để xem lại.
+
+## Vòng điều khiển attitude v1, type 7 cũ
+
+Payload 56 byte, frame 68 byte, dùng cùng header và CRC32. Viewer đọc type 7
+từ firmware cũ. Firmware hiện tại dùng type 7 để giữ nguyên hai timestamp khi
+tuổi quaternion vượt giới hạn của type 12. Các trường số dùng little-endian.
+
+| Offset payload | Kiểu        | Nội dung                                                                        |
+| -------------- | ----------- | ------------------------------------------------------------------------------- |
+| 0              | uint32      | Sequence lần gửi thử                                                            |
+| 4              | uint32      | Timestamp MCU tại đầu lần tính, µs modulo 2^32                                  |
+| 8              | uint32      | Timestamp đọc mẫu dùng cho quaternion, µs modulo 2^32                           |
+| 12             | uint32      | Bit 0 báo phép tính hợp lệ, các bit còn lại bằng 0                              |
+| 16             | float32 × 4 | Quaternion FRD → NED đã dùng, theo thứ tự `w, x, y, z`                          |
+| 32             | float32 × 2 | Góc đặt Euler roll/pitch, rad                                                   |
+| 40             | float32 × 2 | Sai số nghiêng X/Y thân, bằng hai lần phần vector của quaternion sai số nghiêng |
+| 48             | float32 × 2 | Tốc độ góc lệnh X/Y thân trước giới hạn của vòng rate, rad/s                    |
+
+Hai trường cuối bằng 0 khi bit hợp lệ tắt. CSV giữ timestamp MCU và giá trị
+gốc. Viewer chuyển quaternion và góc đặt sang độ để so sánh trên cùng trục
+thời gian. Fixture [type 7](fixtures/attitude_control_v1.hex) dùng để kiểm tra
+khả năng đọc khung cũ.
+
+## Vòng điều khiển attitude gọn v1, type 12
+
+Payload 50 byte, frame 62 byte. App thử gửi trên CH1 sau cập nhật motor cho
+mỗi lần tính vòng attitude với quaternion còn mới ở SC MIDDLE/HIGH, danh
+định 100 Hz, tương ứng 6.200 B/s khi dùng toàn khung type 12. Sequence dùng
+chung với type 7 và tăng cả khi RTT đầy. Các trường số dùng little-endian.
+
+| Offset payload | Kiểu        | Nội dung                                                           |
+| -------------: | ----------- | ------------------------------------------------------------------ |
+|              0 | uint32      | Sequence lần thử gửi                                               |
+|              4 | uint32      | Timestamp MCU tại đầu lần tính, µs modulo 2^32                     |
+|              8 | uint16      | Bit 15 báo phép tính hợp lệ, bit 0–14 chứa tuổi quaternion theo µs |
+|             10 | float32 × 4 | Quaternion FRD → NED đã dùng, theo thứ tự `w, x, y, z`             |
+|             26 | float32 × 2 | Góc đặt Euler roll/pitch, rad                                      |
+|             34 | float32 × 2 | Sai số nghiêng X/Y thân, gấp đôi phần vector của quaternion sai số |
+|             42 | float32 × 2 | Tốc độ góc lệnh X/Y thân trước giới hạn của vòng rate, rad/s       |
+
+Tuổi quaternion bằng `(t_control_us - t_estimate_us) mod 2^32`. Firmware gửi
+type 7 nếu tuổi lớn hơn 32.767 µs. Hai trường sai số và tốc độ góc lệnh bằng
+0 khi bit hợp lệ tắt. Viewer khôi phục `t_estimate_us` bằng
+`(t_control_us - age_us) mod 2^32` và lấy `flags` từ bit 15. Schema CSV giữ
+nguyên, mỗi khung được giải mã độc lập.
+
+Fixture [Attitude Control gọn](fixtures/attitude_control_compact_v1.hex) dùng
+chung cho encoder C và decoder Python.

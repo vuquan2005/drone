@@ -25,11 +25,12 @@ report/
 - Dùng tên file tiếng Anh, chữ thường, không có khoảng trắng và đường dẫn tương đối.
 - Lưu nguồn trích dẫn trong `bibliography/references.bib`. Khi lấy nguồn từ [thư viện nghiên cứu](../docs/references/papers/references.bib), giữ nguyên khóa BibTeX và cập nhật thông tin nhất quán ở cả hai nơi.
 - Thay hết placeholder trước khi nộp.
-- Chạy `make clean` từ gốc repository để xóa `report/build/` (gồm PDF) cùng toàn bộ build và cache CMake của firmware. Build lại báo cáo bằng LaTeX Workshop hoặc `make report`.
 
 ## Văn phong và mức độ chi tiết
 
 - Viết thành nội dung có thể đưa trực tiếp vào báo cáo: nêu vấn đề, trình bày cách giải quyết, tính toán và kết luận lựa chọn.
+- Giải thích thuật ngữ và chữ viết tắt khi xuất hiện lần đầu. Khi giới thiệu công thức hoặc chỉ số, nêu ý nghĩa của đại lượng, ký hiệu, đơn vị và quy ước cần để đọc kết quả.
+- Khi chỉnh văn phong hoặc dịch, giữ nguyên ý kỹ thuật, số liệu, công thức và trích dẫn. Nếu thiếu số liệu hoặc nguồn để hỗ trợ kết luận, chỉ rõ chỗ cần bổ sung khi bàn giao.
 - Dùng đoạn văn liên kết để giải thích; dùng bảng cho thông số và so sánh, hình cho cấu tạo và sơ đồ.
 - Không đưa lịch sử trao đổi, phương án đã bỏ, lời nhắc cho người viết hoặc hướng dẫn thao tác vào phần nội dung chính.
 - Tránh giọng ghi chú kỹ thuật: không liên tục viết “cần kiểm tra”, “chưa xác nhận”, “không được xem là…”. Nêu giới hạn có ảnh hưởng đến kết luận một lần, tại đúng chỗ.
@@ -53,6 +54,13 @@ report/
 - Giữ các file riêng theo cấu trúc hiện có; dùng `\input`/`\include` thay vì dồn mọi nội dung vào `main.tex`.
 - Tôn trọng thay đổi của người dùng và các file họ đã thêm hoặc xóa. Chỉ sửa trong phạm vi công việc hiện tại.
 
+## Đối chiếu nội dung giữa các chương
+
+- Khi viết hoặc sửa một mục, đọc các phần mà mục đó dựa vào. Đối chiếu thuật ngữ tiếng Việt và tiếng Anh, chữ viết tắt, ký hiệu, hệ trục, dấu và đơn vị giữa nội dung, công thức, hình và bảng.
+- Trong Chương 3, giải thích các lựa chọn chính theo mạch yêu cầu, căn cứ tính chọn và quyết định thiết kế.
+- Phân biệt thông số từ datasheet, giá trị tính toán và số đo thực nghiệm. Trong Chương 4, trình bày rõ điều kiện thử, quan sát và số đo. Khi so sánh kết quả, ghi rõ mốc so sánh và chỉ số. Giới hạn kết luận theo điều kiện đã kiểm chứng, chẳng hạn điều kiện thử trên gimbal. Dùng dữ liệu bay để hỗ trợ nhận định về bay.
+- Trong Chương 5, chỉ tổng hợp kết quả đã có căn cứ ở Chương 4. Khi rà nhiều nhận định cùng lúc, có thể dùng bảng Nhận định · Căn cứ · Phạm vi trong phần nhận xét biên tập.
+
 ## Kiểm tra trước khi bàn giao
 
 - Với thay đổi nội dung LaTeX, bảng, hình hoặc định dạng, biên dịch từ thư mục `report/` bằng `latexmk main.tex`.
@@ -61,7 +69,7 @@ report/
 - Không chỉ dựa vào việc biên dịch thành công. Không để tham chiếu hoặc trích dẫn chưa xác định trong phần vừa sửa.
 - Bản PDF sinh tại `build/main.pdf`; giữ file build trong thư mục đang được Git bỏ qua.
 - Nếu bản Markdown đối chiếu vẫn còn trong workspace và thuộc phạm vi công việc, đồng bộ với nội dung báo cáo. Không tự tạo lại file người dùng đã xóa.
-- Trước commit, xem `git status`, `git diff` và chạy `git diff --check`; chỉ đưa vào commit các thay đổi thuộc công việc được yêu cầu.
+- Trước khi commit, xem `git status` và `git diff` để rà thay đổi chưa stage. Sau khi stage, xem `git diff --cached` và chạy `git diff --cached --check`. Chỉ đưa vào commit các thay đổi thuộc phạm vi công việc.
 
 ## Biên dịch
 
@@ -73,4 +81,4 @@ make report
 
 Lệnh cần latexmk, XeLaTeX và BibTeX; cấu hình dùng chung nằm trong `report/latexmkrc`. Có thể build trực tiếp bằng `latexmk main.tex` khi đang ở thư mục `report/`.
 
-Kết quả: `report/build/main.pdf`. Trong VS Code, mở `report/main.tex` và chạy **LaTeX Workshop: Build LaTeX project**. Trên Overleaf, tải thư mục `report/` lên và chọn compiler **XeLaTeX**.
+Trong VS Code, mở `report/main.tex` và chạy **LaTeX Workshop: Build LaTeX project**. Trên Overleaf, tải thư mục `report/` lên và chọn compiler **XeLaTeX**.

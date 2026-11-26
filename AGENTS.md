@@ -46,7 +46,7 @@ Index gốc dành cho mã nguồn chính. Để tra cứu mã tham khảo (ardup
 
 ## Git
 
-Chạy lệnh từ gốc repository, tuân theo yêu cầu của người dùng và giới hạn quyền hiện hành.
+Chạy lệnh từ gốc repository, tuân theo yêu cầu của người dùng và giới hạn quyền hiện hành. Nếu người dùng có yêu cầu không hợp lý về quản lý mã nguồn Git, giải thích rõ thay đổi và ảnh hưởng của nó trước khi thực hiện.
 
 - Kiểm tra `git status --short` trước khi thao tác; phân biệt thay đổi có sẵn với thay đổi của công việc hiện tại.
 - Xem diff và nội dung tệp mới trước khi stage; chỉ stage thay đổi thuộc phạm vi được yêu cầu.
@@ -68,8 +68,14 @@ Chạy lệnh từ gốc repository, tuân theo yêu cầu của người dùng 
 - Khi được yêu cầu merge PR, mặc định squash and merge, lấy tiêu đề PR theo Conventional Commits làm tiêu đề commit squash. Chỉ dùng merge commit khi người dùng yêu cầu giữ lịch sử từng commit.
 - Sau merge, mặc định xóa branch công việc ở local và remote; giữ lại nếu người dùng yêu cầu hoặc đó là branch lâu dài. Trước khi xóa, xác nhận PR đã merge và cả branch local lẫn remote không có commit ngoài PR; sau squash, không chỉ dựa vào dấu đã merge của Git. Không tự xóa branch khác.
 
+### Mở PR
+
+- Chỉ mở PR khi người dùng yêu cầu. Trước khi push để mở PR, xác định phạm vi công việc, nhánh nguồn và nhánh đích. Xem danh sách commit và diff từ điểm chung với nhánh đích để kiểm tra những gì GitHub sẽ hiển thị trong PR.
+- Tìm PR đang mở, kể cả PR nháp, theo nhánh nguồn, issue liên quan và phạm vi công việc. Khi có PR liên quan, đọc mô tả và diff để xác định phần trùng và phần mới. Một nhánh khác hoặc một commit mới vẫn có thể chứa công việc đã có trong PR đang mở.
+- Nếu yêu cầu rõ ràng là tiếp tục công việc của một PR hiện có, dùng PR đó khi đã được phép cập nhật nhánh nguồn. Nếu yêu cầu mở PR mới nhưng phát hiện phạm vi chồng lấn, báo số PR, phần trùng và phần mới rồi xác nhận với người dùng họ muốn cập nhật PR hiện có, thay thế nó hay mở PR riêng cho phần mới. Nếu PR mới thay thế PR cũ, ghi rõ quan hệ trong mô tả và để xuất cách xử lý với PR cũ.
+
 ### Đồng bộ với main
 
-- Định kỳ chạy `git fetch origin` và kiểm tra commit còn thiếu so với `origin/main`.
+- Mỗi phiên làm việc mới hoặc khởi động lại chạy `git fetch origin` và kiểm tra commit còn thiếu.
 - Nếu còn thiếu commit, nhắc người dùng đồng bộ: gợi ý `git rebase origin/main` cho nhánh cá nhân hoặc `git merge origin/main` cho nhánh nhiều người cùng làm.
 - Chỉ đồng bộ khi người dùng cho phép; kiểm tra working tree trước và giữ nguyên thay đổi chưa commit ngoài phạm vi công việc.

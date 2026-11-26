@@ -1016,6 +1016,229 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "DA_Drone:MCU-055_BNO055"
+			(pin_names
+				(offset 1.016)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board no)
+			(in_pos_files no)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "U"
+				(at 0 20.32 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "MCU-055 (BNO055)"
+				(at 0 16.51 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" "https://lkcg.vn/module-gia-toc-9-truc-mcu-055-mcu-9dof-bno055"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "MCU-055 BNO055 9-axis IMU module, 8-pin header in PCB silkscreen order."
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "MCU-055_BNO055_0_1"
+				(rectangle
+					(start -15.24 11.43)
+					(end 15.24 -11.43)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type background)
+					)
+				)
+			)
+			(symbol "MCU-055_BNO055_1_1"
+				(pin power_in line
+					(at -20.32 8.89 0)
+					(length 5.08)
+					(name "VCC"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin power_in line
+					(at -20.32 6.35 0)
+					(length 5.08)
+					(name "GND"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -20.32 3.81 0)
+					(length 5.08)
+					(name "ATX/SDA"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin bidirectional line
+					(at -20.32 1.27 0)
+					(length 5.08)
+					(name "LRX/SCL"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "4"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -20.32 -1.27 0)
+					(length 5.08)
+					(name "I2C/COM3"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "5"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin output line
+					(at -20.32 -3.81 0)
+					(length 5.08)
+					(name "INT"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "6"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -20.32 -6.35 0)
+					(length 5.08)
+					(name "RES"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "7"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+				(pin input line
+					(at -20.32 -8.89 0)
+					(length 5.08)
+					(name "BOOT"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+					(number "8"
+						(effects
+							(font
+								(size 1.016 1.016)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "DA_Drone:SB_Nano_Receiver"
 			(pin_names
 				(offset 1.016)
@@ -2976,6 +3199,10 @@
 		(uuid "4aaa5d19-0242-50cf-a5d2-24be8ef13de9")
 	)
 	(no_connect
+		(at 110.49 209.55)
+		(uuid "4f80937f-e737-4137-9c34-5629aca54f7d")
+	)
+	(no_connect
 		(at 287.02 57.15)
 		(uuid "510aa2ad-3d39-4451-97d4-3a89bc5c8c1e")
 	)
@@ -2996,6 +3223,10 @@
 		(uuid "5d16bcaf-aa29-5655-87ea-04f6a2f951a4")
 	)
 	(no_connect
+		(at 110.49 212.09)
+		(uuid "5d8167e9-e3a2-4145-a9c9-aab112bcc8e3")
+	)
+	(no_connect
 		(at 88.9 144.78)
 		(uuid "6191b04a-ce17-56e3-8c64-e70ddad01705")
 	)
@@ -3014,10 +3245,6 @@
 	(no_connect
 		(at 162.56 66.04)
 		(uuid "69838453-f0b2-51b3-aeeb-52a73d478829")
-	)
-	(no_connect
-		(at 88.9 104.14)
-		(uuid "69edce70-12dd-57ca-9aee-0a9c4c4fe79a")
 	)
 	(no_connect
 		(at 162.56 104.14)
@@ -3042,10 +3269,6 @@
 	(no_connect
 		(at 162.56 101.6)
 		(uuid "79b5e39b-bb74-5cab-97a4-8b3e0d837d8f")
-	)
-	(no_connect
-		(at 88.9 106.68)
-		(uuid "7b4a0bab-7881-5ade-83c8-e978b20a785f")
 	)
 	(no_connect
 		(at 162.56 96.52)
@@ -3106,6 +3329,10 @@
 	(no_connect
 		(at 88.9 157.48)
 		(uuid "aa2751b1-8353-5f30-be2b-2a6379e1d6a2")
+	)
+	(no_connect
+		(at 110.49 207.01)
+		(uuid "af557fbb-c9fa-401a-b83a-7289b3f7c9ff")
 	)
 	(no_connect
 		(at 162.56 119.38)
@@ -3208,6 +3435,10 @@
 		(uuid "fe61224b-3e15-524c-96e4-488fb934990f")
 	)
 	(no_connect
+		(at 110.49 204.47)
+		(uuid "fea84549-4c48-49e0-88a5-7c844e087f26")
+	)
+	(no_connect
 		(at 88.9 58.42)
 		(uuid "ff760b16-4fb3-5340-ae75-ed58671c4cc2")
 	)
@@ -3253,6 +3484,16 @@
 	)
 	(wire
 		(pts
+			(xy 88.9 106.68) (xy 82.55 106.68)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "22d32d61-92c5-4fe2-9561-72afb356bfbf")
+	)
+	(wire
+		(pts
 			(xy 88.9 48.26) (xy 82.55 48.26)
 		)
 		(stroke
@@ -3290,6 +3531,16 @@
 			(type default)
 		)
 		(uuid "2d8ce17d-e8d9-4a5b-81b6-273f18796042")
+	)
+	(wire
+		(pts
+			(xy 88.9 104.14) (xy 82.55 104.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "308b1fb3-7633-493c-ac87-d15e605b6e0c")
 	)
 	(wire
 		(pts
@@ -3373,6 +3624,16 @@
 	)
 	(wire
 		(pts
+			(xy 110.49 201.93) (xy 104.14 201.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4753ea37-e44c-4e52-ac68-57961771b416")
+	)
+	(wire
+		(pts
 			(xy 44.45 212.09) (xy 39.37 212.09)
 		)
 		(stroke
@@ -3430,6 +3691,16 @@
 			(type default)
 		)
 		(uuid "591878a6-b021-495b-abc3-d0527d584540")
+	)
+	(wire
+		(pts
+			(xy 110.49 196.85) (xy 104.14 196.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5c24ecc4-b3c1-479a-aea6-a1be29d09203")
 	)
 	(wire
 		(pts
@@ -3533,6 +3804,16 @@
 	)
 	(wire
 		(pts
+			(xy 110.49 199.39) (xy 104.14 199.39)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "853fc8e5-6a16-4a45-a6d4-abc93b8902ff")
+	)
+	(wire
+		(pts
 			(xy 345.44 86.36) (xy 345.44 81.28)
 		)
 		(stroke
@@ -3570,6 +3851,16 @@
 			(type default)
 		)
 		(uuid "9287ab1c-c435-4fb6-93a0-cac4654add80")
+	)
+	(wire
+		(pts
+			(xy 110.49 194.31) (xy 104.14 194.31)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "92f517e7-6cbc-4406-99f7-903f1d37d4a5")
 	)
 	(wire
 		(pts
@@ -4001,6 +4292,16 @@
 		)
 		(uuid "3eaef88d-c75d-4f0a-b43d-1b41be545ec2")
 	)
+	(label "+3V3"
+		(at 104.14 194.31 180)
+		(effects
+			(font
+				(size 1 1)
+			)
+			(justify right bottom)
+		)
+		(uuid "3eb049cc-ba25-4025-95df-072b9418718e")
+	)
 	(label "VBAT_LIPO"
 		(at 281.94 78.74 180)
 		(effects
@@ -4042,6 +4343,16 @@
 		(uuid "528646ec-cfd3-423b-a781-553bfdbeb014")
 	)
 	(label "GND"
+		(at 104.14 196.85 180)
+		(effects
+			(font
+				(size 1 1)
+			)
+			(justify right bottom)
+		)
+		(uuid "54b5d601-c0cb-4522-b470-d7473702d2de")
+	)
+	(label "GND"
 		(at 39.37 199.39 180)
 		(effects
 			(font
@@ -4050,6 +4361,16 @@
 			(justify right bottom)
 		)
 		(uuid "55b2b09f-566d-4d04-b747-a4c9495c00d2")
+	)
+	(label "I2C2_SDA"
+		(at 82.55 106.68 180)
+		(effects
+			(font
+				(size 1 1)
+			)
+			(justify right bottom)
+		)
+		(uuid "60133d8b-bf20-4044-a713-507a867232c1")
 	)
 	(label "GND"
 		(at 278.13 104.14 0)
@@ -4201,6 +4522,16 @@
 		)
 		(uuid "af70152b-9ec7-447d-b30d-b90f3228c988")
 	)
+	(label "I2C2_SCL"
+		(at 82.55 104.14 180)
+		(effects
+			(font
+				(size 1 1)
+			)
+			(justify right bottom)
+		)
+		(uuid "b73f3d19-ef8b-4b31-be4f-a89889621348")
+	)
 	(label "SPI1_MOSI"
 		(at 82.55 53.34 180)
 		(effects
@@ -4291,6 +4622,16 @@
 		)
 		(uuid "e94a4564-ff44-4fb0-b240-464bd7909c02")
 	)
+	(label "I2C2_SCL"
+		(at 104.14 201.93 180)
+		(effects
+			(font
+				(size 1 1)
+			)
+			(justify right bottom)
+		)
+		(uuid "ee11a1b9-a674-4897-84b9-e2cdcd6ccf3e")
+	)
 	(label "GND"
 		(at 281.94 167.64 180)
 		(effects
@@ -4310,6 +4651,16 @@
 			(justify right bottom)
 		)
 		(uuid "f254df0d-7c80-440a-90eb-eb14e57ca731")
+	)
+	(label "I2C2_SDA"
+		(at 104.14 199.39 180)
+		(effects
+			(font
+				(size 1 1)
+			)
+			(justify right bottom)
+		)
+		(uuid "f619bf04-4751-4a6d-a99e-c520adb6818c")
 	)
 	(label "SPI1_SCK"
 		(at 39.37 204.47 180)
@@ -4342,7 +4693,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "021a815c-8ca4-4075-a90e-d13cfc23b71f")
-		(property "Reference" "U6"
+		(property "Reference" "U7"
 			(at 307.34 175.26 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4422,7 +4773,7 @@
 		(instances
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "U6")
+					(reference "U7")
 					(unit 1)
 				)
 			)
@@ -4880,7 +5231,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "408091bd-6d95-480b-8419-e4330cbfe4f4")
-		(property "Reference" "U3"
+		(property "Reference" "U4"
 			(at 307.34 49.53 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4960,6 +5311,103 @@
 		(instances
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
+					(reference "U4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "DA_Drone:MCU-055_BNO055")
+		(at 130.81 203.2 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board no)
+		(in_pos_files no)
+		(dnp no)
+		(uuid "5c6a25af-495e-4ac4-bb4a-84a73f84f689")
+		(property "Reference" "U3"
+			(at 130.81 182.88 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.5 1.5)
+				)
+			)
+		)
+		(property "Value" "MCU-055 (BNO055)"
+			(at 130.81 186.69 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 2 2)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 130.81 203.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "https://lkcg.vn/module-gia-toc-9-truc-mcu-055-mcu-9dof-bno055"
+			(at 130.81 203.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "MCU-055 BNO055 9-axis IMU module, 8-pin header in PCB silkscreen order."
+			(at 130.81 203.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "dcdba1ca-0650-4ab5-9b02-5ffd6cd3bdea")
+		)
+		(pin "2"
+			(uuid "84f17f3e-7f4b-4e82-9869-8ed82411e20d")
+		)
+		(pin "3"
+			(uuid "bcfafab3-04e3-43b2-b989-362e45e97be1")
+		)
+		(pin "4"
+			(uuid "595009a5-66ae-45e6-921d-658dd27fc3d6")
+		)
+		(pin "5"
+			(uuid "42b023aa-5839-4e4f-a336-24fa17d241a8")
+		)
+		(pin "6"
+			(uuid "4c07e668-5add-4320-b268-e7837668d9be")
+		)
+		(pin "7"
+			(uuid "26cb279c-ddeb-4f7d-b5c7-6eac247a66d1")
+		)
+		(pin "8"
+			(uuid "bc61c2fc-4614-4622-88ef-da776687cb21")
+		)
+		(instances
+			(project "Quadrotor_Wiring"
+				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
 					(reference "U3")
 					(unit 1)
 				)
@@ -4977,7 +5425,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "6dd08b50-0b64-4da1-a89e-4feb1dbb8bda")
-		(property "Reference" "U5"
+		(property "Reference" "U6"
 			(at 307.34 133.35 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5057,7 +5505,7 @@
 		(instances
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "U5")
+					(reference "U6")
 					(unit 1)
 				)
 			)
@@ -5814,7 +6262,7 @@
 		(in_pos_files yes)
 		(dnp no)
 		(uuid "e42e561d-c3ec-4519-90fd-9f3311b0ae31")
-		(property "Reference" "U4"
+		(property "Reference" "U5"
 			(at 307.34 92.71 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -5894,7 +6342,7 @@
 		(instances
 			(project "Quadrotor_Wiring"
 				(path "/7d74e32f-d235-515c-b45d-40f9d7ead055"
-					(reference "U4")
+					(reference "U5")
 					(unit 1)
 				)
 			)

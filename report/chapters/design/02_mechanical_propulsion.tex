@@ -1,0 +1,174 @@
+% !TEX root = ../../main.tex
+\section{Thiết kế cơ khí và tính chọn hệ động lực}
+\label{sec:design-mechanical}
+
+\subsection{Lựa chọn khung và bố trí các cụm thiết bị}
+
+Khung F450 gồm hai tấm trung tâm và bốn tay đòn, như \fref{fig:design-f450-frame}. Kết cấu này cung cấp vị trí lắp động cơ ở bốn đầu tay đòn và không gian bố trí bo điều khiển, pin cùng các module ở giữa khung. Các tay đòn khác màu hỗ trợ nhận biết hướng thân khi lắp ráp và quan sát.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.58\linewidth]{figures/ch03/f450-frame.png}
+	\caption{Khung F450 với hai tấm trung tâm và bốn tay đòn.}
+	\label{fig:design-f450-frame}
+\end{figure}
+
+Khung F450 được sử dụng theo cấu hình chữ X, với bốn cụm động cơ đặt tại đầu các tay đòn. Kích thước cơ sở của dòng khung này là khoảng cách đường chéo giữa hai trục động cơ đối diện $D=450$ mm~\cite{djiF450Manual}. Lấy tâm hình học của khung làm vị trí trọng tâm danh định, tay đòn và hình chiếu lên các trục thân là
+\begin{equation}
+	l=\frac{D}{2}=0{,}225\ \mathrm m,\qquad
+	a=\frac{l}{\sqrt{2}}\approx0{,}1591\ \mathrm m.
+	\label{eq:design-arm-dimensions}
+\end{equation}
+Giá trị $a$ được dùng trong phép phân bổ mômen roll và pitch. Khi vị trí trọng tâm thay đổi do cách lắp pin hoặc thiết bị, các tọa độ rôto được xác định lại tương đối với trọng tâm đó.
+
+Khoảng cách giữa hai trục động cơ liền kề của cấu hình vuông là $d=D/\sqrt{2}\approx318{,}2$ mm. Cánh quạt 9 inch có đường kính $d_p=9\times25{,}4=228{,}6$ mm. Khoảng hở danh định giữa hai đường tròn quét liền kề bằng
+\begin{equation}
+	h=d-d_p\approx89{,}6\ \mathrm{mm}.
+	\label{eq:design-propeller-clearance}
+\end{equation}
+Kết quả cho thấy đường kính cánh được chọn đáp ứng điều kiện không chồng lấn vùng quét trong mặt phẳng bố trí danh định. Khoảng hở này được xác định theo hình học, chưa xét biến dạng tay đòn và độ võng của cánh khi quay.
+
+Pin được bố trí gần tâm khung và có khả năng điều chỉnh vị trí để giảm lệch trọng tâm. Bo điều khiển và IMU đặt tại vùng trung tâm; hướng lắp IMU được cố định để duy trì phép chuyển hệ trục. ESC bố trí trên các tay đòn nhằm rút ngắn dây nối động cơ và phân bố tương đối đều khối lượng. Hai cặp cánh có chiều quay đối nhau, cùng tạo lực đẩy hướng lên; thứ tự rôto giữ theo \fref{fig:background-layout}.
+
+Khối lượng thiết kế được tổng hợp từ các nhóm thiết bị:
+\begin{equation}
+	m=m_{\mathrm{khung}}+4m_{\mathrm{dc}}+4m_{\mathrm{canh}}
+	+4m_{\mathrm{ESC}}+m_{\mathrm{pin}}+m_{\mathrm{dt}}
+	+m_{\mathrm{phu}},
+	\label{eq:design-mass-budget}
+\end{equation}
+trong đó $m_{\mathrm{dt}}$ gồm bo xử lý, IMU, bộ thu và mạch nguồn; $m_{\mathrm{phu}}$ gồm dây dẫn, giắc nối, đế và chi tiết gá. Toàn bộ khối lượng trong phép tính dùng kg. Cách tổng hợp này tránh bỏ sót phần dây và chi tiết lắp ghép khi tính lực đẩy.
+
+Với các cụm thiết bị có khối lượng $m_k$ và vị trí tâm khối lượng $\mathbf r_k$, vị trí trọng tâm toàn hệ được tính bằng $\mathbf r_G=\sum_k m_k\mathbf r_k/m$. Mômen quán tính quanh trục roll được xác định theo định lý trục song song:
+\begin{equation}
+	J_x=\sum_k\left[J_{x,k}^{(c)}
+		+m_k\left((y_k-y_G)^2+(z_k-z_G)^2\right)\right].
+	\label{eq:design-inertia}
+\end{equation}
+Biểu thức cho $J_y$ được lập tương tự bằng các khoảng cách theo $x$ và $z$. Tham số quán tính được lấy từ mô hình khối lượng hoặc phép đo tương ứng với cấu hình đã lắp, làm đầu vào cho thiết kế bộ điều khiển.
+
+\subsection{Tính chọn động cơ, cánh quạt và ESC}
+
+Để cân bằng lực ở tư thế nằm ngang, lực đẩy trung bình của mỗi rôto bằng $f_h=mg/4$. Ngoài lực đẩy nền, hệ động lực cần dự trữ để tạo chênh lệch lực đẩy khi điều chỉnh tư thế. Chọn tỉ số lực đẩy cực đại trên trọng lượng làm tiêu chí thiết kế ban đầu $\lambda_T=2$, yêu cầu đối với mỗi cụm là
+\begin{equation}
+	f_{\max}\geq\frac{\lambda_T mg}{4}
+	=\frac{mg}{2},\qquad g=9{,}80665\ \mathrm{m/s^2}.
+	\label{eq:design-thrust-requirement}
+\end{equation}
+Với tiêu chí này, lực đẩy cần thiết để cân bằng lực không vượt quá một nửa lực đẩy cực đại của cụm, xét trên mô hình bốn rôto giống nhau. Tỉ lệ này là tỉ lệ lực đẩy, không đồng nghĩa với mức 50\% độ rộng xung hoặc 50\% lệnh ga.
+
+Động cơ của đề tài là loại không chổi than A2212/10T 1400KV, kết hợp cánh quạt đường kính 9 inch. Động cơ và ESC được minh họa trong \fref{fig:design-motor-esc}. ESC nhận nguồn một chiều từ pin và chuyển mạch ba pha để điều khiển động cơ; bộ xử lý chỉ gửi lệnh điều khiển đến ESC qua đường tín hiệu PWM.
+
+\begin{figure}[htbp]
+	\centering
+	\begin{subfigure}[t]{0.46\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{figures/ch03/a2212-1400kv-motor.png}
+		\caption{Động cơ A2212/10T 1400KV.}
+		\label{fig:design-a2212-motor}
+	\end{subfigure}
+	\hfill
+	\begin{subfigure}[t]{0.46\linewidth}
+		\centering
+		\includegraphics[width=\linewidth]{figures/ch03/esc-30a.png}
+		\caption{Bộ điều tốc ESC ghi nhãn 30 A.}
+		\label{fig:design-esc-30a}
+	\end{subfigure}
+	\caption{Các phần tử chính của một nhánh truyền động.}
+	\label{fig:design-motor-esc}
+\end{figure}
+
+Hằng số tốc độ $K_V=1400$ vòng/phút/V cho giá trị tham chiếu tốc độ không tải tại $V_{\mathrm{ref}}=11{,}2$ V:
+\begin{equation}
+	n_0\approx K_V\,V_{\mathrm{ref}}
+	=15680\ \text{vòng/phút}.
+	\label{eq:design-motor-no-load-speed}
+\end{equation}
+Khi mang cánh, tốc độ phụ thuộc mômen tải, tổn hao và điện áp dưới tải. Bước cánh cũng ảnh hưởng đến dòng và lực đẩy; đường kính 9 inch cùng giá trị $K_V$ chưa đủ để suy ra $f_{\max}$. Vì vậy, điều kiện trong~\eqref{eq:design-thrust-requirement} được đối chiếu với đặc tính lực đẩy của đúng tổ hợp động cơ, cánh và nguồn.
+
+Mỗi động cơ dùng một ESC có dòng ghi nhãn 30 A. Chọn hệ số dự trữ dòng $s_I=1{,}25$, điều kiện tính chọn theo dòng là
+\begin{equation}
+	I_{\mathrm{ESC,cont}}\geq s_I I_{\mathrm{dc},\max}.
+	\label{eq:design-esc-current}
+\end{equation}
+Nếu 30 A là dòng liên tục được nhà sản xuất cho phép trong điều kiện sử dụng, tiêu chí trên tương ứng $I_{\mathrm{dc},\max}\leq24$ A. Đây là giới hạn từ phía ESC; giới hạn nhiệt và dòng cho phép của động cơ có thể thấp hơn. Mức dòng vận hành được chọn theo phần tử có giới hạn nhỏ nhất trong tổ hợp.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Cấu hình cơ khí và hệ động lực sử dụng trong thiết kế.}
+	\label{tab:design-propulsion}
+	\begin{tabularx}{\linewidth}{|C{3.2cm}|Y|}
+		\hline
+		\textbf{Thành phần} & \textbf{Lựa chọn và thông số dùng tính toán}                       \\
+		\hline
+		Khung               & F450, cấu hình chữ X; đường chéo danh định 450 mm                  \\
+		\hline
+		Động cơ             & 4 động cơ A2212/10T 1400KV                                         \\
+		\hline
+		Cánh quạt           & 4 cánh đường kính 9 inch, gồm hai cặp chiều quay đối nhau          \\
+		\hline
+		ESC                 & 4 ESC ghi nhãn 30 A; giao tiếp điều khiển PWM                      \\
+		\hline
+		Pin                 & LiPo 3S1P, 5200 mAh; danh định 11,1 V; tham chiếu tính toán 11,2 V \\
+		\hline
+		Hình học phân bổ    & $l=0{,}225$ m; $a\approx0{,}1591$ m                                \\
+		\hline
+		Dự trữ lực đẩy      & Tiêu chí ban đầu $\lambda_T=2$                                     \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+\subsection{Tính toán nguồn pin và khả năng cấp dòng}
+
+Pin LiPo trong \fref{fig:design-lipo-battery} cấp năng lượng cho cả hệ động lực và điện tử. Nhãn pin thể hiện cấu hình 3S1P, gồm ba cell nối tiếp trong một nhánh, với dung lượng $Q_b=5200$ mAh $=5{,}2$ Ah. Các thông số đọc từ nhãn được tổng hợp trong \tref{tab:design-battery-specifications}.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[trim=0 40bp 0 55bp,clip,width=0.66\linewidth]{figures/ch03/lipo-3s-5200mah.png}
+	\caption{Pin LiPo 3S1P dung lượng 5200 mAh dùng làm nguồn chính.}
+	\label{fig:design-lipo-battery}
+\end{figure}
+
+\begin{table}[htbp]
+	\centering
+	\caption{Thông số ghi trên nhãn pin LiPo.}
+	\label{tab:design-battery-specifications}
+	\begin{tabularx}{\linewidth}{|C{4.2cm}|Y|}
+		\hline
+		\textbf{Thông số}    & \textbf{Giá trị}  \\
+		\hline
+		Cấu hình cell        & 3S1P              \\
+		\hline
+		Điện áp danh định    & 11,1 V            \\
+		\hline
+		Dung lượng           & 5200 mAh (5,2 Ah) \\
+		\hline
+		Năng lượng danh định & 57,72 Wh          \\
+		\hline
+		Hệ số xả ghi nhãn    & 90C               \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Năng lượng danh định được đối chiếu theo $E_{b,\mathrm{nom}}=V_{b,\mathrm{nom}}Q_b=11{,}1\times5{,}2=57{,}72$ Wh, phù hợp với nhãn pin. Hệ số 90C là thông tin ghi nhãn; ảnh không phân biệt mức xả liên tục và mức xả ngắn hạn, do đó chưa dùng giá trị này để xác lập dòng làm việc liên tục của hệ thống.
+
+Dòng tổng được xác định từ bốn nhánh ESC và nhánh hạ áp. Với hiệu suất nhánh nguồn $\eta_{\mathrm{dc}}$, công suất điện tử $P_{\mathrm{dt}}$ và điện áp pin $V_b$, dòng yêu cầu xấp xỉ
+\begin{equation}
+	I_b=\sum_{i=1}^{4}I_{\mathrm{ESC},i}
+	+\frac{P_{\mathrm{dt}}}{\eta_{\mathrm{dc}}V_b}.
+	\label{eq:design-battery-current}
+\end{equation}
+Dòng $I_{\mathrm{ESC},i}$ trong công thức là dòng lấy từ pin của nhánh ESC, được xác định theo cùng điều kiện tải. Dòng pha động cơ không được dùng thay trực tiếp cho dòng nhánh này.
+
+Gọi $C_b$ là hệ số xả liên tục của pin. Khả năng cấp dòng theo thông số pin là $I_{b,\mathrm{rated}}=C_b\,Q_b$, với $Q_b$ tính bằng Ah. Khi dùng 24 A cho mỗi nhánh làm trường hợp tính chọn phía ESC, tổng bốn nhánh bằng 96 A, tương ứng yêu cầu $C_b\geq96/5{,}2\approx18{,}5$ trước khi cộng nhánh điện tử và dự trữ nguồn. Con số 96 A là trường hợp tính toán theo giới hạn đã chọn, không phải dòng tiêu thụ đo được của hệ thống.
+
+Thời gian cấp năng lượng phụ thuộc dòng trung bình $I_{\mathrm{avg}}$. Với tỉ phần dung lượng khai thác $\eta_Q$, ước lượng theo dung lượng là
+\begin{equation}
+	t_{\mathrm{pin}}\approx
+	\frac{60\eta_Q Q_b}{I_{\mathrm{avg}}}
+	=\frac{312\eta_Q}{I_{\mathrm{avg}}}\ \text{phút}.
+	\label{eq:design-battery-duration}
+\end{equation}
+Ví dụ, nếu chọn $\eta_Q=0{,}8$ để dự trữ dung lượng thì hệ số trong tử số bằng $249{,}6$. Thời gian cụ thể được xác định từ dòng trung bình của điều kiện làm việc, đồng thời chịu ảnh hưởng của sụt áp và dung lượng thực của pin.
+
+Từ các tính toán trên, khung F450 đáp ứng bố trí hình học của bốn cánh 9 inch; tổ hợp A2212, ESC 30 A và pin 3S 5200 mAh được dùng làm cấu hình thiết kế. Khả năng nâng toàn bộ khối lượng và miền mômen điều khiển được quyết định bởi đường đặc tính lực đẩy--dòng điện của tổ hợp này.

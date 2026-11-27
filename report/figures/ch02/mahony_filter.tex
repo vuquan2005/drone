@@ -1,0 +1,48 @@
+\begin{tikzpicture}[
+    x=1cm,y=1cm,>=latex,line width=0.75pt,
+    font=\fontsize{10}{12}\selectfont,
+    block/.style={draw,fill=gray!6,align=center,inner sep=3pt,
+        minimum height=0.9cm},
+    every node/.style={align=center}
+]
+    \node[draw,circle,minimum size=0.48cm,inner sep=0pt] (sum) at (6.1,0) {};
+    \node[block,text width=3.0cm,minimum height=1.15cm] (quaternion) at (9.8,0)
+        {Động học quaternion\\và chuẩn hóa};
+    \node[block,text width=1.0cm,minimum height=0.75cm] (proportional) at (5.1,-1.7)
+        {$k_P$};
+    \node[block,text width=2.2cm] (bias) at (7.3,-1.7)
+        {$\dot{\hat{\mathbf b}}_r=-k_I\mathbf e$\\Tích phân};
+    \node[block,text width=1.6cm] (normalization) at (1.15,-3.5)
+        {Chuẩn hóa\\$-\mathbf f_B/\|\mathbf f_B\|$};
+    \node[block,text width=2.2cm,minimum height=1.0cm] (error) at (3.85,-3.5)
+        {Sai lệch phương\\$w_a(\mathbf v_a\times\hat{\mathbf v}_a)$};
+    \node[block,text width=2.5cm,minimum height=1.0cm] (prediction) at (9.8,-3.5)
+        {Dự đoán phương\\$\hat{\mathbf v}_a=\hat R^{\mathsf T}\mathbf e_3$};
+
+    \draw[->] (0,0) -- (sum.west);
+    \node[anchor=south] at (2.9,0.15) {Gyro sau hiệu chuẩn $\symbf\omega_c$};
+    \node at (5.75,0.25) {$+$};
+    \draw[->] (sum.east) -- (quaternion.west);
+    \node[anchor=south] at (7.3,0.12) {$\symbf\omega_o$};
+    \draw[->] (quaternion.east) -- (13.0,0);
+    \node[anchor=south] at (12.6,0.12) {$\hat{\mathbf q}$};
+
+    \draw[->] (0,-3.5) -- (normalization.west);
+    \node[anchor=south] at (0.05,-3.32) {$\mathbf f_B$};
+    \draw[->] (normalization.east) -- (error.west);
+    \node[anchor=south] at (2.43,-3.32) {$\mathbf v_a$};
+    \draw[->] (12.1,0) |- (prediction.east);
+    \fill (12.1,0) circle (1.3pt);
+    \draw[->] (prediction.west) -- (error.east);
+    \node[anchor=south] at (6.8,-3.32) {$\hat{\mathbf v}_a$};
+
+    \draw[->] (error.north) -- (3.85,-1.7) -- (proportional.west);
+    \node[anchor=east] at (3.73,-2.35) {$\mathbf e$};
+    \draw[->] (3.85,-2.65) -- (7.3,-2.65) -- (bias.south);
+    \fill (3.85,-2.65) circle (1.3pt);
+    \draw[->] (proportional.north) -- (5.1,-0.8) -- (sum.south west);
+    \node at (5.57,-0.4) {$+$};
+    \draw[->] (bias.north) -- (7.3,-0.8) -- (sum.south east);
+    \node at (6.63,-0.4) {$-$};
+    \node[anchor=west] at (7.38,-0.9) {$\hat{\mathbf b}_r$};
+\end{tikzpicture}

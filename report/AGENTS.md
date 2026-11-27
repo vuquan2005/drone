@@ -79,4 +79,6 @@ Từ thư mục gốc dự án:
 make report
 ```
 
-Có thể build trực tiếp bằng `latexmk main.tex` khi đang ở thư mục `report/`.
+Lệnh cần latexmk, XeLaTeX và BibTeX; cấu hình dùng chung nằm trong `report/latexmkrc`. Có thể build trực tiếp bằng `latexmk main.tex` khi đang ở thư mục `report/`.
+
+Trong VS Code, mở `report/main.tex` và chạy **LaTeX Workshop: Build LaTeX project**. Trên Overleaf, tải thư mục `report/` lên và chọn compiler **XeLaTeX**.

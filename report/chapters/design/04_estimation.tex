@@ -1,0 +1,96 @@
+% !TEX root = ../../main.tex
+\subsection{Thiết kế khâu thu nhận và ước lượng tư thế}
+\label{sec:design-estimation}
+
+\subsubsection{Thu nhận và quy đổi dữ liệu BMI270}
+
+Chuỗi xử lý cảm biến được tổ chức theo thứ tự: đọc mẫu mới, quy đổi đơn vị, hiệu chỉnh sai lệch, chuyển về hệ trục thân rồi tính các đại lượng phản hồi. Chương trình chỉ tạo một lần cập nhật thuật toán cho một mẫu hợp lệ. Khi chưa có dữ liệu mới, trạng thái ước lượng được giữ và vòng điều phối tiếp tục phục vụ các chức năng khác.
+
+Với dải đo đã cấu hình, dữ liệu số có dấu 16 bit được quy đổi theo hai hệ số:
+\begin{equation}
+	\begin{aligned}
+		s_a      & =\frac{16g}{32768}
+		\approx4{,}7884\times10^{-3}\
+		\mathrm{\frac{m/s^2}{LSB}},                   \\
+		s_\omega & =\frac{2000}{32768}\frac{\pi}{180}
+		\approx1{,}0653\times10^{-3}\
+		\mathrm{\frac{rad/s}{LSB}}.
+	\end{aligned}
+	\label{eq:design-imu-scales}
+\end{equation}
+Trong đó, LSB là một đơn vị đếm của dữ liệu số. Các hệ số được xác định từ dải đo BMI270~\cite{boschBmi270Datasheet} và phù hợp với cách quy đổi trong khối thu nhận hiện có. Ví dụ, khi tín hiệu theo một trục gia tốc xấp xỉ 2048 LSB, độ lớn gia tốc riêng theo trục đó xấp xỉ $g$ ở dải $\pm16g$.
+
+Tần số xuất dữ liệu được đặt 400 Hz, tương ứng chu kỳ danh định
+\begin{equation}
+	T_s=\frac{1}{400}=0{,}0025\ \mathrm s.
+	\label{eq:design-sampling-period}
+\end{equation}
+Đối với thuật toán, khoảng thời gian thực giữa hai mẫu được ký hiệu $\Delta t_k$ và lấy từ đồng hồ đơn điệu của MCU gắn với mỗi lần nhận mẫu hợp lệ. Tích phân, vi phân và hệ số lọc sử dụng cùng $\Delta t_k$; giá trị $T_s$ phục vụ tính toán danh định và lập lịch.
+
+Mỗi bản ghi giữ thêm bộ đếm thời gian của cảm biến để đối chiếu chuỗi mẫu. BMI270 cung cấp bộ đếm 24 bit với bước thời gian $39{,}0625$ $\mu$s~\cite{boschBmi270Datasheet}. Hiệu hai giá trị đếm được tính theo modulo $2^{24}$ khi xử lý tràn. Bộ đếm cảm biến và đồng hồ MCU là hai miền thời gian khác nhau; thời điểm nhận dữ liệu trên MCU được dùng riêng để giám sát tuổi mẫu.
+
+\subsubsection{Hiệu chỉnh và thống nhất hệ trục}
+
+Sai lệch điểm không con quay được xác định khi khung đứng yên và động cơ chưa được phép chạy. Chọn ban đầu $N=800$ mẫu, tương ứng khoảng 2 s ở 400 Hz, để tính giá trị trung bình theo~\eqref{eq:background-gyro-bias-correction}. Độ phân tán của vận tốc góc và độ ổn định của độ lớn gia tốc được dùng để nhận biết cửa sổ đứng yên. Nếu khung đang dịch chuyển, cửa sổ hiệu chỉnh được bắt đầu lại để tránh đưa vận tốc quay thực vào sai lệch điểm không.
+
+Gia tốc kế được hiệu chỉnh theo các tư thế tĩnh với từng trục lần lượt có gia tốc riêng chuẩn $+g$ và $-g$. Gọi $v_j^+$, $v_j^-$ là trung bình tín hiệu đã đổi sang m/s$^2$ ở hai tư thế của trục $j$. Sai lệch và hệ số hiệu chỉnh được xác định:
+\begin{equation}
+	b_{a,j}=\frac{v_j^++v_j^-}{2},\qquad
+	k_{a,j}=\frac{2g}{v_j^+-v_j^-},\qquad
+	a_{S,c,j}=k_{a,j}(a_{S,m,j}-b_{a,j}).
+	\label{eq:design-accel-calibration}
+\end{equation}
+Chỉ số $S$ chỉ hệ trục cảm biến; $m$ và $c$ lần lượt chỉ giá trị đo và giá trị đã hiệu chỉnh. Phép hiệu chỉnh giữ thông tin trọng lực thay vì đưa cả ba giá trị trung bình về không. Dữ liệu các tư thế chuẩn cùng hệ số hiệu chỉnh được lưu để có thể lặp lại phép xử lý.
+
+Gọi $C_{BS}$ là ma trận chuyển từ hệ cảm biến sang hệ thân. Các vectơ đưa vào bộ điều khiển là
+\begin{equation}
+	\mathbf a_B=C_{BS}\mathbf a_{S,c},\qquad
+	\symbf\omega_B=C_{BS}
+	(\symbf\omega_{S,m}-\widehat{\mathbf b}_{\omega,S}).
+	\label{eq:design-sensor-body-transform}
+\end{equation}
+Với cách lắp thẳng trục, $C_{BS}$ có dạng hoán vị và đổi dấu các trục, đồng thời phải thỏa $C_{BS}^{\mathsf T}C_{BS}=I$ và $\det C_{BS}=1$. Cùng một phép chuyển được áp dụng cho gia tốc và vận tốc góc. Ma trận được xác định từ hướng đánh dấu trên module và chiều lắp thực tế.
+
+Theo hệ FRD, khi thân nằm ngang và đứng yên, gia tốc riêng sau chuyển trục xấp xỉ $[0,0,-g]^{\mathsf T}$. Khi quay theo chiều roll dương, phản hồi $p$ phải dương; tương tự, quay pitch dương phải cho $q$ dương. Các phép đối chiếu dấu này liên kết trực tiếp phép đo với quy ước mômen của khâu phân bổ.
+
+\subsubsection{Thiết kế bộ lọc bổ sung}
+
+Bộ lọc bổ sung được chọn để ước lượng hai góc nghiêng trong miền làm việc gần nằm ngang. Sau hiệu chỉnh và chuyển trục, góc từ gia tốc kế được tính theo~\eqref{eq:background-accelerometer-angles}. Trạng thái đầu của bộ lọc lấy từ trung bình góc gia tốc kế trong cửa sổ đứng yên, giúp giảm quá trình quá độ do khởi tạo góc bằng một giá trị tùy ý.
+
+Chọn hằng số thời gian ban đầu $\tau_f=0{,}5$ s. Tại chu kỳ danh định 2,5 ms, hệ số phối hợp bằng
+\begin{equation}
+	\alpha_f=\frac{0{,}5}{0{,}5+0{,}0025}
+	\approx0{,}9950.
+	\label{eq:design-complementary-coefficient}
+\end{equation}
+Trong chương trình, hệ số được tính lại bằng $\alpha_f[k]=\tau_f/(\tau_f+\Delta t_k)$ để phù hợp thời gian mẫu. Với xấp xỉ góc nhỏ gần tư thế nằm ngang, hai góc được cập nhật bằng
+\begin{equation}
+	\begin{aligned}
+		\widehat{\phi}[k]&=\alpha_f[k]\bigl(\widehat{\phi}[k-1]
+		+\Delta t_k p_c[k]\bigr)+(1-\alpha_f[k])\phi_a[k],\\
+		\widehat{\theta}[k]&=\alpha_f[k]\bigl(\widehat{\theta}[k-1]
+		+\Delta t_k q_c[k]\bigr)+(1-\alpha_f[k])\theta_a[k],
+	\end{aligned}
+	\label{eq:design-complementary-update}
+\end{equation}
+trong đó $p_c$, $q_c$ là vận tốc góc sau hiệu chỉnh và chuyển về hệ thân, tính bằng rad/s; $\phi_a$, $\theta_a$ là góc từ gia tốc kế, tính bằng rad. Giá trị $\tau_f$ trên là lựa chọn khởi tạo: nhánh con quay theo dõi biến thiên nhanh, còn nhánh gia tốc kế hiệu chỉnh xu hướng trôi khi gia tốc chuyển động nhỏ.
+
+Vận tốc góc đưa vào vòng trong được lấy từ con quay đã hiệu chỉnh, với bộ lọc thông thấp riêng:
+\begin{equation}
+	\begin{aligned}
+		\widehat{\nu}_j[k]
+		&=b_\omega[k]\widehat{\nu}_j[k-1]
+		+(1-b_\omega[k])\nu_{j,c}[k],\\
+		b_\omega[k]&=\frac{\tau_\omega}{\tau_\omega+\Delta t_k},
+	\end{aligned}
+	\label{eq:design-rate-low-pass}
+\end{equation}
+trong đó $\nu_x=p$, $\nu_y=q$ và $\tau_\omega$ là hằng số thời gian lọc. Chọn tần số cắt ban đầu $f_\omega=40$ Hz, tương ứng $\tau_\omega=1/(2\pi f_\omega)\approx3{,}98$ ms. Tại $T_s=2{,}5$ ms, $b_\omega\approx0{,}614$. Nhánh này giảm nhiễu cao tần trong tín hiệu vận tốc góc; mức lọc được xét cùng độ trễ của cảm biến và băng thông điều khiển.
+
+Giá trị $\tau_f$ điều chỉnh cách phối hợp hai nguồn đo, còn $\tau_\omega$ điều chỉnh mức làm mịn tín hiệu con quay cho vòng vận tốc góc. Hai tham số có vai trò khác nhau nên được lựa chọn riêng. Việc giảm rung cơ khí và dùng cấu hình lọc nội của IMU vẫn có ý nghĩa trước khâu xử lý số, vì lọc phần mềm sau lấy mẫu không loại được ảnh hưởng của nhiễu đã bị chồng phổ.
+
+\subsubsection{Tính hợp lệ của dữ liệu phản hồi}
+
+Bản dữ liệu phản hồi gồm góc ước lượng, vận tốc góc, thời điểm mẫu và trạng thái hợp lệ. Một mẫu chỉ được dùng khi đọc thành công, có dữ liệu mới và các kết quả tính toán hữu hạn. Độ lớn gia tốc và biên độ con quay được giám sát để nhận biết tình trạng bão hòa hoặc chuyển động nằm ngoài điều kiện hiệu chỉnh tư thế.
+
+Khi khoảng thời gian mẫu vượt ngưỡng gián đoạn đã cấu hình, thuật toán không tích phân liên tục qua khoảng mất dữ liệu. Khối quản lý trạng thái nhận thông tin lỗi, ngăn xuất lệnh điều khiển và yêu cầu khởi tạo lại trạng thái lọc khi phục hồi theo chính sách vận hành. Thời gian mẫu thực, số lần mất mẫu và trạng thái cảm biến được lưu cùng dữ liệu đáp ứng để phân tích nguyên nhân sai lệch.

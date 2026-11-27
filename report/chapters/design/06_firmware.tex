@@ -1,0 +1,115 @@
+% !TEX root = ../../main.tex
+\subsection{Thiết kế chương trình điều khiển trên STM32}
+\label{sec:design-firmware}
+
+\subsubsection{Tổ chức các khối chương trình}
+
+Chương trình được tổ chức theo các lớp khởi tạo, điều phối, phần cứng và driver. Lớp khởi tạo cấu hình clock, GPIO, DMA, SPI, USART và timer; lớp ứng dụng điều phối thu nhận và tính toán. Lớp hỗ trợ bo mạch liên kết chân, ngoại vi và thiết bị, còn driver thực hiện giao tiếp theo yêu cầu của cảm biến và vi điều khiển.
+
+Các khối tính toán tư thế, điều khiển và phân bổ được thiết kế độc lập với STM32 HAL. Đầu vào của chúng gồm mẫu đo theo SI, hệ trục đã thống nhất, thời gian mẫu và trạng thái hợp lệ. Đầu ra gồm tư thế ước lượng, mômen yêu cầu, lực đẩy phân bổ và trạng thái giới hạn. Cách tách này cho phép dùng cùng thuật toán trong mô phỏng, kiểm thử trên máy tính và ứng dụng nhúng.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Phân chia trách nhiệm các lớp chương trình.}
+	\label{tab:design-software-layers}
+	\begin{tabularx}{\linewidth}{|C{2.5cm}|Y|}
+		\hline
+		\textbf{Lớp}   & \textbf{Trách nhiệm}                                              \\
+		\hline
+		Khởi tạo       & Cấu hình HAL, clock và ngoại vi; thiết lập điểm gọi ứng dụng      \\
+		\hline
+		Ứng dụng       & Điều phối mẫu, tham chiếu, trạng thái vận hành và chuỗi tính toán \\
+		\hline
+		Thuật toán     & Hiệu chỉnh, ước lượng, P/PID, phân bổ và chuyển đổi lực đẩy       \\
+		\hline
+		Hỗ trợ bo mạch & Quản lý SPI, chân CS, UART, PWM và đồng hồ thời gian              \\
+		\hline
+		Driver         & Truy cập cảm biến, thanh ghi và chức năng ngoại vi                \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Trong nền tảng firmware hiện có, các chức năng đã được viết gồm khởi tạo ngoại vi, đọc BMI270, đổi dữ liệu sang SI, nhận CRSF và phát bốn kênh PWM. Chuỗi hiệu chỉnh, ước lượng, điều khiển, phân bổ và quản lý cho phép chạy trong chương này là phương án tích hợp tiếp theo. Các phép kiểm tra phần mềm hiện có không thay thế xác nhận kết nối và thời gian thực hiện trên bo mạch.
+
+\subsubsection{Định thời và chu kỳ xử lý}
+
+Phương án ban đầu sử dụng vòng điều phối chạy liên tục, không đặt thời gian chờ cố định sau mỗi lượt. Ngắt phục vụ thu nhận byte và cập nhật trạng thái ngoại vi trong thời gian ngắn; giải mã, SPI đồng bộ và thuật toán điều khiển chạy trong vòng chính. Bộ điều phối nhận biết dữ liệu IMU mới để kích hoạt một lượt xử lý, đồng thời phục vụ bộ thu và giám sát giữa các lượt đó.
+
+Tần số IMU, vòng vận tốc góc và phân bổ được chọn theo chu kỳ danh định 400 Hz. Vòng góc được chọn 100 Hz bằng cách cập nhật sau mỗi bốn mẫu IMU hợp lệ; vận tốc góc đặt được giữ giữa hai lần cập nhật vòng ngoài. Đây là lịch thiết kế được tổng hợp trong \tref{tab:design-task-timing}.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Lịch thực thi danh định của các chức năng.}
+	\label{tab:design-task-timing}
+	\begin{tabularx}{\linewidth}{|C{3.6cm}|C{2.5cm}|Y|}
+		\hline
+		\textbf{Chức năng}    & \textbf{Lịch cập nhật} & \textbf{Điều kiện}                                        \\
+		\hline
+		IMU, hiệu chỉnh, lọc  & 400 Hz                 & Có mẫu mới hợp lệ, lưu thời điểm mẫu                      \\
+		\hline
+		Ước lượng tư thế      & 400 Hz                 & Dùng cùng mẫu và $\Delta t_k$                             \\
+		\hline
+		Vòng góc P            & 100 Hz                 & Mỗi bốn mẫu hợp lệ, giữ đầu ra giữa các lần tính          \\
+		\hline
+		PID vận tốc góc       & 400 Hz                 & Dùng vận tốc đo mới và trạng thái tích phân hiện có       \\
+		\hline
+		Phân bổ và đổi lệnh   & 400 Hz                 & Sau vòng vận tốc góc                                      \\
+		\hline
+		Phát PWM              & 400 Hz                 & Timer phát liên tục, áp bộ lệnh tại lần cập nhật kế tiếp  \\
+		\hline
+		Nhận và giải mã RC    & Theo dữ liệu đến       & Phục vụ thường xuyên trong vòng chính                     \\
+		\hline
+		Giám sát, ghi dữ liệu & Vòng chính             & Giám sát ưu tiên trước; ghi dữ liệu có giới hạn thời gian \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Tại mẫu $k$, thứ tự xử lý là lấy dữ liệu và thời gian mẫu, hiệu chỉnh và lọc, cập nhật tư thế, tính vòng góc nếu đến lượt, tính PID vận tốc góc, phân bổ lực đẩy, chuyển lệnh ESC rồi áp điều kiện cho phép xuất lệnh. Trạng thái tích phân cho mẫu tiếp theo được cập nhật sau khi có thông tin giới hạn của bộ lệnh cuối. Lưu đồ được thể hiện trên \fref{fig:design-control-cycle}.
+
+\begin{figure}[H]
+	\centering
+	\resizebox{0.90\linewidth}{!}{\input{figures/ch03/control_cycle}}
+	\caption{Lưu đồ điều phối và xử lý một chu kỳ điều khiển.}
+	\label{fig:design-control-cycle}
+\end{figure}
+
+Thời gian từ khi nhận mẫu đến khi hoàn tất bộ lệnh mới phải nhỏ hơn 2,5 ms để tránh dồn chu kỳ trong lịch danh định. Thanh ghi đệm PWM làm lệnh có hiệu lực ở mốc timer kế tiếp, nên độ trễ chờ cập nhật xung được xét riêng với thời gian tính toán. Hai khối IMU và PWM cùng có tần số danh định 400 Hz nhưng không tự đồng bộ pha.
+
+Đường RC dùng DMA vòng và bộ đệm giải mã, do đó thời gian chặn giao tiếp phải phù hợp khả năng giữ dữ liệu. Thiết kế đặt mục tiêu khoảng cách giữa hai lần phục vụ bộ thu không quá 2 ms. Trong cấu hình khởi tạo hiện có, thời gian chờ tối đa mỗi giao dịch SPI là 100 ms, lớn hơn nhiều ngân sách một chu kỳ. Khi tích hợp vòng điều khiển, thời gian chờ và đường xử lý lỗi SPI được giới hạn theo ngân sách thực thi; một lỗi giao tiếp được trả về bộ điều phối thay vì giữ toàn bộ chuỗi tính toán trong thời gian chờ dài.
+
+\subsubsection{Quản lý trạng thái vận hành}
+
+Quyền xuất lệnh động cơ được quản lý tập trung, độc lập với giá trị do bộ điều khiển tính ra. Bốn trạng thái của phương án được mô tả trong \tref{tab:design-operation-states}. Chỉ trạng thái cho phép chạy mới sử dụng bộ lệnh điều khiển; các trạng thái còn lại chọn lệnh dừng đã thống nhất với ESC.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Các trạng thái vận hành trong phương án chương trình.}
+	\label{tab:design-operation-states}
+	\begin{tabularx}{\linewidth}{|C{3.2cm}|Y|}
+		\hline
+		\textbf{Trạng thái} & \textbf{Hành vi}                                                       \\
+		\hline
+		Khởi tạo            & Thiết lập ngoại vi, kiểm tra IMU, hiệu chỉnh ban đầu; giữ lệnh dừng    \\
+		\hline
+		Khóa động cơ        & Tiếp tục nhận lệnh và ước lượng; xóa tích phân, giữ lệnh dừng          \\
+		\hline
+		Cho phép chạy       & Tính điều khiển và xuất lệnh trong giới hạn; giám sát dữ liệu liên tục \\
+		\hline
+		Lỗi, mất tín hiệu   & Chọn lệnh dừng, xóa tích phân và hủy quyền xuất lệnh điều khiển        \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Chuyển sang trạng thái cho phép chạy yêu cầu đồng thời có RC hợp lệ, mẫu IMU còn mới, tư thế ước lượng hợp lệ, ga ở mức thấp và thao tác cho phép từ người vận hành. Các hệ số lọc và trạng thái trước đó được khởi tạo nhất quán; đạo hàm được khởi tạo từ mẫu hiện tại để tránh xung do lịch sử dữ liệu cũ. Chế độ khảo sát cân bằng dùng góc đặt ban đầu bằng không và tăng lực đẩy nền theo lệnh người vận hành.
+
+Ngưỡng quá hạn RC giữ theo cấu hình bộ nhận hiện có là 100 ms kể từ khung kênh hợp lệ gần nhất. Thiết kế chọn ban đầu ngưỡng quá hạn IMU 10 ms, bằng bốn chu kỳ danh định. Khi một ngưỡng bị vượt, kết quả ước lượng không hữu hạn hoặc xuất lệnh thất bại, hệ thống hủy quyền chạy. Giám sát quá hạn diễn ra cả khi chưa có mẫu IMU mới, tránh phụ thuộc việc chuỗi tính toán có được kích hoạt hay không.
+
+Phương án xử lý lỗi này phục vụ thử nghiệm cân bằng có kiểm soát và chọn đưa động cơ về lệnh dừng khi mất quyền điều khiển. Cơ chế hạ cánh tự động trong bay tự do nằm ngoài phạm vi thiết kế. Sau lỗi, hệ thống trở về trạng thái khóa và yêu cầu thao tác cho phép mới; dữ liệu phục hồi không tự khôi phục quyền chạy.
+
+\subsubsection{Dữ liệu phục vụ kiểm chứng thiết kế}
+
+Các đại lượng được ghi gồm thời điểm mẫu, khoảng thời gian xử lý, góc đặt, góc ước lượng, vận tốc góc đặt và phản hồi, các thành phần P/I/D, mômen yêu cầu và mômen khả dụng theo mô hình. Bộ lệnh PWM, hệ số giảm $\gamma$, trạng thái vận hành và các cờ lỗi được lưu cùng để nhận biết ảnh hưởng của bão hòa hoặc gián đoạn dữ liệu.
+
+Dữ liệu được đưa vào bộ đệm có dung lượng xác định, phục vụ xuất và phân tích ngoài đường xử lý điều khiển. Mỗi lần khảo sát gắn với cấu hình hệ số, chu kỳ, hướng trục, thứ tự động cơ và điều kiện nguồn. Điều này cho phép tái lập phép tính từ dữ liệu gốc và so sánh các bộ tham số theo cùng tiêu chí trong \secref{sec:background-metrics}.
+
+Phương án thiết kế liên kết được phần cứng F450 với chuỗi xử lý từ cảm biến đến lệnh ESC, trong đó mômen yêu cầu và giới hạn lực đẩy có cùng ý nghĩa vật lý. Các kết quả tính toán hình học, cấu hình giao tiếp và bộ tham số khởi tạo là cơ sở triển khai; chất lượng cân bằng được đánh giá từ đáp ứng và điều kiện thử tương ứng.

@@ -90,11 +90,11 @@ bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
     if (result == BMI2_OK) {
         settings[0].cfg.acc.odr = BMI2_ACC_ODR_800HZ;
         settings[0].cfg.acc.range = BMI2_ACC_RANGE_16G;
-        settings[0].cfg.acc.bwp = BMI2_ACC_NORMAL_AVG4;
+        settings[0].cfg.acc.bwp = BMI2_ACC_OSR2_AVG2;
         settings[0].cfg.acc.filter_perf = BMI2_PERF_OPT_MODE;
         settings[1].cfg.gyr.odr = BMI2_GYR_ODR_800HZ;
         settings[1].cfg.gyr.range = BMI2_GYR_RANGE_2000;
-        settings[1].cfg.gyr.bwp = BMI2_GYR_NORMAL_MODE;
+        settings[1].cfg.gyr.bwp = BMI2_GYR_OSR2_MODE;
         settings[1].cfg.gyr.noise_perf = BMI2_PERF_OPT_MODE;
         settings[1].cfg.gyr.filter_perf = BMI2_PERF_OPT_MODE;
         result = bmi2_set_sensor_config(settings, 2, &imu->device);

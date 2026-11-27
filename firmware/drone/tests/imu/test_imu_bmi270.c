@@ -183,8 +183,10 @@ static void test_real_driver_init_and_samples(void) {
     assert((registers[BMI2_ACC_CONF_ADDR + 1U] & 3U) == BMI2_ACC_RANGE_16G);
     assert((registers[BMI2_GYR_CONF_ADDR] & 0xfU) == BMI2_GYR_ODR_800HZ);
     assert((registers[BMI2_GYR_CONF_ADDR + 1U] & 7U) == BMI2_GYR_RANGE_2000);
-    // TODO: Check bandwidth and performance bits too; wrong accel filtering
-    // currently passes despite the ODR/range checks.
+    assert((registers[BMI2_ACC_CONF_ADDR] & BMI2_ACC_BW_PARAM_MASK) ==
+           (BMI2_ACC_OSR2_AVG2 << BMI2_ACC_BW_PARAM_POS));
+    assert((registers[BMI2_GYR_CONF_ADDR] & BMI2_GYR_BW_PARAM_MASK) ==
+           (BMI2_GYR_OSR2_MODE << BMI2_GYR_BW_PARAM_POS));
     assert((registers[BMI2_PWR_CTRL_ADDR] & 6U) == 6U);
     assert((registers[BMI2_PWR_CONF_ADDR] & 1U) == 0U);
 

@@ -100,13 +100,13 @@ bsp_imu_result_t bsp_imu_init(bsp_imu_t *imu, const bsp_imu_config_t *config) {
         imu->device.accel_cfg = (struct bmi160_cfg){
             .odr = BMI160_ACCEL_ODR_800HZ,
             .range = BMI160_ACCEL_RANGE_16G,
-            .bw = BMI160_ACCEL_BW_NORMAL_AVG4,
+            .bw = BMI160_ACCEL_BW_OSR2_AVG2,
             .power = BMI160_ACCEL_NORMAL_MODE,
         };
         imu->device.gyro_cfg = (struct bmi160_cfg){
             .odr = BMI160_GYRO_ODR_800HZ,
             .range = BMI160_GYRO_RANGE_2000_DPS,
-            .bw = BMI160_GYRO_BW_NORMAL_MODE,
+            .bw = BMI160_GYRO_BW_OSR2_MODE,
             .power = BMI160_GYRO_NORMAL_MODE,
         };
         /* Apply ODR/range only after both sensors have left suspend. The

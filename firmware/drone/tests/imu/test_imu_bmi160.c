@@ -190,8 +190,10 @@ static void test_real_driver_init_and_samples(void) {
            BMI160_GYRO_ODR_800HZ);
     assert((registers[BMI160_GYRO_CONFIG_ADDR + 1U] & 7U) ==
            BMI160_GYRO_RANGE_2000_DPS);
-    assert((registers[BMI160_ACCEL_CONFIG_ADDR] & 0xf0U) == 0x20U);
-    assert((registers[BMI160_GYRO_CONFIG_ADDR] & 0x30U) == 0x20U);
+    assert((registers[BMI160_ACCEL_CONFIG_ADDR] & 0xf0U) ==
+           (BMI160_ACCEL_BW_OSR2_AVG2 << 4U));
+    assert((registers[BMI160_GYRO_CONFIG_ADDR] & 0x30U) ==
+           (BMI160_GYRO_BW_OSR2_MODE << 4U));
     assert((registers[BMI160_PMU_STATUS_ADDR] & 0x3cU) == 0x14U);
 
     assert(app_imu_poll(&imu) == BSP_IMU_NO_DATA);

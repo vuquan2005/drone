@@ -93,6 +93,7 @@ target_sources(
     PRIVATE Control/Src/attitude_controller.c
             Control/Src/mixer.c
             Control/Src/rate_controller.c
+            Control/Src/imu_lowpass.c
             Control/Src/mahony.c
             Control/Src/gyro_bias.c
             Control/Src/accel_calibration.c

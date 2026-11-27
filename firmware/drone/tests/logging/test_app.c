@@ -530,7 +530,9 @@ int main(void) {
     gyro_roll_radps = 1.0f;
     process_app();
     assert(app_get_rate_result(&preview));
-    assert(preview.achieved.roll > 3200 && preview.achieved.roll < 3350);
+    /* Both gyro samples feed the 80 Hz LPF, including the one skipped by PID.
+     */
+    assert(abs(preview.achieved.roll - 4652) <= 5);
     const norm_q15_t held_roll = preview.achieved.roll;
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     gyro_roll_radps = 0;

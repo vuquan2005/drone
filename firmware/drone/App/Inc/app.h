@@ -62,7 +62,7 @@ bool app_get_attitude(float body_to_ned[4]);
  * Same contract as app_rate_configure; serialized foreground access only. This
  * disarms and revokes the previous OFF token. period_us sets minimum spacing
  * between consumed IMU samples; faster IMU samples are skipped until due, using
- * the latest available sample. No catch-up steps or gyro decimation filter are
+ * the latest gyro sample filtered at the IMU rate. No catch-up steps are
  * provided.
  */
 bool app_configure_rate(const app_rate_config_t *config);

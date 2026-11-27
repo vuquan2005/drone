@@ -9,19 +9,22 @@
 #include "bsp_board.h"
 #include "bsp_time.h"
 #include "imu_calibration_store.h"
+#include "imu_lowpass.h"
 #include "mahony.h"
 #include "main.h"
 #include <stddef.h>
 
 #define IMU_TIMEOUT_US 20000U
+#define RATE_GYRO_LPF_HZ 80.0f
+#define MAHONY_ACCEL_LPF_HZ 30.0f
 #define MAHONY_HZ 200U
 #define ATTITUDE_CONTROL_HZ 100U
 #define MAHONY_KP_PER_S 2.0f
 #define MAHONY_KI_PER_S2 0.0f
 #define ATTITUDE_KP_PER_S 4.0f
 #define ATTITUDE_MAX_ANGLE_RAD (25.0f * 0.01745329252f)
-#define GRAVITY_MIN_MPS2 7.85f
-#define GRAVITY_MAX_MPS2 11.77f
+#define GRAVITY_MIN_MPS2 (0.9f * 9.80665f)
+#define GRAVITY_MAX_MPS2 (1.1f * 9.80665f)
 #define RATE_ROLL_KP 0.1f
 #define RATE_PITCH_KP 0.1f
 #define RATE_YAW_KP 0.1f
@@ -39,6 +42,8 @@ _Static_assert(MAHONY_HZ >= ATTITUDE_CONTROL_HZ &&
                "Attitude control requires an integer Mahony decimation factor");
 
 static app_imu_t imu;
+static imu_lowpass_t imu_lowpass;
+static uint32_t imu_lowpass_sample_us;
 static struct {
     mahony_t filter;
     float gyro_delta_rad[3];
@@ -199,10 +204,10 @@ static void update_attitude(const app_imu_sample_t *sample) {
             return;
     }
 
-    const float *accel = sample->accel_mps2;
+    const float *accel = imu_lowpass.accel_mps2;
     const float accel_sq =
         accel[0] * accel[0] + accel[1] * accel[1] + accel[2] * accel[2];
-    /* Reject gravity feedback outside approximately 0.8 to 1.2 g. */
+    /* Reject gravity feedback outside approximately 0.9 to 1.1 g. */
     const bool gravity_usable =
         accel_sq >= GRAVITY_MIN_MPS2 * GRAVITY_MIN_MPS2 &&
         accel_sq <= GRAVITY_MAX_MPS2 * GRAVITY_MAX_MPS2;
@@ -236,8 +241,18 @@ static void process_imu(void) {
     if (imu_failed(status)) {
         imu_available = false;
         attitude.valid = false;
+        imu_lowpass.initialized = false;
     }
     if (status == BSP_IMU_OK) {
+        const uint32_t interval_us =
+            imu.sample.t_read_us - imu_lowpass_sample_us;
+        if (interval_us > IMU_TIMEOUT_US)
+            imu_lowpass.initialized = false;
+        if (!imu_lowpass.initialized || interval_us != 0U) {
+            imu_lowpass_update(&imu_lowpass, imu.sample.gyro_radps,
+                               imu.sample.accel_mps2, interval_us * 1e-6f);
+            imu_lowpass_sample_us = imu.sample.t_read_us;
+        }
         imu_available = true;
         update_attitude(&imu.sample);
     }
@@ -320,7 +335,7 @@ static void process_rate(void) {
     const bool had_time = rate.have_time;
     const bool calculated = app_rate_step_with_tilt(
         &rate, &command, use_attitude ? tilt_target.result.rate_radps : NULL,
-        imu.sample.gyro_radps, imu.sample.t_read_us);
+        imu_lowpass.gyro_radps, imu.sample.t_read_us);
     rate_failed = !calculated && (had_time || !rate.have_time);
 }
 
@@ -488,6 +503,9 @@ bool app_get_attitude(float body_to_ned[4]) {
 }
 
 void app_init(void) {
+    imu_lowpass_init(&imu_lowpass, BSP_IMU_ODR_HZ, RATE_GYRO_LPF_HZ,
+                     MAHONY_ACCEL_LPF_HZ);
+    imu_lowpass_sample_us = 0U;
     attitude.valid = false;
     attitude.updates = 0U;
     tilt_target.have_update = false;

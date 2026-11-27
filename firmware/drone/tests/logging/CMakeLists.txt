@@ -38,6 +38,7 @@ set(APP_LOGGING_SOURCES
     test_app.c
     ${FIRMWARE_ROOT}/Control/Src/attitude_controller.c
     ${FIRMWARE_ROOT}/Control/Src/rate_controller.c
+    ${FIRMWARE_ROOT}/Control/Src/imu_lowpass.c
     ${FIRMWARE_ROOT}/Control/Src/mahony.c
     ${FIRMWARE_ROOT}/Control/Src/mixer.c
     ${FIRMWARE_ROOT}/App/Src/runtime.c

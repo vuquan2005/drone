@@ -1,0 +1,57 @@
+% !TEX root = ../../main.tex
+\subsection{Yêu cầu và phương án thiết kế tổng thể}
+\label{sec:design-requirements}
+
+\subsubsection{Yêu cầu thiết kế}
+
+Hệ thống được thiết kế để tạo mômen hiệu chỉnh khi thân quadrotor lệch khỏi tư thế đặt, với trọng tâm là hai kênh roll và pitch gần tư thế nằm ngang. Bộ điều khiển nhận góc đặt từ người vận hành, sử dụng IMU để xác định trạng thái quay và điều chỉnh bốn cụm động cơ--cánh quạt. Khi khảo sát khả năng tự cân bằng, hai góc đặt được đưa về không; khi khảo sát khả năng bám, góc đặt thay đổi trong miền góc nhỏ.
+
+Cấu hình phần cứng của đề tài gồm khung F450, bốn động cơ A2212/10T 1400KV, cánh quạt đường kính 9 inch, bốn ESC 30 A và pin LiPo 3S dung lượng 5200 mAh. Khối xử lý sử dụng STM32F103VET6, cảm biến BMI270, bộ thu ExpressLRS (ELRS) 2,4 GHz dạng Nano và mạch hạ áp LM2596. Người vận hành gửi lệnh bằng tay điều khiển Jumper T20 V2 theo phương án liên kết ELRS 2,4 GHz. Điện áp danh định ghi trên pin là 11,1 V; trong các phép tính nguồn, $V_{\mathrm{ref}}=11{,}2$ V là điện áp tham chiếu do nhóm cung cấp, không phải điện áp cố định trong suốt quá trình sử dụng pin.
+
+Các yêu cầu chính được tổng hợp trong \tref{tab:design-requirements}. Các đại lượng tính toán nội bộ sử dụng hệ SI; góc đổi sang độ chỉ phục vụ hiển thị và phân tích đồ thị.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Yêu cầu thiết kế hệ thống điều khiển cân bằng.}
+	\label{tab:design-requirements}
+	\begin{tabularx}{\linewidth}{|C{3.1cm}|Y|}
+		\hline
+		\textbf{Nội dung} & \textbf{Yêu cầu}                                                            \\
+		\hline
+		Biến điều khiển   & Góc roll $\phi$ và pitch $\theta$; phản hồi vận tốc góc $p$, $q$            \\
+		\hline
+		Miền khảo sát     & Gần tư thế nằm ngang, với góc nghiêng và vận tốc quay nhỏ                   \\
+		\hline
+		Hệ tọa độ         & Hệ thân FRD, hệ quán tính NED; chiều dương theo quy tắc bàn tay phải        \\
+		\hline
+		Đơn vị nội bộ     & Góc rad; vận tốc góc rad/s; gia tốc m/s$^2$; lực N; mômen N$\cdot$m         \\
+		\hline
+		Thu nhận dữ liệu  & Nhận biết mẫu IMU mới, thời điểm mẫu và trạng thái hợp lệ của tín hiệu RC   \\
+		\hline
+		Điều khiển số     & Tính toán theo thời gian mẫu, giới hạn lệnh và quản lý trạng thái tích phân \\
+		\hline
+		Đầu ra            & Bốn kênh PWM cho ESC, có điều kiện cho phép xuất lệnh động cơ               \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Tổng lực đẩy là đầu vào nền của hệ động lực và được điều chỉnh độc lập với hai kênh cân bằng. Trong phép phân bổ phục vụ khảo sát roll và pitch, mômen yaw yêu cầu được đặt bằng không. Thiết kế này tập trung vào chuyển động quay; chức năng giữ độ cao, vị trí và góc hướng tuyệt đối nằm ngoài phạm vi tổng hợp bộ điều khiển.
+
+\subsubsection{Phương án cấu trúc hệ thống}
+
+Phương án tổng thể được thể hiện trên \fref{fig:design-system-architecture}. Bộ thu truyền lệnh người vận hành đến STM32 qua giao tiếp nối tiếp. BMI270 cung cấp gia tốc và vận tốc góc qua SPI. STM32 thực hiện hiệu chỉnh, chuyển hệ trục, ước lượng tư thế, tính mômen hiệu chỉnh và phân bổ lực đẩy, sau đó chuyển kết quả thành bốn độ rộng xung gửi tới ESC.
+
+\begin{figure}[htbp]
+	\centering
+	\resizebox{\linewidth}{!}{\input{figures/ch03/system_architecture}}
+	\caption{Phương án cấu trúc hệ thống điều khiển cân bằng quadrotor.}
+	\label{fig:design-system-architecture}
+\end{figure}
+
+Hai vòng điều khiển được tổ chức xếp tầng. Vòng ngoài dùng sai lệch góc để tạo vận tốc góc đặt; vòng trong dùng vận tốc góc từ con quay hồi chuyển để tính mômen yêu cầu. Nhánh phản hồi vận tốc góc đi trực tiếp từ dữ liệu con quay đã xử lý, còn nhánh phản hồi góc đi qua bộ lọc bổ sung. Cách tổ chức này giúp lựa chọn mức lọc theo vai trò của từng tín hiệu.
+
+Đối với hệ động lực, khâu phân bổ tính lực đẩy từng rôto theo hình học khung và giới hạn cơ cấu chấp hành. Quan hệ lực đẩy--lệnh ESC được tách khỏi phép phân bổ để giữ ý nghĩa vật lý của các hệ số điều khiển. Khối quản lý trạng thái quyết định khi nào các lệnh tính toán được phép đưa ra chân PWM.
+
+\subsubsection{Cơ sở xác định tham số thiết kế}
+
+Kích thước khung và cấu hình ngoại vi cung cấp các tham số hình học, thời gian và giao tiếp. Khối lượng toàn bộ, mômen quán tính, lực đẩy khả dụng, dòng điện và quan hệ lực đẩy--PWM phụ thuộc cấu hình lắp ráp thực tế. Trong chương này, những đại lượng chưa có số đo được giữ dưới dạng tham số; các giá trị lựa chọn cho thuật toán là thông số khởi tạo thiết kế. Kết quả kiểm chứng và mức đáp ứng đạt được được trình bày theo dữ liệu thực nghiệm trong \charef{chap:evaluation}.

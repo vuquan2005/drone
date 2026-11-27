@@ -82,8 +82,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE BSP/Src/bsp_flash.c App/Src/app_fla
                                              App/Src/flash_erase.c)
 
 if(DRONE_ENABLE_RTT)
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE Maintenance/Src/flash_export.c)
-    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE Maintenance/Inc)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE App/Src/flash_export.c)
     target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE DRONE_RUNTIME_FLASH_EXPORT=1)
 endif()
 

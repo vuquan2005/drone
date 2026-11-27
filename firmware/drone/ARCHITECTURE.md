@@ -38,7 +38,7 @@ khởi tạo vì việc khởi tạo IMU có thể blocking.
 Runtime chọn mode theo [bảng công tắc RC](README.md#chọn-chế-độ-sau-reset).
 Với SB dưới HIGH, SD STREAM chọn FLASH_EXPORT và giữ PWM tắt, còn
 OFF/RECORD chọn FLIGHT. Build tắt RTT giữ BOOT_SELECT khi SD ở STREAM.
-Mode đã chọn giữ đến reset. FLASH_EXPORT gọi module trong `Maintenance/`
+Mode đã chọn giữ đến reset. FLASH_EXPORT gọi module `flash_export` trong `App/`
 qua runtime.
 `app_get_status()` cung cấp sức khỏe IMU/PWM và trạng thái arm riêng với
 mode. Safety trong App quyết định quyền motor. Runtime poll receiver mỗi lượt; snapshot/command chỉ cập nhật khi có frame RC

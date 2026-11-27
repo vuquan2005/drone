@@ -1,9 +1,7 @@
 % !TEX root = ../../main.tex
-\section{Sơ đồ nguyên lý hệ thống điện của quadrotor}
+\section{Sơ đồ nguyên lý và kết nối hệ thống điện}
 \label{sec:design-electrical-system}
 % Block PNGs copied from hardware/kicad at commit 4952fd9 (update-hardware).
-
-Hệ thống điện của quadrotor được tổ chức thành ba khối chức năng: khối nguồn, khối điều khiển và khối cơ cấu chấp hành.
 
 \begin{figure}[H]
 	\centering
@@ -12,7 +10,9 @@ Hệ thống điện của quadrotor được tổ chức thành ba khối chứ
 	\label{fig:design-electrical-blocks}
 \end{figure}
 
-\subsection{Khối nguồn}
+Hệ thống điện trong \fref{fig:design-electrical-blocks} gồm ba khối chức năng: khối nguồn, khối điều khiển và khối cơ cấu chấp hành. Pin LiPo 3S cấp nguồn cho bốn ESC, còn STM32 gửi lệnh PWM đến từng ESC để điều khiển động cơ. Nhánh BEC của ESC2 cấp nguồn 5 V cho khối điều khiển; các khối dùng chung GND.
+
+\subsection{Mạch cấp nguồn và phân phối điện áp}
 \label{subsec:design-power-block}
 
 \begin{figure}[H]
@@ -22,10 +22,10 @@ Hệ thống điện của quadrotor được tổ chức thành ba khối chứ
 	\label{fig:design-power-block-schematic}
 \end{figure}
 
-Pin LiPo 3S cấp trực tiếp cho bốn ESC qua đường \texttt{VBAT\_LIPO}. Đường 5 V cấp cho bo STM32 và bộ thu ELRS được lấy từ mạch BEC tích hợp của ESC2. Tầng nguồn trên bo STM32 tạo đường 3,3 V cấp cho BMI160 và BNO055. Ba khối dùng chung GND làm mức điện áp tham chiếu cho nguồn và tín hiệu.
+Pin LiPo 3S cấp trực tiếp cho bốn ESC qua đường \texttt{VBAT\_LIPO}. Đường 5 V cấp cho bo STM32 và bộ thu ELRS được lấy từ mạch BEC tích hợp của ESC2; đầu ra BEC của ba ESC còn lại không kết nối. Tầng nguồn trên bo STM32 tạo đường 3,3 V cấp cho BMI160 và BNO055. Ba khối dùng chung GND làm mức điện áp tham chiếu cho nguồn và tín hiệu.
 
 \clearpage
-\subsection{Khối điều khiển}
+\subsection{Kết nối vi điều khiển với cảm biến và bộ thu}
 \label{subsec:design-control-block}
 
 \begin{figure}[H]
@@ -37,17 +37,17 @@ Pin LiPo 3S cấp trực tiếp cho bốn ESC qua đường \texttt{VBAT\_LIPO}.
 
 Khối điều khiển gồm bo STM32F103VET6, BMI160, module BNO055 và bộ thu ELRS. BMI160 kết nối qua SPI1, sử dụng PA4 cho tín hiệu chọn chip, PA5 cho SCK, PA6 cho MISO và PA7 cho MOSI. BNO055 kết nối qua I\textsuperscript{2}C2 với PB10 là SCL và PB11 là SDA; hai cảm biến được cấp nguồn 3,3 V theo sơ đồ.
 
-Bộ thu ELRS trao đổi dữ liệu với STM32 qua UART: PA2 nối tới RX của bộ thu, còn PA3 nhận dữ liệu từ TX của bộ thu. Bốn lệnh PWM được đưa tới ESC1, ESC2, ESC3 và ESC4 lần lượt qua PB9, PB8, PB7 và PB6. Các đường nguồn, GND và tín hiệu được liên kết giữa các module bằng nhãn mạng tương ứng trong sơ đồ.
+Bộ thu ELRS trao đổi dữ liệu với STM32 qua UART: PA2 nối tới RX của bộ thu, còn PA3 nhận dữ liệu từ TX của bộ thu. Các đường nguồn, GND và tín hiệu được liên kết giữa các module bằng nhãn mạng tương ứng trong sơ đồ.
 
 \clearpage
-\subsection{Khối cơ cấu chấp hành}
+\subsection{Kết nối ESC và động cơ}
 \label{subsec:design-actuator-block}
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[trim=8bp 10bp 50bp 8bp,clip,width=\linewidth,height=19cm,keepaspectratio]{figures/ch03/actuator-block.png}
+	\includegraphics[trim=8bp 10bp 50bp 8bp,clip,width=\linewidth,height=17cm,keepaspectratio]{figures/ch03/actuator-block.png}
 	\caption{Sơ đồ nguyên lý khối cơ cấu chấp hành.}
 	\label{fig:design-actuator-block-schematic}
 \end{figure}
 
-Khối cơ cấu chấp hành gồm bốn tổ hợp ESC--động cơ--cánh quạt. Mỗi ESC nhận nguồn pin và lệnh PWM riêng từ STM32, tạo ba pha U, V, W để điều khiển động cơ. Chênh lệch lực đẩy giữa bốn cụm tạo mômen hiệu chỉnh tư thế. Trong sơ đồ, chỉ đầu ra BEC của ESC2 được nối vào đường 5 V; đầu ra BEC của ba ESC còn lại không kết nối.
+Khối cơ cấu chấp hành gồm bốn tổ hợp ESC--động cơ--cánh quạt. Bốn lệnh PWM từ STM32 được đưa tới ESC1, ESC2, ESC3 và ESC4 lần lượt qua PB9, PB8, PB7 và PB6. Mỗi ESC nhận nguồn pin và lệnh PWM riêng, tạo ba pha U, V, W để điều khiển động cơ. Chênh lệch lực đẩy giữa bốn cụm tạo mômen hiệu chỉnh tư thế. Đường 5 V từ BEC của ESC2 được nối về khối điều khiển.

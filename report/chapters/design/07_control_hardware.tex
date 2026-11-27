@@ -1,12 +1,10 @@
 % !TEX root = ../../main.tex
-\section{Phần điều khiển}
+\section{Phần cứng xử lý, cảm biến và liên lạc vô tuyến}
 \label{sec:design-control}
-
-Phần điều khiển gồm vi điều khiển STM32F103VET6, cảm biến quán tính BMI160, module cảm biến 9 trục BNO055, mạch thu tín hiệu ELRS 2,4 GHz và tay điều khiển Jumper T20 V2. Các thiết bị phối hợp để thu nhận trạng thái chuyển động, tiếp nhận lệnh người vận hành và tạo tín hiệu điều khiển đến ESC.
 
 \subsection{Vi điều khiển STM32F103VET6}
 
-STM32F103VET6 là bộ xử lý trung tâm, tiếp nhận dữ liệu từ cảm biến và mạch thu để tạo lệnh điều khiển. Các giao tiếp SPI, I\textsuperscript{2}C và USART phục vụ kết nối thiết bị; timer hỗ trợ phát PWM đến ESC~\cite{stm32f103veDatasheet}.
+STM32F103VET6 là bộ xử lý trung tâm, tiếp nhận dữ liệu từ cảm biến và bộ thu để tạo lệnh điều khiển. Các giao tiếp SPI, I\textsuperscript{2}C và USART phục vụ kết nối thiết bị; timer hỗ trợ phát PWM đến ESC~\cite{stm32f103veDatasheet}.
 
 \begin{figure}[H]
 	\centering
@@ -79,10 +77,10 @@ Module BMI160 trong \fref{fig:control-bmi160} đưa các chân nguồn và tín 
 	\end{tabularx}
 \end{table}
 
-Trong bảng, $g$ biểu thị gia tốc trọng trường. Các dải đo là khả năng cấu hình của cảm biến; việc lựa chọn dải cụ thể phụ thuộc biên độ chuyển động khảo sát. Các mức điện áp nêu trên áp dụng cho IC BMI160; điện áp tại chân cấp nguồn của module phụ thuộc mạch nguồn tích hợp trên module.
+Trong bảng, $g$ là gia tốc trọng trường, được dùng làm mốc biểu diễn dải đo gia tốc. Dải đo cho biết biên độ gia tốc hoặc vận tốc quay mà cảm biến có thể ghi nhận, vì thế dải đo sử dụng được lựa chọn theo mức chuyển động của quadrotor trong thí nghiệm. Các mức điện áp VDD và VDDIO mô tả nguồn cấp cho bản thân IC BMI160; khi cấp điện qua module, điện áp tại chân nguồn được xét cùng với mạch nguồn trên bo.
 
 \clearpage
-\subsection{Module cảm biến 9 trục BNO055}
+\subsection{Module cảm biến BNO055}
 \label{subsec:control-bno055}
 
 BNO055 của Bosch Sensortec tích hợp gia tốc kế, con quay hồi chuyển và từ kế, mỗi loại ba trục. Bộ xử lý tích hợp thực hiện hợp nhất dữ liệu cảm biến, cho phép xuất trực tiếp tư thế dưới dạng quaternion hoặc góc Euler~\cite{boschBno055Datasheet}.
@@ -121,47 +119,12 @@ Module trong \fref{fig:control-bno055} đưa các chân nguồn và tín hiệu 
 	\end{tabularx}
 \end{table}
 
-Các mức điện áp trong bảng áp dụng cho IC BNO055. Điện áp cấp tại chân VCC của module phụ thuộc mạch nguồn tích hợp trên bo.
-
-\clearpage
-\subsection{Mạch thu tín hiệu ELRS 2,4 GHz dạng Nano}
-
-Mạch thu tín hiệu nhận lệnh vô tuyến từ tay điều khiển và chuyển dữ liệu kênh đến STM32. Phương án sử dụng bộ thu ExpressLRS (ELRS) ở băng tần 2,4 GHz, dạng Nano để bố trí trong vùng trung tâm khung. Với loại bộ thu dùng UART, dữ liệu trao đổi với bộ điều khiển theo giao thức CRSF~\cite{expresslrsReceiverWiring}.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[height=4.2cm]{figures/ch03/elrs-24ghz-receiver.png}
-	\caption{Mạch thu tín hiệu ELRS 2,4 GHz dạng Nano.}
-	\label{fig:control-elrs-receiver}
-\end{figure}
-
-\begin{table}[H]
-	\centering
-	\caption{Đặc điểm của mạch thu và giao tiếp với bộ điều khiển~\cite{expresslrsReceiverWiring}.}
-	\label{tab:control-receiver-specifications}
-	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
-		\hline
-		\textbf{Thông số} & \textbf{Giá trị} \\
-		\hline
-		Hệ thống liên lạc & ExpressLRS (ELRS) \\
-		\hline
-		Băng tần sử dụng & 2,4 GHz \\
-		\hline
-		Dạng module & Nano \\
-		\hline
-		Giao tiếp với vi điều khiển & UART, giao thức CRSF \\
-		\hline
-		Các chân kết nối thể hiện trên module & TX, RX, VCC và GND \\
-		\hline
-	\end{tabularx}
-\end{table}
-
-Hai chân TX và RX phục vụ trao đổi dữ liệu, còn VCC và GND cấp nguồn cho module. Ảnh bộ thu thể hiện đầu nối anten ngoài. Dải điện áp nguồn và dòng tiêu thụ phụ thuộc mã bộ thu cụ thể, nên các giá trị này được xác định theo tài liệu của module khi tích hợp.
+Nguồn từ chân VCC của module đi qua mạch nguồn trên bo đến BNO055. Các mức VDD và VDDIO trong bảng là điện áp cấp tại IC.
 
 \clearpage
 \subsection{Tay điều khiển Jumper T20 V2}
 
-Tay điều khiển Jumper T20 V2 tạo lệnh điều khiển thông qua hai cần điều khiển và các công tắc chức năng. Trong đề tài, thiết bị được ghép với mạch thu ELRS 2,4 GHz để truyền lệnh của người vận hành đến quadrotor. Tay điều khiển sử dụng bộ pin riêng, độc lập với pin cấp nguồn cho hệ thống bay.
+Tay điều khiển Jumper T20 V2 tạo lệnh điều khiển thông qua hai cần điều khiển và các công tắc chức năng. Trong đề tài, thiết bị được ghép với bộ thu ELRS 2,4 GHz để truyền lệnh của người vận hành đến quadrotor. Tay điều khiển sử dụng bộ pin riêng, độc lập với pin cấp nguồn cho hệ thống bay.
 
 \begin{figure}[H]
 	\centering
@@ -191,4 +154,52 @@ Tay điều khiển Jumper T20 V2 tạo lệnh điều khiển thông qua hai c�
 	\end{tabularx}
 \end{table}
 
-Các cần điều khiển cung cấp lệnh ga và lệnh thay đổi tư thế, còn các công tắc được gán cho những chức năng vận hành. Sự tương thích giữa tay điều khiển và mạch thu được xác lập theo cùng hệ liên lạc ELRS và băng tần sử dụng.
+Các cần điều khiển cung cấp lệnh ga và lệnh thay đổi tư thế, còn các công tắc được gán cho những chức năng vận hành. Sự tương thích giữa tay điều khiển và bộ thu được xác lập theo cùng hệ liên lạc ELRS và băng tần sử dụng.
+
+\clearpage
+\subsection{Bộ thu ExpressLRS 2,4 GHz}
+
+Bộ thu nhận lệnh vô tuyến từ tay điều khiển Jumper T20 V2 và chuyển dữ liệu kênh đến STM32. Phương án sử dụng bộ thu ELRS ở băng tần 2,4 GHz, dạng Nano để bố trí trong vùng trung tâm khung. Với loại bộ thu dùng UART, dữ liệu trao đổi với bộ điều khiển theo giao thức CRSF~\cite{expresslrsReceiverWiring}.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[height=4.2cm]{figures/ch03/elrs-24ghz-receiver.png}
+	\caption{Bộ thu ELRS 2,4 GHz dạng Nano.}
+	\label{fig:control-elrs-receiver}
+\end{figure}
+
+\begin{table}[H]
+	\centering
+	\caption{Đặc điểm của bộ thu và giao tiếp với bộ điều khiển~\cite{expresslrsReceiverWiring}.}
+	\label{tab:control-receiver-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Hệ thống liên lạc & ExpressLRS (ELRS) \\
+		\hline
+		Băng tần sử dụng & 2,4 GHz \\
+		\hline
+		Dạng module & Nano \\
+		\hline
+		Giao tiếp với vi điều khiển & UART, giao thức CRSF \\
+		\hline
+		Các chân kết nối thể hiện trên module & TX, RX, VCC và GND \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Ở phía vô tuyến, bộ thu tiếp nhận tín hiệu từ tay điều khiển qua anten ngoài. Lệnh nhận được chuyển đến STM32 qua cặp chân TX và RX, còn hai chân VCC và GND cấp nguồn cho bộ thu. Như vậy, đường truyền lệnh và đường cấp nguồn có các chân kết nối riêng; điện áp cấp và dòng tiêu thụ được xác định theo loại module sử dụng.
+
+\clearpage
+\subsection{Lắp ráp cụm điều khiển}
+\label{subsec:design-control-assembly}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=300bp 22bp 75bp 0,clip,width=0.85\linewidth,height=14cm,keepaspectratio]{figures/ch03/control-assembly.jpg}
+	\caption{Cụm điều khiển được lắp trên bo mạch lỗ.}
+	\label{fig:design-control-assembly}
+\end{figure}
+
+Bo STM32 và module cảm biến được bố trí trên cùng một bo mạch lỗ, tạo thành cụm điều khiển để lắp vào thân quadrotor. Các hàng chân cắm đưa kết nối của bo xử lý ra ngoài, còn dây nối liên kết bộ thu vô tuyến với cụm mạch. Bộ thu được bọc bảo vệ và nối với anten chữ T đặt tách khỏi bo. Các vị trí bắt vít ở góc bo tạo điểm liên kết cơ khí khi đưa cụm điều khiển lên khung.

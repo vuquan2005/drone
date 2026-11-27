@@ -1,10 +1,8 @@
 % !TEX root = ../../main.tex
-\section{Phần cứng bay và nguồn}
+\section{Kết cấu cơ khí, hệ động lực và nguồn cấp}
 \label{sec:design-hardware}
 
-Phần cứng bay và nguồn gồm khung F450, pin LiPo 3S cùng bốn tổ hợp ESC--động cơ--cánh quạt. Nhóm này đảm nhiệm liên kết cơ khí, cấp năng lượng và tạo lực đẩy. Nguồn 5 V cho phần điều khiển được lấy từ mạch BEC tích hợp của ESC2.
-
-\subsection{Bộ khung F450}
+\subsection{Khung quadrotor F450}
 
 \begin{figure}[H]
 	\centering
@@ -31,82 +29,6 @@ Bộ khung F450 trong \fref{fig:hardware-f450-frame} gồm hai tấm trung tâm 
 		\hline
 	\end{tabularx}
 \end{table}
-
-\clearpage
-\subsection{Pin LiPo 3S 5200 mAh}
-
-Pin LiPo là nguồn năng lượng chính cho các ESC và nhánh cấp nguồn điện tử.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[trim=0 60bp 0 65bp,clip,width=0.60\linewidth]{figures/ch03/lipo-3s-5200mah.png}
-	\caption{Pin LiPo 3S1P dung lượng 5200 mAh.}
-	\label{fig:hardware-lipo-battery}
-\end{figure}
-
-Pin trong \fref{fig:hardware-lipo-battery} có cấu hình 3S1P, gồm ba cell nối tiếp trong một nhánh.
-
-\begin{table}[H]
-	\centering
-	\caption{Thông số của pin LiPo.}
-	\label{tab:hardware-battery-specifications}
-	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
-		\hline
-		\textbf{Thông số} & \textbf{Giá trị} \\
-		\hline
-		Loại pin & Lithium polymer (LiPo) \\
-		\hline
-		Cấu hình cell & 3S1P \\
-		\hline
-		Điện áp danh định & 11,1 V \\
-		\hline
-		Dung lượng & 5200 mAh (5,2 Ah) \\
-		\hline
-		Năng lượng danh định & 57,72 Wh \\
-		\hline
-		Hệ số xả & 90C \\
-		\hline
-	\end{tabularx}
-\end{table}
-
-Điện áp pin thay đổi theo mức nạp và tải. Hệ số 90C là thông tin ghi nhãn, chưa phân biệt mức xả liên tục và ngắn hạn; khả năng cấp dòng thực tế phụ thuộc đặc tính của pin và điều kiện sử dụng.
-
-\clearpage
-\subsection{Bộ điều tốc ESC 30 A}
-
-Hệ thống sử dụng bốn ESC, mỗi ESC điều khiển một động cơ không chổi than. ESC nhận nguồn một chiều từ pin và chuyển mạch ba pha để cấp điện cho động cơ, đồng thời tiếp nhận lệnh PWM từ vi điều khiển.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=0.43\linewidth]{figures/ch03/esc-30a.png}
-	\caption{Bộ điều tốc ESC ghi nhãn 30 A.}
-	\label{fig:hardware-esc-30a}
-\end{figure}
-
-\begin{table}[H]
-	\centering
-	\caption{Thông số nhận dạng và cấu hình sử dụng ESC.}
-	\label{tab:hardware-esc-specifications}
-	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
-		\hline
-		\textbf{Thông số} & \textbf{Giá trị} \\
-		\hline
-		Dòng điện ESC & 30 A \\
-		\hline
-		Số lượng & 4 ESC \\
-		\hline
-		Loại động cơ điều khiển & Động cơ không chổi than ba pha \\
-		\hline
-		Tín hiệu điều khiển & PWM từ vi điều khiển \\
-		\hline
-		Nguồn cấp trong đề tài & Pin LiPo 3S \\
-		\hline
-	\end{tabularx}
-\end{table}
-
-Giá trị 30 A trong \tref{tab:hardware-esc-specifications} được lấy từ nhãn ESC; dòng cho phép liên tục và dải xung điều khiển phụ thuộc phiên bản ESC và điều kiện làm việc của thiết bị.
-
-Trong cấu hình sử dụng, mạch BEC (Battery Eliminator Circuit) của ESC2 cung cấp đường 5 V cho bo điều khiển STM32 và bộ thu ELRS. Tầng nguồn trên bo STM32 tạo mức 3,3 V cho BMI160 và BNO055. Chỉ đầu ra BEC của ESC2 được nối vào đường 5 V; đầu ra BEC của các ESC còn lại không kết nối. Cách phân phối nguồn này được thể hiện trong \secref{sec:design-electrical-system}.
 
 \clearpage
 \subsection{Động cơ không chổi than A2212/10T 1400KV}
@@ -141,7 +63,7 @@ Bốn động cơ A2212/10T 1400KV được bố trí tại đầu các tay đò
 	\end{tabularx}
 \end{table}
 
-Hằng số $K_V$ trong \tref{tab:hardware-motor-specifications} biểu thị quan hệ xấp xỉ giữa tốc độ không tải và điện áp cấp. Khi lắp cánh quạt, tốc độ, lực đẩy và dòng điện còn phụ thuộc tải khí động và điện áp nguồn; do đó, $K_V$ không trực tiếp biểu thị công suất hoặc lực nâng của động cơ.
+Hằng số $K_V$ trong \tref{tab:hardware-motor-specifications} cho biết quan hệ xấp xỉ giữa điện áp cấp và tốc độ quay khi động cơ chạy không tải. Khi lắp cánh quạt, động cơ phải tạo mômen để kéo tải khí động, nên tốc độ quay và dòng điện thay đổi theo cánh quạt và điện áp pin. Vì vậy, khả năng tạo lực đẩy được xét trên cả cụm động cơ--cánh quạt trong điều kiện có tải này.
 
 \clearpage
 \subsection{Cánh quạt 9 inch}
@@ -175,3 +97,90 @@ Cánh quạt chuyển mômen quay của động cơ thành lực đẩy. Hệ th
 \end{table}
 
 Bước cánh hình học biểu thị quãng tiến lý thuyết theo phương trục của cánh quạt trong một vòng quay khi không có trượt~\cite{faaPropellerHandbook}. Bên cạnh đường kính và bước cánh, vật liệu chế tạo ảnh hưởng đến khối lượng, độ bền và độ cứng của cánh quạt. Độ cứng phù hợp giúp hạn chế biến dạng và kiểm soát đáp ứng rung khi cánh quay~\cite{apcPropellerMaterials}. Vì vậy, việc lựa chọn cánh quạt cần xét đồng thời đặc tính khí động và cơ học, bảo đảm phù hợp với động cơ và điều kiện vận hành.
+
+\clearpage
+\subsection{Bộ điều tốc ESC 30 A}
+
+Hệ thống sử dụng bốn bộ điều tốc ESC 30 A, mỗi bộ điều khiển một động cơ A2212/10T. ESC nối giữa pin và động cơ, nhận điện một chiều từ pin LiPo 3S và chuyển mạch để cấp điện ba pha cho động cơ.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=0.43\linewidth]{figures/ch03/esc-30a.png}
+	\caption{Bộ điều tốc ESC 30 A.}
+	\label{fig:hardware-esc-30a}
+\end{figure}
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số và cấu hình sử dụng ESC.}
+	\label{tab:hardware-esc-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Dòng điện ESC & 30 A \\
+		\hline
+		Số lượng & 4 ESC \\
+		\hline
+		Loại động cơ điều khiển & Động cơ không chổi than ba pha \\
+		\hline
+		Tín hiệu điều khiển & PWM từ vi điều khiển \\
+		\hline
+		Nguồn cấp trong đề tài & Pin LiPo 3S \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+STM32 gửi lệnh PWM riêng đến từng ESC để điều chỉnh tốc độ bốn động cơ. Khi tốc độ một động cơ thay đổi, lực đẩy của cánh quạt tương ứng cũng thay đổi. Bằng cách điều chỉnh lực đẩy khác nhau giữa các cụm động cơ--cánh quạt, hệ thống tạo mômen để hiệu chỉnh tư thế quadrotor. ESC đảm nhiệm khâu công suất, chuyển lệnh từ vi điều khiển thành tác động lên động cơ.
+
+Bên cạnh nhánh công suất cấp cho động cơ, mạch BEC (Battery Eliminator Circuit) tích hợp trong ESC2 cung cấp nguồn 5 V cho bo STM32 và bộ thu ELRS.
+
+\clearpage
+\subsection{Pin LiPo 3S 5200 mAh}
+
+Pin được sử dụng có cấu hình 3S1P, gồm ba cell mắc nối tiếp trong một nhánh. Bộ pin LiPo có điện áp danh định 11,1 V và dung lượng 5200 mAh, cung cấp năng lượng cho bốn ESC cùng nhánh nguồn điện tử.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=0 60bp 0 65bp,clip,width=0.60\linewidth]{figures/ch03/lipo-3s-5200mah.png}
+	\caption{Pin LiPo 3S1P dung lượng 5200 mAh.}
+	\label{fig:hardware-lipo-battery}
+\end{figure}
+
+\begin{table}[H]
+	\centering
+	\caption{Thông số của pin LiPo.}
+	\label{tab:hardware-battery-specifications}
+	\begin{tabularx}{\linewidth}{|C{5.0cm}|Y|}
+		\hline
+		\textbf{Thông số} & \textbf{Giá trị} \\
+		\hline
+		Loại pin & Lithium polymer (LiPo) \\
+		\hline
+		Cấu hình cell & 3S1P \\
+		\hline
+		Điện áp danh định & 11,1 V \\
+		\hline
+		Dung lượng & 5200 mAh (5,2 Ah) \\
+		\hline
+		Năng lượng danh định & 57,72 Wh \\
+		\hline
+		Hệ số xả công bố & 90C \\
+		\hline
+	\end{tabularx}
+\end{table}
+
+Khi tăng ga để tăng lực đẩy, dòng điện từ pin cấp cho các động cơ tăng lên. Điện áp giữa hai cực pin cũng thay đổi theo tải và lượng điện còn lại. Dung lượng 5200 mAh cho biết lượng điện tích dự trữ, còn hệ số xả C mô tả khả năng cấp dòng theo dung lượng pin~\cite{grepowLipoCRating}.
+
+\clearpage
+\subsection{Lắp ráp cụm cơ khí và nguồn}
+\label{subsec:design-mechanical-assembly}
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[trim=0 100bp 0 300bp,clip,width=0.90\linewidth,height=12.5cm,keepaspectratio]{figures/ch03/mechanical-power-assembly.jpg}
+	\caption{Cụm cơ khí, hệ động lực và nguồn sau khi lắp ráp.}
+	\label{fig:design-mechanical-assembly}
+\end{figure}
+
+Bốn động cơ được lắp tại đầu các tay đòn của khung F450, đưa các cánh quạt ra ngoài vùng trung tâm thân. Dây nối động cơ được dẫn dọc theo tay đòn và giữ sát khung bằng dây rút. Pin nằm ở vùng giữa thân, bên dưới tấm khung trung tâm; dây nguồn được đưa ra cạnh thân để kết nối với hệ động lực. Các thành phần này tạo thành cụm cơ khí và nguồn trước khi lắp thêm bo điều khiển.

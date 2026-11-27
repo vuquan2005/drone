@@ -21,13 +21,12 @@
 #define ATTITUDE_CONTROL_HZ 100U
 #define MAHONY_KP_PER_S 2.0f
 #define MAHONY_KI_PER_S2 0.0f
-#define ATTITUDE_KP_PER_S 4.0f
+#define ATTITUDE_KP_PER_S 4.14f
 #define ATTITUDE_MAX_ANGLE_RAD (25.0f * 0.01745329252f)
 #define GRAVITY_MIN_MPS2 (0.9f * 9.80665f)
 #define GRAVITY_MAX_MPS2 (1.1f * 9.80665f)
-#define RATE_ROLL_KP 0.1f
-#define RATE_PITCH_KP 0.1f
-#define RATE_YAW_KP 0.1f
+#define RATE_INTEGRAL_LIMIT 0.10f
+#define RATE_D_FILTER_TAU_S 0.008f
 #define RATE_OUTPUT_LIMIT 1.0f
 #define RATE_ROLL_MAX_RADPS 2.0f
 #define RATE_PITCH_MAX_RADPS 2.0f
@@ -522,9 +521,22 @@ void app_init(void) {
     /* Bench gains only; motor permission is owned by the arm/failsafe state.
      */
     const app_rate_config_t rate_config = {
-        .axis = {{.kp = RATE_ROLL_KP, .output_limit = RATE_OUTPUT_LIMIT},
-                 {.kp = RATE_PITCH_KP, .output_limit = RATE_OUTPUT_LIMIT},
-                 {.kp = RATE_YAW_KP, .output_limit = RATE_OUTPUT_LIMIT}},
+        .axis = {{.kp = 0.123f,
+                  .ki = 0.485f,
+                  .kd = 0.00250f,
+                  .integral_limit = RATE_INTEGRAL_LIMIT,
+                  .output_limit = RATE_OUTPUT_LIMIT,
+                  .d_filter_tau_s = RATE_D_FILTER_TAU_S},
+                 {.kp = 0.124f,
+                  .ki = 0.504f,
+                  .kd = 0.00254f,
+                  .integral_limit = RATE_INTEGRAL_LIMIT,
+                  .output_limit = RATE_OUTPUT_LIMIT,
+                  .d_filter_tau_s = RATE_D_FILTER_TAU_S},
+                 {.kp = 0.154f,
+                  .ki = 0.973f,
+                  .integral_limit = RATE_INTEGRAL_LIMIT,
+                  .output_limit = RATE_OUTPUT_LIMIT}},
         .max_rate_radps = {RATE_ROLL_MAX_RADPS, RATE_PITCH_MAX_RADPS,
                            RATE_YAW_MAX_RADPS},
         .period_us = RATE_PERIOD_US};

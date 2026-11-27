@@ -273,8 +273,10 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     assert(drain(1U, trace) == 62U);
     assert((uint8_t)trace[5] == 12U && get_u32(trace + 8U) == 2U);
     assert(app_get_rate_result(&result));
-    assert(result.achieved.roll > 5000 && result.achieved.roll < 6000);
-    assert(result.achieved.pitch < -5000 && result.achieved.pitch > -6000);
+    /* A 4.14/s tilt gain and the test's P-only rate loop give these Q15
+     * outputs for the combined +25 degree roll and -25 degree pitch target. */
+    assert(abs(result.achieved.roll - 5445) <= 5);
+    assert(abs(result.achieved.pitch + 6008) <= 5);
     pilot.mode = APP_COMMAND_SWITCH_LOW;
     advance_time_us(IMU_SAMPLE_PERIOD_US);
     app_process(&pilot);
@@ -327,7 +329,7 @@ static void test_attitude_control(const app_rate_config_t *rate_config) {
     tick += 2U;
     app_process(&pilot);
     assert(app_get_rate_result(&result));
-    assert(result.achieved.roll < -3300 && result.achieved.roll > -3500);
+    assert(abs(result.achieved.roll + 3541) <= 5);
     assert(result.achieved.pitch == 0 && result.achieved.yaw == 0);
 }
 
